@@ -1,1720 +1,474 @@
-:root {
-  --bg: #111;
-  --panel: #222;
-  --panel2: #2a2a2a;
-  --card: #333;
-  --text: #f4f4f4;
-
-  --accent: #1e90ff;
-  --accent2: #16f3f8;
-
-  --good: #16f3f8;
-  --meh: #ffd84d;
-  --bad: #ff4d4d;
-
-  --glow-red: rgba(255, 0, 0, .32);
-  --glow-cyan: rgba(22, 243, 248, .35);
-
-  --wiz-size: 64px;
-  --radius: 12px;
-}
-
 /* ============================================================
-   BASE
+   MISSION: REINFORCEABLE — WOOD / SCROLL RPG LANDING SKIN
+   Load AFTER style.css
    ============================================================ */
 
-* {
-  box-sizing: border-box;
+:root {
+  --stone: #4b4b55;
+  --stone-dark: #1d1d24;
+  --wood: #1a100b;
+  --wood2: #2a1810;
+  --gold: #d9a94a;
+  --gold-dark: #6f4318;
+  --parchment: #efc987;
+  --parchment2: #dba86b;
+  --ink: #1a120c;
+  --button-green: #58d944;
+  --button-green-dark: #19822e;
+  --button-edge: #f3df71;
+  --cream: #fff3d0;
 }
 
+/* Page background */
 html,
 body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-  overflow-x: hidden;
-  background: var(--bg);
-  color: var(--text);
-  font-family: "Courier New", monospace;
-  line-height: 1.6;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: #080808 !important;
+  color: var(--cream) !important;
+  font-family: "Courier New", monospace !important;
 }
 
-body {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-}
-
-button {
-  font-family: inherit;
-  -webkit-tap-highlight-color: transparent;
-}
-
+/* Main game board */
 #game-container {
-  width: min(1650px, calc(100vw - 48px));
-  max-width: 1650px;
-  margin: clamp(8px, 1.5vh, 18px) auto;
-  padding:
-    clamp(14px, 2vh, 24px)
-    clamp(24px, 3vw, 38px)
-    clamp(10px, 1.8vh, 16px);
-  background: var(--panel);
-  border: 1px solid rgba(255, 80, 80, .35);
-  border-radius: var(--radius);
+  position: relative !important;
+  width: min(1260px, calc(100vw - 18px)) !important;
+  max-width: 1260px !important;
+  height: calc(100vh - 18px) !important;
+  max-height: calc(100vh - 18px) !important;
+  margin: 9px auto !important;
+  padding: 20px 42px 24px !important;
+  overflow: hidden !important;
+
+  background:
+    linear-gradient(90deg, rgba(0,0,0,.25), transparent 15%, transparent 85%, rgba(0,0,0,.25)),
+    repeating-linear-gradient(
+      0deg,
+      #1c100b 0px,
+      #1c100b 14px,
+      #21130d 15px,
+      #160c08 31px
+    ) !important;
+
+  border: 10px solid var(--stone-dark) !important;
+  border-radius: 0 !important;
   box-shadow:
-    0 0 22px rgba(255, 0, 0, .22),
-    0 0 60px rgba(255, 0, 0, .10);
+    inset 0 0 0 4px #64646e,
+    inset 0 0 0 8px #22222b,
+    0 0 0 3px #000,
+    0 18px 60px rgba(0,0,0,.75) !important;
+}
+
+/* Fake corner brackets */
+#game-container::before,
+#game-container::after {
+  content: "";
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  z-index: 10;
+  background: linear-gradient(135deg, #f7c85b, #9b621f);
+  border: 4px solid #3a230d;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.18);
+}
+
+#game-container::before {
+  top: -2px;
+  left: -2px;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
 }
 
 #game-container::after {
-  content: "";
-  display: block;
-  clear: both;
+  right: -2px;
+  bottom: -2px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
 }
 
-/* ============================================================
-   TITLES
-   ============================================================ */
+/* Hide teacher/points badges for this landing look */
+#teacher-badge,
+#score-badge {
+  display: none !important;
+}
 
+/* Title stack */
 h1 {
-  margin: 0 0 clamp(2px, .7vh, 6px);
-  text-align: center;
-  font-size: clamp(1.65rem, 3vw, 2.35rem);
-  line-height: 1.08;
-  text-shadow: 0 0 6px #fdd;
+  margin: 0 !important;
+  text-align: center !important;
+  color: var(--gold) !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: clamp(1.8rem, 3vw, 2.7rem) !important;
+  line-height: 1 !important;
+  letter-spacing: .04em !important;
+  text-shadow:
+    0 2px 0 #000,
+    0 0 10px rgba(255, 205, 88, .3) !important;
 }
 
 h2,
 #scenario-title {
-  margin: 0 0 clamp(8px, 1.4vh, 14px);
-  text-align: center;
-  color: var(--accent2);
-  font-size: clamp(1.05rem, 2vw, 1.55rem);
-  line-height: 1.12;
-  text-shadow: 0 0 6px #0ff;
+  display: block !important;
+  width: auto !important;
+  margin: 2px auto 8px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--gold) !important;
+  font-size: clamp(1rem, 1.7vw, 1.45rem) !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  text-shadow: 0 2px 0 #000 !important;
+  box-shadow: none !important;
 }
 
-/* ============================================================
-   TOOLBAR / HUD
-   ============================================================ */
-
+/* HUD row: hearts left, feedback right */
 #toolbar {
-  display: grid;
-  grid-template-columns:
-    max-content
-    max-content
-    max-content
-    minmax(320px, 520px)
-    max-content;
-  grid-template-areas:
-    "teacher points hearts feedback progress home";
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  margin-bottom: clamp(10px, 1.6vh, 16px);
-  overflow: visible;
+  display: grid !important;
+  grid-template-columns: 330px 1fr 560px !important;
+  grid-template-areas: "hearts . feedback" !important;
+  align-items: center !important;
+  gap: 18px !important;
+  width: 100% !important;
+  margin: -8px 0 12px !important;
 }
 
-#teacher-badge {
-  grid-area: teacher;
-}
-
-#score-badge {
-  grid-area: points;
-}
-
+/* Hearts */
 #hearts-display {
-  grid-area: hearts;
-}
-
-#feedback {
-  grid-area: feedback;
-}
-
-.utility-actions {
-  grid-area: actions;
-}
-
-.spacer {
-  display: none;
-}
-
-#teacher-badge,
-#score-badge {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #333;
-  padding: 6px 12px;
-  border: 1px solid #444;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 0.95rem;
-  white-space: nowrap;
-}
-
-/* ============================================================
-   UTILITY ACTION BUTTONS
-   My Progress + Start Over
-   ============================================================ */
-
-.utility-actions {
-  display: grid;
-  grid-template-columns: 150px 150px;
-  gap: 12px;
-  justify-content: center;
-  align-items: center;
-}
-
-.utility-actions .ghost {
-  width: 150px;
-  min-width: 150px;
-  min-height: 44px;
-  background: transparent;
-  color: #fff;
-  border: 1px solid #555;
-  padding: 8px 14px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.utility-actions .ghost:hover {
-  border-color: var(--accent2);
-  box-shadow: 0 0 10px rgba(22, 243, 248, .25);
-}
-
-#bottom-action-slot {
-  width: 100%;
-  margin-top: 8px;
-}
-
-#bottom-action-slot .utility-actions {
-  display: grid;
-  grid-template-columns: 150px 150px;
-  justify-content: center;
-}
-
-/* ============================================================
-   START SCREEN
-   Buttons move below everything
-   ============================================================ */
-
-body.start-screen #toolbar {
-  grid-template-columns:
-    max-content
-    max-content
-    max-content
-    minmax(320px, 520px);
-  grid-template-areas:
-    "teacher points hearts feedback";
-}
-
-body.start-screen #bottom-action-slot {
-  display: block;
-}
-
-body.start-screen #bottom-action-slot .utility-actions {
-  margin: 8px auto 0;
-}
-
-/* ============================================================
-   END SCREEN
-   Buttons return to top and stay same size
-   ============================================================ */
-
-body.end-screen #toolbar {
-  grid-template-columns:
-    max-content
-    max-content
-    max-content
-    minmax(320px, 520px)
-    max-content;
-  grid-template-areas:
-    "teacher points hearts feedback actions";
-}
-
-body.end-screen .utility-actions {
-  justify-self: center;
-}
-
-/* ============================================================
-   NARROW DESKTOP
-   Prevent toolbar overlap
-   ============================================================ */
-
-@media (min-width: 900px) and (max-width: 1250px) {
-  body.end-screen #toolbar,
-  #toolbar {
-    grid-template-columns:
-      max-content
-      max-content
-      max-content
-      minmax(320px, 520px);
-    grid-template-areas:
-      "teacher points hearts feedback"
-      ". . actions actions";
-    gap: 10px 12px;
-  }
-
-  body.start-screen #toolbar {
-    grid-template-columns:
-      max-content
-      max-content
-      max-content
-      minmax(320px, 520px);
-    grid-template-areas:
-      "teacher points hearts feedback";
-  }
-}
-
-/* ============================================================
-   MOBILE
-   ============================================================ */
-
-@media (max-width: 700px) {
-  .utility-actions,
-  #bottom-action-slot .utility-actions {
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    gap: 8px;
-  }
-
-  .utility-actions .ghost {
-    width: 100%;
-    min-width: 0;
-    font-size: .82rem;
-    min-height: 40px;
-  }
-}
-/* ============================================================
-   HEARTS
-   ============================================================ */
-
-#hearts-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(6px, .9vw, 10px);
-  min-width: 0;
-  padding: 0 8px;
-  background: transparent;
+  grid-area: hearts !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .zelda-heart {
-  display: inline-block;
-  width: clamp(30px, 3.1vw, 42px);
-  height: clamp(26px, 2.7vw, 36px);
-  filter: drop-shadow(0 0 8px rgba(255, 40, 40, .45));
+  width: 38px !important;
+  height: 34px !important;
+  filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 6px rgba(255, 80, 60, .45)) !important;
 }
 
-.zelda-heart-svg {
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-.zelda-heart-svg .heart-shadow {
-  fill: #5a0b0b;
-  opacity: .95;
-}
-
-.zelda-heart-svg .heart-empty {
-  fill: #f2f2f2;
-  stroke: #000;
-  stroke-width: .7;
-  paint-order: stroke fill;
-}
-
-.zelda-heart-svg .heart-fill {
-  fill: #df4332;
-  stroke: #000;
-  stroke-width: .7;
-  paint-order: stroke fill;
-}
-
-.zelda-heart-svg .heart-highlight {
-  fill: #ffe7e7;
-}
-
-.zelda-heart-svg .heart-highlight-soft {
-  fill: #f7bcbc;
-}
-
-#hearts-display.flash-hearts {
-  animation: heartPop .22s ease-out;
-}
-
-@keyframes heartPop {
-  from { transform: scale(1.08); }
-  to { transform: scale(1); }
-}
-
-/* ============================================================
-   TOP WIZARD FEEDBACK PANEL
-   ============================================================ */
-
+/* Wizard feedback black dialogue box */
 #feedback {
-  width: 100%;
-  max-width: 520px;
-  min-width: 360px;
-  min-height: clamp(58px, 9vh, 96px);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--panel);
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: clamp(7px, 1vh, 12px) clamp(9px, 1.3vw, 14px);
-  color: var(--text);
-  transition: all .25s ease;
+  grid-area: feedback !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  min-height: 76px !important;
+  padding: 10px 16px !important;
+
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+
+  background: #030303 !important;
+  color: #fff !important;
+  border: 4px solid #fff !important;
+  border-radius: 16px !important;
+  box-shadow:
+    0 6px 0 #000,
+    0 0 0 3px #111 !important;
 }
 
 #coach-icon {
-  width: clamp(44px, 5vw, var(--wiz-size));
-  height: clamp(44px, 5vw, var(--wiz-size));
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #222;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  overflow: hidden;
+  width: 58px !important;
+  height: 58px !important;
+  flex: 0 0 58px !important;
+  border: 3px solid #fff !important;
+  border-radius: 10px !important;
+  background: #101025 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 #coach-img {
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  display: none !important;
+}
+
+#coach-icon::before {
+  content: "🧙‍♂️";
+  font-size: 2rem;
+  line-height: 1;
 }
 
 #feedback-text {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: normal;
-  overflow-wrap: break-word;
-  font-size: clamp(.82rem, 1vw, .98rem);
-  line-height: 1.3;
+  color: #fff !important;
+  font-size: 1rem !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 2px 0 #000 !important;
 }
 
-#feedback.state-plus {
-  border-color: var(--good);
-  box-shadow:
-    0 0 12px rgba(22, 243, 248, .3),
-    inset 0 0 6px rgba(22, 243, 248, .15);
-  color: #e6fdff;
-}
-
-#feedback.state-meh {
-  border-color: var(--meh);
-  box-shadow:
-    0 0 12px rgba(255, 216, 77, .3),
-    inset 0 0 6px rgba(255, 216, 77, .15);
-  color: #fff7d6;
-}
-
-#feedback.state-minus {
-  border-color: var(--bad);
-  box-shadow:
-    0 0 12px rgba(255, 77, 77, .3),
-    inset 0 0 6px rgba(255, 77, 77, .15);
-  color: #ffe0e0;
-}
-
-#feedback.state-plus #coach-icon {
-  border-color: var(--good);
-  box-shadow: 0 0 14px rgba(22, 243, 248, .6);
-}
-
-#feedback.state-meh #coach-icon {
-  border-color: var(--meh);
-  box-shadow: 0 0 14px rgba(255, 216, 77, .6);
-}
-
-#feedback.state-minus #coach-icon {
-  border-color: var(--bad);
-  box-shadow: 0 0 14px rgba(255, 77, 77, .6);
-}
-
-.flash {
-  animation: flash .25s ease-out;
-}
-
-@keyframes flash {
-  from {
-    transform: scale(1.02);
-    opacity: .85;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* ============================================================
-   STORY + CHOICES
-   ============================================================ */
-
+/* Parchment story panel */
 #story-text {
-  background: #333;
-  padding: clamp(14px, 2vh, 22px);
-  border-radius: 10px;
-  margin-bottom: clamp(8px, 1.5vh, 14px);
-  white-space: pre-wrap;
-  font-size: clamp(1.05rem, 1.25vw, 1.25rem);
-  line-height: 1.5;
-}
+  position: relative !important;
+  margin: 8px 0 22px !important;
+  padding: 24px 38px !important;
+  min-height: 128px !important;
 
-#choices {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: clamp(8px, 1.4vh, 14px);
-}
-
-#choices button,
-.mission-card .action button {
-  width: 100%;
-  min-height: clamp(56px, 8.5vh, 92px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: #fff;
-  border: 2px solid #111;
-  border-radius: 12px;
-  padding: clamp(10px, 1.7vh, 18px) clamp(14px, 1.8vw, 22px);
-  font-size: clamp(.84rem, 1vw, 1rem);
-  line-height: 1.28;
-  font-weight: 700;
-  text-align: center;
-  white-space: normal;
-  cursor: pointer;
+  background:
+    linear-gradient(180deg, var(--parchment), var(--parchment2)) !important;
+  color: var(--ink) !important;
+  border: 5px solid #6b3a16 !important;
+  border-radius: 4px !important;
   box-shadow:
-    inset 0 -3px 0 rgba(0, 0, 0, .35),
-    0 4px 0 rgba(0, 0, 0, .35);
-  transition: transform .12s ease, background .12s ease;
+    inset 0 0 0 3px rgba(255,255,255,.22),
+    inset 0 -12px 18px rgba(92, 47, 16, .18),
+    0 8px 0 #120805,
+    0 14px 24px rgba(0,0,0,.35) !important;
+
+  font-size: clamp(1rem, 1.45vw, 1.25rem) !important;
+  line-height: 1.45 !important;
+  font-weight: 900 !important;
+  white-space: pre-wrap !important;
 }
 
-#choices button:hover,
-.mission-card .action button:hover {
-  background: var(--accent2);
-  color: #000;
-  transform: translateY(-2px);
+/* Scroll rods */
+#story-text::before,
+#story-text::after {
+  content: "";
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  width: 22px;
+  background:
+    linear-gradient(90deg, #7e4d24, #f1c987 45%, #7e4d24);
+  border: 3px solid #4a260e;
+  border-radius: 12px;
+  box-shadow: 0 4px 0 rgba(0,0,0,.35);
 }
 
-#choices button:focus,
-#choices button:active {
-  outline: none;
-  background: var(--accent);
-  color: #fff;
-  transform: none;
+#story-text::before {
+  left: -16px;
 }
 
-/* ============================================================
-   MISSION CARDS / HOME SCREEN
-   ============================================================ */
+#story-text::after {
+  right: -16px;
+}
 
+/* Mission cards row */
 .mission-intro {
-  background: #333;
-  padding: 12px;
-  border-radius: 10px;
-  margin: 18px 0 14px;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .mission-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(240px, 1fr));
-  gap: 18px;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 28px !important;
 }
 
 .mission-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: #262626;
-  border: 1px solid #444;
-  border-radius: 14px;
-  padding: 12px;
+  position: relative !important;
+  min-height: 150px !important;
+  padding: 22px 18px 18px !important;
+
+  background:
+    linear-gradient(180deg, #9d5a2f, #6f3a1f) !important;
+  border: 5px solid #2c160b !important;
+  border-radius: 5px !important;
+  box-shadow:
+    inset 0 0 0 3px rgba(255,255,255,.12),
+    0 7px 0 #0e0604,
+    0 14px 22px rgba(0,0,0,.4) !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+}
+
+.mission-card::before,
+.mission-card::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  bottom: -10px;
+  width: 20px;
+  background:
+    linear-gradient(90deg, #7e4d24, #f1c987 45%, #7e4d24);
+  border: 3px solid #4a260e;
+  border-radius: 10px;
+}
+
+.mission-card::before {
+  left: -14px;
+}
+
+.mission-card::after {
+  right: -14px;
 }
 
 .mission-card h3 {
-  margin: 0;
-  color: #fff;
+  margin: 0 !important;
+  color: #fff !important;
+  font-size: clamp(1.15rem, 1.7vw, 1.55rem) !important;
+  line-height: 1.1 !important;
+  text-shadow:
+    0 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000 !important;
 }
 
 .mission-card p {
-  margin: 0;
-  color: #ddd;
-  opacity: .9;
-  font-size: .9rem;
-  line-height: 1.35;
+  display: none !important;
 }
 
-.mission-card .action {
-  margin-top: auto;
-}
-
-.mission-card .action button {
-  min-height: 68px;
-  white-space: nowrap;
-  font-size: clamp(1.05rem, 1.25vw, 1.25rem);
-  line-height: 1.25;
-}
-
-/* ============================================================
-   SAME-DAY RETURN SCREEN
-   ============================================================ */
-
-#story-text.same-day-return {
-  padding: 14px 20px;
-  margin: 0 0 12px;
-  min-height: 0;
-  max-height: none;
-  height: auto;
-  display: block;
-  text-align: left;
-  white-space: normal;
-  line-height: 1.35;
-}
-
-#story-text.same-day-return .same-day-lead {
-  display: block;
-  margin: 0 0 12px;
-  padding: 0;
-  font-size: 1.35rem;
-  line-height: 1.3;
-  font-weight: 900;
-  color: #fff;
-  text-align: left;
-}
-
-#story-text.same-day-return .same-day-recap,
-#story-text.same-day-return .same-day-feedback {
-  margin: 0 0 12px;
-  padding: 0;
-  font-size: 1rem;
-  line-height: 1.4;
-  text-align: left;
-}
-
-#story-text.same-day-return .same-day-next {
-  margin: 0;
-  padding: 0;
-  font-size: 1.08rem;
-  line-height: 1.35;
-  text-align: left;
-}
-
-/* ============================================================
-   SUMMARY PANEL
-   ============================================================ */
-
-#summary-panel {
-  width: 100%;
-  background: var(--panel2);
-  border: 1px solid #444;
-  border-radius: 10px;
-  padding: 12px;
-  margin-top: 16px;
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-#summary-panel .summary-score {
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-}
-
-#summary-panel .summary-section {
-  margin-top: 14px;
-}
-
-#summary-panel ul {
-  margin: 8px 0 0 20px;
-}
-
-/* ============================================================
-   ACTIVE MISSION DESKTOP SPLIT SCREEN
-   ============================================================ */
-
-@media (min-width: 900px) {
-  body.playing-mission #toolbar {
-    grid-template-columns:
-      max-content
-      max-content
-      max-content
-      1fr
-      max-content
-      max-content;
-    grid-template-areas:
-      "teacher points hearts spacer progress home";
-    justify-content: center;
-    align-items: center;
-    gap: 12px;
-  }
-
-  body.playing-mission #feedback {
-    display: none;
-  }
-
-  body.playing-mission #story-text {
-    width: 45%;
-    float: left;
-
-    /* No internal scroll. The box grows naturally. */
-    min-height: 300px;
-    height: auto;
-    max-height: none;
-    overflow: visible;
-
-    margin: 0 clamp(14px, 2vw, 24px) 0 0;
-    padding: 18px 22px;
-    font-size: 1.05rem;
-    line-height: 1.42;
-  }
-
-  body.playing-mission #choices {
-    width: calc(55% - clamp(14px, 2vw, 24px));
-    float: right;
-
-    /* Do not force-match height. Let the choices stay compact. */
-    height: auto;
-
-    display: grid;
-    grid-template-rows: auto;
-    gap: 8px;
-    margin: 0;
-  }
-
-  body.playing-mission .choice-wizard-card {
-    min-height: 0;
-    padding: 8px 12px;
-  }
-
-  body.playing-mission .choice-wizard-icon {
-    width: 54px;
-    height: 54px;
-    flex-basis: 54px;
-  }
-
-  body.playing-mission .choice-wizard-text strong {
-    font-size: 1rem;
-  }
-
-  body.playing-mission .choice-wizard-text span {
-    font-size: .86rem;
-    line-height: 1.2;
-  }
-
-  body.playing-mission #choices > button {
-    min-height: 70px;
-    height: auto;
-    padding: 10px 14px;
-    font-size: .95rem;
-    line-height: 1.22;
-    text-align: left;
-    justify-content: flex-start;
-    align-items: center;
-  }
-}
-/* ============================================================
-   CHOICE WIZARD CARD DURING PLAY
-   ============================================================ */
-
-.choice-wizard-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: #222;
-  border: 2px solid var(--accent2);
-  border-radius: 14px;
-  padding: 12px;
-  box-shadow:
-    0 0 14px rgba(22, 243, 248, .28),
-    inset 0 0 8px rgba(22, 243, 248, .08);
-}
-
-.choice-wizard-icon {
-  width: clamp(52px, 5vw, 70px);
-  height: clamp(52px, 5vw, 70px);
-  flex: 0 0 clamp(52px, 5vw, 70px);
-  border: 2px solid var(--accent2);
-  border-radius: 10px;
-  overflow: hidden;
-  background: #111;
-}
-
-.choice-wizard-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-.choice-wizard-text {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  line-height: 1.35;
-}
-
-.choice-wizard-text strong {
-  color: var(--accent2);
-  font-size: clamp(.95rem, 1.1vw, 1.1rem);
-}
-
-.choice-wizard-text span {
-  color: #f4f4f4;
-  font-size: clamp(.78rem, .95vw, .95rem);
-  line-height: 1.25;
-}
-
-/* ============================================================
-   WIZARD POP-UP MODAL
-   ============================================================ */
-
-body.modal-open {
-  overflow: hidden;
-}
-
-.wizard-modal {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  background: rgba(0, 0, 0, .82);
-  z-index: 999999;
-  padding:
-    clamp(18px, 6vh, 70px)
-    14px
-    14px;
-}
-
-.wizard-modal-card {
-  width: min(760px, 94vw);
-  max-height: 88dvh;
-  overflow-y: auto;
-  background: #1f1f1f;
-  border: 3px solid var(--accent2);
-  border-radius: 18px;
-  padding: 16px;
-  box-shadow:
-    0 0 24px rgba(22, 243, 248, .45),
-    inset 0 0 14px rgba(22, 243, 248, .08);
-}
-
-.wizard-modal.state-plus .wizard-modal-card {
-  border-color: var(--good);
-}
-
-.wizard-modal.state-meh .wizard-modal-card {
-  border-color: var(--meh);
-}
-
-.wizard-modal.state-minus .wizard-modal-card {
-  border-color: var(--bad);
-}
-
-.wizard-modal-top {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 12px;
-}
-
-.wizard-modal-icon {
-  width: 88px;
-  height: 88px;
-  flex: 0 0 88px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #111;
-  border: 3px solid currentColor;
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.wizard-modal-icon img {
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-.wizard-modal h2 {
-  margin: 0 0 6px;
-  text-align: left;
-  color: #fff;
-  font-size: 1.55rem;
-  line-height: 1.15;
-  text-shadow: 0 0 8px currentColor;
-}
-
-.wizard-modal-tag {
-  display: inline-block;
-  background: #2c2c2c;
-  color: #f4f4f4;
-  border: 1px solid #555;
-  border-radius: 999px;
-  padding: 5px 9px;
-  font-size: .85rem;
-  font-weight: 700;
-}
-
-.wizard-modal-body {
-  background: #303030;
-  border: 1px solid #444;
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 14px;
-  font-size: 1.05rem;
-  line-height: 1.5;
-  white-space: normal;
-}
-
+/* Buttons */
+#choices button,
+.mission-card .action button,
+#bottom-action-slot .ghost,
 .wizard-continue-btn {
-  width: 100%;
-  background: var(--accent2);
-  color: #000;
-  border: 2px solid #111;
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 1rem;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.wizard-continue-btn:hover,
-.wizard-continue-btn:focus {
-  background: var(--accent);
-  color: #fff;
-  outline: none;
-}
-
-/* ============================================================
-   PROGRESS DASHBOARD
-   ============================================================ */
-
-#progress-dashboard,
-#session-details {
-  width: 100%;
-  background: #333;
-  border-radius: 14px;
-  padding: 12px;
-}
-
-.wizard-summary-bubble {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  background: #252525;
-  border: 2px solid var(--accent2);
-  border-radius: 16px;
-  padding: 12px;
-  margin-bottom: 18px;
-  box-shadow:
-    0 0 18px rgba(22, 243, 248, .25),
-    inset 0 0 10px rgba(22, 243, 248, .08);
-}
-
-.wizard-summary-icon {
-  width: 74px;
-  height: 74px;
-  flex: 0 0 auto;
-  background: #111;
-  border: 2px solid var(--accent2);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.wizard-summary-icon img {
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
-}
-
-.wizard-summary-text h3 {
-  margin: 0 0 6px;
-  color: var(--accent2);
-}
-
-.wizard-summary-text p {
-  margin: 0;
-  line-height: 1.5;
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.dashboard-card {
-  background: #252525;
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 12px;
-  text-align: center;
-}
-
-.dashboard-number {
-  color: var(--accent2);
-  font-size: 2rem;
-  font-weight: 900;
-  text-shadow: 0 0 8px rgba(22, 243, 248, .6);
-}
-
-.dashboard-label {
-  color: #ddd;
-  font-size: .9rem;
-}
-
-.dashboard-section {
-  background: #282828;
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 16px;
-}
-
-.dashboard-section h3 {
-  margin: 0 0 6px;
-}
-
-.dashboard-hint {
-  margin-top: 0;
-  color: #ddd;
-  opacity: .85;
-  font-size: .95rem;
-}
-
-.dashboard-session-list {
-  display: grid;
-  gap: 10px;
-}
-
-.dashboard-session-card {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 90px 1fr auto;
-  gap: 12px;
-  align-items: center;
-  background: #202020;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 12px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.dashboard-session-card:hover {
-  border-color: var(--accent2);
-  box-shadow: 0 0 10px rgba(22, 243, 248, .25);
-}
-
-.dashboard-session-date {
-  color: var(--accent2);
-  font-weight: 900;
-}
-
-.dashboard-session-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.dashboard-session-main small {
-  opacity: .8;
-}
-
-.dashboard-session-link {
-  color: var(--accent2);
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.dashboard-empty,
-.session-detail-header,
-.decision-review-card {
-  background: #252525;
-  border: 1px solid #444;
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.dashboard-empty {
-  text-align: center;
-}
-
-.session-detail-header {
-  margin-bottom: 16px;
-}
-
-.session-detail-header h3 {
-  margin: 0 0 4px;
-  color: var(--accent2);
-}
-
-.session-detail-header p {
-  margin: 0 0 10px;
-}
-
-.session-score-large {
-  color: #fff;
-  font-size: 2rem;
-  font-weight: 900;
-}
-
-.session-score-large span {
-  color: var(--accent2);
-  font-size: 1.2rem;
-}
-
-.decision-review-card {
-  background: #202020;
-  margin-bottom: 10px;
-}
-
-.decision-review-card.correct {
-  border-color: var(--good);
-}
-
-.decision-review-card.meh {
-  border-color: var(--meh);
-}
-
-.decision-review-card.wrong {
-  border-color: var(--bad);
-}
-
-.decision-review-top {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-.decision-review-top span {
-  font-weight: 900;
-}
-
-.decision-review-choice {
-  line-height: 1.4;
-  margin-bottom: 8px;
-}
-
-.decision-review-meta {
-  color: #ddd;
-  opacity: .85;
-  font-size: .85rem;
-}
-.dashboard-wizard-card {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 22px;
-  border-radius: 18px;
-  background: rgba(30, 30, 30, 0.92);
-  border: 3px solid var(--dash-wizard-color);
-  box-shadow: 0 0 18px var(--dash-wizard-glow);
-  margin: 24px 0;
-}
-
-.dashboard-wizard-card img {
-  width: 96px;
-  height: 96px;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.dashboard-wizard-copy h3 {
-  margin: 0 0 10px;
-  color: var(--dash-wizard-color);
-  text-shadow: 0 0 10px var(--dash-wizard-glow);
-}
-
-.dashboard-wizard-copy p {
-  margin: 0;
-  color: #f3f3f3;
-  line-height: 1.5;
-}
-
-.dashboard-wizard-plus {
-  --dash-wizard-color: #20f7ff;
-  --dash-wizard-glow: rgba(32, 247, 255, 0.55);
-}
-
-.dashboard-wizard-meh {
-  --dash-wizard-color: #ffd84d;
-  --dash-wizard-glow: rgba(255, 216, 77, 0.55);
-}
-
-.dashboard-wizard-minus {
-  --dash-wizard-color: #ff4d5e;
-  --dash-wizard-glow: rgba(255, 77, 94, 0.55);
-}
-/* ===== Dashboard Wizard Feedback State Colors ===== */
-
-.wizard-summary-bubble.wizard-summary-plus {
-  border-color: #20f7ff;
-  box-shadow:
-    0 0 18px rgba(32, 247, 255, 0.55),
-    inset 0 0 10px rgba(32, 247, 255, 0.12);
-}
-
-.wizard-summary-bubble.wizard-summary-plus .wizard-summary-icon {
-  border-color: #20f7ff;
-}
-
-.wizard-summary-bubble.wizard-summary-plus .wizard-summary-text h3 {
-  color: #20f7ff;
-  text-shadow: 0 0 10px rgba(32, 247, 255, 0.75);
-}
-
-.wizard-summary-bubble.wizard-summary-plus .wizard-summary-text p {
-  color: #d9fdff;
-}
-
-
-.wizard-summary-bubble.wizard-summary-meh {
-  border-color: #ffd84d;
-  box-shadow:
-    0 0 18px rgba(255, 216, 77, 0.55),
-    inset 0 0 10px rgba(255, 216, 77, 0.12);
-}
-
-.wizard-summary-bubble.wizard-summary-meh .wizard-summary-icon {
-  border-color: #ffd84d;
-}
-
-.wizard-summary-bubble.wizard-summary-meh .wizard-summary-text h3 {
-  color: #ffd84d;
-  text-shadow: 0 0 10px rgba(255, 216, 77, 0.75);
-}
-
-.wizard-summary-bubble.wizard-summary-meh .wizard-summary-text p {
-  color: #fff4c2;
-}
-
-
-.wizard-summary-bubble.wizard-summary-minus {
-  border-color: #ff4d5e;
-  box-shadow:
-    0 0 18px rgba(255, 77, 94, 0.55),
-    inset 0 0 10px rgba(255, 77, 94, 0.12);
-}
-
-.wizard-summary-bubble.wizard-summary-minus .wizard-summary-icon {
-  border-color: #ff4d5e;
-}
-
-.wizard-summary-bubble.wizard-summary-minus .wizard-summary-text h3 {
-  color: #ff4d5e;
-  text-shadow: 0 0 10px rgba(255, 77, 94, 0.75);
-}
-
-.wizard-summary-bubble.wizard-summary-minus .wizard-summary-text p {
-  color: #ffd0d5;
-}
-/* ============================================================
-   TABLET
-   ============================================================ */
-
-@media (max-width: 900px) {
-  #game-container {
-    width: min(760px, calc(100vw - 24px));
-    padding: 18px 22px 24px;
-  }
-
-  #toolbar {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "teacher points"
-      "hearts hearts"
-      "feedback feedback"
-      "progress home";
-    gap: 8px;
-    align-items: stretch;
-  }
-
-  #feedback {
-    min-width: 0;
-    max-width: none;
-  }
-
-  .mission-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .mission-card .action button {
-    white-space: normal;
-  }
-}
-
-/* ============================================================
-   MOBILE
-   ============================================================ */
-
-@media (max-width: 700px) {
-  html,
-  body {
-    min-height: 100%;
-    background: #111;
-  }
-
-  body {
-    display: block;
-  }
-
-  #game-container {
-    width: 100%;
-    max-width: none;
-    min-height: 100vh;
-    margin: 0;
-    padding: 10px 10px 16px;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  h1 {
-    font-size: 1.35rem;
-    line-height: 1.15;
-    margin: 4px 0;
-    letter-spacing: .5px;
-  }
-
-  h2,
-  #scenario-title {
-    font-size: 1rem;
-    line-height: 1.2;
-    margin: 0 0 8px;
-  }
-
-  #teacher-badge,
-  #score-badge {
-    width: 100%;
-    min-height: 38px;
-    padding: 6px 8px;
-    font-size: .82rem;
-  }
-
-  #hearts-display {
-    gap: 8px;
-    padding: 2px 0;
-  }
-
-  .zelda-heart {
-    width: 34px;
-    height: 29px;
-  }
-
-  #feedback {
-    width: 100%;
-    min-height: 52px;
-    padding: 7px 9px;
-    gap: 8px;
-    text-align: left;
-    border-radius: 10px;
-  }
-
-  #coach-icon,
-  #coach-img {
-    width: 42px;
-    height: 42px;
-  }
-
-  #feedback-text {
-    font-size: .82rem;
-    line-height: 1.25;
-  }
-
-  #progress-btn,
-  #home-btn {
-    width: 100%;
-    min-width: 0;
-    min-height: 40px;
-    padding: 8px 10px;
-    font-size: .82rem;
-  }
-
-  #story-text {
-    font-size: .94rem;
-    line-height: 1.38;
-    padding: 12px;
-    margin-bottom: 10px;
-    max-height: 34vh;
-    overflow-y: auto;
-  }
-
-  .mission-intro {
-    padding: 10px;
-    margin: 8px 0 0;
-  }
-
-  .mission-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-  }
-
-  .mission-card {
-    padding: 10px;
-    gap: 7px;
-    border-radius: 10px;
-  }
-
-  .mission-card h3 {
-    font-size: 1rem;
-  }
-
-  .mission-card p {
-    font-size: .82rem;
-    line-height: 1.25;
-  }
-
-  .mission-card .action button {
-    min-height: 46px;
-    padding: 9px 10px;
-    font-size: .9rem;
-    line-height: 1.15;
-  }
-
-  #choices {
-    gap: 8px;
-  }
-
-  #choices > button {
-    min-height: auto;
-    padding: 8px 10px;
-    font-size: .88rem;
-    line-height: 1.25;
-    text-align: left;
-    justify-content: flex-start;
-  }
-
-  .choice-wizard-card {
-    display: none;
-  }
-
-  .wizard-modal {
-    padding: 12px 10px 10px;
-  }
-
-  .wizard-modal-card {
-    width: 100%;
-    max-height: 90dvh;
-    padding: 12px;
-  }
-
-  .wizard-modal-top {
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .wizard-modal-icon {
-    width: 64px;
-    height: 64px;
-    flex-basis: 64px;
-  }
-
-  .wizard-modal h2 {
-    font-size: 1.15rem;
-  }
-
-  .wizard-modal-body {
-    font-size: .95rem;
-    line-height: 1.45;
-  }
-
-  #progress-dashboard,
-  #session-details {
-    padding: 12px;
-    border-radius: 10px;
-  }
-
-  .wizard-summary-bubble {
-    padding: 12px;
-    gap: 10px;
-  }
-
-  .wizard-summary-icon {
-    width: 52px;
-    height: 52px;
-  }
-
-  .wizard-summary-text h3 {
-    font-size: 1rem;
-  }
-
-  .wizard-summary-text p {
-    font-size: .9rem;
-    line-height: 1.4;
-  }
-
-  .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .dashboard-card {
-    padding: 12px 8px;
-  }
-
-  .dashboard-number {
-    font-size: 1.45rem;
-  }
-
-  .dashboard-label {
-    font-size: .78rem;
-  }
-
-  .dashboard-session-card {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-
-  .dashboard-session-link {
-    font-size: .85rem;
-  }
-
-  .session-score-large {
-    font-size: 1.5rem;
-  }
-
-  .decision-review-top {
-    flex-direction: column;
-    gap: 2px;
-  }
-}
-
-/* ============================================================
-   FINAL BUTTON FIX: My Progress + Start Over
-   ============================================================ */
-
-#progress-btn,
-#home-btn {
-  min-height: 44px !important;
-  min-width: 130px !important;
-  background: transparent !important;
+  width: 100% !important;
+  min-height: 54px !important;
+  padding: 10px 16px !important;
+
+  background:
+    linear-gradient(180deg, #7dff54 0%, var(--button-green) 45%, var(--button-green-dark) 100%) !important;
   color: #fff !important;
-  border: 1px solid #555 !important;
-  padding: 8px 14px !important;
-  border-radius: 10px !important;
-  cursor: pointer !important;
+  border: 4px solid var(--button-edge) !important;
+  border-radius: 8px !important;
+  box-shadow:
+    inset 0 0 0 3px rgba(0,0,0,.25),
+    0 5px 0 #06370e,
+    0 9px 0 #000 !important;
+
   font-family: "Courier New", monospace !important;
-  font-size: 0.95rem !important;
-  font-weight: 700 !important;
-  white-space: nowrap !important;
-  box-shadow: none !important;
-  appearance: none !important;
-  -webkit-appearance: none !important;
+  font-size: clamp(.9rem, 1.35vw, 1.25rem) !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  line-height: 1.1 !important;
+  letter-spacing: .02em !important;
+  text-align: center !important;
+  text-shadow:
+    0 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000 !important;
+
+  cursor: pointer !important;
 }
 
-#progress-btn:hover,
-#home-btn:hover {
-  border-color: var(--accent2) !important;
-  box-shadow: 0 0 10px rgba(22, 243, 248, .25) !important;
-}
-@media (min-width: 900px) and (max-width: 1250px) {
-  #toolbar {
-    grid-template-columns:
-      max-content
-      max-content
-      max-content
-      minmax(320px, 520px);
-    grid-template-areas:
-      "teacher points hearts feedback"
-      ". . progress home" !important;
-    gap: 10px 12px !important;
-  }
-
-  #progress-btn {
-    grid-area: progress !important;
-  }
-
-  #home-btn {
-    grid-area: home !important;
-  }
-}
-/* ============================================================
-   SAFE FINAL OVERRIDE: Move My Progress + Start Over below cards
-   ============================================================ */
-
-#toolbar {
-  display: grid !important;
-  grid-template-columns:
-    max-content
-    max-content
-    max-content
-    minmax(320px, 520px) !important;
-  grid-template-areas:
-    "teacher points hearts feedback" !important;
-  justify-content: center !important;
-  align-items: center !important;
-  gap: 12px !important;
+#choices button:hover,
+.mission-card .action button:hover,
+#bottom-action-slot .ghost:hover,
+.wizard-continue-btn:hover {
+  filter: brightness(1.12) !important;
+  transform: translateY(-2px) !important;
 }
 
-#progress-btn {
-  grid-area: auto !important;
+#choices button:active,
+.mission-card .action button:active,
+#bottom-action-slot .ghost:active,
+.wizard-continue-btn:active {
+  transform: translateY(3px) !important;
+  box-shadow:
+    inset 0 0 0 3px rgba(0,0,0,.25),
+    0 2px 0 #06370e,
+    0 5px 0 #000 !important;
 }
 
-#home-btn {
-  grid-area: auto !important;
-}
-
+/* Bottom buttons */
 #bottom-action-slot {
-  width: 100%;
-  clear: both;
-  margin-top: 22px;
-  margin-bottom: 8px;
+  margin: 34px auto 0 !important;
+  width: min(650px, 100%) !important;
 }
 
 #bottom-action-slot .utility-actions {
   display: grid !important;
-  grid-template-columns: minmax(170px, 260px) minmax(170px, 260px);
-  gap: 18px;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 28px !important;
 }
 
 #bottom-action-slot .ghost {
-  width: 100% !important;
-  min-width: 0 !important;
   min-height: 56px !important;
-  background: transparent !important;
-  color: #fff !important;
-  border: 1px solid #555 !important;
-  padding: 10px 16px !important;
-  border-radius: 12px !important;
-  cursor: pointer !important;
-  font-family: "Courier New", monospace !important;
-  font-size: 0.95rem !important;
-  font-weight: 700 !important;
-  white-space: nowrap !important;
-  box-shadow: none !important;
 }
 
-#bottom-action-slot .ghost:hover {
-  border-color: var(--accent2) !important;
-  box-shadow: 0 0 10px rgba(22, 243, 248, .25) !important;
+/* Active mission can still use the same skin */
+body.playing-mission #toolbar {
+  grid-template-columns: 330px 1fr !important;
+  grid-template-areas: "hearts ." !important;
 }
 
-/* During missions, keep the buttons below the mission area instead of in the HUD */
-body.playing-mission #bottom-action-slot {
-  clear: both;
-  padding-top: 18px;
+body.playing-mission #feedback {
+  display: none !important;
 }
 
-/* Tablet */
+body.playing-mission #story-text {
+  width: 45% !important;
+  float: left !important;
+  margin: 12px 24px 0 0 !important;
+  min-height: 320px !important;
+  font-size: 1rem !important;
+}
+
+body.playing-mission #choices {
+  width: calc(55% - 24px) !important;
+  float: right !important;
+  display: grid !important;
+  gap: 12px !important;
+  margin-top: 12px !important;
+}
+
+body.playing-mission #choices > button {
+  min-height: 72px !important;
+  text-align: left !important;
+  justify-content: flex-start !important;
+}
+
+/* Mobile/tablet fallback: allow scrolling */
 @media (max-width: 900px) {
-  #toolbar {
-    grid-template-columns: 1fr 1fr !important;
-    grid-template-areas:
-      "teacher points"
-      "hearts hearts"
-      "feedback feedback" !important;
+  html,
+  body {
+    height: auto !important;
+    overflow: auto !important;
   }
 
-  #bottom-action-slot .utility-actions {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-/* Mobile */
-@media (max-width: 700px) {
-  #bottom-action-slot {
-    margin-top: 12px;
-  }
-
-  #bottom-action-slot .utility-actions {
-    gap: 8px;
-  }
-
-  #bottom-action-slot .ghost {
-    min-height: 42px !important;
-    font-size: .82rem !important;
-    padding: 8px 10px !important;
-  }
-}
-
-/* ============================================================
-   WIDE DESKTOP EMBED TUNING
-   Put this at the bottom of style.css
-   ============================================================ */
-
-@media (min-width: 901px) {
   #game-container {
-    width: min(1920px, calc(100vw - 20px));
-    max-width: none;
-    margin: 6px auto;
-    padding: 12px 28px 16px;
-  }
-
-  h1 {
-    font-size: clamp(1.55rem, 2.4vw, 2.15rem);
-    margin-bottom: 2px;
-  }
-
-  h2,
-  #scenario-title {
-    font-size: clamp(1rem, 1.7vw, 1.35rem);
-    margin-bottom: 8px;
+    width: 100% !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 14px !important;
   }
 
   #toolbar {
-    margin-bottom: 10px;
-    gap: 10px;
-  }
-
-  #feedback {
-    max-width: 620px;
-    min-width: 420px;
-    min-height: 60px;
-  }
-
-  #story-text {
-    padding: 14px 18px;
-    margin-bottom: 10px;
-    font-size: clamp(1rem, 1.05vw, 1.12rem);
-    line-height: 1.38;
-  }
-
-  .mission-intro {
-    margin: 10px 0;
-    padding: 10px 12px;
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "hearts"
+      "feedback" !important;
   }
 
   .mission-grid {
-    gap: 12px;
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
   }
 
-  .mission-card {
-    padding: 10px 12px;
-    gap: 8px;
+  #story-text {
+    padding: 20px 24px !important;
   }
 
-  .mission-card .action button {
-    min-height: 54px;
+  #bottom-action-slot .utility-actions {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  body.playing-mission #story-text,
+  body.playing-mission #choices {
+    width: 100% !important;
+    float: none !important;
+    margin: 12px 0 !important;
   }
 }
