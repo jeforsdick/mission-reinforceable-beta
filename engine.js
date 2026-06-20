@@ -610,6 +610,7 @@ function pickScenario(pool, rnd) { return sample(pool, 1, rnd)[0]; }
 function renderIntroCards() {
   setPlayMode(false);
   document.body.classList.add('start-screen');
+  const useQuestHub = document.body.classList.contains('skin-quest-hub');
   
   if (storyText) storyText.classList.remove('same-day-return');
   if (storyText) storyText.style.display = 'block';
@@ -618,7 +619,23 @@ function renderIntroCards() {
   if (scenarioTitle) scenarioTitle.textContent = "Behavior Intervention Simulator";
 
   if (storyText) {
-    storyText.innerHTML = `
+    storyText.innerHTML = useQuestHub
+      ? `
+      <section class="quest-hero" aria-labelledby="quest-hero-title">
+        <div class="quest-hero-art" role="img" aria-label="Magical classroom quest map placeholder">
+          <div class="quest-map-sky"></div>
+          <div class="quest-map-castle">⌂</div>
+          <div class="quest-map-path"></div>
+          <span class="quest-map-label">Classroom Quest Map</span>
+        </div>
+        <div class="quest-hero-copy">
+          <span class="quest-eyebrow">Teacher Quest Hub</span>
+          <h3 id="quest-hero-title">Your Classroom Quest, Mastered.</h3>
+          <p>Practice short behavior-support decisions before the school day.</p>
+          <button type="button" class="quest-hero-cta">Start Daily Quest</button>
+        </div>
+      </section>`
+      : `
       <div class="landing-welcome">
         <div class="landing-wizard-portrait">
           <img src="${WIZ.meh}" alt="MR Wizard">
@@ -633,8 +650,37 @@ function renderIntroCards() {
   }
 
   const menu = document.createElement('div');
-  menu.className = 'mission-grid';
-  menu.innerHTML = `
+  menu.className = useQuestHub ? 'quest-grid' : 'mission-grid';
+  menu.innerHTML = useQuestHub
+    ? `
+    <article class="quest-card quest-card-daily">
+      <div class="quest-card-icon" aria-hidden="true">☀</div>
+      <div class="quest-card-copy">
+        <span class="quest-card-kicker">Plan Your Day</span>
+        <h3>Daily Quest</h3>
+        <p>Practice plan-aligned support decisions.</p>
+      </div>
+      <div class="action"><button id="btn-drill">View Quest</button></div>
+    </article>
+    <article class="quest-card quest-card-crisis">
+      <div class="quest-card-icon" aria-hidden="true">✦</div>
+      <div class="quest-card-copy">
+        <span class="quest-card-kicker">Steady the Moment</span>
+        <h3>Crisis Mission</h3>
+        <p>Practice calm responses during higher-intensity classroom moments.</p>
+      </div>
+      <div class="action"><button id="btn-crisis">View Quest</button></div>
+    </article>
+    <article class="quest-card quest-card-mystery">
+      <div class="quest-card-icon" aria-hidden="true">?</div>
+      <div class="quest-card-copy">
+        <span class="quest-card-kicker">Wildcard Challenge</span>
+        <h3>Mystery Quest</h3>
+        <p>Try randomized classroom scenarios.</p>
+      </div>
+      <div class="action"><button id="btn-random">View Quest</button></div>
+    </article>`
+    : `
     <div class="mission-card">
       <h3>Daily Mission</h3>
       <div class="action"><button id="btn-drill">Start Daily Practice ▶</button></div>
@@ -675,6 +721,10 @@ function renderIntroCards() {
     resetGame();
     currentMode = "Wildcard";
     startDynamicMission('Shuffle Quest', pickScenario(POOL.wild, rnd));
+  });
+
+  document.querySelector('.quest-hero-cta')?.addEventListener('click', () => {
+    document.getElementById('btn-drill')?.click();
   });
 }
 function startMissionByType(type) {

@@ -8,9 +8,10 @@
   <!-- Shared stylesheet is one folder up -->
  <link rel="stylesheet" href="../style.css">
 <!-- <link rel="stylesheet" href="../rpg-skin.css"> -->
+<link rel="stylesheet" href="../quest-hub.css">
 </head>
 
-<body>
+<body class="skin-quest-hub">
   <div id="game-container">
     <h1>Mission: Reinforceable</h1>
     <h2 id="scenario-title">Behavior Intervention Simulator</h2>
@@ -19,6 +20,18 @@
   <div id="teacher-badge">Teacher: <span id="teacher-code">Test</span></div>
   <div id="score-badge">Points: <span id="points">0</span></div>
   <div id="hearts-display" aria-label="Hearts"></div>
+
+  <div class="quest-stat quest-progress-stat" hidden>
+    <span>Quest Progress</span>
+    <strong>0 / 3</strong>
+  </div>
+
+  <div class="quest-stat scenario-progress-stat" hidden>
+    <span>Scenario Progress</span>
+    <span class="quest-meter" aria-hidden="true"><i></i></span>
+  </div>
+
+  <div class="quest-hud-menu" hidden aria-hidden="true">☰</div>
 
   <div id="feedback">
     <div id="coach-icon">
@@ -32,8 +45,11 @@
 <div id="choices"></div>
 
 <div id="bottom-action-slot">
-  <div class="utility-actions">
-    <button id="progress-btn" class="ghost">My Progress</button>
+  <div class="utility-actions quest-bottom-nav">
+    <a class="quest-nav-link" href="#game-container" hidden>Home</a>
+    <a class="quest-nav-link" href="#choices" hidden>Quests</a>
+    <button id="progress-btn" class="ghost">Progress</button>
+    <a class="quest-nav-link quest-resources-link" href="#" hidden aria-disabled="true">Resources</a>
     <button id="home-btn" class="ghost">Start Over</button>
   </div>
 </div>
