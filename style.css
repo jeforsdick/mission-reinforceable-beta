@@ -574,11 +574,127 @@ body.playing-mission #choices > button {
   }
 }
 
-/* Keep landing cards horizontal on desktop-width viewports.
-   This intentionally comes after the short-viewport fallback above. */
+/* Compact desktop landing composition. The :has() guard keeps these
+   proportions off gameplay answer screens and progress/detail views. */
 @media (min-width: 901px) {
-  body:not(.playing-mission) #choices .mission-grid {
+  body:has(#choices > .mission-intro .mission-grid) #game-container {
+    padding: 9px 38px 12px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) h1 {
+    font-size: clamp(1.75rem, 2.65vw, 2.3rem);
+    line-height: .9;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #scenario-title {
+    margin: 0 auto 2px;
+    font-size: clamp(.92rem, 1.45vw, 1.22rem);
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #toolbar {
+    position: relative;
+    display: block;
+    min-height: 110px;
+    margin: 0 0 6px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #hearts-display {
+    position: absolute;
+    top: -43px;
+    left: 2px;
+    min-height: 40px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) .zelda-heart {
+    width: 34px;
+    height: 31px;
+    flex-basis: 34px;
+  }
+
+  /* Cosmetic status meter; no game state is attached yet. */
+  body:has(#choices > .mission-intro .mission-grid) #toolbar::after {
+    content: "";
+    position: absolute;
+    top: -35px;
+    right: 2px;
+    width: clamp(220px, 24vw, 305px);
+    height: 25px;
+    border: 3px solid #bdfbff;
+    border-radius: 8px;
+    background:
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, .22) 0 3px, transparent 3px 10px),
+      linear-gradient(180deg, #41ecff, #208ee7 62%, #123d96);
+    box-shadow:
+      inset 0 0 0 3px #1956ae,
+      0 0 0 3px #052b3d,
+      0 0 14px rgba(61, 232, 255, .65);
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #feedback {
+    position: absolute;
+    top: 25px;
+    right: 26px;
+    width: min(620px, 52vw);
+    min-height: 68px;
+    padding: 6px 12px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #coach-icon {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #feedback-text {
+    font-size: clamp(.84rem, 1.15vw, 1rem);
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #story-text {
+    min-height: 112px;
+    margin: 0 14px 18px;
+    padding: 14px 27px;
+    font-size: clamp(.9rem, 1.25vw, 1.08rem);
+    line-height: 1.3;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) .mission-intro {
+    margin: 0 18px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) .mission-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(25px, 3.2vw, 42px);
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) .mission-card {
+    min-height: 112px;
+    padding: 13px 15px 12px;
+    gap: 8px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) .mission-card h3 {
+    font-size: clamp(1rem, 1.48vw, 1.3rem);
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) .mission-card .action button {
+    min-height: 44px;
+    padding: 6px 9px;
+    font-size: clamp(.76rem, 1.08vw, 1rem);
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #bottom-action-slot {
+    width: min(660px, 58%);
+    margin-top: 24px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #bottom-action-slot .utility-actions {
+    gap: 26px;
+  }
+
+  body:has(#choices > .mission-intro .mission-grid) #bottom-action-slot .ghost {
+    min-height: 46px;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 }
