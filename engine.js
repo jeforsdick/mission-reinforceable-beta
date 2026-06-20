@@ -611,6 +611,10 @@ function renderIntroCards() {
   setPlayMode(false);
   document.body.classList.add('start-screen');
   const useQuestHub = document.body.classList.contains('skin-quest-hub');
+
+  if (coachImgEl && useQuestHub) {
+    coachImgEl.src = '../wizard-guide.png';
+  }
   
   if (storyText) storyText.classList.remove('same-day-return');
   if (storyText) storyText.style.display = 'block';
@@ -622,10 +626,8 @@ function renderIntroCards() {
     storyText.innerHTML = useQuestHub
       ? `
       <section class="quest-hero" aria-labelledby="quest-hero-title">
-        <div class="quest-hero-art" role="img" aria-label="Magical classroom quest map placeholder">
-          <div class="quest-map-sky"></div>
-          <div class="quest-map-castle">⌂</div>
-          <div class="quest-map-path"></div>
+        <div class="quest-hero-art">
+          <img src="../quest-map-hero.png" alt="Magical classroom kingdom quest map">
           <span class="quest-map-label">Classroom Quest Map</span>
         </div>
         <div class="quest-hero-copy">
@@ -654,7 +656,7 @@ function renderIntroCards() {
   menu.innerHTML = useQuestHub
     ? `
     <article class="quest-card quest-card-daily">
-      <div class="quest-card-icon" aria-hidden="true">☀</div>
+      <div class="quest-card-icon"><img src="../daily-quest-icon.png" alt=""></div>
       <div class="quest-card-copy">
         <span class="quest-card-kicker">Plan Your Day</span>
         <h3>Daily Quest</h3>
@@ -663,7 +665,7 @@ function renderIntroCards() {
       <div class="action"><button id="btn-drill">View Quest</button></div>
     </article>
     <article class="quest-card quest-card-crisis">
-      <div class="quest-card-icon" aria-hidden="true">✦</div>
+      <div class="quest-card-icon"><img src="../crisis-mission-icon.png" alt=""></div>
       <div class="quest-card-copy">
         <span class="quest-card-kicker">Steady the Moment</span>
         <h3>Crisis Mission</h3>
@@ -672,7 +674,7 @@ function renderIntroCards() {
       <div class="action"><button id="btn-crisis">View Quest</button></div>
     </article>
     <article class="quest-card quest-card-mystery">
-      <div class="quest-card-icon" aria-hidden="true">?</div>
+      <div class="quest-card-icon"><img src="../mystery-quest-icon.png" alt=""></div>
       <div class="quest-card-copy">
         <span class="quest-card-kicker">Wildcard Challenge</span>
         <h3>Mystery Quest</h3>

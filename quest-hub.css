@@ -348,46 +348,19 @@ body.skin-quest-hub.start-screen .quest-hero-art {
   position: relative;
   min-height: 215px;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 22% 20%, rgba(255, 255, 255, .82) 0 1px, transparent 2px),
-    radial-gradient(circle at 76% 14%, rgba(255, 244, 176, .8) 0 1px, transparent 2px),
-    linear-gradient(180deg, #303183 0 44%, #4d4c9b 45% 52%, #283166 53% 100%);
-  background-size: 43px 43px, 59px 59px, auto;
+  background: #171846;
   border-right: 3px solid var(--hub-gold-dark);
   image-rendering: pixelated;
 }
 
-body.skin-quest-hub.start-screen .quest-map-sky {
+body.skin-quest-hub.start-screen .quest-hero-art img {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(155deg, transparent 0 54%, #1b2651 55% 65%, transparent 66%),
-    linear-gradient(25deg, transparent 0 58%, #343976 59% 70%, transparent 71%);
-}
-
-body.skin-quest-hub.start-screen .quest-map-castle {
-  position: absolute;
-  top: 44px;
-  left: 46%;
-  display: grid;
-  width: 76px;
-  height: 70px;
-  place-items: center;
-  color: #fff0b0;
-  background: linear-gradient(180deg, #7a68c8, #392d7e);
-  border: 4px solid #e8c36b;
-  box-shadow: 8px 8px 0 rgba(8, 8, 29, .45), 0 0 18px rgba(139, 106, 255, .38);
-  font-size: 2.2rem;
-}
-
-body.skin-quest-hub.start-screen .quest-map-path {
-  position: absolute;
-  right: 10%;
-  bottom: -26px;
-  width: 62%;
-  height: 102px;
-  background: linear-gradient(145deg, transparent 0 31%, #d7ad5c 32% 42%, #7c5b35 43% 48%, transparent 49%);
-  transform: rotate(-8deg);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  image-rendering: pixelated;
 }
 
 body.skin-quest-hub.start-screen .quest-map-label {
@@ -532,12 +505,21 @@ body.skin-quest-hub.start-screen .quest-card-icon {
   grid-row: 1 / 3;
   place-items: center;
   align-self: center;
+  padding: 4px;
   color: var(--hub-gold-light);
   background: linear-gradient(180deg, #44388d, #1c1d4d);
   border: 2px solid var(--hub-gold);
   border-radius: 7px;
   box-shadow: inset 0 0 0 2px #1a163f, 0 3px 0 #050510, 0 0 12px rgba(109, 78, 217, .28);
   font-size: 1.55rem;
+  image-rendering: pixelated;
+}
+
+body.skin-quest-hub.start-screen .quest-card-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
   image-rendering: pixelated;
 }
 
