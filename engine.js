@@ -598,7 +598,8 @@ function renderIntroCards() {
       ? `
       <section class="quest-hero" aria-labelledby="quest-hero-title">
         <div class="quest-hero-art">
-          <img src="../assets/ui/map-quest-background.png" alt="Magical classroom kingdom quest map">
+          <img class="quest-map-background" src="../assets/ui/map-quest-background.png" alt="Magical classroom kingdom quest map">
+          <img class="quest-map-wizard-guide" src="../assets/ui/wizard-start.png" alt="The Wizard will chime in after every move.">
           <div class="quest-map-caption">
             <h3 id="quest-hero-title">Your Classroom Kingdom</h3>
             <button type="button" class="quest-hero-cta">Start Daily Quest</button>
