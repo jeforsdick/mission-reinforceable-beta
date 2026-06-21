@@ -231,6 +231,8 @@ function resetGame() {
     'modal-open',
     'bip-briefing',
     'feedback-open',
+    'dashboard-screen',
+    'same-day-screen',
     'summary-screen'
   );
   updateGameplayHud();
@@ -667,6 +669,7 @@ function pickScenario(pool, rnd) { return sample(pool, 1, rnd)[0]; }
 
 function renderIntroCards() {
   setPlayMode(false);
+  document.body.classList.remove('dashboard-screen', 'same-day-screen');
   document.body.classList.add('start-screen');
   const useQuestHub = document.body.classList.contains('skin-quest-hub');
   
@@ -800,6 +803,7 @@ function startMissionByType(type) {
 
 function renderSameDayReturnScreen(result) {
   setPlayMode(false);
+  document.body.classList.add('same-day-screen');
 
   if (storyText) storyText.style.display = 'block';
 

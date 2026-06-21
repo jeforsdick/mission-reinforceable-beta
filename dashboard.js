@@ -455,7 +455,16 @@ async function openProgressDashboard() {
   const storyText = document.getElementById("story-text");
   const scenarioTitle = document.getElementById("scenario-title");
 
-  document.body.classList.remove("start-screen");
+  if (typeof setPlayMode === "function") setPlayMode(false);
+  document.getElementById("wizard-modal")?.remove();
+  document.body.classList.remove(
+    "start-screen",
+    "summary-screen",
+    "bip-briefing",
+    "feedback-open",
+    "modal-open"
+  );
+  document.body.classList.add("dashboard-screen");
   hideDashboardTopFeedback();
 
   if (storyText) storyText.style.display = "none";

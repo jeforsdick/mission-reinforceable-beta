@@ -350,9 +350,15 @@ body.skin-quest-hub.summary-screen #bottom-action-slot .utility-actions {
 }
 
 body.skin-quest-hub.playing-mission #bottom-action-slot .ghost,
-body.skin-quest-hub.summary-screen #bottom-action-slot .ghost {
-  width: min(250px, 32vw);
+body.skin-quest-hub.summary-screen #bottom-action-slot .ghost,
+body.skin-quest-hub.playing-mission #bottom-action-slot .quest-nav-link,
+body.skin-quest-hub.summary-screen #bottom-action-slot .quest-nav-link {
+  display: flex;
+  width: min(250px, 24vw);
   min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 5px 12px;
   color: #fff;
   background: transparent;
@@ -361,10 +367,13 @@ body.skin-quest-hub.summary-screen #bottom-action-slot .ghost {
   box-shadow: none;
   font-family: var(--font-pixel, "Courier New", monospace);
   font-size: .72rem;
+  text-decoration: none;
 }
 
 body.skin-quest-hub.playing-mission #bottom-action-slot .ghost img,
-body.skin-quest-hub.summary-screen #bottom-action-slot .ghost img {
+body.skin-quest-hub.summary-screen #bottom-action-slot .ghost img,
+body.skin-quest-hub.playing-mission #bottom-action-slot .quest-nav-link img,
+body.skin-quest-hub.summary-screen #bottom-action-slot .quest-nav-link img {
   width: 35px;
   height: 35px;
   object-fit: contain;
@@ -388,7 +397,7 @@ body.skin-quest-hub .wizard-modal {
 body.skin-quest-hub.bip-briefing .wizard-modal,
 body.skin-quest-hub.feedback-open .wizard-modal {
   position: fixed;
-  inset: 0;
+  inset: 84px 0 64px;
   z-index: 1000;
   display: grid;
   place-items: center;
@@ -399,7 +408,7 @@ body.skin-quest-hub.feedback-open .wizard-modal {
 
 body.skin-quest-hub .wizard-modal-card {
   width: min(760px, calc(100vw - 32px));
-  max-height: calc(100vh - 38px);
+  max-height: calc(100vh - 178px);
   padding: clamp(18px, 2.5vw, 28px);
   overflow: auto;
   color: var(--game-cream, #fff6d8);
@@ -503,6 +512,224 @@ body.skin-quest-hub .wizard-modal.state-minus .wizard-modal-card {
   border-color: #e46868;
 }
 
+/* Persistent chrome for dashboard and same-day utility views. */
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) {
+  --game-panel: #111833;
+  --game-panel-hi: #1b2547;
+  --game-gold: #e4b94e;
+  --game-gold-lo: #684315;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  background: #040714;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #game-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 84px minmax(0, 1fr) 64px;
+  grid-template-areas: "toolbar" "content" "nav";
+  gap: 12px;
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  margin: 0;
+  padding: 7px 20px 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #101933, #070b1d);
+  border: 4px solid #050713;
+  box-shadow: inset 0 0 0 2px #7188a4;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #game-container::before,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #game-container::after,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) h1,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #scenario-title,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #teacher-badge,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #feedback,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .scenario-progress-stat {
+  display: none !important;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #toolbar {
+  grid-area: toolbar;
+  display: grid;
+  grid-template-columns: 29% 35.5% 35.5%;
+  grid-template-areas: "hearts quest xp";
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 7px 22px;
+  background: linear-gradient(180deg, #151b39, #0a1027);
+  border: 3px solid #080b18;
+  box-shadow: inset 0 0 0 2px #7189a5, 0 3px 0 #02030a;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #hearts-display {
+  grid-area: hearts;
+  justify-content: flex-start;
+  gap: 7px;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .quest-progress-stat,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #score-badge {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  grid-template-rows: 24px 22px;
+  align-items: center;
+  min-width: 0;
+  color: #fff;
+  font-family: var(--font-pixel, "Courier New", monospace);
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .quest-progress-stat[hidden] {
+  display: grid !important;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .quest-progress-stat {
+  grid-area: quest;
+  padding-right: 15px;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #score-badge {
+  grid-area: xp;
+  padding-left: 8px;
+  font-size: 0;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .quest-progress-stat::before {
+  content: "";
+  grid-row: 1 / 3;
+  width: 40px;
+  height: 40px;
+  background: url("assets/ui/quest-progress-icon.png") center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .quest-progress-stat > span:first-child,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #score-badge::before {
+  align-self: end;
+  color: #fff;
+  font-size: clamp(.7rem, 1.3vw, 1rem);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #score-badge::before {
+  content: "Behavior XP " attr(data-behavior-xp-label);
+  grid-column: 2;
+  grid-row: 1;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .quest-meter,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #score-badge::after {
+  align-self: center;
+  display: block;
+  width: 100%;
+  height: 20px;
+  overflow: hidden;
+  background: #080b19;
+  border: 3px solid #d8e4ed;
+  box-shadow: 0 0 0 2px #26344c;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) .quest-meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(180deg, #66d1ff, #258dd2);
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #score-badge::after {
+  content: "";
+  grid-column: 2;
+  grid-row: 2;
+  background:
+    linear-gradient(90deg, #bd54dc 0 var(--behavior-xp-percent, 0%), transparent var(--behavior-xp-percent, 0%)),
+    #080b19;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #score-badge #points {
+  display: block;
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 40px;
+  height: 40px;
+  color: transparent;
+  font-size: 0;
+  background: url("assets/ui/behavior-xp-icon.png") center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #story-text,
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #choices {
+  grid-area: content;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+}
+
+body.skin-quest-hub.same-day-screen #game-container {
+  grid-template-rows: 84px minmax(0, 1fr) auto 64px;
+  grid-template-areas: "toolbar" "content" "actions" "nav";
+}
+
+body.skin-quest-hub.same-day-screen #story-text {
+  grid-area: content;
+}
+
+body.skin-quest-hub.same-day-screen #choices {
+  grid-area: actions;
+  overflow: visible;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #bottom-action-slot {
+  grid-area: nav;
+  width: calc(100% + 40px);
+  height: 64px;
+  margin-left: -20px;
+  padding: 5px 28px 7px;
+  background: linear-gradient(180deg, #11162f, #080c20);
+  border-top: 3px solid #6f8299;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #bottom-action-slot .utility-actions {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 48px;
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #bottom-action-slot :is(.quest-nav-link, .ghost) {
+  display: flex;
+  width: min(250px, 24vw);
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  text-decoration: none;
+  font: 700 .72rem/1 var(--font-pixel, "Courier New", monospace);
+}
+
+body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #bottom-action-slot img {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+body.skin-quest-hub:not(.start-screen) .quest-resources-link {
+  opacity: .76;
+  pointer-events: none;
+}
+
 /* Summary remains readable after the last decision. */
 body.skin-quest-hub.summary-screen #game-container {
   grid-template-columns: 1fr;
@@ -546,7 +773,9 @@ body.skin-quest-hub.summary-screen #choices > button {
 
 @media (max-width: 900px), (max-height: 679px) {
   body.skin-quest-hub.playing-mission,
-  body.skin-quest-hub.summary-screen {
+  body.skin-quest-hub.summary-screen,
+  body.skin-quest-hub.dashboard-screen,
+  body.skin-quest-hub.same-day-screen {
     height: auto;
     overflow: auto;
   }
@@ -566,6 +795,13 @@ body.skin-quest-hub.summary-screen #choices > button {
     grid-template-areas: "toolbar" "summary" "actions" "nav";
   }
 
+  body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #game-container {
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    min-height: 100vh;
+    height: auto;
+    padding: 8px 12px 0;
+  }
+
   body.skin-quest-hub.playing-mission #toolbar,
   body.skin-quest-hub.summary-screen #toolbar {
     grid-template-columns: 1fr;
@@ -576,6 +812,16 @@ body.skin-quest-hub.summary-screen #choices > button {
 
   body.skin-quest-hub.playing-mission #hearts-display,
   body.skin-quest-hub.summary-screen #hearts-display {
+    justify-content: center;
+  }
+
+  body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #toolbar {
+    grid-template-columns: 1fr;
+    grid-template-areas: "hearts" "quest" "xp";
+    gap: 6px;
+  }
+
+  body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #hearts-display {
     justify-content: center;
   }
 
@@ -609,8 +855,19 @@ body.skin-quest-hub.summary-screen #choices > button {
     margin-left: -12px;
   }
 
-  body.skin-quest-hub .wizard-modal {
+  body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #bottom-action-slot {
+    width: calc(100% + 24px);
+    margin-left: -12px;
+  }
+
+  body.skin-quest-hub.bip-briefing .wizard-modal,
+  body.skin-quest-hub.feedback-open .wizard-modal {
+    inset: 170px 0 64px;
     padding: 12px;
+  }
+
+  body.skin-quest-hub .wizard-modal-card {
+    max-height: calc(100vh - 250px);
   }
 
   body.skin-quest-hub .wizard-modal-top {
@@ -635,13 +892,15 @@ body.skin-quest-hub.summary-screen #choices > button {
   }
 
   body.skin-quest-hub.playing-mission #bottom-action-slot .utility-actions,
-  body.skin-quest-hub.summary-screen #bottom-action-slot .utility-actions {
+  body.skin-quest-hub.summary-screen #bottom-action-slot .utility-actions,
+  body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #bottom-action-slot .utility-actions {
     gap: 8px;
   }
 
-  body.skin-quest-hub.playing-mission #bottom-action-slot .ghost,
-  body.skin-quest-hub.summary-screen #bottom-action-slot .ghost {
-    width: 50%;
+  body.skin-quest-hub.playing-mission #bottom-action-slot :is(.quest-nav-link, .ghost),
+  body.skin-quest-hub.summary-screen #bottom-action-slot :is(.quest-nav-link, .ghost),
+  body.skin-quest-hub:is(.dashboard-screen, .same-day-screen) #bottom-action-slot :is(.quest-nav-link, .ghost) {
+    width: 25%;
     font-size: .6rem;
   }
 }
