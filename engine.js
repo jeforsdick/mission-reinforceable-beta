@@ -72,7 +72,7 @@ function scoreLevel(score) {
 }
 
 /* -------- Hearts system -------- */
-const HEARTS_START = 3;
+const HEARTS_START = 5;
 
 let hearts = HEARTS_START;
 let maxHearts = HEARTS_START;
@@ -85,39 +85,14 @@ function renderHearts() {
 
   for (let i = 0; i < maxHearts; i++) {
     const fill = Math.max(0, Math.min(1, hearts - i));
-    const width = Math.round(fill * 16);
-    const clipId = `heart-clip-${i}-${Date.now()}`;
+    const fillPercent = Math.round(fill * 100);
 
     html += `
-      <span class="zelda-heart" aria-hidden="true">
-        <svg viewBox="0 0 16 14" class="zelda-heart-svg" shape-rendering="crispEdges">
-          <defs>
-            <clipPath id="${clipId}">
-              <rect x="0" y="0" width="${width}" height="14"></rect>
-            </clipPath>
-          </defs>
-
-          <!-- dark shadow -->
-          <path class="heart-shadow"
-            d="M2 0h4v1h1v2h2V1h1V0h4v1h1v1h1v4h-1v2h-1v1h-1v1h-1v1h-1v1h-1v1H8v1H7v-1H6v-1H5v-1H4v-1H3V9H2V8H1V6H0V2h1V1h1z"
-            transform="translate(1,1)"
-          />
-
-          <!-- black outline / empty heart -->
-          <path class="heart-empty"
-            d="M2 0h4v1h1v2h2V1h1V0h4v1h1v1h1v4h-1v2h-1v1h-1v1h-1v1h-1v1h-1v1H8v1H7v-1H6v-1H5v-1H4v-1H3V9H2V8H1V6H0V2h1V1h1z"
-          />
-
-          <!-- red fill -->
-          <path class="heart-fill"
-            clip-path="url(#${clipId})"
-            d="M2 0h4v1h1v2h2V1h1V0h4v1h1v1h1v4h-1v2h-1v1h-1v1h-1v1h-1v1h-1v1H8v1H7v-1H6v-1H5v-1H4v-1H3V9H2V8H1V6H0V2h1V1h1z"
-          />
-
-          <!-- little pixel highlights -->
-          <rect class="heart-highlight" x="3" y="2" width="2" height="2" clip-path="url(#${clipId})"></rect>
-          <rect class="heart-highlight-soft" x="5" y="2" width="1" height="2" clip-path="url(#${clipId})"></rect>
-        </svg>
+      <span class="zelda-heart" aria-hidden="true" style="--heart-fill: ${fillPercent}%">
+        <img class="heart-icon heart-icon-empty" src="../assets/ui/heart-icon.png" alt="">
+        <span class="heart-icon-fill">
+          <img class="heart-icon" src="../assets/ui/heart-icon.png" alt="">
+        </span>
       </span>
     `;
   }
