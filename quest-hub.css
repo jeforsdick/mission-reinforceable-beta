@@ -466,7 +466,7 @@ body.skin-quest-hub.start-screen .quest-card h3 {
   margin: 0 0 3px;
   color: #fff;
   font-family: var(--font-pixel, monospace);
-  font-size: clamp(.78rem, 1.1vw, .96rem);
+  font-size: clamp(.88rem, 1.2vw, 1.08rem);
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -.055em;
@@ -478,7 +478,7 @@ body.skin-quest-hub.start-screen .quest-card p {
   margin: 0;
   color: #f0f1f7;
   font-family: "Courier New", monospace;
-  font-size: clamp(.65rem, .79vw, .78rem);
+  font-size: clamp(.72rem, .88vw, .86rem);
   font-weight: 700;
   line-height: 1.15;
 }
