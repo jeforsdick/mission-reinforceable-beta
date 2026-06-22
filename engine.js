@@ -691,15 +691,15 @@ function renderIntroCards() {
       ? `
       <section class="quest-hero" aria-labelledby="quest-hero-title">
         <div class="quest-hero-heading">
-          <span class="quest-classroom-plaque">Mrs. Olson's Classroom</span>
+          <span class="quest-classroom-plaque">Mrs. Olson&rsquo;s Classroom</span>
           <h2 id="quest-hero-title">Master Classroom Missions, One Choice at a Time.</h2>
-          <p>Embark on a journey to level up behavior support, one decision at a time.</p>
+          <p>Embark on a journey to level up behavior support,</p>
         </div>
         <div class="quest-hero-art">
           <img class="quest-classroom-background" src="../assets/skin-v2/classroom-image.png" alt="A magical pixel-art classroom">
           <div class="quest-wizard-coach" aria-label="Wizard guide">
             <img class="quest-wizard-bubble" src="../assets/skin-v2/speech-bubble-left.png" alt="">
-            <span>Choose a mission and practice your next best move.</span>
+            <span>The Wizard will chime in after every move.</span>
             <img class="quest-map-wizard-guide" src="../assets/skin-v2/wizard-guide.png" alt="Wizard guide">
           </div>
           <button type="button" class="quest-hero-cta">Start Your Daily Mission</button>
