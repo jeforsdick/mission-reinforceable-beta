@@ -378,7 +378,10 @@ function renderProgressDashboardFromHistory(history) {
             <div class="dashboard-session-main">
               <span class="dashboard-session-date">${dashboardEscape(dashboardFormatDate(session.timestamp || session.date))}</span>
               <strong>${dashboardEscape(mission.label)}</strong>
-              <span>Score: ${dashboardEscape(scoreText)} <b>Accuracy: ${dashboardEscape(pctText)}</b></span>
+              <span class="dashboard-session-metrics">
+                <span>Score: ${dashboardEscape(scoreText)}</span>
+                <b>Accuracy: ${dashboardEscape(pctText)}</b>
+              </span>
               <small>${dashboardEscape(sessionDecisions.length)} choices reviewed</small>
             </div>
             <div class="dashboard-session-link">Details ▶</div>

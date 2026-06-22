@@ -17,19 +17,19 @@ body.skin-quest-hub.dashboard-screen {
 }
 
 body.skin-quest-hub.dashboard-screen #game-container {
-  grid-template-rows: 58px minmax(0, 1fr) 64px;
-  gap: 8px;
+  grid-template-rows: minmax(0, 1fr) 64px;
+  grid-template-areas: "content" "nav";
+  gap: 7px;
+  padding-top: 8px;
   background:
     linear-gradient(rgba(3, 7, 24, .76), rgba(3, 7, 24, .9)),
     url("assets/ui/gameplay-stone-background.png") center / cover no-repeat;
 }
 
-/* Active-mission percentages are intentionally hidden on the history screen. */
+/* The active-mission HUD is omitted on history screens so no stale mission
+   values appear and the mission log receives the full available height. */
 body.skin-quest-hub.dashboard-screen #toolbar {
-  grid-template-columns: 1fr !important;
-  grid-template-areas: "hearts" !important;
-  min-height: 58px;
-  padding: 5px 18px;
+  display: none !important;
 }
 
 body.skin-quest-hub.dashboard-screen #toolbar .quest-progress-stat,
@@ -57,12 +57,12 @@ body.skin-quest-hub.dashboard-screen #choices {
 
 body.skin-quest-hub.dashboard-screen #progress-dashboard {
   display: grid;
-  grid-template-rows: auto auto auto minmax(240px, 1fr);
-  gap: 7px;
+  grid-template-rows: auto auto auto minmax(280px, 1fr);
+  gap: 10px;
   width: min(1420px, 100%);
   height: 100%;
   margin: 0 auto;
-  padding: 3px 18px 7px;
+  padding: 3px 14px 8px;
   color: #f7f5ea;
   font-family: var(--font-pixel, "Courier New", monospace);
 }
@@ -70,24 +70,24 @@ body.skin-quest-hub.dashboard-screen #progress-dashboard {
 body.skin-quest-hub.dashboard-screen .progress-guild-header {
   position: relative;
   display: grid;
-  grid-template-columns: 74px minmax(0, 1fr);
-  min-height: 72px;
+  grid-template-columns: 62px minmax(0, 1fr);
+  min-height: 62px;
   align-items: center;
-  gap: 14px;
-  padding: 7px 18px;
+  gap: 12px;
+  padding: 6px 16px;
   background:
     linear-gradient(90deg, rgba(32, 50, 97, .42), transparent 32%),
     linear-gradient(180deg, #111b3c, #09112c);
-  border: 3px solid var(--progress-gold);
-  box-shadow: inset 0 0 0 2px #5e431b, inset 0 0 0 4px #1f3159, 0 4px 0 #03050d;
+  border: 2px solid var(--progress-gold);
+  box-shadow: inset 0 0 0 1px #5e431b, 0 3px 0 #03050d;
 }
 
 body.skin-quest-hub.dashboard-screen .progress-guild-header::before,
 body.skin-quest-hub.dashboard-screen .progress-guild-header::after {
   content: "";
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 9px;
+  height: 9px;
   background: var(--progress-gold-hi);
   border: 3px solid #6d4916;
 }
@@ -103,9 +103,13 @@ body.skin-quest-hub.dashboard-screen .progress-guild-header::after {
 }
 
 body.skin-quest-hub.dashboard-screen .progress-guild-wizard {
-  width: 68px;
-  height: 68px;
+  width: 56px;
+  height: 56px;
   align-self: center;
+  padding: 3px;
+  background: #10183a;
+  border: 2px solid var(--progress-blue);
+  box-shadow: inset 0 0 0 1px #293a61;
   object-fit: contain;
   object-position: center bottom;
   image-rendering: pixelated;
@@ -116,7 +120,7 @@ body.skin-quest-hub.dashboard-screen .progress-guild-heading h2 {
   margin: 0 0 3px;
   color: #fff;
   font-family: var(--font-pixel, "Courier New", monospace);
-  font-size: clamp(1.05rem, 2vw, 1.55rem);
+  font-size: clamp(.98rem, 1.7vw, 1.38rem);
   letter-spacing: .04em;
   text-transform: uppercase;
   text-shadow: 0 3px 0 #02030a;
@@ -142,25 +146,25 @@ body.skin-quest-hub.dashboard-screen .progress-guild-mark img {
 body.skin-quest-hub.dashboard-screen .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 9px;
+  gap: 10px;
 }
 
 body.skin-quest-hub.dashboard-screen .dashboard-card {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  min-height: 70px;
+  grid-template-columns: 50px minmax(0, 1fr);
+  height: 64px;
   align-items: center;
-  gap: 10px;
-  padding: 6px 11px;
+  gap: 8px;
+  padding: 5px 10px;
   background: linear-gradient(180deg, #121d40, #09112b);
-  border: 3px solid var(--progress-blue);
-  box-shadow: inset 0 0 0 2px #24365d, 0 4px 0 #03050c;
+  border: 2px solid var(--progress-blue);
+  box-shadow: inset 0 0 0 1px #24365d, 0 3px 0 #03050c;
   text-align: center;
 }
 
 body.skin-quest-hub.dashboard-screen .dashboard-card img {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
   image-rendering: pixelated;
 }
@@ -175,7 +179,7 @@ body.skin-quest-hub.dashboard-screen .dashboard-label {
 
 body.skin-quest-hub.dashboard-screen .dashboard-number {
   color: #fff;
-  font-size: clamp(1.08rem, 2vw, 1.55rem);
+  font-size: clamp(1rem, 1.7vw, 1.36rem);
   line-height: 1;
   text-shadow: 0 3px 0 #02030a;
 }
@@ -187,10 +191,10 @@ body.skin-quest-hub.dashboard-screen .dashboard-number small {
 
 body.skin-quest-hub.dashboard-screen .dashboard-section {
   min-width: 0;
-  padding: 8px 13px;
+  padding: 7px 12px;
   background: linear-gradient(180deg, rgba(16, 27, 61, .97), rgba(7, 13, 36, .98));
-  border: 3px solid var(--progress-blue);
-  box-shadow: inset 0 0 0 2px #26385e, 0 4px 0 #03050c;
+  border: 2px solid var(--progress-blue);
+  box-shadow: inset 0 0 0 1px #26385e, 0 3px 0 #03050c;
 }
 
 body.skin-quest-hub.dashboard-screen .dashboard-section h3 {
@@ -202,8 +206,8 @@ body.skin-quest-hub.dashboard-screen .dashboard-section h3 {
 }
 
 body.skin-quest-hub.dashboard-screen .weekly-mission-path {
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 body.skin-quest-hub.dashboard-screen .weekly-path-track {
@@ -211,13 +215,13 @@ body.skin-quest-hub.dashboard-screen .weekly-path-track {
   display: grid;
   grid-template-columns: repeat(5, minmax(76px, 1fr));
   gap: 0;
-  margin: 4px 20px 3px;
+  margin: 2px 20px 1px;
 }
 
 body.skin-quest-hub.dashboard-screen .weekly-path-track::before {
   content: "";
   position: absolute;
-  top: 31px;
+  top: 27px;
   right: 6%;
   left: 6%;
   height: 4px;
@@ -241,8 +245,8 @@ body.skin-quest-hub.dashboard-screen .weekly-path-label {
 
 body.skin-quest-hub.dashboard-screen .weekly-path-node {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   background: radial-gradient(circle, #18223d 0 52%, #080c1b 54%);
   border: 3px solid #54647e;
   border-radius: 50%;
@@ -265,9 +269,9 @@ body.skin-quest-hub.dashboard-screen .weekly-path-legend {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 20px;
   color: #c7cee0;
-  font: 700 .62rem/1 "Courier New", monospace;
+  font: 700 .58rem/1 "Courier New", monospace;
   text-transform: uppercase;
 }
 
@@ -299,7 +303,7 @@ body.skin-quest-hub.dashboard-screen .weekly-path-legend .legend-today {
 
 body.skin-quest-hub.dashboard-screen .recent-mission-log {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: 34px minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
 }
@@ -309,7 +313,7 @@ body.skin-quest-hub.dashboard-screen .dashboard-section-heading {
   grid-template-columns: max-content minmax(0, 1fr) 142px;
   align-items: baseline;
   gap: 14px;
-  margin-bottom: 7px;
+  margin-bottom: 5px;
 }
 
 body.skin-quest-hub.dashboard-screen .dashboard-hint {
@@ -322,9 +326,9 @@ body.skin-quest-hub.dashboard-screen .dashboard-hint {
 body.skin-quest-hub.dashboard-screen .dashboard-session-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
-  padding: 2px 6px 4px 2px;
+  padding: 3px 9px 14px 3px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #6f89aa #080d22;
@@ -351,16 +355,16 @@ body.skin-quest-hub.dashboard-screen #session-details::-webkit-scrollbar-thumb {
 body.skin-quest-hub.dashboard-screen .dashboard-session-card {
   --session-accent: var(--progress-gold);
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 82px;
-  min-height: 94px;
+  grid-template-columns: 48px minmax(0, 1fr) 82px;
+  min-height: 88px;
   align-items: center;
-  gap: 10px;
-  padding: 7px 9px;
+  gap: 9px;
+  padding: 7px 10px;
   color: #fff;
   background: linear-gradient(180deg, #142044, #09122f);
-  border: 3px solid var(--session-accent);
+  border: 2px solid var(--session-accent);
   border-radius: 0;
-  box-shadow: inset 0 0 0 2px #24365d, 0 3px 0 #03050c;
+  box-shadow: inset 0 0 0 1px #24365d, 0 2px 0 #03050c;
   font-family: "Courier New", monospace;
   text-align: left;
 }
@@ -389,15 +393,15 @@ body.skin-quest-hub.dashboard-screen .dashboard-session-card:active {
 }
 
 body.skin-quest-hub.dashboard-screen .dashboard-session-icon {
-  width: 50px;
-  height: 50px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
   image-rendering: pixelated;
 }
 
 body.skin-quest-hub.dashboard-screen .dashboard-session-main {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -420,6 +424,17 @@ body.skin-quest-hub.dashboard-screen .dashboard-session-main small {
   color: #f2f3f8;
   font-size: .68rem;
   line-height: 1.2;
+}
+
+body.skin-quest-hub.dashboard-screen .dashboard-session-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+body.skin-quest-hub.dashboard-screen .dashboard-session-metrics > span,
+body.skin-quest-hub.dashboard-screen .dashboard-session-metrics > b {
+  white-space: nowrap;
 }
 
 body.skin-quest-hub.dashboard-screen .dashboard-session-main b {
@@ -543,13 +558,18 @@ body.skin-quest-hub.dashboard-screen .decision-review-meta {
 
 body.skin-quest-hub.dashboard-screen #bottom-action-slot #progress-btn {
   color: var(--progress-gold-hi);
-  background: linear-gradient(180deg, rgba(48, 82, 133, .2), rgba(23, 42, 82, .12));
-  box-shadow: inset 0 -3px 0 var(--progress-gold), 0 0 8px rgba(82, 174, 235, .25);
+  min-height: 44px;
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: inset 0 -3px 0 var(--progress-gold), 0 0 7px rgba(82, 174, 235, .2);
+  transform: none;
 }
 
 @media (max-width: 900px) {
   body.skin-quest-hub.dashboard-screen #game-container {
-    grid-template-rows: auto auto auto;
+    grid-template-rows: auto auto;
+    grid-template-areas: "content" "nav";
     height: auto;
     min-height: 100vh;
   }
@@ -587,13 +607,13 @@ body.skin-quest-hub.dashboard-screen #bottom-action-slot #progress-btn {
 
 @media (max-width: 620px) {
   body.skin-quest-hub.dashboard-screen .progress-guild-header {
-    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-columns: 58px minmax(0, 1fr);
     padding: 8px 12px;
   }
 
   body.skin-quest-hub.dashboard-screen .progress-guild-wizard {
-    width: 74px;
-    height: 82px;
+    width: 52px;
+    height: 52px;
   }
 
   body.skin-quest-hub.dashboard-screen .progress-guild-mark {
