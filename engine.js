@@ -438,8 +438,15 @@ function showBipBriefingPopup(scn, briefingText, onContinue) {
       </div>
 
       <div class="wizard-modal-body">
-        ${missionFocus ? `<strong>Mission focus:</strong> ${escapeHTML(missionFocus)}<br><br>` : ''}
-        ${escapeHTML(briefingText).replaceAll('\n', '<br>')}
+        ${missionFocus ? `
+          <div class="bip-focus-block">
+            <strong>Mission Focus</strong>
+            <span>${escapeHTML(missionFocus)}</span>
+          </div>
+        ` : ''}
+        <div class="bip-briefing-copy">
+          ${escapeHTML(briefingText).replaceAll('\n', '<br>')}
+        </div>
       </div>
 
       <button id="wizard-continue-btn" class="wizard-continue-btn">
