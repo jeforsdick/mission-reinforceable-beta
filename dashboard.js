@@ -329,7 +329,7 @@ function renderProgressDashboardFromHistory(history) {
   const oldSummary = document.getElementById("summary-panel");
   if (oldSummary) oldSummary.remove();
 
-  if (scenarioTitle) scenarioTitle.textContent = "My Mission Progress";
+  if (scenarioTitle) scenarioTitle.textContent = "Mission Progress";
 
   const sessions = (history.sessions || [])
     .map(dashboardNormalizeSession)
@@ -390,7 +390,7 @@ function renderProgressDashboardFromHistory(history) {
       <header class="progress-guild-header">
         <img class="progress-guild-wizard" src="../assets/characters/wizard-guide.png" alt="MR Wizard">
         <div class="progress-guild-heading">
-          <h2>Mission Progress</h2>
+          <h2>MISSION PROGRESS</h2>
           <p>Review your mission history, accuracy, and mission streak.</p>
         </div>
         <div class="progress-guild-mark" aria-hidden="true">
@@ -421,7 +421,7 @@ function renderProgressDashboardFromHistory(history) {
       </div>
 
       <section class="dashboard-section weekly-mission-path">
-        <h3>Weekly Mission Path</h3>
+        <h3>WEEKLY MISSION PATH</h3>
         <div class="weekly-path-track">${weeklyNodes}</div>
         <div class="weekly-path-legend">
           <span><i class="legend-complete"></i>Completed</span>
@@ -432,7 +432,7 @@ function renderProgressDashboardFromHistory(history) {
 
       <section class="dashboard-section recent-mission-log">
         <div class="dashboard-section-heading">
-          <h3>Recent Mission Log</h3>
+          <h3>RECENT MISSION LOG</h3>
           <p class="dashboard-hint">Select Details to review choices and coaching.</p>
         </div>
         <div class="dashboard-session-list">
