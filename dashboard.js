@@ -112,29 +112,38 @@ function dashboardUniqueDates(sessions) {
   )].sort();
 }
 
-function dashboardCurrentStreak(sessions) {
+function dashboardCurrentStreak(sessions, referenceDate = new Date()) {
   const dates = dashboardUniqueDates(sessions);
   const dateSet = new Set(dates);
-
   let streak = 0;
-  const today = new Date();
+  const cursor = new Date(referenceDate);
+  cursor.setHours(12, 0, 0, 0);
 
-  for (let i = 0; i < 45; i++) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
+  // Do not erase an existing streak simply because today's mission has not
+  // been completed yet. Start with the previous school day in that case.
+  const todayIsSchoolDay = cursor.getDay() !== 0 && cursor.getDay() !== 6;
+  if (todayIsSchoolDay && !dateSet.has(dashboardDateKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
 
-    const day = d.getDay();
+  for (let checkedSchoolDays = 0; checkedSchoolDays < 45;) {
+    const day = cursor.getDay();
 
-    // Skip weekends for a school-day streak
-    if (day === 0 || day === 6) continue;
+    if (day === 0 || day === 6) {
+      cursor.setDate(cursor.getDate() - 1);
+      continue;
+    }
 
-    const key = d.toISOString().slice(0, 10);
+    checkedSchoolDays++;
+    const key = dashboardDateKey(cursor);
 
     if (dateSet.has(key)) {
       streak++;
     } else {
       break;
     }
+
+    cursor.setDate(cursor.getDate() - 1);
   }
 
   return streak;
@@ -142,6 +151,13 @@ function dashboardCurrentStreak(sessions) {
 
 function dashboardFormatDate(dateString) {
   if (!dateString) return "";
+
+  const dateOnlyMatch = String(dateString).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnlyMatch) {
+    const [, year, month, day] = dateOnlyMatch;
+    const localDate = new Date(Number(year), Number(month) - 1, Number(day), 12);
+    return localDate.toLocaleDateString([], { month: "short", day: "numeric" });
+  }
 
   const d = new Date(dateString);
   if (Number.isNaN(d.getTime())) return String(dateString).slice(0, 10);
@@ -171,13 +187,18 @@ function dashboardDateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
-function dashboardCurrentWeek(sessions) {
+function dashboardCurrentWeek(sessions, referenceDate = new Date()) {
   const completedDates = new Set(dashboardUniqueDates(sessions));
-  const today = new Date();
-  const start = new Date(today);
-  start.setHours(12, 0, 0, 0);
-  const daysSinceMonday = (today.getDay() + 6) % 7;
-  start.setDate(today.getDate() - daysSinceMonday);
+  const today = new Date(referenceDate);
+  today.setHours(12, 0, 0, 0);
+
+  // A display week runs Sunday through Saturday but shows school days only.
+  // On Sunday this intentionally points at the upcoming Monday–Friday, so
+  // every Sunday begins a fresh, empty mission path.
+  const sunday = new Date(today);
+  sunday.setDate(today.getDate() - today.getDay());
+  const start = new Date(sunday);
+  start.setDate(sunday.getDate() + 1);
   const todayKey = dashboardDateKey(today);
 
   return Array.from({ length: 5 }, (_, index) => {
@@ -317,6 +338,17 @@ function dashboardNormalizeDecision(row) {
   };
 }
 
+function dashboardUniqueSessions(sessions) {
+  const seen = new Set();
+
+  return sessions.filter(session => {
+    const id = String(session.session_id || "");
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
 function renderProgressDashboardFromHistory(history) {
   const storyText = document.getElementById("story-text");
   const choicesDiv = document.getElementById("choices");
@@ -332,10 +364,12 @@ function renderProgressDashboardFromHistory(history) {
 
   if (scenarioTitle) scenarioTitle.textContent = "Mission Progress";
 
-  const sessions = (history.sessions || [])
-    .map(dashboardNormalizeSession)
-    .filter(s => s.session_id)
-    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const sessions = dashboardUniqueSessions(
+    (history.sessions || [])
+      .map(dashboardNormalizeSession)
+      .filter(s => s.session_id)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+  );
 
   const decisions = (history.decisions || [])
     .map(dashboardNormalizeDecision);
