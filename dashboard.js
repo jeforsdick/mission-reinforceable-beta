@@ -176,10 +176,11 @@ function dashboardCurrentWeek(sessions) {
   const today = new Date();
   const start = new Date(today);
   start.setHours(12, 0, 0, 0);
-  start.setDate(today.getDate() - today.getDay());
+  const daysSinceMonday = (today.getDay() + 6) % 7;
+  start.setDate(today.getDate() - daysSinceMonday);
   const todayKey = dashboardDateKey(today);
 
-  return Array.from({ length: 7 }, (_, index) => {
+  return Array.from({ length: 5 }, (_, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);
     const key = dashboardDateKey(date);
@@ -346,6 +347,7 @@ function renderProgressDashboardFromHistory(history) {
   const streak = dashboardCurrentStreak(sessions);
   const total = sessions.length;
   const week = dashboardCurrentWeek(sessions);
+  const weekIncludesToday = week.some(day => day.today);
 
   const weeklyNodes = week.map(day => {
     const stateClass = day.today
@@ -426,7 +428,7 @@ function renderProgressDashboardFromHistory(history) {
         <div class="weekly-path-legend">
           <span><i class="legend-complete"></i>Completed</span>
           <span><i class="legend-empty"></i>No Session</span>
-          <span><i class="legend-today"></i>Today</span>
+          ${weekIncludesToday ? `<span><i class="legend-today"></i>Today</span>` : ''}
         </div>
       </section>
 
@@ -434,15 +436,14 @@ function renderProgressDashboardFromHistory(history) {
         <div class="dashboard-section-heading">
           <h3>RECENT MISSION LOG</h3>
           <p class="dashboard-hint">Select Details to review choices and coaching.</p>
+          <button id="dashboard-back-btn" class="scenario-btn primary big option-btn">
+            Back to Missions
+          </button>
         </div>
         <div class="dashboard-session-list">
           ${recentSessionCards}
         </div>
       </section>
-
-      <button id="dashboard-back-btn" class="scenario-btn primary big option-btn">
-        Back to Missions
-      </button>
     </div>
   `;
 
