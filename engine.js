@@ -829,14 +829,30 @@ function renderSameDayReturnScreen(result) {
   storyText.classList.add('same-day-return');
 
   storyText.innerHTML = `
-    <section class="quest-hero same-day-hero" aria-labelledby="quest-hero-title">
-      <div class="quest-hero-heading">
+    <section class="quest-hero same-day-quest-hero" aria-labelledby="quest-hero-title">
+      <div class="quest-hero-heading same-day-hero-heading">
         <span class="quest-classroom-plaque">Mrs. Olson&rsquo;s Classroom</span>
-        <h2 id="quest-hero-title">Mission already logged today.</h2>
+        <h2 id="quest-hero-title">Mission Already Logged Today.</h2>
         <p>${result.mode || "Mission"} complete at ${completedTime} with ${result.points} / ${result.max_possible} (${pct}%).</p>
       </div>
-      <div class="quest-hero-art">
-        <img class="quest-classroom-background" src="../assets/skin-v2/same-day-return-page-classroom.png" alt="A magical pixel-art classroom with welcome-back wizard messages">
+
+      <div class="quest-hero-art same-day-hero-art">
+        <img class="quest-classroom-background" src="../assets/skin-v2/classroom-image.png" alt="A magical pixel-art classroom">
+
+        <div class="same-day-bubble same-day-bubble-one">
+          <img src="../assets/skin-v2/speech-bubble-left.png" alt="">
+          <span>Welcome back, we have already seen you today!</span>
+        </div>
+
+        <div class="same-day-bubble same-day-bubble-two">
+          <img src="../assets/skin-v2/speech-bubble-left.png" alt="">
+          <span>But feel free to play again!</span>
+        </div>
+
+        <div class="same-day-bubble same-day-bubble-three">
+          <img src="../assets/skin-v2/speech-bubble-left.png" alt="">
+          <span>Or check out your progress tab to review your mission!</span>
+        </div>
       </div>
     </section>
   `;
@@ -845,7 +861,7 @@ function renderSameDayReturnScreen(result) {
   if (!choicesDiv) return;
 
   choicesDiv.innerHTML = `
-      <div class="mission-intro">
+    <div class="mission-intro">
       <div class="quest-grid">
         <article class="quest-card quest-card-daily">
           <div class="quest-card-icon"><img src="../assets/skin-v2/daily-mission-icon.png" alt=""></div>

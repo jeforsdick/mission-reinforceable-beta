@@ -2122,6 +2122,215 @@ body.skin-v2.same-day-screen .quest-classroom-background {
   image-rendering: pixelated;
 }
 
+/* Same-day return uses the exact landing hub geometry; only copy/bubbles differ. */
+body.skin-v2.start-screen.same-day-screen #game-container {
+  display: grid !important;
+  grid-template-rows: 142px minmax(0, 1fr) 96px !important;
+  width: min(92vw, 1500px) !important;
+  height: calc(100vh - 14px) !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .screen-content-shell {
+  grid-row: 2 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 61fr) minmax(410px, 39fr) !important;
+  grid-template-rows: 64px minmax(0, 1fr) !important;
+  column-gap: 26px !important;
+  row-gap: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 44px 30px 30px !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen.same-day-screen #story-text,
+body.skin-v2.start-screen.same-day-screen #story-text.same-day-return {
+  display: contents !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  color: inherit !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  white-space: normal !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .quest-hero,
+body.skin-v2.start-screen.same-day-screen .same-day-quest-hero {
+  display: contents !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .quest-hero-heading,
+body.skin-v2.start-screen.same-day-screen .same-day-hero-heading {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  max-width: 980px !important;
+  min-width: 0 !important;
+  margin: 0 auto !important;
+  padding: 0 20px !important;
+  text-align: center !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .quest-hero-art,
+body.skin-v2.start-screen.same-day-screen .same-day-hero-art {
+  position: relative !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 360px !important;
+  margin: -28px 0 36px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .quest-classroom-background {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: scale(1.04);
+  transform-origin: center center;
+}
+
+body.skin-v2.start-screen.same-day-screen #choices {
+  position: relative !important;
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  align-self: stretch !important;
+  width: auto !important;
+  max-width: 520px !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 8px 0 0 !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .quest-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .mission-grid,
+body.skin-v2.start-screen.same-day-screen .mission-card,
+body.skin-v2.start-screen.same-day-screen .same-day-lead,
+body.skin-v2.start-screen.same-day-screen .same-day-recap,
+body.skin-v2.start-screen.same-day-screen .same-day-feedback,
+body.skin-v2.start-screen.same-day-screen .same-day-next {
+  all: unset;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble {
+  position: absolute;
+  z-index: 8;
+  display: block;
+  pointer-events: none;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 3px 0 rgba(2, 4, 15, .55));
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble span {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  color: #160d09;
+  font-family: "Courier New", monospace;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-one {
+  top: 2%;
+  left: 4%;
+  width: 31%;
+  aspect-ratio: 1.95 / 1;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-one span {
+  inset: 15% 18% 25% 10%;
+  font-size: clamp(.52rem, .82vw, .78rem);
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-two {
+  top: 24%;
+  right: 10%;
+  width: 29%;
+  aspect-ratio: 1.95 / 1;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-two img {
+  transform: scaleX(-1);
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-two span {
+  inset: 18% 11% 28% 18%;
+  font-size: clamp(.52rem, .82vw, .78rem);
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-three {
+  left: 3%;
+  bottom: 10%;
+  width: 32%;
+  aspect-ratio: 1.75 / 1;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-three span {
+  inset: 15% 17% 19% 10%;
+  font-size: clamp(.48rem, .74vw, .72rem);
+}
+
+@media (max-width: 1180px), (max-height: 760px) {
+  body.skin-v2.start-screen.same-day-screen .screen-content-shell {
+    grid-template-columns: minmax(0, 60fr) minmax(390px, 40fr) !important;
+    grid-template-rows: 56px minmax(0, 1fr) !important;
+    padding: 40px 24px 28px !important;
+  }
+
+  body.skin-v2.start-screen.same-day-screen .quest-hero-art,
+  body.skin-v2.start-screen.same-day-screen .same-day-hero-art {
+    min-height: 340px !important;
+    margin: -22px 0 32px !important;
+  }
+
+  body.skin-v2.start-screen.same-day-screen .quest-classroom-background {
+    transform: scale(1.02);
+  }
+}
+
 /* Bigger classroom composites: these are a primary part of the hub, not thumbnails. */
 body.skin-v2.start-screen #game-container,
 body.skin-v2.same-day-screen #game-container {
