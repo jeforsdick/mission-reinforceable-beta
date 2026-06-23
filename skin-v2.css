@@ -4983,3 +4983,13 @@ body.skin-v2.same-day-screen .same-day-bubble-three {
   width: 32% !important;
   aspect-ratio: 1.55 / 1 !important;
 }
+
+/* Gameplay HUD placement: pin hearts to the top sky area, independent of frame flow. */
+body.skin-v2.playing-mission #hearts-display {
+  position: fixed !important;
+  top: clamp(58px, 7.5vh, 90px) !important;
+  left: clamp(42px, 4.2vw, 84px) !important;
+  z-index: 80 !important;
+  transform: none !important;
+  margin: 0 !important;
+}
