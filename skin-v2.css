@@ -2287,6 +2287,187 @@ body.skin-v2.start-screen.same-day-screen .same-day-bubble-three span {
   }
 }
 
+/* Image-backed wizard feedback and BIP briefing popups. */
+body.skin-v2.modal-open #wizard-modal.wizard-popup-overlay,
+.wizard-popup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  background: rgba(0, 0, 0, .55) !important;
+}
+
+body.skin-v2.modal-open .wizard-popup {
+  position: relative !important;
+  width: min(86vw, 980px) !important;
+  aspect-ratio: 1536 / 864 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-family: "Courier New", monospace !important;
+}
+
+body.skin-v2.modal-open .wizard-popup-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+body.skin-v2.modal-open .wizard-popup-copy {
+  position: absolute !important;
+  left: 9% !important;
+  top: 17% !important;
+  width: 58% !important;
+  max-height: 57% !important;
+  overflow-y: auto !important;
+  padding-right: 10px !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  font-family: "Courier New", monospace !important;
+  font-size: clamp(15px, 1rem, 23px) !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+}
+
+body.skin-v2.modal-open .wizard-popup-copy h2 {
+  margin: 0 0 .72rem !important;
+  color: #1d120d !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(24px, 2rem, 42px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+}
+
+body.skin-v2.modal-open .wizard-popup-tag {
+  margin: 0 0 .72rem !important;
+  color: #4a2613 !important;
+  font-family: "Courier New", monospace !important;
+  font-size: clamp(14px, .95rem, 18px) !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+}
+
+body.skin-v2.modal-open .wizard-popup-body,
+body.skin-v2.modal-open .bip-briefing-copy {
+  color: #1d120d !important;
+  font-family: "Courier New", monospace !important;
+  font-size: inherit !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+body.skin-v2.modal-open .bip-focus-block {
+  display: grid !important;
+  gap: 4px !important;
+  margin: 0 0 .72rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.modal-open .bip-focus-block strong {
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(13px, .9rem, 17px) !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase !important;
+}
+
+body.skin-v2.modal-open .bip-focus-block span {
+  display: block !important;
+}
+
+body.skin-v2.modal-open .wizard-popup-button,
+body.skin-v2.modal-open .wizard-continue-btn.wizard-popup-button {
+  position: absolute !important;
+  left: 10% !important;
+  bottom: 9% !important;
+  display: grid !important;
+  place-items: center !important;
+  min-width: 250px !important;
+  width: auto !important;
+  min-height: 58px !important;
+  height: auto !important;
+  padding: 10px 22px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(#2fa97f, #116246) !important;
+  color: #fff !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(16px, 1.1rem, 22px) !important;
+  font-weight: 900 !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+  text-shadow: 2px 2px #1a1a1a !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 0 4px #3b2418, 0 0 0 7px #d8b477 !important;
+}
+
+body.skin-v2.modal-open .wizard-popup-button:hover {
+  filter: brightness(1.08);
+}
+
+body.skin-v2.modal-open .wizard-popup-button:active {
+  transform: translateY(2px);
+}
+
+body.skin-v2.modal-open .wizard-modal-card,
+body.skin-v2.modal-open .wizard-modal-top,
+body.skin-v2.modal-open .wizard-modal-icon,
+body.skin-v2.modal-open .wizard-modal-body {
+  display: contents !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 760px) {
+  body.skin-v2.modal-open #wizard-modal.wizard-popup-overlay {
+    padding: 10px !important;
+  }
+
+  body.skin-v2.modal-open .wizard-popup {
+    width: 98vw !important;
+  }
+
+  body.skin-v2.modal-open .wizard-popup-copy {
+    left: 8% !important;
+    top: 15% !important;
+    width: 61% !important;
+    max-height: 57% !important;
+    font-size: clamp(11px, .82rem, 15px) !important;
+  }
+
+  body.skin-v2.modal-open .wizard-popup-copy h2 {
+    font-size: clamp(16px, 1.25rem, 24px) !important;
+    margin-bottom: .4rem !important;
+  }
+
+  body.skin-v2.modal-open .wizard-popup-button,
+  body.skin-v2.modal-open .wizard-continue-btn.wizard-popup-button {
+    left: 9% !important;
+    bottom: 7% !important;
+    min-width: 170px !important;
+    min-height: 44px !important;
+    font-size: clamp(11px, .82rem, 15px) !important;
+  }
+}
+
 /* Final same-day polish: landing geometry, contained classroom, intentional bubbles. */
 body.skin-v2.start-screen.same-day-screen #game-container {
   grid-template-rows: 142px minmax(0, 1fr) 96px !important;

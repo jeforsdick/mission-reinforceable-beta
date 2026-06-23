@@ -302,6 +302,26 @@ function wizardButtonTextFromDelta(delta) {
   return 'I read it. Recover the mission ▶';
 }
 
+function wizardPopupFrameForState(state, variant) {
+  if (variant === 'briefing') {
+    return '../assets/skin-v2/wizard-feedback-popup-mockup-neutral.png';
+  }
+
+  if (variant === 'dead') {
+    return '../assets/skin-v2/wizard-feedback-popup-mockup-dead.png';
+  }
+
+  if (state === 'plus') {
+    return '../assets/skin-v2/wizard-feedback-popup-mockup-happy.png';
+  }
+
+  if (state === 'minus') {
+    return '../assets/skin-v2/wizard-feedback-popup-mockup-shocked.png';
+  }
+
+  return '../assets/skin-v2/wizard-feedback-popup-mockup-questioning.png';
+}
+
 function buildWizardFeedback(opt) {
   const base = opt.feedback || '';
 
@@ -352,27 +372,24 @@ function showWizardPopup(opt, onContinue) {
 
   const modal = document.createElement('div');
   modal.id = 'wizard-modal';
-  modal.className = `wizard-modal state-${state}`;
+  modal.className = `wizard-modal wizard-popup-overlay active state-${state}`;
+  const frameSrc = wizardPopupFrameForState(state);
 
   modal.innerHTML = `
-    <div class="wizard-modal-card" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title">
-      <div class="wizard-modal-top">
-        <div class="wizard-modal-icon">
-          <img src="${state === 'plus' ? WIZ.plus : state === 'minus' ? WIZ.minus : WIZ.meh}" alt="MR Wizard">
-        </div>
-        <div>
-          <h2 id="wizard-modal-title">${escapeHTML(title)}</h2>
-          <div class="wizard-modal-tag">
-            ${state === 'plus' ? 'Fidelity strengthened' : state === 'minus' ? 'Mission risk increased' : 'Partial support'}
-          </div>
+    <div class="wizard-popup wizard-popup-${state}" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title">
+      <img class="wizard-popup-frame" src="${frameSrc}" alt="">
+
+      <div class="wizard-popup-copy">
+        <h2 id="wizard-modal-title">${escapeHTML(title)}</h2>
+        <p class="wizard-popup-tag">
+          ${state === 'plus' ? 'Fidelity strengthened' : state === 'minus' ? 'Mission risk increased' : 'Partial support'}
+        </p>
+        <div class="wizard-popup-body">
+          ${escapeHTML(body).replaceAll('\n', '<br>')}
         </div>
       </div>
 
-      <div class="wizard-modal-body">
-        ${escapeHTML(body).replaceAll('\n', '<br>')}
-      </div>
-
-      <button id="wizard-continue-btn" class="wizard-continue-btn">
+      <button id="wizard-continue-btn" class="wizard-popup-button wizard-continue-btn">
         ${escapeHTML(buttonText)}
       </button>
     </div>
@@ -395,8 +412,7 @@ function showWizardPopup(opt, onContinue) {
     continueBtn.addEventListener('click', continueFromWizard);
   }
 
-  modal.querySelector('.wizard-modal-icon')?.addEventListener('click', continueFromWizard);
-  modal.querySelector('.wizard-modal-body')?.addEventListener('click', continueFromWizard);
+  modal.querySelector('.wizard-popup-copy')?.addEventListener('click', continueFromWizard);
 }
 
 function showBipBriefingPopup(scn, briefingText, onContinue) {
@@ -417,40 +433,32 @@ function showBipBriefingPopup(scn, briefingText, onContinue) {
   const modal = document.createElement('div');
   modal.id = 'wizard-modal';
 
-  // Keep your blue/correct styling
-  modal.className = 'wizard-modal state-correct';
+  modal.className = 'wizard-modal wizard-popup-overlay active state-briefing';
 
   const missionTitle = scn?.title || 'Mission';
   const missionFocus = scn?.focus || '';
+  const frameSrc = wizardPopupFrameForState('meh', 'briefing');
 
   modal.innerHTML = `
-    <div class="wizard-modal-card" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title">
-      <div class="wizard-modal-top">
-        <div class="wizard-modal-icon">
-          <img src="../assets/skin-v2/wizard-guide.png" alt="MR Wizard">
-        </div>
-        <div>
-          <h2 id="wizard-modal-title">BIP Briefing</h2>
-          <div class="wizard-modal-tag">
-            ${escapeHTML(missionTitle)}
-          </div>
-        </div>
-      </div>
+    <div class="wizard-popup wizard-popup-briefing" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title">
+      <img class="wizard-popup-frame" src="${frameSrc}" alt="">
 
-      <div class="wizard-modal-body">
+      <div class="wizard-popup-copy">
+        <h2 id="wizard-modal-title">BIP BRIEFING</h2>
+        <p class="wizard-popup-tag">${escapeHTML(missionTitle)}</p>
         ${missionFocus ? `
           <div class="bip-focus-block">
             <strong>Mission Focus</strong>
             <span>${escapeHTML(missionFocus)}</span>
           </div>
         ` : ''}
-        <div class="bip-briefing-copy">
+        <div class="wizard-popup-body bip-briefing-copy">
           ${escapeHTML(briefingText).replaceAll('\n', '<br>')}
         </div>
       </div>
 
-      <button id="wizard-continue-btn" class="wizard-continue-btn">
-        Begin Mission ▶
+      <button id="wizard-continue-btn" class="wizard-popup-button wizard-continue-btn">
+        BEGIN MISSION ▶
       </button>
     </div>
   `;
