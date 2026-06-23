@@ -1918,3 +1918,172 @@ body.skin-v2.dashboard-screen #bottom-action-slot {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ============================================================
+   SKIN V2 LANDING - FINAL DREAM ALIGNMENT
+   Landing page only. Do not affect gameplay/dashboard screens.
+   ============================================================ */
+
+/* Slightly narrower and calmer than current version */
+body.skin-v2.start-screen #game-container {
+  width: min(84vw, 1320px) !important;
+  grid-template-rows: 136px minmax(0, 1fr) 98px !important;
+  height: calc(100vh - 14px) !important;
+}
+
+/* Title: still big, but less top-heavy */
+body.skin-v2.start-screen h1 {
+  height: 130px !important;
+}
+
+body.skin-v2.start-screen h1::before {
+  font-size: clamp(2.25rem, 4.35vw, 4.35rem) !important;
+  top: 58% !important;
+}
+
+/* Main frame: a little less wide/packed */
+body.skin-v2.start-screen .screen-content-shell {
+  grid-template-columns: minmax(0, 59fr) minmax(410px, 41fr) !important;
+  grid-template-rows: 92px minmax(0, 1fr) !important;
+  column-gap: 30px !important;
+  padding: 46px 30px 24px !important;
+}
+
+/* Heading: closer to dream mockup proportions */
+body.skin-v2.start-screen .quest-hero-heading {
+  padding-top: 8px !important;
+}
+
+body.skin-v2.start-screen .quest-hero-heading h2 {
+  font-size: clamp(.96rem, 1.46vw, 1.28rem) !important;
+}
+
+body.skin-v2.start-screen .quest-hero-heading p {
+  font-size: clamp(.84rem, 1vw, .98rem) !important;
+}
+
+/* Classroom plaque: keep it tucked into the frame */
+body.skin-v2.start-screen .quest-classroom-plaque {
+  height: 50px !important;
+  width: min(360px, 40%) !important;
+  transform: translate(-50%, -42%) !important;
+}
+
+/* Remove the remaining "boxed-in" classroom border feel */
+body.skin-v2.start-screen .quest-hero-art {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  margin-bottom: 12px !important;
+}
+
+body.skin-v2.start-screen .quest-hero-art::after {
+  box-shadow: none !important;
+}
+
+/* Keep classroom image crisp and centered */
+body.skin-v2.start-screen .quest-classroom-background {
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: transparent !important;
+}
+
+/* Wizard/bubble: slightly smaller so it matches the dream page better */
+body.skin-v2.start-screen .quest-wizard-coach {
+  top: 18px !important;
+  left: 24px !important;
+  width: min(280px, 40%) !important;
+  height: 150px !important;
+}
+
+body.skin-v2.start-screen .quest-map-wizard-guide {
+  max-width: 82px !important;
+}
+
+/* Main classroom CTA: a little smaller and cleaner */
+body.skin-v2.start-screen .quest-hero-cta {
+  width: min(278px, 46%) !important;
+  height: 44px !important;
+  bottom: -10px !important;
+  font-size: clamp(.62rem, .74vw, .72rem) !important;
+}
+
+/* Mission column: make it feel like the mockup, not squeezed */
+body.skin-v2.start-screen #choices {
+  max-width: 500px !important;
+  padding-top: 32px !important;
+}
+
+/* Mission Options plaque */
+body.skin-v2.start-screen #choices::before {
+  top: -16px !important;
+  width: min(270px, 80%) !important;
+  height: 44px !important;
+}
+
+/* Cards: balanced between readable text and visible green buttons */
+body.skin-v2.start-screen .quest-grid {
+  gap: 14px !important;
+}
+
+body.skin-v2.start-screen .quest-card {
+  grid-template-columns: 60px minmax(0, 1fr) !important;
+  padding: 12px 122px 12px 14px !important;
+}
+
+body.skin-v2.start-screen .quest-card-icon {
+  width: 60px !important;
+  height: 60px !important;
+}
+
+body.skin-v2.start-screen .quest-card h3 {
+  font-size: clamp(.76rem, .92vw, .88rem) !important;
+}
+
+body.skin-v2.start-screen .quest-card p {
+  font-size: clamp(.58rem, .68vw, .70rem) !important;
+  line-height: 1.08 !important;
+}
+
+/* Green buttons: visible but not covering text */
+body.skin-v2.start-screen .quest-card .action {
+  right: 12px !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  width: 106px !important;
+  height: 40px !important;
+}
+
+body.skin-v2.start-screen .quest-card button {
+  width: 106px !important;
+  height: 40px !important;
+  font-size: .54rem !important;
+  padding: 4px 9px !important;
+}
+
+/* Bottom nav: make sure it is fully visible and not too tall */
+body.skin-v2.start-screen #bottom-action-slot {
+  margin-top: 7px !important;
+  padding: 6px 64px !important;
+}
+
+body.skin-v2.start-screen #bottom-action-slot .quest-bottom-nav {
+  gap: 28px !important;
+}
+
+body.skin-v2.start-screen .quest-nav-link,
+body.skin-v2.start-screen #progress-btn,
+body.skin-v2.start-screen #home-btn {
+  min-height: 56px !important;
+  padding: 5px 22px !important;
+  font-size: clamp(.82rem, 1vw, .98rem) !important;
+}
+
+body.skin-v2.start-screen .quest-nav-link img,
+body.skin-v2.start-screen #progress-btn img,
+body.skin-v2.start-screen #home-btn img {
+  width: 32px !important;
+  height: 32px !important;
+  flex-basis: 32px !important;
+}
