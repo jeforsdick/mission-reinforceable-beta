@@ -4704,6 +4704,12 @@ body.skin-v2.modal-open .wizard-popup-button,
 }
 
 /* Keep feedback popups from feeling like briefing documents. */
+body.skin-v2.bip-briefing .wizard-popup,
+body.skin-v2.bip-briefing #wizard-modal .wizard-popup {
+  width: min(94vw, 1240px) !important;
+  max-height: 90vh !important;
+}
+
 body.skin-v2.feedback-open .wizard-popup,
 body.skin-v2.feedback-open #wizard-modal .wizard-popup {
   width: min(96vw, 1296px) !important;
