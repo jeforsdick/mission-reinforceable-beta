@@ -4987,27 +4987,27 @@ body.skin-v2.same-day-screen .same-day-bubble-three {
 /* Gameplay HUD placement: pin hearts to the top sky area, independent of frame flow. */
 body.skin-v2.playing-mission #hearts-display {
   position: fixed !important;
-  top: clamp(54px, 6.5vh, 78px) !important;
-  left: clamp(54px, 5.5vw, 96px) !important;
+  top: clamp(68px, 8.5vh, 104px) !important;
+  left: clamp(82px, 6vw, 120px) !important;
   z-index: 80 !important;
   transform: none !important;
   margin: 0 !important;
-  gap: clamp(9px, 1vw, 15px) !important;
+  gap: clamp(8px, .8vw, 13px) !important;
 }
 
 body.skin-v2.playing-mission .zelda-heart {
-  width: clamp(42px, 3.35vw, 56px) !important;
-  height: clamp(38px, 3vw, 51px) !important;
-  flex: 0 0 clamp(42px, 3.35vw, 56px) !important;
+  width: clamp(36px, 2.7vw, 50px) !important;
+  height: clamp(33px, 2.45vw, 46px) !important;
+  flex: 0 0 clamp(36px, 2.7vw, 50px) !important;
 }
 
 /* Gameplay HUD placement: pin mission progress in the top center HUD band. */
 body.skin-v2.playing-mission .quest-progress-stat {
   position: fixed !important;
-  top: clamp(52px, 6vh, 74px) !important;
+  top: clamp(64px, 7.8vh, 94px) !important;
   left: 50% !important;
   z-index: 80 !important;
-  width: clamp(310px, 30vw, 500px) !important;
+  width: clamp(280px, 25vw, 430px) !important;
   min-width: 0 !important;
   transform: translateX(-50%) !important;
   margin: 0 !important;
@@ -5016,28 +5016,28 @@ body.skin-v2.playing-mission .quest-progress-stat {
 
 body.skin-v2.playing-mission .quest-progress-stat > span:first-child,
 body.skin-v2.playing-mission #score-badge::before {
-  font-size: clamp(.68rem, .82vw, .86rem) !important;
+  font-size: clamp(.58rem, .68vw, .76rem) !important;
 }
 
 body.skin-v2.playing-mission .quest-progress-stat .quest-meter,
 body.skin-v2.playing-mission #score-badge::after {
-  height: clamp(17px, 1.35vw, 22px) !important;
+  height: clamp(14px, 1.05vw, 19px) !important;
   padding: 3px !important;
   border-width: 3px !important;
 }
 
 body.skin-v2.playing-mission #score-badge {
   position: fixed !important;
-  top: clamp(52px, 6vh, 74px) !important;
-  right: clamp(54px, 5.5vw, 96px) !important;
+  top: clamp(64px, 7.8vh, 94px) !important;
+  right: clamp(82px, 6vw, 120px) !important;
   z-index: 80 !important;
-  width: clamp(310px, 30vw, 500px) !important;
+  width: clamp(280px, 25vw, 430px) !important;
   min-width: 0 !important;
   margin: 0 !important;
   gap: 5px !important;
 }
 
 body.skin-v2.playing-mission #points {
-  font-size: clamp(.62rem, .72vw, .78rem) !important;
+  font-size: clamp(.54rem, .62vw, .7rem) !important;
   margin-top: 0 !important;
 }
