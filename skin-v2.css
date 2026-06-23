@@ -2122,6 +2122,81 @@ body.skin-v2.same-day-screen .quest-classroom-background {
   image-rendering: pixelated;
 }
 
+/* Bigger classroom composites: these are a primary part of the hub, not thumbnails. */
+body.skin-v2.start-screen #game-container,
+body.skin-v2.same-day-screen #game-container {
+  width: min(92vw, 1500px) !important;
+}
+
+body.skin-v2.start-screen .screen-content-shell,
+body.skin-v2.same-day-screen .screen-content-shell {
+  grid-template-columns: minmax(0, 64fr) minmax(405px, 36fr) !important;
+  grid-template-rows: 58px minmax(0, 1fr) !important;
+  column-gap: 24px !important;
+  padding: 42px 28px 24px !important;
+}
+
+body.skin-v2.start-screen .quest-hero-heading,
+body.skin-v2.same-day-screen .quest-hero-heading {
+  padding-top: 0 !important;
+}
+
+body.skin-v2.start-screen .quest-hero-heading h2,
+body.skin-v2.same-day-screen .quest-hero-heading h2 {
+  font-size: clamp(.9rem, 1.3vw, 1.16rem) !important;
+}
+
+body.skin-v2.start-screen .quest-hero-heading p,
+body.skin-v2.same-day-screen .quest-hero-heading p {
+  font-size: clamp(.78rem, .95vw, .92rem) !important;
+  margin-top: 3px !important;
+}
+
+body.skin-v2.start-screen .quest-hero-art,
+body.skin-v2.same-day-screen .quest-hero-art {
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 420px !important;
+  margin: -4px 0 0 !important;
+}
+
+body.skin-v2.start-screen .quest-classroom-background,
+body.skin-v2.same-day-screen .quest-classroom-background {
+  transform: scale(1.16);
+  transform-origin: center center;
+}
+
+body.skin-v2.start-screen #choices,
+body.skin-v2.same-day-screen #choices {
+  padding-top: 8px !important;
+}
+
+body.skin-v2.start-screen .quest-grid,
+body.skin-v2.same-day-screen .quest-grid {
+  gap: 8px !important;
+}
+
+@media (max-width: 1180px), (max-height: 760px) {
+  body.skin-v2.start-screen .screen-content-shell,
+  body.skin-v2.same-day-screen .screen-content-shell {
+    grid-template-columns: minmax(0, 62fr) minmax(385px, 38fr) !important;
+    grid-template-rows: 50px minmax(0, 1fr) !important;
+    padding: 38px 24px 22px !important;
+  }
+
+  body.skin-v2.start-screen .quest-hero-art,
+  body.skin-v2.same-day-screen .quest-hero-art {
+    min-height: 380px !important;
+  }
+
+  body.skin-v2.start-screen .quest-classroom-background,
+  body.skin-v2.same-day-screen .quest-classroom-background {
+    transform: scale(1.12);
+  }
+}
+
 /* Final V2 alignment for the current same-day and progress DOM. */
 body.skin-v2.same-day-screen #story-text {
   display: contents !important;
