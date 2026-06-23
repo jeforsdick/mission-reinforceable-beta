@@ -2287,6 +2287,403 @@ body.skin-v2.start-screen.same-day-screen .same-day-bubble-three span {
   }
 }
 
+/* Last popup authority: hide the old briefing surface and keep the image-backed wizard centered. */
+body.skin-v2.wizard-popup-open .screen-content-shell,
+body.skin-v2.wizard-popup-open #story-text,
+body.skin-v2.wizard-popup-open #choices,
+body.skin-v2.wizard-popup-open #feedback {
+  visibility: hidden !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal,
+body.skin-v2.wizard-popup-open #wizard-modal * {
+  visibility: visible !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal.wizard-popup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  background: rgba(0, 0, 0, .58) !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup {
+  position: relative !important;
+  width: min(82vw, 980px) !important;
+  aspect-ratio: 1536 / 864 !important;
+  max-height: 82vh !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  image-rendering: pixelated;
+  pointer-events: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy {
+  position: absolute !important;
+  left: 10% !important;
+  top: 20% !important;
+  width: 55% !important;
+  max-height: 52% !important;
+  overflow-y: auto !important;
+  padding: 0 10px 0 0 !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  font-family: "Courier New", monospace !important;
+  font-size: clamp(13px, 1.15vw, 20px) !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  z-index: 2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy h2 {
+  margin: 0 0 .7rem !important;
+  color: #1d120d !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(22px, 2vw, 36px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-tag {
+  margin: 0 0 .65rem !important;
+  color: #4a2613 !important;
+  font-size: clamp(12px, 1vw, 17px) !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-body,
+body.skin-v2.wizard-popup-open .bip-briefing-copy {
+  color: #1d120d !important;
+  font-size: inherit !important;
+  line-height: 1.35 !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block {
+  display: grid !important;
+  gap: 3px !important;
+  margin: 0 0 .65rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block strong {
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(12px, .95vw, 16px) !important;
+  letter-spacing: 0 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-button {
+  position: absolute !important;
+  left: 10.5% !important;
+  bottom: 10.5% !important;
+  z-index: 3 !important;
+  min-width: 240px !important;
+  min-height: 58px !important;
+  padding: 10px 22px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(#2fa97f, #116246) !important;
+  color: #fff !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(15px, 1.2vw, 21px) !important;
+  font-weight: 900 !important;
+  text-shadow: 2px 2px #1a1a1a !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 0 4px #3b2418, 0 0 0 7px #d8b477 !important;
+}
+
+/* Final popup authority: hide the old briefing surface and keep the image-backed wizard centered. */
+body.skin-v2.wizard-popup-open .screen-content-shell,
+body.skin-v2.wizard-popup-open #story-text,
+body.skin-v2.wizard-popup-open #choices,
+body.skin-v2.wizard-popup-open #feedback {
+  visibility: hidden !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal,
+body.skin-v2.wizard-popup-open #wizard-modal * {
+  visibility: visible !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal.wizard-popup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  background: rgba(0, 0, 0, .58) !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup {
+  position: relative !important;
+  width: min(82vw, 980px) !important;
+  aspect-ratio: 1536 / 864 !important;
+  max-height: 82vh !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  image-rendering: pixelated;
+  pointer-events: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy {
+  position: absolute !important;
+  left: 10% !important;
+  top: 20% !important;
+  width: 55% !important;
+  max-height: 52% !important;
+  overflow-y: auto !important;
+  padding: 0 10px 0 0 !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  font-family: "Courier New", monospace !important;
+  font-size: clamp(13px, 1.15vw, 20px) !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  z-index: 2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy h2 {
+  margin: 0 0 .7rem !important;
+  color: #1d120d !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(22px, 2vw, 36px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-tag {
+  margin: 0 0 .65rem !important;
+  color: #4a2613 !important;
+  font-size: clamp(12px, 1vw, 17px) !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-body,
+body.skin-v2.wizard-popup-open .bip-briefing-copy {
+  color: #1d120d !important;
+  font-size: inherit !important;
+  line-height: 1.35 !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block {
+  display: grid !important;
+  gap: 3px !important;
+  margin: 0 0 .65rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block strong {
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(12px, .95vw, 16px) !important;
+  letter-spacing: 0 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-button {
+  position: absolute !important;
+  left: 10.5% !important;
+  bottom: 10.5% !important;
+  z-index: 3 !important;
+  min-width: 240px !important;
+  min-height: 58px !important;
+  padding: 10px 22px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(#2fa97f, #116246) !important;
+  color: #fff !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(15px, 1.2vw, 21px) !important;
+  font-weight: 900 !important;
+  text-shadow: 2px 2px #1a1a1a !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 0 4px #3b2418, 0 0 0 7px #d8b477 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-modal-card,
+body.skin-v2.wizard-popup-open .wizard-modal-icon,
+body.skin-v2.wizard-popup-open .wizard-modal-body,
+body.skin-v2.wizard-popup-open .wizard-modal-top {
+  display: none !important;
+}
+
+/* Popup cleanup footer: keep wizard popup as the only visible briefing surface. */
+body.skin-v2.wizard-popup-open .screen-content-shell,
+body.skin-v2.wizard-popup-open #story-text,
+body.skin-v2.wizard-popup-open #choices,
+body.skin-v2.wizard-popup-open #feedback {
+  visibility: hidden !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal,
+body.skin-v2.wizard-popup-open #wizard-modal * {
+  visibility: visible !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal.wizard-popup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  background: rgba(0, 0, 0, .58) !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup {
+  position: relative !important;
+  width: min(82vw, 980px) !important;
+  aspect-ratio: 1536 / 864 !important;
+  max-height: 82vh !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  image-rendering: pixelated;
+  pointer-events: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy {
+  position: absolute !important;
+  left: 10% !important;
+  top: 20% !important;
+  width: 55% !important;
+  max-height: 52% !important;
+  overflow-y: auto !important;
+  padding: 0 10px 0 0 !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  font-family: "Courier New", monospace !important;
+  font-size: clamp(13px, 1.15vw, 20px) !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  z-index: 2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy h2 {
+  margin: 0 0 .7rem !important;
+  color: #1d120d !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(22px, 2vw, 36px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-tag {
+  margin: 0 0 .65rem !important;
+  color: #4a2613 !important;
+  font-size: clamp(12px, 1vw, 17px) !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-body,
+body.skin-v2.wizard-popup-open .bip-briefing-copy {
+  color: #1d120d !important;
+  font-size: inherit !important;
+  line-height: 1.35 !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block {
+  display: grid !important;
+  gap: 3px !important;
+  margin: 0 0 .65rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block strong {
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(12px, .95vw, 16px) !important;
+  letter-spacing: 0 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-button {
+  position: absolute !important;
+  left: 10.5% !important;
+  bottom: 10.5% !important;
+  z-index: 3 !important;
+  min-width: 240px !important;
+  min-height: 58px !important;
+  padding: 10px 22px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(#2fa97f, #116246) !important;
+  color: #fff !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(15px, 1.2vw, 21px) !important;
+  font-weight: 900 !important;
+  text-shadow: 2px 2px #1a1a1a !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 0 4px #3b2418, 0 0 0 7px #d8b477 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-modal-card,
+body.skin-v2.wizard-popup-open .wizard-modal-icon,
+body.skin-v2.wizard-popup-open .wizard-modal-body,
+body.skin-v2.wizard-popup-open .wizard-modal-top {
+  display: none !important;
+}
+
 /* Image-backed wizard feedback and BIP briefing popups. */
 body.skin-v2.modal-open #wizard-modal.wizard-popup-overlay,
 .wizard-popup-overlay {
@@ -2466,6 +2863,140 @@ body.skin-v2.modal-open .wizard-modal-body {
     min-height: 44px !important;
     font-size: clamp(11px, .82rem, 15px) !important;
   }
+}
+
+/* Final cleanup: popup is the only briefing surface while open. */
+body.skin-v2.wizard-popup-open .screen-content-shell,
+body.skin-v2.wizard-popup-open #story-text,
+body.skin-v2.wizard-popup-open #choices,
+body.skin-v2.wizard-popup-open #feedback {
+  visibility: hidden !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal,
+body.skin-v2.wizard-popup-open #wizard-modal * {
+  visibility: visible !important;
+}
+
+body.skin-v2.wizard-popup-open #wizard-modal.wizard-popup-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  background: rgba(0, 0, 0, .58) !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup {
+  position: relative !important;
+  width: min(82vw, 980px) !important;
+  aspect-ratio: 1536 / 864 !important;
+  max-height: 82vh !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  image-rendering: pixelated;
+  pointer-events: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy {
+  position: absolute !important;
+  left: 10% !important;
+  top: 20% !important;
+  width: 55% !important;
+  max-height: 52% !important;
+  overflow-y: auto !important;
+  padding: 0 10px 0 0 !important;
+  color: #1d120d !important;
+  background: transparent !important;
+  font-family: "Courier New", monospace !important;
+  font-size: clamp(13px, 1.15vw, 20px) !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  text-align: left !important;
+  z-index: 2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-copy h2 {
+  margin: 0 0 .7rem !important;
+  color: #1d120d !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(22px, 2vw, 36px) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase !important;
+  text-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-tag {
+  margin: 0 0 .65rem !important;
+  color: #4a2613 !important;
+  font-size: clamp(12px, 1vw, 17px) !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-body,
+body.skin-v2.wizard-popup-open .bip-briefing-copy {
+  color: #1d120d !important;
+  font-size: inherit !important;
+  line-height: 1.35 !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block {
+  display: grid !important;
+  gap: 3px !important;
+  margin: 0 0 .65rem !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.wizard-popup-open .bip-focus-block strong {
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(12px, .95vw, 16px) !important;
+  letter-spacing: 0 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-popup-button {
+  position: absolute !important;
+  left: 10.5% !important;
+  bottom: 10.5% !important;
+  z-index: 3 !important;
+  min-width: 240px !important;
+  min-height: 58px !important;
+  padding: 10px 22px !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(#2fa97f, #116246) !important;
+  color: #fff !important;
+  font-family: var(--v2-pixel, "Courier New", monospace) !important;
+  font-size: clamp(15px, 1.2vw, 21px) !important;
+  font-weight: 900 !important;
+  text-shadow: 2px 2px #1a1a1a !important;
+  cursor: pointer !important;
+  box-shadow: 0 0 0 4px #3b2418, 0 0 0 7px #d8b477 !important;
+}
+
+body.skin-v2.wizard-popup-open .wizard-modal-card,
+body.skin-v2.wizard-popup-open .wizard-modal-icon,
+body.skin-v2.wizard-popup-open .wizard-modal-body,
+body.skin-v2.wizard-popup-open .wizard-modal-top {
+  display: none !important;
 }
 
 /* Final same-day polish: landing geometry, contained classroom, intentional bubbles. */

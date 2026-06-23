@@ -231,6 +231,7 @@ function resetGame() {
     'modal-open',
     'bip-briefing',
     'feedback-open',
+    'wizard-popup-open',
     'dashboard-screen',
     'same-day-screen',
     'summary-screen'
@@ -372,7 +373,7 @@ function showWizardPopup(opt, onContinue) {
 
   const modal = document.createElement('div');
   modal.id = 'wizard-modal';
-  modal.className = `wizard-modal wizard-popup-overlay active state-${state}`;
+  modal.className = `wizard-popup-overlay active state-${state}`;
   const frameSrc = wizardPopupFrameForState(state);
 
   modal.innerHTML = `
@@ -396,14 +397,14 @@ function showWizardPopup(opt, onContinue) {
   `;
 
   document.body.classList.remove('bip-briefing');
-  document.body.classList.add('modal-open', 'feedback-open');
+  document.body.classList.add('modal-open', 'feedback-open', 'wizard-popup-open');
   document.body.appendChild(modal);
 
   const continueBtn = document.getElementById('wizard-continue-btn');
   const continueFromWizard = () => {
     if (!modal.isConnected) return;
     modal.remove();
-    document.body.classList.remove('modal-open', 'feedback-open');
+    document.body.classList.remove('modal-open', 'feedback-open', 'wizard-popup-open');
     onContinue();
   };
 
@@ -433,7 +434,7 @@ function showBipBriefingPopup(scn, briefingText, onContinue) {
   const modal = document.createElement('div');
   modal.id = 'wizard-modal';
 
-  modal.className = 'wizard-modal wizard-popup-overlay active state-briefing';
+  modal.className = 'wizard-popup-overlay active state-briefing';
 
   const missionTitle = scn?.title || 'Mission';
   const missionFocus = scn?.focus || '';
@@ -464,7 +465,7 @@ function showBipBriefingPopup(scn, briefingText, onContinue) {
   `;
 
   document.body.classList.remove('feedback-open');
-  document.body.classList.add('modal-open', 'bip-briefing');
+  document.body.classList.add('modal-open', 'bip-briefing', 'wizard-popup-open');
   document.body.appendChild(modal);
 
   const continueBtn = document.getElementById('wizard-continue-btn');
@@ -474,7 +475,7 @@ function showBipBriefingPopup(scn, briefingText, onContinue) {
 
     continueBtn.addEventListener('click', () => {
       modal.remove();
-      document.body.classList.remove('modal-open', 'bip-briefing');
+      document.body.classList.remove('modal-open', 'bip-briefing', 'wizard-popup-open');
       onContinue();
     });
   }
