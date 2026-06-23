@@ -696,12 +696,7 @@ function renderIntroCards() {
           <p>Embark on a journey to level up behavior support, one decision at a time.</p>
         </div>
         <div class="quest-hero-art">
-          <img class="quest-classroom-background" src="../assets/skin-v2/classroom-image.png" alt="A magical pixel-art classroom">
-          <div class="quest-wizard-coach" aria-label="Wizard guide">
-            <img class="quest-wizard-bubble" src="../assets/skin-v2/speech-bubble-left.png" alt="">
-            <span>The Wizard will chime in after every move.</span>
-            <img class="quest-map-wizard-guide" src="../assets/skin-v2/wizard-guide.png" alt="Wizard guide">
-          </div>
+          <img class="quest-classroom-background" src="../assets/skin-v2/landing-page-classroom.png" alt="A magical pixel-art classroom with the wizard guide">
           <button type="button" class="quest-hero-cta">Start Your Daily Mission</button>
         </div>
       </section>`
@@ -841,13 +836,7 @@ function renderSameDayReturnScreen(result) {
         <p>${result.mode || "Mission"} complete at ${completedTime} with ${result.points} / ${result.max_possible} (${pct}%).</p>
       </div>
       <div class="quest-hero-art">
-        <img class="quest-classroom-background" src="../assets/skin-v2/classroom-image.png" alt="A magical pixel-art classroom">
-        <div class="same-day-bubbles" aria-label="Wizard message">
-          <span>Welcome back, we have already seen you today!</span>
-          <span>But feel free to play again!</span>
-          <span>Or check out your progress tab to review your mission!</span>
-        </div>
-        <img class="quest-map-wizard-guide same-day-wizard" src="../assets/skin-v2/wizard-guide.png" alt="Wizard guide">
+        <img class="quest-classroom-background" src="../assets/skin-v2/same-day-return-page-classroom.png" alt="A magical pixel-art classroom with welcome-back wizard messages">
       </div>
     </section>
   `;

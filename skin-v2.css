@@ -2088,6 +2088,40 @@ body.skin-v2.start-screen #home-btn img {
   flex-basis: 32px !important;
 }
 
+/* Static classroom art supplied for the landing and same-day pages. */
+body.skin-v2.start-screen .quest-hero-cta,
+body.skin-v2.start-screen .quest-wizard-coach,
+body.skin-v2.start-screen .quest-map-wizard-guide,
+body.skin-v2.start-screen .quest-wizard-bubble,
+body.skin-v2.same-day-screen .same-day-bubbles,
+body.skin-v2.same-day-screen .same-day-wizard {
+  display: none !important;
+}
+
+body.skin-v2.start-screen .quest-hero-art,
+body.skin-v2.same-day-screen .quest-hero-art {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+body.skin-v2.start-screen .quest-hero-art::after,
+body.skin-v2.same-day-screen .quest-hero-art::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.skin-v2.start-screen .quest-classroom-background,
+body.skin-v2.same-day-screen .quest-classroom-background {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: transparent !important;
+  image-rendering: pixelated;
+}
+
 /* Final V2 alignment for the current same-day and progress DOM. */
 body.skin-v2.same-day-screen #story-text {
   display: contents !important;
@@ -2313,4 +2347,38 @@ body.skin-v2.dashboard-screen .dashboard-grid {
   body.skin-v2.dashboard-screen .progress-guild-mark {
     display: none;
   }
+}
+
+/* Last word: the uploaded classroom composites already include bubbles and framing. */
+body.skin-v2.start-screen .quest-hero-cta,
+body.skin-v2.start-screen .quest-wizard-coach,
+body.skin-v2.start-screen .quest-map-wizard-guide,
+body.skin-v2.start-screen .quest-wizard-bubble,
+body.skin-v2.same-day-screen .same-day-bubbles,
+body.skin-v2.same-day-screen .same-day-wizard {
+  display: none !important;
+}
+
+body.skin-v2.start-screen .quest-hero-art,
+body.skin-v2.same-day-screen .quest-hero-art {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+body.skin-v2.start-screen .quest-hero-art::after,
+body.skin-v2.same-day-screen .quest-hero-art::after {
+  content: none !important;
+  display: none !important;
+}
+
+body.skin-v2.start-screen .quest-classroom-background,
+body.skin-v2.same-day-screen .quest-classroom-background {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: transparent !important;
+  image-rendering: pixelated;
 }
