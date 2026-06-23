@@ -4277,10 +4277,31 @@ body.skin-v2.playing-mission .choice-wizard-text strong {
 body.skin-v2.playing-mission #bottom-action-slot {
   grid-row: 3 !important;
   align-self: stretch !important;
-  width: min(1040px, 90%) !important;
-  margin: 8px auto 0 !important;
-  padding: 6px clamp(42px, 5vw, 78px) !important;
+  width: min(832px, 72%) !important;
+  margin: 6px auto 0 !important;
+  padding: 5px clamp(34px, 4vw, 62px) !important;
   z-index: 25 !important;
+}
+
+body.skin-v2.playing-mission #bottom-action-slot .quest-bottom-nav {
+  gap: 24px !important;
+}
+
+body.skin-v2.playing-mission #bottom-action-slot .quest-nav-link,
+body.skin-v2.playing-mission #bottom-action-slot #progress-btn,
+body.skin-v2.playing-mission #bottom-action-slot #home-btn {
+  min-height: 48px !important;
+  padding: 5px 19px !important;
+  gap: 8px !important;
+  font-size: clamp(.76rem, .9vw, .92rem) !important;
+}
+
+body.skin-v2.playing-mission #bottom-action-slot .quest-nav-link img,
+body.skin-v2.playing-mission #bottom-action-slot #progress-btn img,
+body.skin-v2.playing-mission #bottom-action-slot #home-btn img {
+  width: 27px !important;
+  height: 27px !important;
+  flex-basis: 27px !important;
 }
 
 /* ---------- Popup authority: image-backed wizard popups only ---------- */
@@ -4986,7 +5007,7 @@ body.skin-v2.same-day-screen .same-day-bubble-three {
 
 /* Gameplay HUD authority: one grid row above the scenario frame. */
 body.skin-v2.playing-mission #game-container {
-  grid-template-rows: 146px minmax(0, 1fr) 104px !important;
+  grid-template-rows: 146px minmax(0, 1fr) 84px !important;
 }
 
 body.skin-v2.playing-mission #toolbar {
