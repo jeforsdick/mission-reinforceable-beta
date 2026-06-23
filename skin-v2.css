@@ -3987,7 +3987,7 @@ body.skin-v2.playing-mission {
 
 body.skin-v2.playing-mission #game-container {
   display: grid !important;
-  grid-template-rows: 148px minmax(0, 1fr) 104px !important;
+  grid-template-rows: 124px minmax(0, 1fr) 104px !important;
   width: min(92vw, 1460px) !important;
   height: calc(100vh - 16px) !important;
   margin: 0 auto !important;
@@ -4015,7 +4015,7 @@ body.skin-v2.playing-mission #toolbar {
   width: 100% !important;
   min-height: 0 !important;
   margin: 0 auto 14px !important;
-  padding: 12px 8px 16px !important;
+  padding: 0 8px 14px !important;
   position: relative !important;
   z-index: 30 !important;
   background: transparent !important;
@@ -4033,7 +4033,8 @@ body.skin-v2.playing-mission #hearts-display {
   min-width: 0 !important;
   overflow: visible !important;
   align-self: start !important;
-  margin-top: 0 !important;
+  margin-top: -2px !important;
+  transform: translateY(-10px) !important;
   z-index: 32 !important;
 }
 
