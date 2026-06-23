@@ -5007,8 +5007,8 @@ body.skin-v2.same-day-screen .same-day-bubble-three {
 
 /* Gameplay HUD authority: one grid row above the scenario frame. */
 body.skin-v2.playing-mission #game-container {
-  grid-template-rows: 126px minmax(0, 1fr) 84px !important;
-  width: min(96vw, 1540px) !important;
+  grid-template-rows: 112px minmax(0, 1fr) 84px !important;
+  width: min(93vw, 1480px) !important;
 }
 
 body.skin-v2.playing-mission #toolbar {
@@ -5026,7 +5026,7 @@ body.skin-v2.playing-mission #toolbar {
   width: 100% !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: clamp(20px, 3.4vh, 32px) clamp(28px, 3vw, 48px) 8px !important;
+  padding: clamp(16px, 2.8vh, 26px) clamp(28px, 3vw, 48px) 6px !important;
   transform: none !important;
   pointer-events: auto !important;
   background: transparent !important;
