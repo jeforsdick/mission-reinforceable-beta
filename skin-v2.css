@@ -4589,11 +4589,11 @@ body.skin-v2.wizard-popup-open .wizard-popup-copy,
 body.skin-v2.modal-open .wizard-popup-copy,
 #wizard-modal .wizard-popup-copy {
   position: absolute !important;
-  left: 15.5% !important;
-  top: 17.2% !important;
-  width: 50.5% !important;
-  height: 43.5% !important;
-  max-height: 43.5% !important;
+  left: 20% !important;
+  top: 20.5% !important;
+  width: 44% !important;
+  height: 38% !important;
+  max-height: 38% !important;
   box-sizing: border-box !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
@@ -4680,8 +4680,8 @@ body.skin-v2.wizard-popup-open .wizard-popup-button,
 body.skin-v2.modal-open .wizard-popup-button,
 #wizard-modal .wizard-popup-button {
   position: absolute !important;
-  left: 15.5% !important;
-  bottom: 23.5% !important;
+  left: 32% !important;
+  bottom: 20% !important;
   z-index: 3 !important;
   display: grid !important;
   place-items: center !important;
@@ -4690,7 +4690,7 @@ body.skin-v2.modal-open .wizard-popup-button,
   padding: 9px 20px !important;
   border: 0 !important;
   border-radius: 12px !important;
-  background: linear-gradient(#2fa97f, #116246) !important;
+  background: linear-gradient(#9f5734, #5b2b19) !important;
   color: #fff !important;
   font-family: var(--font-pixel-heading, var(--v2-pixel, "Courier New", monospace)) !important;
   font-size: clamp(11px, 1vw, 17px) !important;
