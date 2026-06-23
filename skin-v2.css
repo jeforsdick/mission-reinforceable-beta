@@ -2122,6 +2122,170 @@ body.skin-v2.same-day-screen .quest-classroom-background {
   image-rendering: pixelated;
 }
 
+/* Final same-day polish: landing geometry, contained classroom, intentional bubbles. */
+body.skin-v2.start-screen.same-day-screen #game-container {
+  grid-template-rows: 142px minmax(0, 1fr) 96px !important;
+  width: min(86vw, 1360px) !important;
+  height: calc(100vh - 14px) !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .screen-content-shell {
+  grid-template-columns: minmax(0, 54fr) 3fr minmax(400px, 40fr) !important;
+  grid-template-rows: 78px minmax(0, 1fr) !important;
+  column-gap: 0 !important;
+  padding: 48px 32px 30px !important;
+  align-items: start !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-hero-heading {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  align-self: start !important;
+  max-width: 980px !important;
+  min-height: 0 !important;
+  padding: 8px 20px 0 !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-hero-heading h2 {
+  margin: 0 !important;
+  font-size: clamp(.9rem, 1.35vw, 1.18rem) !important;
+  line-height: 1.05 !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-hero-heading p {
+  margin: 4px 0 0 !important;
+  font-size: clamp(.78rem, .96vw, .92rem) !important;
+  line-height: 1.08 !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-hero-art {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  align-self: start !important;
+  justify-self: center !important;
+  width: 100% !important;
+  max-width: 760px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(430px, calc(100vh - 350px)) !important;
+  aspect-ratio: 16 / 9 !important;
+  margin: 0 auto 20px !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-hero-art .quest-classroom-background {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  transform: none !important;
+}
+
+body.skin-v2.start-screen.same-day-screen #choices {
+  grid-column: 3 !important;
+  grid-row: 2 !important;
+  align-self: start !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  max-width: 520px !important;
+  height: min(430px, calc(100vh - 350px)) !important;
+  min-height: 340px !important;
+  margin: 0 !important;
+  padding: 30px 0 0 !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .quest-grid {
+  height: 100% !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble {
+  position: absolute !important;
+  z-index: 8 !important;
+  display: block !important;
+  pointer-events: none !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: fill !important;
+  image-rendering: pixelated;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble span {
+  position: absolute !important;
+  z-index: 2 !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #000 !important;
+  font-family: "Courier New", monospace !important;
+  font-size: clamp(12px, 1vw, 18px) !important;
+  font-weight: 900 !important;
+  line-height: 1.22 !important;
+  text-align: center !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-one {
+  top: 5% !important;
+  left: 2% !important;
+  width: 34% !important;
+  aspect-ratio: 1.72 / 1 !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-one span {
+  inset: 14% 14% 24% 11% !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-two {
+  top: 26% !important;
+  right: 4% !important;
+  width: 34% !important;
+  aspect-ratio: 1.72 / 1 !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-two img {
+  transform: scaleX(-1);
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-two span {
+  inset: 16% 12% 25% 16% !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-three {
+  bottom: 9% !important;
+  left: 3% !important;
+  width: 35% !important;
+  aspect-ratio: 1.62 / 1 !important;
+}
+
+body.skin-v2.start-screen.same-day-screen .same-day-bubble-three span {
+  inset: 13% 14% 19% 10% !important;
+  font-size: clamp(11px, .9vw, 16px) !important;
+}
+
+@media (max-width: 1180px), (max-height: 760px) {
+  body.skin-v2.start-screen.same-day-screen .screen-content-shell {
+    grid-template-columns: minmax(0, 54fr) 3fr minmax(385px, 40fr) !important;
+    grid-template-rows: 70px minmax(0, 1fr) !important;
+    padding: 44px 28px 28px !important;
+  }
+
+  body.skin-v2.start-screen.same-day-screen .same-day-hero-art,
+  body.skin-v2.start-screen.same-day-screen #choices {
+    height: min(390px, calc(100vh - 330px)) !important;
+    max-height: min(390px, calc(100vh - 330px)) !important;
+  }
+
+  body.skin-v2.start-screen.same-day-screen #choices {
+    min-height: 320px !important;
+    padding-top: 26px !important;
+  }
+}
+
 /* Same-day return uses the exact landing hub geometry; only copy/bubbles differ. */
 body.skin-v2.start-screen.same-day-screen #game-container {
   display: grid !important;
