@@ -4993,3 +4993,15 @@ body.skin-v2.playing-mission #hearts-display {
   transform: none !important;
   margin: 0 !important;
 }
+
+/* Gameplay HUD placement: pin mission progress in the top center HUD band. */
+body.skin-v2.playing-mission .quest-progress-stat {
+  position: fixed !important;
+  top: clamp(58px, 7vh, 84px) !important;
+  left: 50% !important;
+  z-index: 80 !important;
+  width: min(31vw, 560px) !important;
+  min-width: 360px !important;
+  transform: translateX(-50%) !important;
+  margin: 0 !important;
+}
