@@ -4010,12 +4010,12 @@ body.skin-v2.playing-mission #toolbar {
   align-self: stretch !important;
   display: grid !important;
   grid-template-columns: minmax(240px, 1fr) minmax(340px, 1.4fr) minmax(340px, 1.4fr) !important;
-  align-items: center !important;
+  align-items: start !important;
   gap: clamp(24px, 3vw, 42px) !important;
   width: 100% !important;
   min-height: 0 !important;
   margin: 0 auto 14px !important;
-  padding: 24px 8px 16px !important;
+  padding: 12px 8px 16px !important;
   position: relative !important;
   z-index: 30 !important;
   background: transparent !important;
@@ -4032,7 +4032,8 @@ body.skin-v2.playing-mission #hearts-display {
   gap: clamp(8px, 1vw, 14px) !important;
   min-width: 0 !important;
   overflow: visible !important;
-  align-self: center !important;
+  align-self: start !important;
+  margin-top: 0 !important;
   z-index: 32 !important;
 }
 
@@ -4044,9 +4045,10 @@ body.skin-v2.playing-mission .zelda-heart {
 
 body.skin-v2.playing-mission .quest-progress-stat {
   grid-column: 2 !important;
-  align-self: center !important;
+  align-self: start !important;
   display: grid !important;
   gap: 7px !important;
+  margin-top: 0 !important;
   min-width: 0 !important;
   color: #fff !important;
   text-align: center !important;
@@ -4086,9 +4088,10 @@ body.skin-v2.playing-mission .quest-progress-stat .quest-meter {
 
 body.skin-v2.playing-mission #score-badge {
   grid-column: 3 !important;
-  align-self: center !important;
+  align-self: start !important;
   display: grid !important;
   gap: 7px !important;
+  margin-top: 0 !important;
   min-width: 0 !important;
   color: #fff !important;
   text-align: center !important;
