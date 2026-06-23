@@ -1461,3 +1461,69 @@ body.skin-v2.start-screen .quest-card {
     max-width: 480px !important;
   }
 }
+/* ============================================================
+   SKIN V2 LANDING FINAL MICRO-POLISH
+   Small adjustments before moving to next screen.
+   ============================================================ */
+
+/* Title is good, just slightly less huge/tight */
+body.skin-v2.start-screen h1::before {
+  font-size: clamp(2.45rem, 4.85vw, 4.85rem) !important;
+  top: 56% !important;
+}
+
+/* Main frame a touch lower and more relaxed */
+body.skin-v2.start-screen #game-container {
+  grid-template-rows: 152px minmax(0, 1fr) 106px !important;
+}
+
+/* Heading feels a little too close to the classroom */
+body.skin-v2.start-screen .quest-hero-heading {
+  padding-top: 10px !important;
+}
+
+/* Classroom daily button a tiny bit smaller */
+body.skin-v2.start-screen .quest-hero-cta {
+  width: min(292px, 48%) !important;
+  height: 48px !important;
+  bottom: -13px !important;
+  font-size: clamp(.66rem, .8vw, .78rem) !important;
+}
+
+/* Mission option column closer to mockup spacing */
+body.skin-v2.start-screen #choices {
+  padding-top: 34px !important;
+}
+
+body.skin-v2.start-screen .quest-grid {
+  gap: 13px !important;
+}
+
+/* Slightly calmer card sizing */
+body.skin-v2.start-screen .quest-card {
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+body.skin-v2.start-screen .quest-card button {
+  width: 122px !important;
+  height: 47px !important;
+  font-size: .66rem !important;
+}
+
+/* Keep cards readable if the screen is shorter */
+@media (max-width: 1050px), (max-height: 735px) {
+  body.skin-v2.start-screen h1::before {
+    font-size: clamp(2rem, 3.85vw, 3.55rem) !important;
+  }
+
+  body.skin-v2.start-screen #game-container {
+    grid-template-rows: 98px minmax(0, 1fr) 84px !important;
+  }
+
+  body.skin-v2.start-screen .quest-card button {
+    width: 104px !important;
+    height: 40px !important;
+    font-size: .56rem !important;
+  }
+}
