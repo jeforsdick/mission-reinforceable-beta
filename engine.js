@@ -227,14 +227,12 @@ function resetGame() {
 
   setPoints(0);
   renderHearts();
+  closeWizardModal();
   document.body.classList.remove(
-    'modal-open',
-    'bip-briefing',
-    'feedback-open',
-    'wizard-popup-open',
     'dashboard-screen',
     'same-day-screen',
-    'summary-screen'
+    'summary-screen',
+    'playing-mission'
   );
   updateGameplayHud();
   showFeedback('', null, 5);
@@ -403,8 +401,7 @@ function showWizardPopup(opt, onContinue) {
   const continueBtn = document.getElementById('wizard-continue-btn');
   const continueFromWizard = () => {
     if (!modal.isConnected) return;
-    modal.remove();
-    document.body.classList.remove('modal-open', 'feedback-open', 'wizard-popup-open');
+    closeWizardModal();
     onContinue();
   };
 
@@ -413,7 +410,6 @@ function showWizardPopup(opt, onContinue) {
     continueBtn.addEventListener('click', continueFromWizard);
   }
 
-  modal.querySelector('.wizard-popup-copy')?.addEventListener('click', continueFromWizard);
 }
 
 function showBipBriefingPopup(scn, briefingText, onContinue) {
@@ -474,8 +470,7 @@ function showBipBriefingPopup(scn, briefingText, onContinue) {
     continueBtn.focus();
 
     continueBtn.addEventListener('click', () => {
-      modal.remove();
-      document.body.classList.remove('modal-open', 'bip-briefing', 'wizard-popup-open');
+      closeWizardModal();
       onContinue();
     });
   }
@@ -626,7 +621,15 @@ saveTodayResult(payload);
 }
 function setPlayMode(isPlaying) {
   document.body.classList.toggle("playing-mission", !!isPlaying);
-  if (isPlaying) document.body.classList.remove('summary-screen');
+  if (isPlaying) {
+    document.body.classList.remove('summary-screen', 'start-screen', 'same-day-screen', 'dashboard-screen');
+  }
+}
+
+function closeWizardModal() {
+  const old = document.getElementById('wizard-modal');
+  if (old) old.remove();
+  document.body.classList.remove('modal-open', 'bip-briefing', 'feedback-open', 'wizard-popup-open');
 }
 /* -------- Utilities -------- */
 function shuffledOptions(options) { return (options || []).map(o => ({...o})).sort(() => Math.random() - 0.5); }
@@ -929,7 +932,8 @@ function newId() { return NEXT_ID++; }
 function startDynamicMission(modeLabel, scn) {
   if (!scn) return;
 
-  document.body.classList.remove('start-screen');
+  closeWizardModal();
+  document.body.classList.remove('start-screen', 'same-day-screen', 'dashboard-screen', 'summary-screen');
   setPlayMode(true);
 
   currentScenario = scn;
@@ -1029,6 +1033,7 @@ function getNode(id) {
 }
 
 function showNode(id) {
+  closeWizardModal();
   const node = getNode(id);
   if (!node) return;
 
