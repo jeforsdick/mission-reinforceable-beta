@@ -3686,6 +3686,10 @@ body.skin-v2.dashboard-screen #bottom-action-slot #home-btn img {
   --mr-frame-padding: clamp(22px, 2.2vw, 34px);
   --mr-frame-gap: clamp(18px, 1.8vw, 28px);
   --mr-nav-width: min(68vw, 920px);
+  --mr-hub-width: min(88vw, 1320px);
+  --mr-hub-frame-height: clamp(470px, 56vh, 590px);
+  --mr-hub-frame-padding: clamp(22px, 2.2vw, 34px);
+  --mr-hub-gap: clamp(18px, 1.8vw, 28px);
 }
 
 body.skin-v2.start-screen #game-container,
@@ -3693,7 +3697,7 @@ body.skin-v2.start-screen.same-day-screen #game-container,
 body.skin-v2.same-day-screen #game-container {
   display: grid !important;
   grid-template-rows: var(--mr-title-row) var(--mr-frame-row-min) var(--mr-nav-row) !important;
-  width: var(--mr-stage-width) !important;
+  width: var(--mr-hub-width) !important;
   max-width: var(--mr-stage-max) !important;
   height: var(--mr-stage-height) !important;
   margin: 0 auto !important;
@@ -3705,19 +3709,59 @@ body.skin-v2.same-day-screen #game-container {
   box-sizing: border-box !important;
 }
 
-body.skin-v2.start-screen:not(.same-day-screen) #game-container {
-  transform: translateY(-48px) !important;
-}
-
+body.skin-v2.start-screen:not(.same-day-screen) #game-container,
 body.skin-v2.same-day-screen #game-container,
 body.skin-v2.start-screen.same-day-screen #game-container {
-  transform: translateY(-10px) !important;
+  transform: translateY(-32px) !important;
 }
 
+body.skin-v2.start-screen h1,
 body.skin-v2.same-day-screen h1,
 body.skin-v2.start-screen.same-day-screen h1 {
-  transform: translateY(38px) !important;
+  grid-row: 1 !important;
+  align-self: start !important;
+  justify-self: center !important;
+  width: min(100vw, 1500px) !important;
+  height: var(--mr-title-row) !important;
+  margin: 0 auto 8px !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+  background: none !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
   z-index: 30 !important;
+}
+
+body.skin-v2.start-screen h1::before,
+body.skin-v2.same-day-screen h1::before,
+body.skin-v2.start-screen.same-day-screen h1::before {
+  content: "MISSION : REINFORCEABLE" !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 48% !important;
+  display: block !important;
+  transform: translate(-50%, -50%) !important;
+  color: #ffd56a !important;
+  font-family: var(--v2-pixel) !important;
+  font-size: clamp(76px, 8.5vw, 132px) !important;
+  font-weight: 900 !important;
+  line-height: .9 !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  text-shadow: 5px 0 0 #000,
+    -5px 0 0 #000,
+    0 5px 0 #000,
+    0 -5px 0 #000,
+    5px 5px 0 #000,
+    -5px 5px 0 #000,
+    5px -5px 0 #000,
+    -5px -5px 0 #000,
+    0 0 22px rgba(96, 39, 180, .75) !important;
 }
 
 body.skin-v2.start-screen .screen-content-shell,
@@ -3728,14 +3772,14 @@ body.skin-v2.same-day-screen .screen-content-shell {
   grid-template-columns: minmax(0, 1.18fr) minmax(340px, .82fr) !important;
   grid-template-rows: 78px minmax(0, 1fr) !important;
   align-items: start !important;
-  column-gap: var(--mr-frame-gap) !important;
+  column-gap: var(--mr-hub-gap) !important;
   row-gap: 0 !important;
-  width: var(--mr-stage-width) !important;
+  width: var(--mr-hub-width) !important;
   max-width: var(--mr-stage-max) !important;
-  min-height: clamp(470px, 56vh, 590px) !important;
-  height: 100% !important;
+  min-height: var(--mr-hub-frame-height) !important;
+  height: var(--mr-hub-frame-height) !important;
   margin: 0 auto !important;
-  padding: var(--mr-frame-padding) !important;
+  padding: var(--mr-hub-frame-padding) !important;
   overflow: visible !important;
   box-sizing: border-box !important;
   background:
@@ -3898,7 +3942,7 @@ body.skin-v2.same-day-screen .quest-grid,
 body.skin-v2.same-day-screen .mission-grid {
   display: grid !important;
   grid-template-columns: 1fr !important;
-  grid-template-rows: repeat(3, minmax(118px, 1fr)) !important;
+  grid-template-rows: repeat(3, minmax(115px, 1fr)) !important;
   align-content: stretch !important;
   width: 100% !important;
   max-width: 100% !important;
@@ -3907,7 +3951,7 @@ body.skin-v2.same-day-screen .mission-grid {
   max-height: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-  gap: clamp(14px, 1.5vh, 20px) !important;
+  gap: clamp(12px, 1.5vh, 18px) !important;
   overflow: visible !important;
   box-sizing: border-box !important;
 }
@@ -3924,10 +3968,10 @@ body.skin-v2.same-day-screen .mission-card {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  min-height: clamp(118px, 15vh, 156px) !important;
+  min-height: clamp(110px, 14vh, 145px) !important;
   height: 100% !important;
   margin: 0 !important;
-  padding: clamp(14px, 1.4vw, 20px) clamp(152px, 12vw, 196px) clamp(14px, 1.4vw, 20px) clamp(14px, 1.4vw, 20px) !important;
+  padding: clamp(14px, 1.4vw, 20px) clamp(150px, 12vw, 210px) clamp(14px, 1.4vw, 20px) clamp(14px, 1.4vw, 20px) !important;
   overflow: visible !important;
   box-sizing: border-box !important;
   background: var(--v2-frame-small) center / 100% 100% no-repeat,
@@ -3942,19 +3986,20 @@ body.skin-v2.start-screen.same-day-screen .quest-card .action,
 body.skin-v2.same-day-screen .quest-card .action,
 body.skin-v2.same-day-screen .mission-card .action {
   position: absolute !important;
-  top: 50% !important;
-  right: clamp(14px, 1.3vw, 22px) !important;
-  bottom: auto !important;
+  top: auto !important;
+  right: clamp(16px, 1.5vw, 26px) !important;
+  bottom: clamp(14px, 1.4vh, 22px) !important;
   left: auto !important;
   z-index: 40 !important;
   display: flex !important;
-  width: clamp(124px, 9.8vw, 158px) !important;
+  width: clamp(130px, 11vw, 185px) !important;
+  max-width: clamp(130px, 11vw, 185px) !important;
   height: clamp(48px, 4.2vw, 60px) !important;
   align-items: center !important;
   justify-content: center !important;
   margin: 0 !important;
   padding: 0 !important;
-  transform: translateY(-50%) !important;
+  transform: none !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
@@ -3975,7 +4020,7 @@ body.skin-v2.same-day-screen .quest-card .start-button {
   z-index: 41 !important;
   display: inline-flex !important;
   width: 100% !important;
-  max-width: 100% !important;
+  max-width: clamp(130px, 11vw, 185px) !important;
   height: 100% !important;
   align-items: center !important;
   justify-content: center !important;
@@ -4046,4 +4091,3 @@ body.skin-v2.playing-mission #bottom-action-slot,
 body.skin-v2.gameplay-screen #bottom-action-slot {
   transform: none !important;
 }
-
