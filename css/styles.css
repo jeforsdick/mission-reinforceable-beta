@@ -758,8 +758,8 @@ body {
 .mr-app {
   --game-width: 1500px;
   --game-height: 900px;
-  --nav-height: 94px;
-  --nav-bottom: 18px;
+  --nav-height: 88px;
+  --nav-bottom: 12px;
 }
 
 .bottom-nav {
@@ -768,14 +768,14 @@ body {
   bottom: var(--nav-bottom);
   width: 1120px;
   height: var(--nav-height);
-  padding: 13px 82px;
+  padding: 10px 82px;
   transform: translateX(-50%);
   z-index: 100;
 }
 
 .scroll-nav-btn {
   flex: 1 1 0;
-  height: 68px;
+  height: 64px;
   font-size: 23px;
 }
 
@@ -1084,4 +1084,179 @@ body {
   height: 532px;
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+/* ============================================================
+   SCREEN-SPECIFIC CLIPPING FIXES
+   Keep the scaled canvas, but stop sharing cramped layout rules
+   across different screens.
+   ============================================================ */
+
+/* Landing and same-day return only */
+.screen-home .title-logo {
+  top: 76px;
+  width: 710px;
+}
+
+.screen-home .home-panel {
+  top: 238px;
+  width: 1240px;
+  height: 560px;
+  padding: 54px 52px 40px;
+  overflow: visible;
+}
+
+.screen-home .classroom-plaque {
+  top: -18px;
+  z-index: 30;
+}
+
+.screen-home .home-tagline {
+  font-size: 31px;
+  line-height: 1.05;
+  margin: 0 0 3px;
+}
+
+.screen-home .home-subtitle {
+  font-size: 23px;
+  line-height: 1.1;
+  margin: 0 0 18px;
+  overflow: visible;
+}
+
+.screen-home .home-layout {
+  grid-template-columns: 1.48fr .98fr;
+  gap: 32px;
+  height: 380px;
+  overflow: visible;
+}
+
+.screen-home .classroom-stage {
+  height: 380px;
+  overflow: hidden;
+}
+
+.screen-home .mission-menu {
+  height: 380px;
+  gap: 14px;
+  overflow: visible;
+}
+
+.screen-home .mission-card {
+  min-height: 116px;
+  height: 116px;
+  padding: 12px 16px;
+  overflow: visible;
+}
+
+.screen-home .mission-card img {
+  width: 74px;
+  height: 74px;
+}
+
+.screen-home .mission-card h2 {
+  font-size: 19px;
+  line-height: 1;
+  margin: 0 0 4px;
+}
+
+.screen-home .mission-card p {
+  font-size: 15px;
+  line-height: 1.06;
+  margin: 0;
+  padding-right: 132px;
+  overflow: visible;
+}
+
+.screen-home .mission-card .green-btn {
+  right: 14px;
+  bottom: 18px;
+  width: 132px;
+  height: 42px;
+  font-size: 12px;
+}
+
+/* Gameplay only */
+.screen-play .hud {
+  top: 44px;
+}
+
+.screen-play .play-panel {
+  top: 148px;
+  height: 626px;
+  overflow: visible;
+}
+
+.screen-play .scenario-area,
+.screen-play .choices-area {
+  height: 552px;
+}
+
+.screen-play .scenario-scroll {
+  position: relative;
+  height: 552px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.screen-play .scenario-scroll-content {
+  position: absolute;
+  left: 92px;
+  right: 92px;
+  top: 108px;
+  bottom: 116px;
+  padding-right: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.screen-play .scenario-text {
+  font-size: 18px;
+  line-height: 1.28;
+}
+
+.screen-play .scenario-text .scene-label {
+  font-size: 30px;
+  line-height: 1;
+  margin: 0 0 8px;
+}
+
+.screen-play .choices-area {
+  grid-template-rows: 132px 1fr;
+  gap: 18px;
+}
+
+.screen-play .wizard-hint-wrap {
+  height: 132px;
+  min-height: 132px;
+}
+
+.screen-play .scenario-hint {
+  width: 344px;
+  height: 130px;
+  right: 88px;
+  padding: 28px 42px 34px;
+  font-size: 15px;
+  line-height: 1.25;
+  overflow: visible;
+}
+
+.screen-play .wizard-sidekick {
+  width: 106px;
+  height: 134px;
+}
+
+.screen-play .choice-list {
+  height: 402px;
+  grid-template-rows: repeat(3, minmax(118px, 1fr));
+  gap: 16px;
+}
+
+.screen-play .choice-btn {
+  min-height: 118px;
+  padding: 12px 22px;
+  font-size: 22px;
+  line-height: 1.02;
+  overflow: visible;
+  white-space: normal;
 }
