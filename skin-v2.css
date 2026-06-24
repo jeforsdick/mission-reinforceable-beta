@@ -3708,3 +3708,36 @@ body.skin-v2.same-day-screen .screen-content-shell {
 body.skin-v2.same-day-screen .quest-hero-heading h2 {
   font-size: clamp(1.3rem, 2vw, 1.7rem) !important;
 }
+
+
+/* ============================================================
+   LANDING PAGE TWEAKS — appended overrides
+   ============================================================ */
+
+/* --- Bigger "MISSION: REINFORCEABLE" title image --- */
+body.skin-v2.start-screen h1 {
+  height: 240px !important;
+}
+
+/* --- Smaller "MASTER CLASSROOM MISSIONS..." headline --- */
+body.skin-v2.start-screen .quest-hero-heading h2 {
+  font-size: clamp(.72rem, 1.05vw, .92rem) !important;
+}
+
+/* --- Bigger green START buttons on mission cards --- */
+body.skin-v2.start-screen .quest-card .action {
+  width: 185px !important;
+  height: 72px !important;
+  right: 10px !important;
+}
+
+body.skin-v2.start-screen .quest-card button {
+  width: 185px !important;
+  height: 72px !important;
+  font-size: .92rem !important;
+}
+
+/* Accommodate wider buttons in card padding */
+body.skin-v2.start-screen .quest-card {
+  padding-right: 205px !important;
+}
