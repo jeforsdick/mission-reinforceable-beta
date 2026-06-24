@@ -523,9 +523,8 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 /* ============================================================
-   GLOBAL STAGE SCALE + ASSET-BACKED FRAMES
-   The whole game scales as one stage. Main containers use the
-   pixel-art frame assets instead of CSS-drawn boxes.
+   GLOBAL STAGE SCALE ONLY
+   Keep stable navy/gold panels; do not asset-swap containers yet.
    ============================================================ */
 
 html,
@@ -537,7 +536,10 @@ body {
 }
 
 body {
-  background: #14286b;
+  background:
+    linear-gradient(rgba(18, 26, 82, 0.08), rgba(18, 26, 82, 0.08)),
+    url("../assets/skin-v2/mission-reinforceable-background.png")
+    center center / cover no-repeat;
 }
 
 .mr-app {
@@ -556,7 +558,7 @@ body {
   transform: translate(-50%, -50%) scale(var(--fit-scale));
   transform-origin: center center;
   overflow: hidden;
-  background: url("../assets/skin-v2/mission-reinforceable-background.png") center center / cover no-repeat;
+  background: transparent;
 }
 
 .bottom-nav {
@@ -569,54 +571,30 @@ body {
 .home-panel,
 .play-panel,
 .results-panel,
-.progress-list,
-.resources-panel,
-.bottom-nav,
-.mission-card,
-.choice-btn,
-.run-card {
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  image-rendering: pixelated;
-}
-
-.home-panel,
-.play-panel,
-.results-panel,
-.progress-list,
-.resources-panel,
-.bottom-nav {
-  background: transparent url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat;
+.progress-panel,
+.resources-panel {
+  background: rgba(6, 11, 62, 0.92);
+  border: 6px solid #f0b52d;
+  box-shadow:
+    0 0 0 4px #7b4a16,
+    0 18px 28px rgba(0, 0, 0, 0.45),
+    inset 0 0 32px rgba(255, 215, 94, 0.08);
 }
 
 .mission-card,
-.run-card {
-  background: transparent url("../assets/skin-v2/mission-cards-border-frame.png") center / 100% 100% no-repeat;
-}
-
+.choice-button,
 .choice-btn {
-  background: transparent url("../assets/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat;
+  background: #14235f;
+  border: 4px solid #d99a32;
+  box-shadow:
+    inset 0 0 0 2px #522d11,
+    0 6px 0 rgba(0, 0, 0, 0.35);
 }
 
-.scroll-nav-btn {
-  background: transparent url("../assets/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat;
-}
-
-.scenario-scroll {
-  background: transparent url("../assets/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat;
-}
-
-.feedback-scroll,
-.resources-scroll {
-  background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
-}
-
-.classroom-plaque,
-.menu-title {
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: transparent url("../assets/skin-v2/box-title-frame.png") center / 100% 100% no-repeat;
-  image-rendering: pixelated;
+.bottom-nav {
+  background: #090d46;
+  border: 5px solid #f0b52d;
+  box-shadow:
+    0 0 0 4px #7b4a16,
+    inset 0 0 18px rgba(255, 215, 94, 0.08);
 }
