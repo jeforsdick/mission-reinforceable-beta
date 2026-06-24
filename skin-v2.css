@@ -5082,7 +5082,7 @@ body.skin-v2.bip-briefing #wizard-modal .wizard-popup-button {
 
 body.skin-v2.start-screen:not(.same-day-screen) {
   --landing-stage-width: min(84vw, 1500px);
-  --landing-title-row: clamp(150px, 18vh, 196px);
+  --landing-title-row: clamp(156px, 19vh, 206px);
   --landing-nav-row: clamp(78px, 9.5vh, 99px);
 }
 
@@ -5099,36 +5099,27 @@ body.skin-v2.start-screen:not(.same-day-screen) #game-container {
 
 body.skin-v2.start-screen:not(.same-day-screen) h1 {
   position: relative !important;
-  display: block !important;
+  display: flex !important;
   grid-row: 1 !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
   align-self: stretch !important;
   justify-self: center !important;
   width: 100% !important;
   height: var(--landing-title-row) !important;
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 0 0 clamp(12px, 1.8vh, 24px) !important;
   overflow: visible !important;
   background: none !important;
-  color: transparent !important;
-  font-size: 0 !important;
-  z-index: 80 !important;
-}
-
-body.skin-v2.start-screen:not(.same-day-screen) h1::before {
-  content: "MISSION : REINFORCEABLE" !important;
-  position: absolute !important;
-  left: 50% !important;
-  top: 74% !important;
-  display: block !important;
-  transform: translate(-50%, -50%) !important;
   color: #ffd56a !important;
   font-family: var(--v2-pixel) !important;
   font-size: clamp(2.8rem, 5.2vw, 5rem) !important;
   font-weight: 900 !important;
   line-height: .9 !important;
   letter-spacing: 0 !important;
-  white-space: nowrap !important;
   text-align: center !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
   text-shadow:
     5px 0 0 #000,
     -5px 0 0 #000,
@@ -5138,6 +5129,12 @@ body.skin-v2.start-screen:not(.same-day-screen) h1::before {
     -5px 5px 0 #000,
     5px -5px 0 #000,
     -5px -5px 0 #000 !important;
+  z-index: 80 !important;
+}
+
+body.skin-v2.start-screen:not(.same-day-screen) h1::before {
+  content: none !important;
+  display: none !important;
 }
 
 body.skin-v2.start-screen:not(.same-day-screen) h1::after {
@@ -5150,7 +5147,7 @@ body.skin-v2.start-screen:not(.same-day-screen) .screen-content-shell {
   align-self: stretch !important;
   justify-self: center !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1.35fr) minmax(360px, .8fr) !important;
+  grid-template-columns: minmax(0, 1.28fr) minmax(420px, .82fr) !important;
   grid-template-rows: clamp(70px, 8vh, 92px) minmax(0, 1fr) !important;
   column-gap: clamp(32px, 3.2vw, 56px) !important;
   width: 100% !important;
@@ -5244,14 +5241,14 @@ body.skin-v2.start-screen:not(.same-day-screen) .quest-grid {
 body.skin-v2.start-screen:not(.same-day-screen) .quest-card {
   position: relative !important;
   display: grid !important;
-  grid-template-columns: clamp(68px, 5.8vw, 92px) minmax(0, 1fr) !important;
+  grid-template-columns: clamp(68px, 5.5vw, 88px) minmax(0, 1fr) clamp(118px, 8.6vw, 150px) !important;
   align-items: center !important;
   gap: clamp(12px, 1.2vw, 18px) !important;
   width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: clamp(12px, 1.3vw, 18px) clamp(142px, 10vw, 172px) clamp(12px, 1.3vw, 18px) clamp(16px, 1.5vw, 22px) !important;
+  padding: clamp(12px, 1.3vw, 18px) clamp(18px, 1.5vw, 24px) !important;
   overflow: visible !important;
   background:
     var(--v2-frame-small) center / 100% 100% no-repeat,
@@ -5282,9 +5279,12 @@ body.skin-v2.start-screen:not(.same-day-screen) .quest-card p {
 }
 
 body.skin-v2.start-screen:not(.same-day-screen) .quest-card .action {
-  position: absolute !important;
-  right: clamp(14px, 1.4vw, 24px) !important;
-  bottom: clamp(12px, 1.4vh, 18px) !important;
+  position: static !important;
+  grid-column: 3 !important;
+  justify-self: end !important;
+  align-self: end !important;
+  right: auto !important;
+  bottom: auto !important;
   top: auto !important;
   left: auto !important;
   width: clamp(120px, 8.6vw, 150px) !important;
