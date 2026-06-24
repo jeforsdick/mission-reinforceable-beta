@@ -3749,6 +3749,19 @@ body.skin-v2.start-screen .quest-card {
    SAME-DAY RETURN SCREEN — match landing page look
    ============================================================ */
 
+/* --- Title image: use the same image as landing page, same height --- */
+body.skin-v2.same-day-screen h1 {
+  height: 680px !important;
+  margin-top: 20px !important;
+  background: url("assets/mission-reinforceable-title.png") center / contain no-repeat !important;
+}
+
+/* Hide the text-based "MISSION : REINFORCEABLE" pseudo on same-day */
+body.skin-v2.same-day-screen h1::before {
+  content: "" !important;
+  display: none !important;
+}
+
 /* Match hero heading sizing to landing page */
 body.skin-v2.same-day-screen .quest-hero-heading h2,
 body.skin-v2.same-day-screen .same-day-hero-heading h2 {
@@ -3785,8 +3798,14 @@ body.skin-v2.same-day-screen .quest-classroom-background {
   max-width: 100% !important;
 }
 
-/* Override media query button sizes for same-day screen */
+/* Override media query button sizes + title for same-day screen */
 @media (max-width: 900px) {
+  body.skin-v2.same-day-screen h1 {
+    height: 94px !important;
+  }
+  body.skin-v2.same-day-screen h1::before {
+    display: none !important;
+  }
   body.skin-v2.same-day-screen .quest-card .action,
   body.skin-v2.same-day-screen .mission-card .action {
     width: 176px !important;
