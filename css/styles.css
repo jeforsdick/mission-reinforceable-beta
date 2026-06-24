@@ -251,7 +251,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
 .title-logo {
   width: min(1400px, 94vw);
-  margin: 20px auto 4px;
+  margin: -10px auto 4px;
 }
 
 .title-logo.small {
