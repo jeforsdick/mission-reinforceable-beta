@@ -4171,3 +4171,99 @@ body.skin-v2.gameplay-screen #bottom-action-slot {
   margin-right: auto !important;
   box-sizing: border-box !important;
 }
+
+/* ============================================================
+   LANDING + SAME-DAY BUTTON/VERTICAL REPAIR
+   Keep gameplay protected; restore visible mission buttons and lift start pages.
+   ============================================================ */
+
+body.skin-v2.start-screen #game-container,
+body.skin-v2.same-day-screen #game-container {
+  transform: translateY(-28px) !important;
+}
+
+body.skin-v2.start-screen .screen-content-shell,
+body.skin-v2.same-day-screen .screen-content-shell {
+  align-items: start !important;
+}
+
+body.skin-v2.start-screen .quest-hero-heading,
+body.skin-v2.same-day-screen .quest-hero-heading,
+body.skin-v2.same-day-screen .same-day-hero-heading {
+  margin-top: 0 !important;
+  margin-bottom: clamp(8px, 1vh, 14px) !important;
+}
+
+body.skin-v2.start-screen #choices,
+body.skin-v2.same-day-screen #choices,
+body.skin-v2.start-screen .quest-grid,
+body.skin-v2.same-day-screen .quest-grid {
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen .quest-grid,
+body.skin-v2.same-day-screen .quest-grid {
+  display: grid !important;
+  grid-template-rows: repeat(3, minmax(115px, 1fr)) !important;
+  gap: clamp(14px, 1.5vh, 20px) !important;
+  align-content: start !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+body.skin-v2.start-screen .quest-card,
+body.skin-v2.same-day-screen .quest-card {
+  position: relative !important;
+  min-height: clamp(115px, 15vh, 155px) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding-right: clamp(150px, 12vw, 210px) !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.start-screen .quest-card .action,
+body.skin-v2.same-day-screen .quest-card .action,
+body.skin-v2.start-screen .quest-card button,
+body.skin-v2.same-day-screen .quest-card button,
+body.skin-v2.start-screen .quest-card .mission-button,
+body.skin-v2.same-day-screen .quest-card .mission-button,
+body.skin-v2.start-screen .quest-card .start-button,
+body.skin-v2.same-day-screen .quest-card .start-button {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.skin-v2.start-screen .quest-card .action,
+body.skin-v2.same-day-screen .quest-card .action {
+  position: absolute !important;
+  inset: auto clamp(16px, 1.5vw, 26px) clamp(14px, 1.4vh, 22px) auto !important;
+  z-index: 20 !important;
+  width: clamp(126px, 10vw, 168px) !important;
+  height: clamp(46px, 4.4vw, 62px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.start-screen .quest-card button,
+body.skin-v2.same-day-screen .quest-card button,
+body.skin-v2.start-screen .quest-card .mission-button,
+body.skin-v2.same-day-screen .quest-card .mission-button,
+body.skin-v2.start-screen .quest-card .start-button,
+body.skin-v2.same-day-screen .quest-card .start-button {
+  position: relative !important;
+  z-index: 21 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+}
