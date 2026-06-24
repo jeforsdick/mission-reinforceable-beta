@@ -4080,3 +4080,94 @@ body.skin-v2.gameplay-screen .bottom-nav {
   box-sizing: border-box !important;
   z-index: 25 !important;
 }
+
+/* ============================================================
+   UNDO SHARED-CONTAINER OVERCORRECTION
+   Protect scenario size first; landing and same-day match this smaller stage.
+   ============================================================ */
+
+:root {
+  --mr-game-width: min(88vw, 1320px);
+  --mr-frame-min-height: clamp(470px, 56vh, 590px);
+  --mr-frame-padding: clamp(22px, 2.2vw, 34px);
+  --mr-frame-gap: clamp(18px, 1.8vw, 28px);
+  --mr-nav-width: min(68vw, 920px);
+}
+
+body.skin-v2.playing-mission #game-container,
+body.skin-v2.gameplay-screen #game-container,
+body.skin-v2.start-screen #game-container,
+body.skin-v2.start-screen.same-day-screen #game-container,
+body.skin-v2.same-day-screen #game-container {
+  width: min(88vw, 1320px) !important;
+  max-width: 1320px !important;
+  height: calc(100vh - 16px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.playing-mission .screen-content-shell,
+body.skin-v2.gameplay-screen .screen-content-shell,
+body.skin-v2.start-screen .screen-content-shell,
+body.skin-v2.start-screen.same-day-screen .screen-content-shell,
+body.skin-v2.same-day-screen .screen-content-shell {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.18fr) minmax(340px, .82fr) !important;
+  align-items: start !important;
+  width: min(88vw, 1320px) !important;
+  max-width: 1320px !important;
+  min-height: clamp(470px, 56vh, 590px) !important;
+  padding: clamp(22px, 2.2vw, 34px) !important;
+  gap: clamp(18px, 1.8vw, 28px) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.start-screen #choices,
+body.skin-v2.start-screen.same-day-screen #choices,
+body.skin-v2.same-day-screen #choices {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+body.skin-v2.start-screen .quest-grid,
+body.skin-v2.start-screen.same-day-screen .quest-grid,
+body.skin-v2.same-day-screen .quest-grid {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: grid !important;
+  gap: clamp(12px, 1.5vh, 18px) !important;
+}
+
+body.skin-v2.start-screen .quest-card,
+body.skin-v2.start-screen.same-day-screen .quest-card,
+body.skin-v2.same-day-screen .quest-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+body.skin-v2.start-screen .quest-card button,
+body.skin-v2.start-screen.same-day-screen .quest-card button,
+body.skin-v2.same-day-screen .quest-card button {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.start-screen #bottom-action-slot,
+body.skin-v2.start-screen.same-day-screen #bottom-action-slot,
+body.skin-v2.same-day-screen #bottom-action-slot,
+body.skin-v2.playing-mission #bottom-action-slot,
+body.skin-v2.gameplay-screen #bottom-action-slot {
+  width: min(68vw, 920px) !important;
+  max-width: 920px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+}
