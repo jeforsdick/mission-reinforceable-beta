@@ -3741,3 +3741,39 @@ body.skin-v2.start-screen .quest-card button {
 body.skin-v2.start-screen .quest-card {
   padding-right: 205px !important;
 }
+
+
+/* ============================================================
+   LANDING PAGE TWEAKS — appended overrides
+   ============================================================ */
+
+/* --- 3x bigger "MISSION: REINFORCEABLE" title image --- */
+body.skin-v2.start-screen h1 {
+  height: 480px !important;
+}
+
+/* --- Bigger "MASTER CLASSROOM MISSIONS..." + "embark on a journey" text --- */
+body.skin-v2.start-screen .quest-hero-heading h2,
+body.skin-v2.start-screen .quest-hero-heading p,
+body.skin-v2.start-screen .quest-hero-text,
+body.skin-v2.start-screen .embark-text {
+  font-size: calc(1em * 1.3) !important;
+}
+
+/* --- Bigger green START buttons on mission cards --- */
+body.skin-v2.start-screen .quest-card .action {
+  width: 185px !important;
+  height: 72px !important;
+  right: 10px !important;
+}
+
+body.skin-v2.start-screen .quest-card button {
+  width: 185px !important;
+  height: 72px !important;
+  font-size: .92rem !important;
+}
+
+/* Accommodate wider buttons in card padding */
+body.skin-v2.start-screen .quest-card {
+  padding-right: 205px !important;
+}
