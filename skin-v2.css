@@ -3856,22 +3856,227 @@ body.skin-v2.same-day-screen .quest-classroom-background {
 }
 
 /* ============================================================
-   FINAL SHARED PAGE SIZE
-   Landing, same-day return, and scenario use the same game container.
+   FINAL SHARED MAIN SCREEN LAYOUT
+   Scenario is the source of truth for landing, same-day, and gameplay.
    ============================================================ */
+
+:root {
+  --mr-game-width: min(92vw, 1460px);
+  --mr-frame-min-height: clamp(520px, 62vh, 650px);
+  --mr-frame-padding: clamp(28px, 2.6vw, 42px);
+  --mr-frame-gap: clamp(22px, 2vw, 34px);
+  --mr-nav-width: min(72vw, 980px);
+}
 
 body.skin-v2.start-screen #game-container,
 body.skin-v2.start-screen.same-day-screen #game-container,
 body.skin-v2.same-day-screen #game-container,
-body.skin-v2.playing-mission #game-container {
+body.skin-v2.playing-mission #game-container,
+body.skin-v2.gameplay-screen #game-container {
   display: grid !important;
   grid-template-rows: 90px minmax(0, 1fr) 84px !important;
-  width: min(92vw, 1500px) !important;
+  width: var(--mr-game-width) !important;
+  max-width: var(--mr-game-width) !important;
   height: calc(100vh - 16px) !important;
-  margin: 0 auto !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
   padding: 0 !important;
   overflow: visible !important;
+  box-sizing: border-box !important;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
+}
+
+body.skin-v2.start-screen .screen-content-shell,
+body.skin-v2.start-screen.same-day-screen .screen-content-shell,
+body.skin-v2.same-day-screen .screen-content-shell,
+body.skin-v2.playing-mission .screen-content-shell,
+body.skin-v2.gameplay-screen .screen-content-shell {
+  grid-row: 2 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.18fr) minmax(380px, .82fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: start !important;
+  width: var(--mr-game-width) !important;
+  max-width: var(--mr-game-width) !important;
+  min-height: var(--mr-frame-min-height) !important;
+  height: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: var(--mr-frame-padding) !important;
+  gap: var(--mr-frame-gap) !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+  background:
+    var(--v2-frame-large) center / 100% 100% no-repeat,
+    rgba(8, 13, 53, .28) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+body.skin-v2.start-screen #story-text,
+body.skin-v2.start-screen.same-day-screen #story-text,
+body.skin-v2.same-day-screen #story-text {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen #choices,
+body.skin-v2.start-screen.same-day-screen #choices,
+body.skin-v2.same-day-screen #choices {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen .quest-hero,
+body.skin-v2.start-screen.same-day-screen .quest-hero,
+body.skin-v2.same-day-screen .quest-hero,
+body.skin-v2.same-day-screen .same-day-quest-hero {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen .quest-hero-art,
+body.skin-v2.start-screen.same-day-screen .quest-hero-art,
+body.skin-v2.same-day-screen .quest-hero-art,
+body.skin-v2.same-day-screen .same-day-hero-art {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  aspect-ratio: 16 / 9 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.start-screen .quest-classroom-background,
+body.skin-v2.start-screen.same-day-screen .quest-classroom-background,
+body.skin-v2.same-day-screen .quest-classroom-background {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+body.skin-v2.start-screen .mission-intro,
+body.skin-v2.start-screen .quest-grid,
+body.skin-v2.start-screen.same-day-screen .mission-intro,
+body.skin-v2.start-screen.same-day-screen .quest-grid,
+body.skin-v2.same-day-screen .mission-intro,
+body.skin-v2.same-day-screen .quest-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  align-content: stretch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: clamp(14px, 1.8vh, 22px) !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.start-screen .quest-card,
+body.skin-v2.start-screen.same-day-screen .quest-card,
+body.skin-v2.same-day-screen .quest-card,
+body.skin-v2.same-day-screen .mission-card {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding-right: clamp(136px, 10.5vw, 172px) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.start-screen .quest-card .action,
+body.skin-v2.start-screen.same-day-screen .quest-card .action,
+body.skin-v2.same-day-screen .quest-card .action,
+body.skin-v2.same-day-screen .mission-card .action {
+  position: absolute !important;
+  inset: auto clamp(10px, 1vw, 16px) auto auto !important;
+  top: 50% !important;
+  z-index: 5 !important;
+  display: flex !important;
+  width: clamp(118px, 9vw, 150px) !important;
+  height: clamp(46px, 4vw, 58px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+body.skin-v2.start-screen .quest-card button,
+body.skin-v2.start-screen.same-day-screen .quest-card button,
+body.skin-v2.same-day-screen .quest-card button,
+body.skin-v2.same-day-screen .mission-card button {
+  position: relative !important;
+  z-index: 2 !important;
+  display: inline-flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 5px 10px !important;
+  box-sizing: border-box !important;
+  background: var(--v2-button-green) center / 100% 100% no-repeat !important;
+  border: 0 !important;
+  font-size: clamp(.62rem, .72vw, .78rem) !important;
+  line-height: 1 !important;
+  pointer-events: auto !important;
+}
+
+body.skin-v2.start-screen #bottom-action-slot,
+body.skin-v2.start-screen.same-day-screen #bottom-action-slot,
+body.skin-v2.same-day-screen #bottom-action-slot,
+body.skin-v2.playing-mission #bottom-action-slot,
+body.skin-v2.gameplay-screen #bottom-action-slot,
+body.skin-v2.start-screen .bottom-nav,
+body.skin-v2.start-screen.same-day-screen .bottom-nav,
+body.skin-v2.same-day-screen .bottom-nav,
+body.skin-v2.playing-mission .bottom-nav,
+body.skin-v2.gameplay-screen .bottom-nav {
+  grid-row: 3 !important;
+  align-self: stretch !important;
+  width: var(--mr-nav-width) !important;
+  max-width: var(--mr-nav-width) !important;
+  margin: 6px auto 0 !important;
+  padding: 5px clamp(34px, 4vw, 62px) !important;
+  box-sizing: border-box !important;
+  z-index: 25 !important;
 }
