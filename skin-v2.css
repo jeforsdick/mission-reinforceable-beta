@@ -4267,3 +4267,114 @@ body.skin-v2.same-day-screen .quest-card .start-button {
   height: 100% !important;
   box-sizing: border-box !important;
 }
+
+/* ============================================================
+   LANDING/SAME-DAY TARGETED POSITION REPAIR
+   Lift landing; let same-day title breathe; keep mission buttons contained.
+   ============================================================ */
+
+body.skin-v2.start-screen:not(.same-day-screen) #game-container {
+  transform: translateY(-48px) !important;
+}
+
+body.skin-v2.same-day-screen #game-container {
+  transform: translateY(-10px) !important;
+}
+
+body.skin-v2.same-day-screen h1 {
+  transform: translateY(38px) !important;
+  z-index: 30 !important;
+}
+
+body.skin-v2.start-screen:not(.same-day-screen) .screen-content-shell,
+body.skin-v2.same-day-screen .screen-content-shell {
+  align-items: start !important;
+}
+
+body.skin-v2.start-screen:not(.same-day-screen) #choices,
+body.skin-v2.same-day-screen #choices {
+  position: relative !important;
+  z-index: 12 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen:not(.same-day-screen) .quest-grid,
+body.skin-v2.same-day-screen .quest-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: repeat(3, minmax(118px, 1fr)) !important;
+  gap: clamp(14px, 1.5vh, 20px) !important;
+  align-content: stretch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  overflow: visible !important;
+}
+
+body.skin-v2.start-screen:not(.same-day-screen) .quest-card,
+body.skin-v2.same-day-screen .quest-card,
+body.skin-v2.same-day-screen .mission-card {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: clamp(64px, 6vw, 82px) minmax(0, 1fr) !important;
+  align-items: center !important;
+  min-height: clamp(118px, 15vh, 156px) !important;
+  height: 100% !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: clamp(14px, 1.4vw, 20px) clamp(152px, 12vw, 196px) clamp(14px, 1.4vw, 20px) clamp(14px, 1.4vw, 20px) !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+body.skin-v2.start-screen:not(.same-day-screen) .quest-card .action,
+body.skin-v2.same-day-screen .quest-card .action,
+body.skin-v2.same-day-screen .mission-card .action {
+  position: absolute !important;
+  top: 50% !important;
+  right: clamp(14px, 1.3vw, 22px) !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 40 !important;
+  display: flex !important;
+  width: clamp(124px, 9.8vw, 158px) !important;
+  height: clamp(48px, 4.2vw, 60px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateY(-50%) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+body.skin-v2.start-screen:not(.same-day-screen) .quest-card button,
+body.skin-v2.same-day-screen .quest-card button,
+body.skin-v2.same-day-screen .mission-card button,
+body.skin-v2.start-screen:not(.same-day-screen) .quest-card .mission-button,
+body.skin-v2.same-day-screen .quest-card .mission-button,
+body.skin-v2.start-screen:not(.same-day-screen) .quest-card .start-button,
+body.skin-v2.same-day-screen .quest-card .start-button {
+  position: relative !important;
+  z-index: 41 !important;
+  display: inline-flex !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  box-sizing: border-box !important;
+}
