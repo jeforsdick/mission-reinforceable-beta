@@ -250,8 +250,8 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .title-logo {
-  width: min(850px, 66vw);
-  margin: 40px auto 4px;
+  width: min(1400px, 94vw);
+  margin: 20px auto 4px;
 }
 
 .title-logo.small {
@@ -262,7 +262,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .home-panel {
   width: 90%;
   min-height: 535px;
-  margin-top: -84px;
+  margin-top: -100px;
   padding: 52px 48px 36px;
 }
 
