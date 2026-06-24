@@ -244,8 +244,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
 .title-logo {
   width: min(790px, 62vw);
-  margin-top: 48px;
-  margin-bottom: 0;
+  margin: 40px auto 4px;
 }
 
 .title-logo.small {
@@ -254,9 +253,9 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .home-panel {
-  width: 79%;
+  width: 90%;
   min-height: 535px;
-  padding: 48px 36px 32px;
+  padding: 52px 48px 36px;
 }
 
 .home-tagline {
@@ -269,8 +268,8 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .home-layout {
-  grid-template-columns: 1fr 385px;
-  gap: 34px;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 36px;
 }
 
 /* The landing and return classroom images already include their speech bubbles. */
@@ -281,12 +280,12 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .mission-menu {
-  gap: 18px;
+  gap: 20px;
 }
 
 .mission-card {
-  min-height: 108px;
-  padding: 15px 18px;
+  min-height: 110px;
+  padding: 14px 20px 16px;
   grid-template-columns: 76px 1fr;
   gap: 15px;
 }
@@ -305,9 +304,9 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .mission-card .green-btn {
-  width: 142px;
+  width: 140px;
   height: 48px;
-  right: 28px;
+  right: 20px;
   bottom: -16px;
   font-size: 13px;
 }
