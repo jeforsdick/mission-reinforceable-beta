@@ -184,20 +184,6 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .muted { color: #dad6ff; font: 700 15px var(--mono); }
 code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
-/* Global shrink only: preserve the existing game proportions. */
-html,
-body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-}
-
-.mr-app {
-  transform: scale(.82);
-  transform-origin: top center;
-}
-
 /* FEEDBACK MODAL */
 .wizard-modal { position: fixed; inset: 0; z-index: 200; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.18); backdrop-filter: blur(1px); }
@@ -234,65 +220,298 @@ body {
   .wizard-modal-img { width: 170px; height: 250px; right: -15px; bottom: -20px; }
 }
 
-/* Feedback/modal cleanup pass */
-.home-bubbles {
+
+/* ============================================================
+   CLEAN REBUILD STARTER ADJUSTMENTS — 2026-06-24
+   Purpose: smaller overall containers, no duplicate home bubbles,
+   and wizard popups/briefings as left speech bubbles.
+   ============================================================ */
+
+/* Slightly reduce the overall game footprint without changing the internal layout model. */
+.mr-app {
+  width: min(1360px, 100vw);
+  min-height: 820px;
+  padding-bottom: 96px;
+}
+
+.screen {
+  min-height: 700px;
+}
+
+.screen-loading {
+  min-height: 760px;
+}
+
+.title-logo {
+  width: min(790px, 62vw);
+  margin-top: 48px;
+  margin-bottom: 0;
+}
+
+.title-logo.small {
+  width: min(680px, 60vw);
+  margin-top: 34px;
+}
+
+.home-panel {
+  width: 79%;
+  min-height: 535px;
+  padding: 48px 36px 32px;
+}
+
+.home-tagline {
+  font-size: clamp(22px, 2.05vw, 30px);
+}
+
+.home-subtitle {
+  font-size: clamp(17px, 1.45vw, 23px);
+  margin-bottom: 21px;
+}
+
+.home-layout {
+  grid-template-columns: 1fr 385px;
+  gap: 34px;
+}
+
+/* The landing and return classroom images already include their speech bubbles. */
+.home-bubbles,
+.home-bubbles-normal,
+.home-bubbles-return {
   display: none !important;
 }
 
-.modal-backdrop {
-  background: rgba(0,0,0,.36);
-  backdrop-filter: blur(1px);
+.mission-menu {
+  gap: 18px;
 }
 
-.wizard-modal-card {
-  width: min(820px, 86vw);
-  height: min(440px, 60vh);
+.mission-card {
+  min-height: 108px;
+  padding: 15px 18px;
+  grid-template-columns: 76px 1fr;
+  gap: 15px;
 }
 
-.wizard-modal-bubble {
-  inset: 0 150px 24px 0;
-  background: transparent url("../assets/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat;
-  padding: 66px 92px 94px 82px;
-  filter: drop-shadow(12px 12px 0 #090000);
+.mission-card img {
+  width: 76px;
+  height: 76px;
 }
 
-.wizard-modal-bubble h2 {
-  margin-bottom: 14px;
-  font-size: clamp(19px, 1.65vw, 25px);
+.mission-card h2 {
+  font-size: 19px;
 }
 
-.wizard-modal-bubble p {
-  max-height: 160px;
-  font-size: clamp(14px, 1.05vw, 17px);
-  line-height: 1.28;
+.mission-card p {
+  font-size: 16px;
 }
 
-.wizard-modal-bubble .green-btn {
-  bottom: 40px;
-  width: 182px;
-  height: 50px;
+.mission-card .green-btn {
+  width: 142px;
+  height: 48px;
+  right: 28px;
+  bottom: -16px;
   font-size: 13px;
 }
 
+.bottom-nav {
+  width: min(1088px, calc(100vw - 34px));
+  height: 82px;
+  padding: 10px 80px;
+  gap: 34px;
+}
+
+.scroll-nav-btn {
+  height: 58px;
+  font-size: 22px;
+}
+
+.scroll-nav-btn img {
+  width: 30px;
+  height: 30px;
+}
+
+.screen-play,
+.screen-results {
+  padding-top: 46px;
+}
+
+.hud {
+  width: min(1180px, 92vw);
+  grid-template-columns: 340px 1fr 1fr;
+  gap: 28px;
+  margin-bottom: 10px;
+}
+
+.heart-row img {
+  width: 52px;
+  height: 46px;
+}
+
+.play-panel,
+.results-panel {
+  width: min(1140px, 90vw);
+  min-height: 520px;
+}
+
+.play-panel {
+  padding: 30px 32px;
+  gap: 28px;
+}
+
+.scenario-scroll {
+  min-height: 430px;
+  padding: 88px 68px 68px 88px;
+}
+
+.scenario-text {
+  font-size: clamp(16px, 1.18vw, 19px);
+  line-height: 1.32;
+}
+
+.scenario-text .scene-label {
+  font-size: 28px;
+}
+
+.choices-area {
+  padding-top: 135px;
+}
+
+.wizard-hint-wrap {
+  width: 390px;
+  height: 130px;
+}
+
+.scenario-hint {
+  right: 72px;
+  width: 285px;
+  height: 106px;
+  font-size: 15px;
+}
+
+.wizard-sidekick {
+  width: 92px;
+  height: 120px;
+}
+
+.choice-list {
+  gap: 15px;
+}
+
+.choice-btn {
+  min-height: 110px;
+  padding: 16px 30px;
+  font-size: clamp(18px, 1.45vw, 24px);
+}
+
+.results-panel {
+  padding: 34px 58px;
+}
+
+.feedback-scroll {
+  min-height: 430px;
+  padding: 82px 72px 82px 88px;
+}
+
+.results-content {
+  font-size: clamp(16px, 1.17vw, 19px);
+}
+
+/* Wizard-linked bubbles should sit to the left of the wizard and use the left bubble asset. */
+.scenario-hint,
+.small-result-bubble {
+  background-image: url("../assets/skin-v2/speech-bubble-left.png");
+}
+
+/* BIP briefing + answer feedback modal: speech bubble on the left, wizard on the right. */
+.wizard-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+}
+
+.wizard-modal-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(980px, 90vw);
+  height: min(630px, 82vh);
+}
+
+.wizard-modal-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  width: min(760px, calc(100% - 185px));
+  height: min(530px, 100%);
+  color: #090303;
+  background: transparent url("../assets/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat;
+  padding: 88px 92px 136px 116px;
+  filter: drop-shadow(16px 16px 0 #090000);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.wizard-modal-bubble h2 {
+  margin: 0 0 18px;
+  text-align: center;
+  text-transform: uppercase;
+  font: 900 25px var(--mono);
+  letter-spacing: 1.5px;
+}
+
+.wizard-modal-bubble p {
+  width: 100%;
+  max-height: 245px;
+  overflow-y: auto;
+  margin: 0;
+  font: 900 clamp(16px, 1.15vw, 20px)/1.32 var(--mono);
+  text-align: center;
+  white-space: pre-line;
+}
+
+.wizard-modal-bubble .green-btn {
+  position: absolute;
+  bottom: 82px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 56px;
+}
+
 .wizard-modal-img {
-  width: 190px;
-  height: 260px;
-  right: 0;
-  bottom: 0;
+  position: absolute;
+  right: 18px;
+  bottom: 22px;
+  width: 235px;
+  height: 330px;
+  object-fit: contain;
+  image-rendering: auto;
+  filter: drop-shadow(10px 10px 0 #070000);
 }
 
-.wizard-modal-img.briefing {
-  width: 186px;
-  height: 270px;
-}
-
-.wizard-modal-img.dead {
-  width: 288px;
-  height: 238px;
-}
-
+.wizard-modal-img.briefing,
 .wizard-modal-img.happy,
 .wizard-modal-img.shocked,
 .wizard-modal-img.questioning {
-  width: 226px;
+  width: 250px;
+  height: 345px;
+}
+
+.wizard-modal-img.dead {
+  width: 360px;
+  height: 300px;
+  right: -12px;
+  bottom: 12px;
+  transform: rotate(6deg);
+}
+
+@media (max-width: 980px) {
+  .mr-app { min-height: 780px; }
+  .wizard-modal-card { width: min(760px, 94vw); height: min(610px, 84vh); }
+  .wizard-modal-bubble { width: 100%; height: 78%; padding: 82px 56px 128px 70px; }
+  .wizard-modal-img { width: 165px; height: 240px; right: -10px; bottom: -12px; }
 }
