@@ -3714,14 +3714,14 @@ body.skin-v2.same-day-screen .quest-hero-heading h2 {
    LANDING PAGE TWEAKS — appended overrides
    ============================================================ */
 
-/* --- Bigger "MISSION: REINFORCEABLE" title image --- */
+/* --- 50% bigger "MISSION: REINFORCEABLE" title image --- */
 body.skin-v2.start-screen h1 {
-  height: 240px !important;
+  height: 360px !important;
 }
 
-/* --- Smaller "MASTER CLASSROOM MISSIONS..." headline --- */
+/* --- Slightly bigger "MASTER CLASSROOM MISSIONS..." headline --- */
 body.skin-v2.start-screen .quest-hero-heading h2 {
-  font-size: clamp(.72rem, 1.05vw, .92rem) !important;
+  font-size: calc(1em * 1.15) !important;
 }
 
 /* --- Bigger green START buttons on mission cards --- */
