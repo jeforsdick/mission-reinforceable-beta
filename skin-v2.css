@@ -1,8 +1,8 @@
 /* ============================================================
    Mission: Reinforceable — skin-v2.css (CLEANED)
-   Original: 109,402 chars, 389 rules
-   Cleaned:  109,391 chars, 389 rules
-   Removed:  0 rules (0 dead, 0 duplicates)
+   Original: 173,518 chars, 660 rules
+   Cleaned:  109,396 chars, 389 rules
+   Removed:  271 rules (38 dead, 233 duplicates)
    ============================================================ */
 
 
@@ -3670,3 +3670,41 @@ body.skin-v2.dashboard-screen #bottom-action-slot #home-btn img {
   }
 }
 
+
+
+/* ============================================================
+   UI TWEAKS — appended overrides
+   ============================================================ */
+
+/* --- Landing page: bigger title --- */
+body.skin-v2.start-screen .quest-hero-heading h2 {
+  font-size: clamp(1.4rem, 2.2vw, 1.9rem) !important;
+}
+
+/* --- Landing page: better mission card spacing (stop overlap) --- */
+body.skin-v2.start-screen .quest-grid {
+  gap: 16px !important;
+}
+
+body.skin-v2.start-screen .quest-card {
+  min-height: 108px !important;
+  padding: 16px 160px 16px 16px !important;
+}
+
+/* --- Same-day: smaller classroom image --- */
+body.skin-v2.start-screen.same-day-screen .same-day-hero-art {
+  max-width: 520px !important;
+  max-height: min(320px, calc(100vh - 420px)) !important;
+  margin: 0 auto 10px !important;
+}
+
+/* --- Same-day: move mission cards up --- */
+body.skin-v2.same-day-screen .screen-content-shell {
+  grid-template-rows: 60px minmax(0, 1fr) !important;
+  padding: 30px 32px 20px !important;
+}
+
+/* --- Same-day: bigger title --- */
+body.skin-v2.same-day-screen .quest-hero-heading h2 {
+  font-size: clamp(1.3rem, 2vw, 1.7rem) !important;
+}
