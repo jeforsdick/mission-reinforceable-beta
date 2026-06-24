@@ -282,3 +282,120 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .wizard-modal-img.questioning {
   width: 226px;
 }
+
+/* Global viewport fit system */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: #14286b url("../assets/skin-v2/mission-reinforceable-background.png") center center / cover no-repeat;
+}
+
+.mr-app {
+  --game-width: 1500px;
+  --game-height: 900px;
+  --fit-scale: 1;
+
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: var(--game-width);
+  height: var(--game-height);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  transform: translate(-50%, -50%) scale(var(--fit-scale));
+  transform-origin: center center;
+  overflow: hidden;
+}
+
+.screen {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  display: none;
+  padding: 0;
+}
+
+.screen.is-active {
+  display: block;
+}
+
+.screen-loading {
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen-loading.is-active {
+  display: flex;
+}
+
+.bottom-nav {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 50;
+  width: 1228px;
+}
+
+.title-logo {
+  width: 920px;
+  margin-top: 70px;
+}
+
+.title-logo.small {
+  width: 760px;
+  margin-top: 45px;
+}
+
+.home-panel {
+  width: 1260px;
+  min-height: 560px;
+}
+
+.screen-play,
+.screen-results {
+  padding-top: 46px;
+}
+
+.hud {
+  width: 1328px;
+}
+
+.play-panel,
+.results-panel {
+  width: 1260px;
+  min-height: 560px;
+}
+
+.scenario-scroll,
+.feedback-scroll {
+  min-height: 450px;
+}
+
+.progress-title {
+  width: 1160px;
+}
+
+.progress-bubble-wrap {
+  width: 1050px;
+}
+
+.badge-row {
+  width: 1080px;
+}
+
+.progress-list {
+  width: 1260px;
+}
+
+.resources-panel {
+  width: 980px;
+}
