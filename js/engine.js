@@ -11,6 +11,7 @@
 
   let current = null;
   let pendingNext = null;
+  let modalPurpose = 'feedback';
 
   function getChoiceArray(step) {
     const entries = Object.entries(step.choices || {}).map(([key, value]) => Object.assign({ key }, value));
@@ -46,6 +47,16 @@
     if (sceneIndex >= 0) value = value.slice(sceneIndex);
     value = value.replace(/\n\nYou are/g, '\n\nYou are');
     return value;
+  }
+
+  function briefingTextForMission(mission) {
+    const startId = mission.start || Object.keys(mission.steps || {})[0];
+    const firstText = String((mission.steps && mission.steps[startId] && mission.steps[startId].text) || '');
+    const sceneIndex = firstText.indexOf('Scene:');
+    const intro = sceneIndex >= 0 ? firstText.slice(0, sceneIndex).trim() : '';
+    const briefing = intro.replace(/^BIP Briefing:\s*/i, '').trim();
+    const focus = mission.focus ? `Mission Focus: ${mission.focus}` : '';
+    return [briefing, focus].filter(Boolean).join('\n\n');
   }
 
   function scenarioHTML(text) {
@@ -160,11 +171,26 @@
     const sprite = wizardSpriteForScore(score);
     const modal = MR.$('#wizard-modal');
     const img = MR.$('#wizard-modal-img');
+    modalPurpose = 'feedback';
+    modal.dataset.kind = 'feedback';
     MR.$('#wizard-modal-title').textContent = sprite.title;
     MR.$('#wizard-modal-text').textContent = choice.wizard || choice.feedback || 'The classroom shifts in response to your decision.';
     img.src = sprite.src;
     img.className = `wizard-modal-img ${sprite.cls}`;
     MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission' : 'Complete Mission';
+    modal.hidden = false;
+  }
+
+  function showBipBriefing() {
+    const modal = MR.$('#wizard-modal');
+    const img = MR.$('#wizard-modal-img');
+    modalPurpose = 'briefing';
+    modal.dataset.kind = 'briefing';
+    MR.$('#wizard-modal-title').textContent = 'BIP Briefing';
+    MR.$('#wizard-modal-text').textContent = briefingTextForMission(current.mission) || 'Review the plan, keep language brief, and reinforce the first safe step back into the routine.';
+    img.src = MR.asset('wizardGuide');
+    img.className = 'wizard-modal-img briefing';
+    MR.$('#wizard-modal-continue').textContent = 'Begin Mission';
     modal.hidden = false;
   }
 
@@ -174,6 +200,10 @@
 
   function continueAfterFeedback() {
     hideWizardFeedback();
+    if (modalPurpose === 'briefing') {
+      modalPurpose = 'feedback';
+      return;
+    }
     if (pendingNext) {
       current.stepId = pendingNext;
       pendingNext = null;
@@ -276,6 +306,7 @@
       current.stepId = current.mission.start || Object.keys(current.mission.steps || {})[0];
       MR.setScreen('play');
       renderStep();
+      showBipBriefing();
     },
 
     continueAfterFeedback,
