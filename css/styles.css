@@ -1151,21 +1151,22 @@ body {
   }
 
   .feedback-scroll {
-    width: 100%;
+    width: calc(100% + 20px);
     min-height: auto;
     max-height: none;
+    margin-left: -10px;
     padding: 72px 36px 58px 42px;
     background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
     overflow: visible;
   }
 
   .results-content {
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.35;
   }
 
   .results-content h1 {
-    font-size: 24px;
+    font-size: 22px;
     line-height: 1.05;
     margin-bottom: 10px;
   }
