@@ -837,7 +837,7 @@ body {
   body {
     background:
       linear-gradient(rgba(18, 26, 82, 0.08), rgba(18, 26, 82, 0.08)),
-      url("../assets/skin-v2/mission-reinforceable-background.png")
+      url("../assets/skin-v2/media-background.png")
       center center / cover no-repeat;
   }
 
@@ -861,5 +861,115 @@ body {
 
   .screen.is-active {
     display: block;
+  }
+
+  .title-logo,
+  .title-logo.small {
+    width: 92vw;
+    margin: 18px auto 8px;
+  }
+
+  .home-panel {
+    width: 100%;
+    min-height: auto;
+    margin: 0 auto;
+    padding: 72px 14px 24px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .home-panel::before {
+    display: none;
+  }
+
+  .home-panel > .classroom-plaque {
+    top: 10px;
+    width: min(320px, 86vw);
+    min-width: 0;
+    height: 46px;
+    font-size: 18px;
+    padding: 9px 18px;
+  }
+
+  .home-tagline {
+    margin-top: 8px;
+    font-size: 20px;
+    line-height: 1.1;
+    letter-spacing: 1px;
+  }
+
+  .home-subtitle {
+    font-size: 16px;
+    line-height: 1.15;
+    margin-bottom: 18px;
+  }
+
+  .home-layout {
+    display: block;
+  }
+
+  .classroom-stage {
+    width: 100%;
+    margin: 0 auto 14px;
+  }
+
+  .classroom-img {
+    width: 100%;
+    max-height: 210px;
+    object-fit: contain;
+  }
+
+  .start-classroom-btn {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    transform: none;
+    display: block;
+    margin: -8px auto 14px;
+    width: min(280px, 78vw);
+    height: 54px;
+  }
+
+  .mission-menu {
+    width: 100%;
+    padding-top: 42px;
+    gap: 14px;
+  }
+
+  .menu-title {
+    top: 0;
+    width: min(260px, 76vw);
+    min-width: 0;
+    font-size: 18px;
+  }
+
+  .mission-card {
+    min-height: 120px;
+    grid-template-columns: 74px 1fr;
+    gap: 12px;
+    padding: 16px 18px 22px;
+  }
+
+  .mission-card img {
+    width: 68px;
+    height: 68px;
+  }
+
+  .mission-card h2 {
+    font-size: 18px;
+  }
+
+  .mission-card p {
+    font-size: 15px;
+    line-height: 1.15;
+  }
+
+  .mission-card .green-btn {
+    width: 132px;
+    height: 44px;
+    right: 16px;
+    bottom: -12px;
+    font-size: 12px;
   }
 }
