@@ -183,15 +183,15 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .progress-bubble-wrap { position: relative; width: min(1050px, 78vw); min-height: 135px; margin: -8px auto 12px; }
 .progress-bubble { position: absolute; inset: 0 110px 0 0; display: flex; align-items: center; justify-content: center; text-align: center; color: #111; text-transform: uppercase; font: 900 clamp(18px, 1.7vw, 27px)/1.15 var(--mono); background: transparent url("../assets/skin-v2/progress-speech-bubble.png") center / 100% 100% no-repeat; padding: 18px 72px 28px; filter: drop-shadow(8px 8px 0 #080008); }
 .progress-wizard { position: absolute; right: 0; top: 3px; width: 130px; height: 130px; object-fit: contain; filter: drop-shadow(5px 5px 0 #080008); transform: rotate(6deg); }
-.badge-row { width: min(1080px, 85vw); margin: -38px auto -28px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; }
-.stat-badge { position: relative; min-height: 310px; color: #080000; text-align: center; padding-top: 108px; background-position: top center; background-repeat: no-repeat; background-size: 300px 300px; }
+.badge-row { width: min(1120px, 88vw); margin: -44px auto -44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.stat-badge { position: relative; min-height: 245px; color: #080000; text-align: center; padding-top: 82px; background-position: top center; background-repeat: no-repeat; background-size: 235px 235px; }
 .stat-badge.purple { background-image: url("../assets/skin-v2/purple-badge.png"); }
 .stat-badge.green { background-image: url("../assets/skin-v2/green-badge.png"); }
 .stat-badge.blue { background-image: url("../assets/skin-v2/blue-badge.png"); }
 .stat-badge.orange { background-image: url("../assets/skin-v2/orange-badge.png"); }
-.stat-badge strong { display: block; font: 900 50px var(--mono); letter-spacing: -2px; }
-.stat-badge span { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); min-width: 188px; min-height: 55px; display: flex; align-items: center; justify-content: center; background: #f3c45a url("../assets/skin-v2/small-frame.png") center / 100% 100% no-repeat; color: #090400; font: 900 18px var(--display); text-transform: uppercase; padding: 10px 12px; }
-.progress-list { width: min(1260px, 92vw); height: 280px; margin: -18px auto 0; padding: 30px 38px; overflow-y: auto; background: url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat, linear-gradient(rgba(8, 22, 82, .72), rgba(8, 22, 82, .72)); border: 0; border-radius: 0; box-shadow: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px; align-content: start; }
+.stat-badge strong { display: block; font: 900 44px var(--mono); letter-spacing: -2px; }
+.stat-badge span { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); min-width: 205px; min-height: 50px; display: flex; align-items: center; justify-content: center; background: #f3c45a url("../assets/skin-v2/small-frame.png") center / 100% 100% no-repeat; color: #090400; font: 900 17px var(--display); text-transform: uppercase; padding: 10px 12px; }
+.progress-list { width: min(1260px, 92vw); height: 280px; margin: -36px auto 0; padding: 30px 38px; overflow-y: auto; background: url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat, linear-gradient(rgba(8, 22, 82, .72), rgba(8, 22, 82, .72)); border: 0; border-radius: 0; box-shadow: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px; align-content: start; }
 .run-card { min-height: 106px; display: grid; grid-template-columns: 87px 1fr 150px; gap: 18px; align-items: center; padding: 16px 18px; background: transparent url("../assets/skin-v2/mission-cards-border-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0; box-shadow: none; }
 .run-card img { width: 75px; height: 75px; object-fit: contain; }
 .run-card h3 { margin: 0 0 2px; color: #ffc54a; text-transform: uppercase; font: 900 19px var(--mono); }
