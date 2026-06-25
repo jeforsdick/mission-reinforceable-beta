@@ -97,7 +97,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .return-two { right: 12%; top: 48px; width: 212px; height: 125px; }
 .return-three { left: 1%; bottom: 74px; width: 222px; height: 145px; }
 
-.mission-menu { position: relative; display: grid; gap: 24px; padding-top: 20px; }
+.mission-menu { position: relative; display: grid; gap: 24px; padding-top: 30px; }
 .menu-title {
   position: absolute; z-index: 2; top: -10px; left: 50%; transform: translateX(-50%);
   min-width: 240px; padding: 7px 22px; color: #fff; background: #33224e; border: 4px solid #b8884d; border-radius: 16px;
