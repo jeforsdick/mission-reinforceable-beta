@@ -642,39 +642,39 @@ body {
 }
 
 
-/* POLISH OVERRIDES — bigger gameplay screen */
+/* POLISH OVERRIDES — medium gameplay screen */
 
 .play-panel {
-  width: min(1650px, 96vw);
-  min-height: 760px;
-  padding: 46px 48px;
-  grid-template-columns: 1.32fr .9fr;
-  gap: 44px;
+  width: min(1500px, 92vw);
+  min-height: 650px;
+  padding: 34px 36px;
+  grid-template-columns: 1.25fr .85fr;
+  gap: 33px;
 }
 
 .scenario-scroll {
-  min-height: 620px;
-  padding: 115px 92px 92px 112px;
+  min-height: 520px;
+  padding: 95px 76px 76px 96px;
 }
 
 .scenario-text {
-  font-size: clamp(20px, 1.55vw, 25px);
+  font-size: clamp(18px, 1.35vw, 22px);
 }
 
 .scenario-text .scene-label {
-  font-size: 36px;
+  font-size: 31px;
 }
 
 .choices-area {
-  padding-top: 165px;
+  padding-top: 145px;
 }
 
 .choice-list {
-  gap: 24px;
+  gap: 18px;
 }
 
 .choice-btn {
-  min-height: 145px;
-  font-size: clamp(23px, 1.85vw, 31px);
-  padding: 22px 42px;
+  min-height: 118px;
+  font-size: clamp(20px, 1.55vw, 26px);
+  padding: 18px 34px;
 }
