@@ -659,11 +659,10 @@ body {
 }
 
 .bottom-nav {
-  background: #090d46;
-  border: 5px solid #f0b52d;
-  box-shadow:
-    0 0 0 4px #7b4a16,
-    inset 0 0 18px rgba(255, 215, 94, 0.08);
+  background: transparent url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .wizard-modal,
