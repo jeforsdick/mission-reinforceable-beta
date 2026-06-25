@@ -621,6 +621,20 @@ body {
   backdrop-filter: none;
 }
 
+.home-panel::before {
+  content: "";
+  position: absolute;
+  inset: 14px 18px;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent url("../assets/skin-v2/home-panel-background.png") center / 100% 100% no-repeat;
+}
+
+.home-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
 .choice-button {
   background: #14235f;
   border: 4px solid #d99a32;
