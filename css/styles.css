@@ -57,7 +57,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .title-logo { display: block; width: min(920px, 70vw); height: auto; margin: 76px auto 4px; filter: drop-shadow(0 7px 0 #050019) drop-shadow(0 10px 8px rgba(0,0,0,.4)); }
 .title-logo.small { width: min(760px, 66vw); margin-top: 45px; }
 
-.home-panel { position: relative; width: 90%; min-height: 700px; margin: 2px auto 0; padding: 52px 40px 36px; }
+.home-panel { position: relative; width: 100%; min-height: 1000px; margin: 2px auto 0; padding: 52px 40px 36px; }
 .classroom-plaque {
   position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
   min-width: 310px; height: 55px; padding: 11px 30px;
