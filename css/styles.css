@@ -620,8 +620,7 @@ body {
   backdrop-filter: none;
 }
 
-.choice-button,
-.choice-btn {
+.choice-button {
   background: #14235f;
   border: 4px solid #d99a32;
   box-shadow:
@@ -684,6 +683,10 @@ body {
   min-height: 118px;
   font-size: clamp(20px, 1.55vw, 26px);
   padding: 18px 34px;
+  background: transparent url("../assets/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 /* POLISH OVERRIDES — tiny bump for gameplay wizard hint */
