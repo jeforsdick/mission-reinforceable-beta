@@ -81,7 +81,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 
 .classroom-img { 
   display: block; 
-  width: 110%; 
+  width: 105%; 
 }
 .start-classroom-btn { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); width: 265px; height: 57px; }
 
@@ -99,7 +99,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 
 .mission-menu { position: relative; display: grid; gap: 24px; padding-top: 2px; }
 .menu-title {
-  position: absolute; z-index: 2; top: -17px; left: 50%; transform: translateX(-50%);
+  position: absolute; z-index: 2; top: -10px; left: 50%; transform: translateX(-50%);
   min-width: 240px; padding: 7px 22px; color: #fff; background: #33224e; border: 4px solid #b8884d; border-radius: 16px;
   text-align: center; font: 800 20px var(--display); text-shadow: 0 2px #000; box-shadow: 0 0 0 3px #24142a;
 }
