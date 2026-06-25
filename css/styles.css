@@ -750,3 +750,31 @@ body {
   right: 0;
   top: -9px;
 }
+
+/* POLISH OVERRIDES — title plaques sit on borders */
+
+.home-panel {
+  overflow: visible;
+}
+
+.home-panel > .classroom-plaque {
+  position: absolute;
+  top: -28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+}
+
+.mission-menu {
+  position: relative;
+  overflow: visible;
+  padding-top: 46px;
+}
+
+.menu-title {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+}
