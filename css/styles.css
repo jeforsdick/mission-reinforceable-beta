@@ -255,8 +255,8 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .title-logo.small {
-  width: min(680px, 60vw);
-  margin-top: 34px;
+  width: min(1400px, 94vw);
+  margin: -100px auto 4px;
 }
 
 .home-panel {
