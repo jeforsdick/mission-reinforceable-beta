@@ -174,8 +174,8 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .empty-progress { grid-column: 1 / -1; text-align: center; font: 800 22px var(--mono); padding: 70px 20px; }
 
 /* RESOURCES */
-.resources-panel { width: min(1120px, 88vw); margin: -50px auto; padding: 38px 56px 46px; color: #fff; }
-.resources-panel h1 { margin: 0 0 -50px; color: #ffc54a; text-align: center; text-transform: uppercase; font: 900 42px var(--mono); text-shadow: 3px 3px #281200; }
+.resources-panel { width: min(1120px, 88vw); margin: -150px auto; padding: 60px 56px 46px; color: #fff; }
+.resources-panel h1 { margin: 0 0 -150px; color: #ffc54a; text-align: center; text-transform: uppercase; font: 900 42px var(--mono); text-shadow: 3px 3px #281200; }
 .resources-scroll { height: 520px; color: #0b0400; background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 86px 90px 82px 104px; overflow: hidden; }
 #resources-content { height: 100%; overflow-y: auto; padding-right: 12px; font: 700 18px/1.35 var(--mono); }
 .bip-section { margin: 0 0 22px; }
