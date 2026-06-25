@@ -119,7 +119,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .green-btn { background-image: url("../assets/skin-v2/green-button.png"); }
 .brown-btn { background-image: url("../assets/skin-v2/brown-button.png"); }
 
-.bottom-nav { position: fixed; z-index: 50; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(1228px, calc(100vw - 34px)); height: 92px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 42px; align-items: center; justify-content: center; padding: 13px 96px; background: #070a3a; }
+.bottom-nav { position: fixed; z-index: 50; left: 50%; bottom: 30px; transform: translateX(-50%); width: min(1228px, calc(100vw - 34px)); height: 92px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 42px; align-items: center; justify-content: center; padding: 13px 96px; background: #070a3a; }
 .scroll-nav-btn { height: 66px; border: 0; background: transparent url("../assets/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat; color: #0b0500; font: 900 24px/1 var(--display); text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 28px; text-shadow: 1px 1px rgba(255,255,255,.45); }
 .scroll-nav-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
 .scroll-nav-btn img { width: 34px; height: 34px; object-fit: contain; }
