@@ -1205,8 +1205,12 @@ body {
     display: none;
   }
 
+  .wizard-modal-bubble h2 {
+    font-size: 20px;
+  }
+
   .wizard-modal-bubble p {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .wizard-modal-img {
