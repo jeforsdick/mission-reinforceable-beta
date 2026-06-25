@@ -84,6 +84,8 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   width: 105%; 
 }
 .start-classroom-btn { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); width: 265px; height: 57px; }
+.start-classroom-btn:hover,
+.start-classroom-btn:focus-visible { transform: translateX(-50%) translateY(-1px); }
 
 .speech { position: absolute; color: #111; background: #fff; border: 0; text-align: center; font: 900 19px/1.35 var(--mono); text-shadow: none; filter: drop-shadow(10px 10px 0 #090000); display: flex; align-items: center; justify-content: center; padding: 20px; }
 .speech-left { background: transparent url("../assets/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat; }
