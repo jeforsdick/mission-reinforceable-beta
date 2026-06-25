@@ -792,3 +792,22 @@ body {
   transform: translateX(-50%);
   z-index: 30;
 }
+
+/* POLISH OVERRIDES — feedback page scroll fit */
+
+.screen-results .results-panel {
+  min-height: 500px;
+  padding: 24px 48px;
+}
+
+.screen-results .feedback-scroll {
+  min-height: 360px;
+  max-height: 390px;
+  padding: 72px 68px 70px 82px;
+  overflow: hidden;
+}
+
+.screen-results .results-content {
+  max-height: 248px;
+  overflow-y: auto;
+}
