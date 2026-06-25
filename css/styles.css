@@ -518,11 +518,12 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
 .wizard-modal-bubble .green-btn {
   position: absolute;
-  bottom: 82px;
+  bottom: 72px;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;
-  height: 56px;
+  width: 260px;
+  height: 72px;
+  font-size: 18px;
 }
 
 .wizard-modal-img {
