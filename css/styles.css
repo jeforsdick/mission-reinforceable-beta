@@ -893,16 +893,11 @@ body {
   }
 
   .home-tagline {
-    margin-top: 8px;
-    font-size: 20px;
-    line-height: 1.1;
-    letter-spacing: 1px;
+    display: none;
   }
 
   .home-subtitle {
-    font-size: 16px;
-    line-height: 1.15;
-    margin-bottom: 18px;
+    display: none;
   }
 
   .home-layout {
@@ -911,24 +906,21 @@ body {
 
   .classroom-stage {
     width: 100%;
+    min-height: 260px;
     margin: 0 auto 14px;
+    background: transparent url("../assets/skin-v2/mobile-landing-page-wizard.png") center / contain no-repeat;
   }
 
   .classroom-img {
-    width: 100%;
-    max-height: 210px;
-    object-fit: contain;
+    display: none;
   }
 
   .start-classroom-btn {
-    position: relative;
-    left: auto;
-    bottom: auto;
-    transform: none;
-    display: block;
-    margin: -8px auto 14px;
-    width: min(280px, 78vw);
-    height: 54px;
+    display: none;
+  }
+
+  .home-return .classroom-stage {
+    background-image: url("../assets/skin-v2/mobile-same-day-return-wizard.png");
   }
 
   .mission-menu {
