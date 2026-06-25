@@ -204,7 +204,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .empty-progress { grid-column: 1 / -1; text-align: center; font: 800 22px var(--mono); padding: 70px 20px; }
 
 /* RESOURCES */
-.resources-panel { width: min(1180px, 90vw); margin: 42px auto 0; padding: 34px 56px 44px; color: #fff; }
+.resources-panel { position: relative; width: min(1180px, 90vw); margin: 42px auto 0; padding: 34px 56px 44px; color: #fff; }
 .resources-panel h1 { margin: 0 0 18px; color: #ffc54a; text-align: center; text-transform: uppercase; letter-spacing: 2px; font: 900 48px/1 var(--mono); text-shadow: 4px 0 0 #050005, -4px 0 0 #050005, 0 4px 0 #050005, 0 -4px 0 #050005, 4px 4px 0 #050005, 0 8px 0 rgba(0,0,0,.3); }
 .resources-scroll { height: 610px; color: #0b0400; background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 86px 90px 82px 104px; overflow: hidden; }
 #resources-content { height: 100%; overflow-y: auto; padding-right: 12px; font: 700 18px/1.35 var(--mono); }
@@ -632,6 +632,20 @@ body {
 }
 
 .home-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.resources-panel::before {
+  content: "";
+  position: absolute;
+  inset: 14px 18px;
+  z-index: 0;
+  pointer-events: none;
+  background: rgba(8, 22, 82, .72);
+}
+
+.resources-panel > * {
   position: relative;
   z-index: 1;
 }
