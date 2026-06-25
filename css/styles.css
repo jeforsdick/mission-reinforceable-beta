@@ -1135,4 +1135,69 @@ body {
     font-size: 18px;
     line-height: 1.05;
   }
+
+  .screen-results {
+    padding: 0 0 24px;
+  }
+
+  .results-panel {
+    width: 100%;
+    min-height: auto;
+    margin: 0 auto;
+    padding: 14px 10px 20px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  .feedback-scroll {
+    width: 100%;
+    min-height: auto;
+    max-height: none;
+    padding: 72px 36px 58px 42px;
+    background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
+    overflow: visible;
+  }
+
+  .results-content {
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  .results-content h1 {
+    font-size: 24px;
+    line-height: 1.05;
+    margin-bottom: 10px;
+  }
+
+  .results-content ul {
+    margin: 8px 0 10px 18px;
+    padding: 0;
+  }
+
+  .results-wizard-note {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    height: 118px;
+    margin: 10px auto 0;
+  }
+
+  .results-wizard-note img {
+    right: 4px;
+    bottom: 0;
+    width: 82px;
+    height: 86px;
+  }
+
+  .small-result-bubble {
+    right: 70px;
+    bottom: 4px;
+    width: calc(100% - 88px);
+    height: 94px;
+    font-size: 13px;
+    line-height: 1.2;
+    padding: 18px 22px;
+  }
 }
