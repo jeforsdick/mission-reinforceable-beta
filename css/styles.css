@@ -59,7 +59,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 
 .home-panel { position: relative; width: 100%; min-height: 1500px; margin: 2px auto 0; padding: 52px 40px 36px; }
 .classroom-plaque {
-  position: absolute; top: -30px; left: 50%; transform: translateX(-50%); z-index: 5;
+  position: absolute; top: -50px; left: 50%; transform: translateX(-50%); z-index: 5;
   min-width: 310px; height: 55px; padding: 11px 30px;
   color: #fff; background: transparent url("../assets/skin-v2/box-title-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
   text-align: center; font: 700 24px var(--display); text-shadow: 0 2px 0 #000;
@@ -99,7 +99,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 
 .mission-menu { position: relative; display: grid; gap: 24px; padding-top: 42px; }
 .menu-title {
-  position: absolute; z-index: 5; top: -18px; left: 50%; transform: translateX(-50%);
+  position: absolute; z-index: 5; top: -30px; left: 50%; transform: translateX(-50%);
   min-width: 240px; padding: 7px 22px; color: #fff; background: transparent url("../assets/skin-v2/box-title-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
   text-align: center; font: 800 20px var(--display); text-shadow: 0 2px #000; box-shadow: none;
 }
