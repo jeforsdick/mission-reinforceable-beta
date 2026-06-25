@@ -246,6 +246,24 @@
     return { level, feedback, actions, lastText };
   }
 
+  function missedAnswerReview(run) {
+    const missed = (run.history || []).filter(item => Number(item.score || 0) === 0);
+    if (!missed.length) {
+      return '<p><strong>Missed-answer review:</strong><br />No incorrect answers to review &mdash; nice work!</p>';
+    }
+
+    return `
+      <p><strong>Missed-answer review:</strong></p>
+      ${missed.map(item => `
+        <div class="missed-answer-review">
+          <p><strong>Scene:</strong> ${MR.escapeHTML(item.stepId || 'Review step')}</p>
+          <p><strong>Your answer:</strong> ${MR.escapeHTML(item.choiceText || 'No answer text saved')}</p>
+          <p><strong>Feedback:</strong> ${MR.escapeHTML(item.wizard || item.feedback || 'No feedback saved')}</p>
+        </div>
+      `).join('')}
+    `;
+  }
+
   function finishMission() {
     const accuracy = current.maxScore ? Math.round((current.score / current.maxScore) * 100) : 0;
     const xp = behaviorXPFor(current.score, current.expectedSteps || 3, current.xpMax);
@@ -314,6 +332,7 @@
       <p>${MR.escapeHTML(summary.lastText)}</p>
       <p><strong>Action steps for teachers:</strong></p>
       ${summary.actions}
+      ${missedAnswerReview(run)}
     `;
     MR.setScreen('results');
   }
