@@ -111,7 +111,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .mission-card img { width: 83px; height: 83px; object-fit: contain; image-rendering: auto; }
 .mission-card h2 { margin: 0; color: #fff; font: 900 20px/1.05 var(--display); text-transform: uppercase; }
 .mission-card p { margin: 2px 0 0; font: 700 18px/1.05 var(--display); }
-.mission-card .green-btn { position: absolute; right: 37px; bottom: -18px; width: 155px; height: 52px; font-size: 14px; }
+.mission-card .green-btn { position: absolute; right: 37px; bottom: -18px; width: 155px; height: 52px; font-size: 15px; }
 
 .pixel-btn { border: 0; color: #fff; text-transform: uppercase; font-weight: 900; text-shadow: 0 2px 0 rgba(0,0,0,.7); background-color: transparent; background-position: center; background-size: 100% 100%; filter: drop-shadow(0 4px 0 rgba(0,0,0,.35)); }
 .pixel-btn:hover { transform: translateY(-1px); filter: brightness(1.06) drop-shadow(0 5px 0 rgba(0,0,0,.35)); }
@@ -133,7 +133,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .heart-row img.half { clip-path: inset(0 50% 0 0); }
 .hud-meter { color: #fff; text-align: center; font-family: Arial, sans-serif; font-weight: 900; text-shadow: 0 2px 0 #17103d; }
 .hud-meter strong { display: block; margin-bottom: 8px; font-size: 16px; }
-.hud-meter small { display: block; margin-top: 8px; font-size: 14px; }
+.hud-meter small { display: block; margin-top: 8px; font-size: 15px; }
 .meter { height: 29px; border: 4px solid #b99d96; border-radius: 15px; background: #121737; box-shadow: inset 0 0 0 3px #030411, 0 2px 0 rgba(255,255,255,.2); overflow: hidden; }
 .meter span { display: block; height: 100%; width: 0%; border-right: 4px solid rgba(255,255,255,.65); background: linear-gradient(180deg, #48ff8f, #07a74f 48%, #086b3f); box-shadow: 0 0 10px #75ffb8; transition: width .35s ease; }
 .xp-meter .meter span { background: linear-gradient(180deg, #c96eff, #8a43df 48%, #5e279f); box-shadow: 0 0 10px #cc91ff; }
@@ -196,11 +196,11 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .run-card { min-height: 106px; display: grid; grid-template-columns: 87px 1fr 150px; gap: 18px; align-items: center; padding: 16px 18px; background: transparent url("../assets/skin-v2/mission-cards-border-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0; box-shadow: none; }
 .run-card img { width: 75px; height: 75px; object-fit: contain; }
 .run-card h3 { margin: 0 0 2px; color: #ffc54a; text-transform: uppercase; font: 900 19px var(--mono); }
-.run-card p { margin: 0; font: 700 16px/1.15 var(--display); }
+.run-card p { margin: 0; font: 700 16px/1.35 var(--display); }
 .run-card .accuracy-good { color: #22e37d; }
 .run-card .accuracy-mid { color: #ffc54a; }
 .run-card .accuracy-low { color: #ff5a75; }
-.run-card button { width: 128px; height: 52px; font-size: 13px; }
+.run-card button { width: 128px; height: 52px; font-size: 15px; }
 .empty-progress { grid-column: 1 / -1; text-align: center; font: 800 22px var(--mono); padding: 70px 20px; }
 
 /* RESOURCES */
@@ -208,7 +208,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .resources-panel h1 { margin: 0; color: #ffc54a; text-align: center; text-transform: uppercase; letter-spacing: 2px; font: 900 48px/1 var(--mono); text-shadow: 4px 0 0 #050005, -4px 0 0 #050005, 0 4px 0 #050005, 0 -4px 0 #050005, 4px 4px 0 #050005, 0 8px 0 rgba(0,0,0,.3); }
 .resources-scroll { width: 100%; max-width: 1040px; height: 540px; color: #0b0400; background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 86px 90px 82px 104px; overflow: hidden; }
 #resources-content { height: 100%; overflow-y: auto; padding-right: 12px; font: 700 18px/1.35 var(--mono); }
-.resources-contact { margin: 4px auto 0; max-width: 900px; text-align: center; color: #fff5d2; font: 800 16px/1.25 var(--mono); text-shadow: 2px 2px 0 #050005; }
+.resources-contact { margin: 4px auto 0; max-width: 900px; text-align: center; color: #fff5d2; font: 800 16px/1.35 var(--mono); text-shadow: 2px 2px 0 #050005; }
 .resources-contact a { color: #ffc54a; text-decoration: underline; }
 .bip-section { margin: 0 0 22px; }
 .bip-section h2 { margin: 0 0 8px; color: #130700; font: 900 25px/1 var(--display); }
@@ -348,7 +348,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   height: 48px;
   right: 20px;
   bottom: -16px;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .bottom-nav {
@@ -405,8 +405,8 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .scenario-text {
-  font-size: clamp(16px, 1.18vw, 19px);
-  line-height: 1.32;
+  font-size: clamp(17px, 1.18vw, 19px);
+  line-height: 1.38;
 }
 
 .scenario-text .scene-label {
@@ -455,6 +455,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
 .results-content {
   font-size: clamp(16px, 1.17vw, 19px);
+  line-height: 1.38;
 }
 
 /* Wizard-linked bubbles should sit to the left of the wizard and use the left bubble asset. */
