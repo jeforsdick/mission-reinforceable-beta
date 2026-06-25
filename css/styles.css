@@ -751,9 +751,16 @@ body {
   top: -9px;
 }
 
-/* POLISH OVERRIDES — title plaques sit on borders */
+/* POLISH OVERRIDES — final landing vertical alignment */
+
+.title-logo,
+.title-logo.small {
+  width: min(1400px, 94vw);
+  margin: -70px auto 4px;
+}
 
 .home-panel {
+  margin-top: -95px;
   overflow: visible;
 }
 
@@ -768,12 +775,12 @@ body {
 .mission-menu {
   position: relative;
   overflow: visible;
-  padding-top: 46px;
+  padding-top: 28px;
 }
 
 .menu-title {
   position: absolute;
-  top: -20px;
+  top: -16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 30;
