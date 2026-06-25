@@ -600,3 +600,13 @@ body {
     inset 0 0 18px rgba(255, 215, 94, 0.08);
 }
 
+.wizard-modal,
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+}
+
+.modal-backdrop {
+  background: rgba(0, 0, 0, .28);
+  backdrop-filter: blur(3px);
+}
