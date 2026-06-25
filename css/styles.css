@@ -67,8 +67,15 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 }
 .home-tagline { margin: 0 auto; text-align: center; color: #ffc84a; text-transform: uppercase; font: 900 clamp(24px, 2.3vw, 34px)/1 var(--mono); letter-spacing: 2px; text-shadow: 3px 3px #281200; }
 .home-subtitle { margin: 2px auto 26px; text-align: center; color: #fff; font: 700 clamp(18px, 1.6vw, 25px)/1.1 var(--display); }
-.home-layout { display: grid; grid-template-columns: 1fr 405px; gap: 42px; align-items: start; }
-.classroom-stage { position: relative; min-width: 0; }
+.home-layout {
+  grid-template-columns: 1fr 360px;
+  gap: 28px;
+}
+
+.classroom-stage {
+  transform: scale(1.05);
+  transform-origin: top left;
+}
 .classroom-img { display: block; width: 100%; border: 0; box-shadow: none; image-rendering: auto; }
 .start-classroom-btn { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); width: 265px; height: 57px; }
 
