@@ -1200,4 +1200,12 @@ body {
     line-height: 1.2;
     padding: 18px 22px;
   }
+
+  .wizard-modal-bubble .green-btn {
+    display: none;
+  }
+
+  .wizard-modal-img {
+    cursor: pointer;
+  }
 }

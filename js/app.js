@@ -41,6 +41,11 @@
     });
 
     MR.$('#wizard-modal-continue').addEventListener('click', () => MR.engine.continueAfterFeedback());
+    MR.$('#wizard-modal-img').addEventListener('click', () => {
+      if (!window.matchMedia('(max-width: 700px)').matches) return;
+      if (MR.$('#wizard-modal').hidden) return;
+      MR.engine.continueAfterFeedback();
+    });
     const saveReminder = MR.$('#save-reminder-btn');
     if (saveReminder) {
       saveReminder.addEventListener('click', async () => {
