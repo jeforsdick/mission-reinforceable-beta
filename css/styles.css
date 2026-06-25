@@ -149,7 +149,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   backdrop-filter: blur(1px);
 }
 .scenario-area { min-width: 0; }
-.scenario-scroll { width: 100%; min-height: 485px; background: transparent url("../assets/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat; padding: 100px 78px 78px 98px; color: #0c0500; }
+.scenario-scroll { width: 100%; min-height: 485px; background: transparent url("../assets/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat; padding: 130px 78px 78px 98px; color: #0c0500; }
 .scenario-text { font: 700 clamp(17px, 1.35vw, 21px)/1.36 var(--mono); white-space: pre-line; }
 .scenario-text .scene-label { display: block; font: 900 30px/1 var(--display); margin-bottom: 4px; }
 .choices-area { position: relative; padding-top: 153px; }
