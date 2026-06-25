@@ -1144,18 +1144,18 @@ body {
     width: 100%;
     min-height: auto;
     margin: 0 auto;
-    padding: 14px 10px 20px;
+    padding: 14px 0 20px;
     background: transparent;
     border: 0;
     box-shadow: none;
   }
 
   .feedback-scroll {
-    width: calc(100% + 20px);
+    width: calc(100% + 44px);
     min-height: auto;
     max-height: none;
-    margin-left: -10px;
-    padding: 72px 36px 58px 42px;
+    margin-left: -22px;
+    padding: 76px 42px 62px 48px;
     background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
     overflow: visible;
   }
@@ -1181,25 +1181,25 @@ body {
     right: auto;
     bottom: auto;
     width: 100%;
-    height: 118px;
-    margin: 10px auto 0;
+    height: 146px;
+    margin: 12px auto 0;
   }
 
   .results-wizard-note img {
     right: 4px;
     bottom: 0;
-    width: 82px;
-    height: 86px;
+    width: 102px;
+    height: 108px;
   }
 
   .small-result-bubble {
-    right: 70px;
-    bottom: 4px;
-    width: calc(100% - 88px);
-    height: 94px;
-    font-size: 13px;
-    line-height: 1.2;
-    padding: 18px 22px;
+    right: 88px;
+    bottom: 10px;
+    width: calc(100% - 102px);
+    height: 118px;
+    font-size: 14px;
+    line-height: 1.25;
+    padding: 22px 26px;
   }
 
   .wizard-modal-bubble .green-btn {
