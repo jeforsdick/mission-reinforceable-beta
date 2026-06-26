@@ -498,7 +498,8 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .wizard-modal-bubble h2 {
-  margin: 0 0 16px;
+  width: min(100%, 580px);
+  margin: 0 auto 16px;
   text-align: center;
   text-transform: uppercase;
   font: 900 30px var(--mono);
@@ -506,10 +507,10 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .wizard-modal-bubble p {
-  width: 100%;
+  width: min(100%, 590px);
   max-height: 282px;
   overflow-y: auto;
-  margin: 0;
+  margin: 0 auto;
   font: 900 clamp(22px, 1.65vw, 29px)/1.38 var(--mono);
   text-align: center;
   white-space: pre-line;
@@ -1230,13 +1231,19 @@ body {
   }
 
   .wizard-modal-bubble h2 {
+    width: min(100%, 360px);
+    margin-left: auto;
+    margin-right: auto;
     font-size: 21px;
     line-height: 1.1;
     margin-bottom: 12px;
   }
 
   .wizard-modal-bubble p {
+    width: min(100%, 380px);
     max-height: 230px;
+    margin-left: auto;
+    margin-right: auto;
     font-size: 18px;
     line-height: 1.38;
   }

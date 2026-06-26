@@ -13,6 +13,17 @@
   let pendingNext = null;
   let modalMode = 'feedback';
 
+  const DEFAULT_BETA_BIP_BRIEFING = `Jordan has a hard time during independent writing. When writing feels too big, Jordan may shut down, refuse, or leave the area.
+
+Your job is to choose responses that follow the plan:
+
+* make the writing task smaller,
+* offer help or a short break,
+* stay calm and private,
+* guide Jordan back to one small step.
+
+Avoid public correction, arguing, threats, or making the task feel bigger.`;
+
   function getChoiceArray(step) {
     const entries = Object.entries(step.choices || {}).map(([key, value]) => Object.assign({ key }, value));
     return MR.teacherConfig.shuffleChoices ? MR.shuffle(entries) : entries;
@@ -194,7 +205,7 @@
     MR.$('#wizard-modal-text').textContent = text;
     img.src = MR.asset('wizardGuide') || MR.asset('wizardThink');
     img.className = 'wizard-modal-img briefing';
-    MR.$('#wizard-modal-continue').textContent = 'Begin Mission';
+    MR.$('#wizard-modal-continue').textContent = 'Start Mission';
     modal.hidden = false;
   }
 
@@ -591,7 +602,7 @@
       MR.setScreen('play');
       renderStep();
       const firstStep = current.mission.steps[current.stepId];
-      showBIPBriefing(extractBIPBriefing(firstStep && firstStep.text));
+      showBIPBriefing(extractBIPBriefing(firstStep && firstStep.text) || DEFAULT_BETA_BIP_BRIEFING);
     },
 
     continueAfterFeedback,
