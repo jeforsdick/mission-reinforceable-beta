@@ -108,7 +108,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   function wizardHintForCurrentStep() {
     if (!current) return 'Choose the move that best follows Jordan’s plan.';
     const history = Array.isArray(current.history) ? current.history : [];
-    if (!history.length) return 'Look for the choice that helps Jordan start small and stay regulated.';
+    if (!history.length) return 'Choose your move carefully. Your decision changes what happens next.';
 
     const missedCount = history.filter(item => Number(item.score) < 5).length;
     if (missedCount >= 2) return 'The plan is your compass: help, break, small step, calm return.';
