@@ -96,6 +96,36 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return MR.escapeHTML(clean);
   }
 
+  function branchStateForStep(stepId) {
+    const value = String(stepId || '');
+    if (value.includes('start')) return 'start';
+    if (value.includes('supported')) return 'supported';
+    if (value.includes('wobbly')) return 'wobbly';
+    if (value.includes('escalated')) return 'escalated';
+    return 'start';
+  }
+
+  function wizardHintForCurrentStep() {
+    if (!current) return 'Choose the move that best follows Jordan’s plan.';
+    const history = Array.isArray(current.history) ? current.history : [];
+    if (!history.length) return 'Look for the choice that helps Jordan start small and stay regulated.';
+
+    const missedCount = history.filter(item => Number(item.score) < 5).length;
+    if (missedCount >= 2) return 'The plan is your compass: help, break, small step, calm return.';
+
+    const branchState = branchStateForStep(current.stepId);
+    if (branchState === 'supported') return 'You’re keeping the path steady. Keep looking for calm, private support.';
+    if (branchState === 'wobbly') return 'Jordan is unsure. Look for help, a short break, or one small step.';
+    if (branchState === 'escalated') return 'Careful — the situation is getting bigger. Look for a lower-pressure response.';
+    return 'Choose the move that best follows Jordan’s plan.';
+  }
+
+  function renderWizardHint() {
+    const hint = MR.$('#wizard-hint');
+    if (!hint) return;
+    hint.textContent = wizardHintForCurrentStep();
+  }
+
   function wizardSpriteForScore(score) {
     if (score >= 10) return { src: MR.asset('wizardSuccess'), cls: 'happy', title: 'The Wizard nods approvingly!' };
     if (score >= 5) return { src: MR.asset('wizardMeh'), cls: 'questioning', title: 'The Wizard pauses...' };
@@ -154,6 +184,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
     renderHUD();
     MR.$('#scenario-text').innerHTML = scenarioHTML(step.text || '');
+    renderWizardHint();
     const choices = getChoiceArray(step);
     MR.$('#choice-list').innerHTML = choices.map(choice => `
       <button class="choice-btn" data-choice-key="${MR.escapeHTML(choice.key)}" type="button">
