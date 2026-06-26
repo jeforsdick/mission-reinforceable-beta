@@ -11,7 +11,7 @@ window.MR_TEACHER_CONFIG = {
 
   // Optional: paste your Google Apps Script web app URL here when ready.
   // The base game always saves locally first, even if this is blank.
-  resultEndpoint: 'https://script.google.com/macros/s/AKfycbw4DsAMLija2_VVkk_8A8NOvWidCoyqPVgaY00pNi6jRkjmhfUySkQToYXqQTwigzS7/exec',
+  resultEndpoint: 'https://script.google.com/macros/s/AKfycbyyjRozcfXiKtLNZ7XQciJjQJPOqpJGn3GYUnFi2ZpRL1rLAkM3JEztANQIAUyWgxtY/exec',
 
   growthFocus: 'Keep prompts brief, private, and tied to the next safe classroom step.',
   xpMax: 1000,
