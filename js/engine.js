@@ -369,7 +369,9 @@
         <p>Thank you for beta testing Mission: Reinforceable. You do not need to be a teacher to answer these questions. Please focus on whether the game was clear, usable, and helpful.</p>
         <p><strong>Privacy reminder:</strong> Please do not include real student names, school names, or identifying information.</p>
         <form id="beta-survey-form">
+          <h3>About You</h3>
           ${surveySelect('testerRole', 'Which best describes you?', roleOptions)}
+          <h3>Mission Experience</h3>
           ${surveySelect('understoodTask', 'I understood what I was supposed to do in the game.', ratings)}
           ${surveySelect('bipClear', "Jordan's behavior plan was clear enough for me to use during the mission.", ratings)}
           ${surveySelect('choicesMadeMeThink', 'The answer choices made me think carefully.', ratings)}
@@ -378,10 +380,19 @@
           ${surveySelect('lookedPolished', 'The game looked polished enough for beta testing with educators.', ratings)}
           ${surveySelect('difficulty', 'How did the difficulty feel?', difficultyOptions)}
           ${surveySelect('branchingClear', 'I could tell that my choices affected what happened next in the scenario.', ratings)}
+          <h3>Resources</h3>
+          ${surveySelect('resourcesEasyToFind', "Jordan's plan on the Resources page was easy to find.", ratings)}
+          ${surveySelect('resourcesShortEnough', "Jordan's plan was short enough to read before playing.", ratings)}
+          ${surveySelect('resourcesHelpful', 'The Resources page helped me make choices during the mission.', ratings)}
+          <h3>Progress and Review</h3>
+          ${surveySelect('progressHelpful', 'The Progress page helped me understand my game history or results.', ratings)}
+          ${surveySelect('missedReviewHelpful', 'The missed-answer review helped me understand what to improve.', ratings)}
+          <h3>Open Feedback</h3>
           ${surveyTextarea('confusingPart', 'What, if anything, was confusing?')}
           ${surveyTextarea('favoritePart', 'What did you like best?')}
           ${surveyTextarea('changeSuggestion', 'What would you change before educators use this game with real student plans?')}
           ${surveyTextarea('openComments', 'Is there anything else you want Jess to know?')}
+          <h3>Permission</h3>
           ${surveySelect('permissionToUseFeedback', 'May Jess use your anonymous feedback to improve Mission: Reinforceable?', permissionOptions)}
           <p>
             <button id="beta-survey-submit" class="pixel-btn green-btn" type="submit">Submit Beta Feedback</button>
@@ -421,6 +432,11 @@
       lookedPolished: data.get('lookedPolished') || '',
       difficulty: data.get('difficulty') || '',
       branchingClear: data.get('branchingClear') || '',
+      resourcesEasyToFind: data.get('resourcesEasyToFind') || '',
+      resourcesShortEnough: data.get('resourcesShortEnough') || '',
+      resourcesHelpful: data.get('resourcesHelpful') || '',
+      progressHelpful: data.get('progressHelpful') || '',
+      missedReviewHelpful: data.get('missedReviewHelpful') || '',
       confusingPart: data.get('confusingPart') || '',
       favoritePart: data.get('favoritePart') || '',
       changeSuggestion: data.get('changeSuggestion') || '',
