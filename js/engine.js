@@ -211,12 +211,30 @@
     modal.hidden = false;
   }
 
+  function showBetaSurveySuccessPopup() {
+    modalMode = 'surveySuccess';
+    const sprite = wizardSpriteForScore(10);
+    const modal = MR.$('#wizard-modal');
+    const img = MR.$('#wizard-modal-img');
+    MR.$('#wizard-modal-title').textContent = 'Quest Complete!';
+    MR.$('#wizard-modal-text').textContent = 'Thank you for helping improve Mission: Reinforceable. Your beta survey was submitted successfully.';
+    img.src = sprite.src;
+    img.className = `wizard-modal-img ${sprite.cls}`;
+    MR.$('#wizard-modal-continue').textContent = 'Back to Results';
+    modal.hidden = false;
+  }
+
   function hideWizardFeedback() {
     MR.$('#wizard-modal').hidden = true;
   }
 
   function continueAfterFeedback() {
     hideWizardFeedback();
+    if (modalMode === 'surveySuccess') {
+      modalMode = 'feedback';
+      MR.setScreen('results');
+      return;
+    }
     if (modalMode === 'briefing') {
       modalMode = 'feedback';
       return;
@@ -473,7 +491,8 @@
       body: JSON.stringify(betaSurveyPayload(run, form))
     }).then(() => {
       button.disabled = false;
-      status.textContent = 'Thank you — your beta feedback was submitted!';
+      status.textContent = '';
+      showBetaSurveySuccessPopup();
     }).catch(error => {
       console.warn('Beta survey submission failed:', error);
       button.disabled = false;
