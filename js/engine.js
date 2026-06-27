@@ -14,14 +14,11 @@
   let modalMode = 'feedback';
 
   const DEFAULT_BETA_BIP_BRIEFING = `Jordan has a hard time during independent writing. When writing feels too big, Jordan may shut down, refuse, or leave the area.
-
 Your job is to choose responses that follow the plan:
-
 * make the writing task smaller,
 * offer help or a short break,
 * stay calm and private,
 * guide Jordan back to one small step.
-
 Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
   function getChoiceArray(step) {
