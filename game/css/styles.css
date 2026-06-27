@@ -1826,8 +1826,6 @@ body {
   }
 
   .back-to-site-cottage {
-    width: clamp(60px, 16vw, 88px);
-    right: 8px;
-    bottom: 54px;
+    display: none;
   }
 }
