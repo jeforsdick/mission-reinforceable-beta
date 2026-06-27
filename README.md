@@ -14,7 +14,7 @@ mission-reinforceable/
 ├── intake/
 │   └── index.html             # New game intake placeholder page
 ├── beta/
-│   └── index.html             # Beta testing information page
+│   └── index.html             # Legacy redirect to game/
 ├── game/
 │   ├── index.html             # Existing beta game shell
 │   ├── css/styles.css         # Existing game styling only
@@ -38,11 +38,10 @@ Use relative links so the site works both locally and on GitHub Pages project UR
 ./
 research/
 intake/
-beta/
 game/
 ```
 
-Nested public pages link back with paths such as `../`, `../game/`, `../research/`, `../intake/`, and `../beta/`.
+Nested public pages link back with paths such as `../`, `../game/`, `../research/`, and `../intake/`.
 
 ## How to test locally
 
@@ -58,7 +57,6 @@ Then open:
 http://localhost:8000/
 http://localhost:8000/research/
 http://localhost:8000/intake/
-http://localhost:8000/beta/
 http://localhost:8000/game/
 http://localhost:8000/game/?teacher=olson
 http://localhost:8000/game/teachers/olson/
@@ -78,7 +76,6 @@ Because the public pages use relative links, these routes should work under that
 https://<username>.github.io/<repository-name>/
 https://<username>.github.io/<repository-name>/research/
 https://<username>.github.io/<repository-name>/intake/
-https://<username>.github.io/<repository-name>/beta/
 https://<username>.github.io/<repository-name>/game/
 ```
 
