@@ -539,7 +539,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .wizard-modal[data-mode="briefing"] .wizard-modal-bubble p {
-  max-height: 400px;
+  max-height: 430px;
   overflow-y: scroll;
   font: 900 clamp(15px, 1.1vw, 19px)/1.35 var(--mono);
 }
