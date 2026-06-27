@@ -399,6 +399,23 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     `;
   }
 
+  function wizardSpriteForAccuracy(accuracy) {
+    const value = Number(accuracy) || 0;
+    if (value >= 80) return { asset: 'wizardSuccess', alt: 'A happy wizard' };
+    if (value >= 60) return { asset: 'wizardMeh', alt: 'A thinking wizard' };
+    return { asset: 'wizardDead', alt: 'A sleepy wizard' };
+  }
+
+  function updateResultsWizard(run) {
+    const img = MR.$('.results-wizard-note img');
+    if (!img) return;
+    const sprite = wizardSpriteForAccuracy(run && run.accuracy);
+    const src = MR.asset(sprite.asset);
+    if (src) img.src = src;
+    img.dataset.asset = sprite.asset;
+    img.alt = sprite.alt;
+  }
+
   function finishMission() {
     const accuracy = current.maxScore ? Math.round((current.score / current.maxScore) * 100) : 0;
     const xp = behaviorXPFor(current.score, current.expectedSteps || 3, current.xpMax);
@@ -686,6 +703,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       ${summary.actions}
       ${missedAnswerReview(run)}
     `;
+    updateResultsWizard(run);
     wireResultsSurveyInvite(run);
     MR.setScreen('results');
   }
