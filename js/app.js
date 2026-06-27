@@ -2,6 +2,8 @@
   'use strict';
 
   const MR = window.MR = window.MR || {};
+  let welcomeShownThisLoad = false;
+  const WELCOME_STORAGE_KEY = 'mission-reinforceable:betaWelcomeShown';
 
   function applyAssets() {
     MR.$$('[data-asset]').forEach(el => {
@@ -19,6 +21,20 @@
     MR.$('#home-classroom-img').src = classroomPath;
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
+  }
+
+  function showWelcomeOnce() {
+    if (welcomeShownThisLoad) return;
+    let alreadyShown = false;
+    try {
+      alreadyShown = sessionStorage.getItem(WELCOME_STORAGE_KEY) === 'true';
+      if (!alreadyShown) sessionStorage.setItem(WELCOME_STORAGE_KEY, 'true');
+    } catch (error) {
+      alreadyShown = welcomeShownThisLoad;
+    }
+    if (alreadyShown) return;
+    welcomeShownThisLoad = true;
+    if (MR.engine && MR.engine.showWelcomePopup) MR.engine.showWelcomePopup();
   }
 
   function wireEvents() {
@@ -66,6 +82,7 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
+      showWelcomeOnce();
       console.info('Mission: Reinforceable loaded', { teacher: MR.teacherConfig, pool: MR.pool });
     } catch (error) {
       console.error(error);

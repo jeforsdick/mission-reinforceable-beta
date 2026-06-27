@@ -269,6 +269,22 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     modal.hidden = false;
   }
 
+  function showWelcomePopup() {
+    modalMode = 'welcome';
+    const sprite = wizardSpriteForScore(10);
+    const modal = MR.$('#wizard-modal');
+    const img = MR.$('#wizard-modal-img');
+    modal.dataset.mode = 'welcome';
+    MR.$('#wizard-modal-title').textContent = 'Welcome to Mission: Reinforceable Beta Testing!';
+    MR.$('#wizard-modal-text').textContent = `Thank you for helping playtest this game. Try a mission, notice what feels clear or confusing, and pay attention to whether the choices feel useful, fun, and challenging.
+
+At the end of your mission, tap the wizard on the Results screen to complete the beta survey.`;
+    img.src = sprite.src;
+    img.className = `wizard-modal-img ${sprite.cls}`;
+    MR.$('#wizard-modal-continue').textContent = 'Start Testing';
+    modal.hidden = false;
+  }
+
   function hideWizardFeedback() {
     const modal = MR.$('#wizard-modal');
     modal.hidden = true;
@@ -280,6 +296,10 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (modalMode === 'surveySuccess') {
       modalMode = 'feedback';
       MR.setScreen('results');
+      return;
+    }
+    if (modalMode === 'welcome') {
+      modalMode = 'feedback';
       return;
     }
     if (modalMode === 'briefing') {
@@ -634,6 +654,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     },
 
     continueAfterFeedback,
+
+    showWelcomePopup,
 
     showStoredRunDetails(run) {
       renderResults(run);
