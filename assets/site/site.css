@@ -62,26 +62,28 @@ a {
 }
 
 .nav-wrap {
-  min-height: 76px;
+  min-height: 112px;
+  padding: 14px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 28px;
 }
 
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
+  flex: 0 1 auto;
   font-weight: 800;
   text-decoration: none;
   letter-spacing: .01em;
 }
 
 .brand-icon {
-  width: 34px;
-  height: 34px;
+  width: clamp(56px, 5vw, 70px);
+  height: clamp(56px, 5vw, 70px);
   flex: 0 0 auto;
   object-fit: contain;
   image-rendering: pixelated;
@@ -89,10 +91,12 @@ a {
 }
 
 .brand-logo {
-  width: min(290px, 42vw);
-  height: 42px;
+  width: clamp(280px, 28vw, 460px);
+  height: auto;
   object-fit: contain;
   object-position: left center;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
   filter: drop-shadow(0 4px 0 rgba(16, 36, 63, .16));
 }
 
@@ -100,8 +104,9 @@ a {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
+  flex: 0 1 auto;
 }
 
 .nav-links a {
@@ -480,11 +485,21 @@ p {
   .nav-wrap {
     align-items: flex-start;
     flex-direction: column;
-    padding: 16px 0;
+    min-height: auto;
+    padding: 18px 0;
   }
 
   .nav-links {
     justify-content: flex-start;
+  }
+
+  .brand-logo {
+    width: clamp(260px, 62vw, 420px);
+  }
+
+  .brand-icon {
+    width: 56px;
+    height: 56px;
   }
 
   .hero-inner,
@@ -525,8 +540,12 @@ p {
   }
 
   .brand-logo {
-    width: min(260px, calc(100vw - 88px));
-    height: 38px;
+    width: min(300px, calc(100vw - 92px));
+  }
+
+  .brand-icon {
+    width: 48px;
+    height: 48px;
   }
 
   .grid-3,
