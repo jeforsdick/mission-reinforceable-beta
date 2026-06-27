@@ -779,7 +779,7 @@ body {
 
 .wizard-hint-wrap {
   width: 615px;
-  height: 205px;
+  height: 255px;
   top: -14px;
   right: 0;
 }
@@ -788,7 +788,7 @@ body {
   right: 124px;
   top: -4px;
   width: 446px;
-  height: 168px;
+  height: 188px;
   font-size: 21px;
   line-height: 1.3;
   padding: 25px 34px;
