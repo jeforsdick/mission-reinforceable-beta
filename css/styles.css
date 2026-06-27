@@ -525,7 +525,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   width: 78%;
   max-width: 560px;
   margin-bottom: 12px;
-  font-size: 36px;
+  font-size: 26px;
   line-height: 1.05;
 }
 
@@ -534,7 +534,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   max-width: 540px;
   max-height: none;
   overflow-y: hidden;
-  font-size: 23px;
+  font-size: 18px;
   line-height: 1.22;
 }
 
@@ -551,7 +551,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   transform: translateX(-50%);
   width: 260px;
   height: 72px;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .wizard-modal-img {
@@ -754,7 +754,7 @@ body {
 }
 
 .scenario-text .scene-label {
-  font-size: 33px;
+  font-size: 30px;
 }
 
 .choices-area {
@@ -1372,7 +1372,7 @@ body {
     width: min(100%, 360px);
     margin-left: auto;
     margin-right: auto;
-    font-size: 21px;
+    font-size: 19px;
     line-height: 1.1;
     margin-bottom: 12px;
   }
@@ -1537,7 +1537,7 @@ body {
     max-height: calc(62vh - 116px);
     overflow-y: auto;
     padding-right: 6px;
-    font-size: 15px;
+    font-size: 18px;
     line-height: 1.35;
   }
 
@@ -1567,7 +1567,7 @@ body {
   .resources-contact {
     margin: 10px auto 0;
     padding: 0 10px;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.3;
     text-align: center;
   }
