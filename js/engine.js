@@ -513,12 +513,12 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
   function betaSurveyHTML() {
     const roleOptions = selectOptions([
-      'Teacher',
+      'Classroom teacher',
       'Behavior specialist',
-      'Parent/caregiver',
       'Student/graduate student',
-      'General adult/non-teacher',
-      'Other'
+      'Parent/caregiver',
+      'Other educator',
+      'Other adult'
     ]);
     const difficultyOptions = selectOptions(['Too easy', 'About right', 'Too hard', "I'm not sure"]);
     const permissionOptions = selectOptions(['Yes', 'No']);
