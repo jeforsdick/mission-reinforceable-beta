@@ -150,7 +150,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       if (remaining >= 1) {
         html += `<img src="${heartPath}" alt="heart" />`;
       } else if (remaining > 0) {
-        html += `<span class="heart-half" aria-label="half heart"><img class="half" src="${heartPath}" alt="" /></span>`;
+        const fillPercent = Math.max(0, Math.min(100, remaining * 100));
+        html += `<span class="heart-half" style="--heart-fill: ${fillPercent}%" aria-label="partial heart"><img class="heart-base" src="${heartPath}" alt="" /><span class="heart-fill"><img src="${heartPath}" alt="" /></span></span>`;
       } else {
         html += `<img class="heart-empty" src="${heartPath}" alt="empty heart" />`;
       }

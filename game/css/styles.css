@@ -1829,3 +1829,61 @@ body {
     display: none;
   }
 }
+
+/* BUG FIX OVERRIDES - partial hearts keep the full pixel silhouette, and decorative hint art cannot intercept answer clicks. */
+.heart-half {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  overflow: visible;
+  filter: none;
+}
+
+.heart-half img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.heart-half .heart-base {
+  opacity: .23;
+  filter: grayscale(1) drop-shadow(5px 5px 0 #080008);
+}
+
+.heart-half .heart-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  clip-path: inset(0 calc(100% - var(--heart-fill, 50%)) 0 0);
+}
+
+.heart-half .heart-fill img {
+  width: 100%;
+  filter: drop-shadow(5px 5px 0 #080008);
+}
+
+.choices-area {
+  z-index: 2;
+}
+
+.wizard-hint-wrap,
+.scenario-hint,
+.wizard-sidekick {
+  pointer-events: none;
+}
+
+.choice-list {
+  position: relative;
+  z-index: 20;
+}
+
+.choice-btn {
+  position: relative;
+  z-index: 21;
+  pointer-events: auto;
+}
