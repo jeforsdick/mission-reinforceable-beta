@@ -27,8 +27,8 @@ window.MR_TEACHER_CONFIG = {
   },
 
   assets: {
-    landingClassroom: 'assets/skin-v2/landing-page-classroom.png',
-    sameDayClassroom: 'assets/skin-v2/same-day-return-page-classroom.png'
+    landingClassroom: '../assets/game/skin-v2/landing-page-classroom.png',
+    sameDayClassroom: '../assets/game/skin-v2/same-day-return-page-classroom.png'
   },
 
   resourcesFile: 'content/resources.js',

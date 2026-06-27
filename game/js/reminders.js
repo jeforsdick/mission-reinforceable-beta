@@ -48,7 +48,7 @@
       const title = 'Mission: Reinforceable';
       const body = 'Your classroom mission is ready. Complete today’s brief practice mission.';
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, { body, icon: 'favicon.png' });
+        new Notification(title, { body, icon: '../favicon.png' });
       } else {
         alert(`${title}\n\n${body}`);
       }

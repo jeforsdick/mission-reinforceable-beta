@@ -5,188 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mission: Reinforceable</title>
   <link rel="icon" href="favicon.png" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1f2933;
+      background: #f4f7fb;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+    }
+
+    main {
+      width: min(920px, calc(100% - 32px));
+      padding: 48px 0;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 5vw, 4rem);
+      line-height: 1;
+    }
+
+    p {
+      max-width: 620px;
+      margin: 0 0 28px;
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+
+    nav {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0 18px;
+      border: 1px solid #c9d4e5;
+      border-radius: 8px;
+      background: #fff;
+      color: #183153;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    a:hover,
+    a:focus-visible {
+      border-color: #4f7ac7;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(79, 122, 199, .18);
+    }
+  </style>
 </head>
 <body>
-  <main id="app" class="mr-app" aria-live="polite">
-    <section id="loading-screen" class="screen screen-loading is-active">
-      <div class="loading-card">
-        <img src="assets/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
-        <p>Summoning the classroom mission...</p>
-      </div>
-    </section>
-
-    <section id="home-screen" class="screen screen-home" aria-label="Mission menu">
-      <img class="title-logo" data-asset="title" alt="Mission: Reinforceable" />
-
-      <div class="home-panel gold-frame star-panel">
-        <div class="classroom-plaque" id="home-classroom-label">Beta Classroom</div>
-        <h1 class="home-tagline">Master classroom missions. One choice at a time.</h1>
-        <p class="home-subtitle">Embark on a journey to level up behavior support.</p>
-
-        <div class="home-layout">
-          <div class="classroom-stage">
-            <img id="home-classroom-img" class="classroom-img" alt="Pixel classroom" />
-            <button id="home-primary-btn" class="pixel-btn brown-btn start-classroom-btn" type="button">Start Your Daily Mission</button>
-          </div>
-
-          <aside class="mission-menu" aria-label="Mission options">
-            <div class="menu-title">Mission Options</div>
-            <article class="mission-card">
-              <img data-asset="dailyIcon" alt="" />
-              <div>
-                <h2>Daily Mission</h2>
-                <p>Practice plan-aligned support decisions.</p>
-              </div>
-              <button class="pixel-btn green-btn" data-start-mode="daily" type="button">Start Daily</button>
-            </article>
-            <article class="mission-card">
-              <img data-asset="mysteryIcon" alt="" />
-              <div>
-                <h2>Mystery Mission</h2>
-                <p>Try a random classroom scenario.</p>
-              </div>
-              <button class="pixel-btn green-btn" data-start-mode="wild" type="button">Start Mystery</button>
-            </article>
-            <article class="mission-card">
-              <img data-asset="crisisIcon" alt="" />
-              <div>
-                <h2>Crisis Mission</h2>
-                <p>Practice calm responses during higher-intensity moments.</p>
-              </div>
-              <button class="pixel-btn green-btn" data-start-mode="crisis" type="button">Start Crisis</button>
-            </article>
-          </aside>
-        </div>
-      </div>
-    </section>
-
-    <section id="play-screen" class="screen screen-play" aria-label="Mission play screen">
-      <div class="hud">
-        <div id="heart-row" class="heart-row" aria-label="Hearts"></div>
-        <div class="hud-meter mission-meter">
-          <strong id="mission-progress-label">Mission Progress: 1/5 Completed</strong>
-          <div class="meter"><span id="mission-progress-fill"></span></div>
-          <small id="mission-progress-count">1/5</small>
-        </div>
-        <div class="hud-meter xp-meter">
-          <strong id="xp-label">Behavior Plan XP: 0/1000</strong>
-          <div class="meter"><span id="xp-fill"></span></div>
-          <small id="score-label">0</small>
-        </div>
-      </div>
-
-      <div class="play-panel gold-frame">
-        <div class="scenario-area">
-          <div class="scenario-scroll">
-            <div id="scenario-text" class="scenario-text"></div>
-          </div>
-        </div>
-
-        <aside class="choices-area">
-          <div class="wizard-hint-wrap">
-            <div class="speech speech-left scenario-hint" id="wizard-hint">Choose your move carefully.<br />Your decision changes what<br />happens next.</div>
-            <img id="wizard-sidekick" class="wizard-sidekick" data-asset="wizardGuide" alt="MR Wizard" />
-          </div>
-          <div id="choice-list" class="choice-list"></div>
-        </aside>
-      </div>
-    </section>
-
-    <section id="results-screen" class="screen screen-results" aria-label="Mission results">
-      <div class="hud results-hud">
-        <div id="results-heart-row" class="heart-row" aria-label="Final hearts"></div>
-        <div class="hud-meter mission-meter">
-          <strong>Mission Progress: Complete</strong>
-          <div class="meter"><span style="width: 100%"></span></div>
-          <small>5/5</small>
-        </div>
-        <div class="hud-meter xp-meter">
-          <strong id="results-xp-label">Behavior Plan XP: 0/1000</strong>
-          <div class="meter"><span id="results-xp-fill"></span></div>
-          <small id="results-score-label">0</small>
-        </div>
-      </div>
-      <div class="results-panel gold-frame">
-        <div class="feedback-scroll">
-          <div id="results-content" class="results-content"></div>
-        </div>
-        <div class="results-wizard-note" role="button" tabindex="0" aria-label="Complete beta survey">
-          <div class="speech speech-left small-result-bubble">One more quest! Tap me to complete the beta survey!</div>
-          <img data-asset="wizardDead" alt="A sleepy wizard" />
-        </div>
-      </div>
-    </section>
-
-    <section id="survey-screen" class="screen screen-results" aria-label="Beta survey">
-      <div class="results-panel gold-frame">
-        <div class="feedback-scroll">
-          <div id="survey-content" class="results-content"></div>
-        </div>
-        <div class="survey-wizard-note" aria-hidden="true">
-          <div class="speech speech-left survey-wizard-bubble">Thank you for your time and feedback.</div>
-          <img data-asset="wizardSuccess" alt="Happy wizard" />
-        </div>
-      </div>
-    </section>
-
-    <section id="progress-screen" class="screen screen-progress" aria-label="Mission progress dashboard">
-      <h1 id="progress-title" class="progress-title">Mission Progress</h1>
-      <div class="progress-bubble-wrap">
-        <div id="growth-focus" class="progress-bubble">Growth focus: Keep prompts brief, private, and tied to the next safe classroom step.</div>
-        <img data-asset="wizardDead" class="progress-wizard" alt="A sleepy wizard" />
-      </div>
-      <div class="badge-row">
-        <div class="stat-badge purple"><strong id="stat-accuracy">0%</strong><span>Overall Accuracy</span></div>
-        <div class="stat-badge green"><strong id="stat-streak">0</strong><span>Day Streak</span></div>
-        <div class="stat-badge blue"><strong id="stat-completed">0</strong><span>Missions Completed</span></div>
-        <div class="stat-badge orange"><strong id="stat-best">0%</strong><span>Best Score</span></div>
-      </div>
-      <div class="progress-list gold-frame" id="progress-list"></div>
-    </section>
-
-    <section id="resources-screen" class="screen screen-resources" aria-label="BIP resources">
-      <div class="resources-panel gold-frame star-panel">
-        <h1 id="resources-title" class="page-title">Resources</h1>
-        <div class="resources-scroll">
-          <div id="resources-content"></div>
-        </div>
-        <p class="resources-contact">
-          For technical issues or questions contact
-          <a href="mailto:jess.olson@utah.edu">jess.olson@utah.edu</a>
-        </p>
-      </div>
-    </section>
-
-    <nav class="bottom-nav gold-frame" aria-label="Game navigation">
-      <button id="nav-home" class="scroll-nav-btn" type="button"><img data-asset="startOverIcon" alt="" />Start Over</button>
-      <button id="nav-progress" class="scroll-nav-btn" type="button"><img data-asset="progressIcon" alt="" />Progress</button>
-      <button id="nav-resources" class="scroll-nav-btn" type="button"><img data-asset="resourcesIcon" alt="" />Resources</button>
+  <main>
+    <h1>Mission: Reinforceable</h1>
+    <p>Temporary project landing page while the beta game and dissertation website are being organized for deployment.</p>
+    <nav aria-label="Site sections">
+      <a href="/game/">Open Game</a>
+      <a href="/research/">Research</a>
+      <a href="/intake/">Intake</a>
+      <a href="/beta/">Beta</a>
     </nav>
-
   </main>
-
-  <div id="wizard-modal" class="wizard-modal" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title" hidden>
-    <div class="modal-backdrop"></div>
-    <div class="wizard-modal-card">
-      <div class="wizard-modal-bubble">
-        <h2 id="wizard-modal-title">Custom Feedback Text</h2>
-        <p id="wizard-modal-text"></p>
-        <button id="wizard-modal-continue" class="pixel-btn green-btn" type="button">Continue</button>
-      </div>
-      <img id="wizard-modal-img" class="wizard-modal-img" alt="MR Wizard reaction" />
-    </div>
-  </div>
-
-  <script src="js/utils.js"></script>
-  <script src="js/session-timer.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/teacher-loader.js"></script>
-  <script src="js/dashboard.js"></script>
-  <script src="js/engine.js"></script>
-  <script src="js/reminders.js"></script>
-  <script src="js/resources.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/fit-screen.js"></script>
 </body>
 </html>

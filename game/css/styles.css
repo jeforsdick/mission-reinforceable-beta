@@ -20,7 +20,7 @@ html, body { min-height: 100%; margin: 0; }
 body {
   overflow-x: hidden;
   color: white;
-  background: #14286b url("../assets/skin-v2/mission-reinforceable-background.png") center center / cover fixed no-repeat;
+  background: #14286b url("../../assets/game/skin-v2/mission-reinforceable-background.png") center center / cover fixed no-repeat;
   font-family: var(--display);
 }
 button, input { font: inherit; }
@@ -61,7 +61,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .classroom-plaque {
   position: absolute; top: -50px; left: 50%; transform: translateX(-50%); z-index: 5;
   min-width: 310px; height: 55px; padding: 11px 30px;
-  color: #fff; background: transparent url("../assets/skin-v2/box-title-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
+  color: #fff; background: transparent url("../../assets/game/skin-v2/box-title-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
   text-align: center; font: 700 24px var(--display); text-shadow: 0 2px 0 #000;
   box-shadow: none;
 }
@@ -85,9 +85,9 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 }
 .start-classroom-btn { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); width: 265px; height: 57px; }
 .speech { position: absolute; color: #111; background: #fff; border: 0; text-align: center; font: 900 19px/1.35 var(--mono); text-shadow: none; filter: drop-shadow(10px 10px 0 #090000); display: flex; align-items: center; justify-content: center; padding: 20px; }
-.speech-left { background: transparent url("../assets/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat; }
-.speech-right { background: transparent url("../assets/skin-v2/speech-bubble-right.png") center / 100% 100% no-repeat; }
-.speech-down { background: transparent url("../assets/skin-v2/speech-bubble-down.png") center / 100% 100% no-repeat; }
+.speech-left { background: transparent url("../../assets/game/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat; }
+.speech-right { background: transparent url("../../assets/game/skin-v2/speech-bubble-right.png") center / 100% 100% no-repeat; }
+.speech-down { background: transparent url("../../assets/game/skin-v2/speech-bubble-down.png") center / 100% 100% no-repeat; }
 .wizard-chime { left: 4%; top: -47px; width: 228px; height: 139px; }
 .home-bubbles-return { display: none; }
 .home-return .home-bubbles-normal { display: none; }
@@ -99,12 +99,12 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .mission-menu { position: relative; display: grid; gap: 24px; padding-top: 42px; }
 .menu-title {
   position: absolute; z-index: 5; top: -30px; left: 50%; transform: translateX(-50%);
-  min-width: 240px; padding: 7px 22px; color: #fff; background: transparent url("../assets/skin-v2/box-title-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
+  min-width: 240px; padding: 7px 22px; color: #fff; background: transparent url("../../assets/game/skin-v2/box-title-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
   text-align: center; font: 800 20px var(--display); text-shadow: 0 2px #000; box-shadow: none;
 }
 .mission-card {
   position: relative; min-height: 118px; display: grid; grid-template-columns: 83px 1fr; gap: 18px; align-items: center;
-  padding: 17px 20px 18px 20px; background: transparent url("../assets/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
+  padding: 17px 20px 18px 20px; background: transparent url("../../assets/game/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0;
   box-shadow: none;
 }
 .mission-card img { width: 83px; height: 83px; object-fit: contain; image-rendering: auto; }
@@ -115,11 +115,11 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .pixel-btn { border: 0; color: #fff; text-transform: uppercase; font-weight: 900; text-shadow: 0 2px 0 rgba(0,0,0,.7); background-color: transparent; background-position: center; background-size: 100% 100%; filter: drop-shadow(0 4px 0 rgba(0,0,0,.35)); }
 .pixel-btn:hover { transform: translateY(-1px); filter: brightness(1.06) drop-shadow(0 5px 0 rgba(0,0,0,.35)); }
 .pixel-btn:active { transform: translateY(2px); filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); }
-.green-btn { background-image: url("../assets/skin-v2/green-button.png"); }
-.brown-btn { background-image: url("../assets/skin-v2/brown-button.png"); }
+.green-btn { background-image: url("../../assets/game/skin-v2/green-button.png"); }
+.brown-btn { background-image: url("../../assets/game/skin-v2/brown-button.png"); }
 
 .bottom-nav { position: fixed; z-index: 50; left: 50%; bottom: 120px; transform: translateX(-50%); width: min(1228px, calc(100vw - 34px)); height: 92px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 42px; align-items: center; justify-content: center; padding: 13px 96px; background: #070a3a; }
-.scroll-nav-btn { height: 66px; border: 0; background: transparent url("../assets/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat; color: #0b0500; font: 900 24px/1 var(--display); text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 28px; text-shadow: 1px 1px rgba(255,255,255,.45); }
+.scroll-nav-btn { height: 66px; border: 0; background: transparent url("../../assets/game/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat; color: #0b0500; font: 900 24px/1 var(--display); text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 28px; text-shadow: 1px 1px rgba(255,255,255,.45); }
 .scroll-nav-btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
 .scroll-nav-btn img { width: 34px; height: 34px; object-fit: contain; }
 
@@ -148,7 +148,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   backdrop-filter: blur(1px);
 }
 .scenario-area { min-width: 0; }
-.scenario-scroll { width: 100%; min-height: 485px; background: transparent url("../assets/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat; padding: 130px 78px 78px 98px; color: #0c0500; }
+.scenario-scroll { width: 100%; min-height: 485px; background: transparent url("../../assets/game/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat; padding: 130px 78px 78px 98px; color: #0c0500; }
 .scenario-text { font: 700 clamp(17px, 1.35vw, 21px)/1.36 var(--mono); white-space: pre-line; }
 .scenario-text .scene-label { display: block; font: 900 30px/1 var(--display); margin-bottom: 4px; }
 .choices-area { position: relative; padding-top: 153px; }
@@ -156,7 +156,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .scenario-hint { right: 78px; top: 0; width: 310px; height: 115px; font-size: 16px; line-height: 1.35; }
 .wizard-sidekick { position: absolute; right: 0; top: -6px; width: 100px; height: 130px; object-fit: contain; filter: drop-shadow(5px 5px 0 #080008); }
 .choice-list { display: grid; gap: 18px; }
-.choice-btn { min-height: 126px; width: 100%; border: 0; color: #fff; background: transparent url("../assets/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat; padding: 18px 36px; font: 900 clamp(19px, 1.65vw, 27px)/.96 var(--display); text-align: center; text-shadow: 0 2px 0 #111; display: flex; align-items: center; justify-content: center; }
+.choice-btn { min-height: 126px; width: 100%; border: 0; color: #fff; background: transparent url("../../assets/game/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat; padding: 18px 36px; font: 900 clamp(19px, 1.65vw, 27px)/.96 var(--display); text-align: center; text-shadow: 0 2px 0 #111; display: flex; align-items: center; justify-content: center; }
 .choice-btn:hover { filter: brightness(1.13); transform: translateX(-2px); }
 .choice-btn:disabled { opacity: .7; cursor: wait; }
 
@@ -169,7 +169,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   padding: 38px 66px;
   background: rgba(28, 100, 123, .4);
 }
-.feedback-scroll { min-height: 486px; background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 91px 80px 90px 96px; color: #0b0400; }
+.feedback-scroll { min-height: 486px; background: transparent url("../../assets/game/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 91px 80px 90px 96px; color: #0b0400; }
 .results-content { font: 700 clamp(17px, 1.3vw, 21px)/1.35 var(--mono); }
 .results-content h1 { margin: 0 0 6px; font: 900 30px var(--display); }
 .results-content ul { margin-top: 8px; }
@@ -181,18 +181,18 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .screen-progress { padding-top: 55px; }
 .progress-title { margin: 18px auto 5px; width: min(1400px, 96vw); color: #ffc54a; text-align: center; text-transform: uppercase; letter-spacing: 2px; font: 900 clamp(38px, 4.2vw, 58px)/1 var(--mono); white-space: nowrap; text-shadow: 4px 0 0 #050005, -4px 0 0 #050005, 0 4px 0 #050005, 0 -4px 0 #050005, 4px 4px 0 #050005, 0 8px 0 rgba(0,0,0,.3); }
 .progress-bubble-wrap { position: relative; width: min(1050px, 78vw); min-height: 135px; margin: -8px auto 12px; }
-.progress-bubble { position: absolute; inset: 0 110px 0 0; display: flex; align-items: center; justify-content: center; text-align: center; color: #111; text-transform: uppercase; font: 900 clamp(18px, 1.7vw, 27px)/1.15 var(--mono); background: transparent url("../assets/skin-v2/progress-speech-bubble.png") center / 100% 100% no-repeat; padding: 18px 72px 28px; filter: drop-shadow(8px 8px 0 #080008); }
+.progress-bubble { position: absolute; inset: 0 110px 0 0; display: flex; align-items: center; justify-content: center; text-align: center; color: #111; text-transform: uppercase; font: 900 clamp(18px, 1.7vw, 27px)/1.15 var(--mono); background: transparent url("../../assets/game/skin-v2/progress-speech-bubble.png") center / 100% 100% no-repeat; padding: 18px 72px 28px; filter: drop-shadow(8px 8px 0 #080008); }
 .progress-wizard { position: absolute; right: 0; top: 3px; width: 130px; height: 130px; object-fit: contain; filter: drop-shadow(5px 5px 0 #080008); transform: rotate(6deg); }
 .badge-row { width: min(1120px, 88vw); margin: -44px auto -44px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 .stat-badge { position: relative; min-height: 245px; color: #080000; text-align: center; padding-top: 82px; background-position: top center; background-repeat: no-repeat; background-size: 235px 235px; }
-.stat-badge.purple { background-image: url("../assets/skin-v2/purple-badge.png"); }
-.stat-badge.green { background-image: url("../assets/skin-v2/green-badge.png"); }
-.stat-badge.blue { background-image: url("../assets/skin-v2/blue-badge.png"); }
-.stat-badge.orange { background-image: url("../assets/skin-v2/orange-badge.png"); }
+.stat-badge.purple { background-image: url("../../assets/game/skin-v2/purple-badge.png"); }
+.stat-badge.green { background-image: url("../../assets/game/skin-v2/green-badge.png"); }
+.stat-badge.blue { background-image: url("../../assets/game/skin-v2/blue-badge.png"); }
+.stat-badge.orange { background-image: url("../../assets/game/skin-v2/orange-badge.png"); }
 .stat-badge strong { display: block; font: 900 44px var(--mono); letter-spacing: -2px; }
-.stat-badge span { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); min-width: 205px; min-height: 50px; display: flex; align-items: center; justify-content: center; background: #f3c45a url("../assets/skin-v2/small-frame.png") center / 100% 100% no-repeat; color: #090400; font: 900 17px var(--display); text-transform: uppercase; padding: 10px 12px; }
-.progress-list { width: min(1260px, 92vw); height: 315px; margin: -18px auto 0; padding: 30px 38px; overflow-y: auto; background: url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat, linear-gradient(rgba(8, 22, 82, .72), rgba(8, 22, 82, .72)); border: 0; border-radius: 0; box-shadow: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px; align-content: start; }
-.run-card { min-height: 106px; display: grid; grid-template-columns: 87px 1fr 150px; gap: 18px; align-items: center; padding: 16px 18px; background: transparent url("../assets/skin-v2/mission-cards-border-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0; box-shadow: none; }
+.stat-badge span { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); min-width: 205px; min-height: 50px; display: flex; align-items: center; justify-content: center; background: #f3c45a url("../../assets/game/skin-v2/small-frame.png") center / 100% 100% no-repeat; color: #090400; font: 900 17px var(--display); text-transform: uppercase; padding: 10px 12px; }
+.progress-list { width: min(1260px, 92vw); height: 315px; margin: -18px auto 0; padding: 30px 38px; overflow-y: auto; background: url("../../assets/game/skin-v2/large-frame.png") center / 100% 100% no-repeat, linear-gradient(rgba(8, 22, 82, .72), rgba(8, 22, 82, .72)); border: 0; border-radius: 0; box-shadow: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 32px; align-content: start; }
+.run-card { min-height: 106px; display: grid; grid-template-columns: 87px 1fr 150px; gap: 18px; align-items: center; padding: 16px 18px; background: transparent url("../../assets/game/skin-v2/mission-cards-border-frame.png") center / 100% 100% no-repeat; border: 0; border-radius: 0; box-shadow: none; }
 .run-card img { width: 75px; height: 75px; object-fit: contain; }
 .run-card h3 { margin: 0 0 2px; color: #ffc54a; text-transform: uppercase; font: 900 19px var(--mono); }
 .run-card p { margin: 0; font: 700 16px/1.35 var(--display); }
@@ -205,7 +205,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 /* RESOURCES */
 .resources-panel { position: relative; width: min(1180px, 90vw); margin: 42px auto 0; padding: 34px 56px 44px; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 14px; }
 .resources-panel h1 { margin: 0; color: #ffc54a; text-align: center; text-transform: uppercase; letter-spacing: 2px; font: 900 48px/1 var(--mono); text-shadow: 4px 0 0 #050005, -4px 0 0 #050005, 0 4px 0 #050005, 0 -4px 0 #050005, 4px 4px 0 #050005, 0 8px 0 rgba(0,0,0,.3); }
-.resources-scroll { width: 100%; max-width: 1040px; height: 540px; color: #0b0400; background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 86px 90px 82px 104px; overflow: hidden; }
+.resources-scroll { width: 100%; max-width: 1040px; height: 540px; color: #0b0400; background: transparent url("../../assets/game/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 86px 90px 82px 104px; overflow: hidden; }
 #resources-content { height: 100%; overflow-y: auto; padding-right: 12px; font: 700 18px/1.35 var(--mono); }
 .resources-contact { margin: 4px auto 0; max-width: 900px; text-align: center; color: #fff5d2; font: 800 16px/1.35 var(--mono); text-shadow: 2px 2px 0 #050005; }
 .resources-contact a { color: #ffc54a; text-decoration: underline; }
@@ -226,7 +226,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .wizard-modal { position: fixed; inset: 0; z-index: 200; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.18); backdrop-filter: blur(1px); }
 .wizard-modal-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1020px, 88vw); height: min(690px, 78vh); }
-.wizard-modal-bubble { position: absolute; inset: 0 110px 75px 0; color: #090303; background: transparent url("../assets/skin-v2/wizard-pop-up-scroll.png") center / 100% 100% no-repeat; padding: 96px 118px 140px 120px; filter: drop-shadow(18px 18px 0 #090000); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
+.wizard-modal-bubble { position: absolute; inset: 0 110px 75px 0; color: #090303; background: transparent url("../../assets/game/skin-v2/wizard-pop-up-scroll.png") center / 100% 100% no-repeat; padding: 96px 118px 140px 120px; filter: drop-shadow(18px 18px 0 #090000); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
 .wizard-modal-bubble h2 { margin: 0 0 28px; text-align: center; text-transform: uppercase; font: 900 27px var(--mono); letter-spacing: 2px; }
 .wizard-modal-bubble p { width: 100%; max-height: 260px; overflow-y: auto; margin: 0; font: 900 clamp(19px, 1.5vw, 24px)/1.35 var(--mono); text-align: center; white-space: pre-line; }
 .wizard-modal-bubble .green-btn { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); width: 220px; height: 62px; }
@@ -362,7 +362,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   font-size: 22px;
   gap: 18px;
   padding: 0 34px;
-  background: transparent url("../assets/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat;
+  background: transparent url("../../assets/game/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat;
 }
 
 .scroll-nav-btn img {
@@ -460,7 +460,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 /* Wizard-linked bubbles should sit to the left of the wizard and use the left bubble asset. */
 .scenario-hint,
 .small-result-bubble {
-  background-image: url("../assets/skin-v2/speech-bubble-left.png");
+  background-image: url("../../assets/game/skin-v2/speech-bubble-left.png");
 }
 
 /* BIP briefing + answer feedback modal: speech bubble on the left, wizard on the right. */
@@ -488,7 +488,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   width: min(760px, calc(100% - 185px));
   height: min(530px, 100%);
   color: #090303;
-  background: transparent url("../assets/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat;
+  background: transparent url("../../assets/game/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat;
   padding: 82px 84px 128px 108px;
   filter: drop-shadow(16px 16px 0 #090000);
   display: flex;
@@ -617,7 +617,7 @@ body {
 body {
   background:
     linear-gradient(rgba(18, 26, 82, 0.08), rgba(18, 26, 82, 0.08)),
-    url("../assets/skin-v2/mission-reinforceable-background.png")
+    url("../../assets/game/skin-v2/mission-reinforceable-background.png")
     center center / cover no-repeat;
 }
 
@@ -664,7 +664,7 @@ body {
 .play-panel,
 .results-panel,
 .resources-panel {
-  background: transparent url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat;
+  background: transparent url("../../assets/game/skin-v2/large-frame.png") center / 100% 100% no-repeat;
   border: 0;
   box-shadow: none;
   backdrop-filter: none;
@@ -714,7 +714,7 @@ body {
   height: 112px;
   padding: 18px 110px;
   gap: 58px;
-  background: url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat, linear-gradient(rgba(8, 22, 82, .72), rgba(8, 22, 82, .72));
+  background: url("../../assets/game/skin-v2/large-frame.png") center / 100% 100% no-repeat, linear-gradient(rgba(8, 22, 82, .72), rgba(8, 22, 82, .72));
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -768,7 +768,7 @@ body {
   min-height: 118px;
   font-size: clamp(20px, 1.55vw, 26px);
   padding: 18px 34px;
-  background: transparent url("../assets/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat;
+  background: transparent url("../../assets/game/skin-v2/answer-choice-frame.png") center / 100% 100% no-repeat;
   border: 0;
   border-radius: 0;
   box-shadow: none;
@@ -902,7 +902,7 @@ body {
   height: 110px;
   font-size: 18px;
   line-height: 1.25;
-  background-image: url("../assets/skin-v2/speech-bubble-left.png");
+  background-image: url("../../assets/game/skin-v2/speech-bubble-left.png");
 }
 
 .survey-rating {
@@ -1009,7 +1009,7 @@ body {
   body {
     background:
       linear-gradient(rgba(18, 26, 82, 0.08), rgba(18, 26, 82, 0.08)),
-      url("../assets/skin-v2/media-background.png")
+      url("../../assets/game/skin-v2/media-background.png")
       center center / cover no-repeat;
   }
 
@@ -1080,7 +1080,7 @@ body {
     width: 100%;
     min-height: 240px;
     margin: -8px auto -8px;
-    background: transparent url("../assets/skin-v2/mobile-landing-page-wizard.png") center / 101% auto no-repeat;
+    background: transparent url("../../assets/game/skin-v2/mobile-landing-page-wizard.png") center / 101% auto no-repeat;
   }
 
   .classroom-img {
@@ -1108,7 +1108,7 @@ body {
   }
 
   .home-return .classroom-stage {
-    background-image: url("../assets/skin-v2/mobile-same-day-return-wizard.png");
+    background-image: url("../../assets/game/skin-v2/mobile-same-day-return-wizard.png");
   }
 
   .mission-menu {
@@ -1167,7 +1167,7 @@ body {
     align-items: center;
     padding: 8px 8px;
     margin: 14px auto 0;
-    background: url("../assets/skin-v2/large-frame.png") center / 100% 100% no-repeat,
+    background: url("../../assets/game/skin-v2/large-frame.png") center / 100% 100% no-repeat,
       linear-gradient(rgba(8, 22, 82, .72), rgba(8, 22, 82, .72));
     z-index: 50;
   }
@@ -1179,7 +1179,7 @@ body {
     font-size: 13px;
     line-height: 1;
     gap: 4px;
-    background: transparent url("../assets/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat;
+    background: transparent url("../../assets/game/skin-v2/bottom-menu-scroll.png") center / 100% 100% no-repeat;
   }
 
   .scroll-nav-btn img {
@@ -1248,7 +1248,7 @@ body {
     width: 100%;
     min-height: auto;
     padding: 72px 38px 54px 44px;
-    background: transparent url("../assets/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat;
+    background: transparent url("../../assets/game/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat;
   }
 
   .scenario-text {
@@ -1328,7 +1328,7 @@ body {
     max-height: none;
     margin-left: 0;
     padding: 76px 28px 62px;
-    background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
+    background: transparent url("../../assets/game/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
     overflow: visible;
   }
 
@@ -1743,7 +1743,7 @@ body {
     max-height: 62vh;
     padding: 62px 34px 54px 40px;
     overflow: hidden;
-    background: transparent url("../assets/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
+    background: transparent url("../../assets/game/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat;
   }
 
   #resources-content {

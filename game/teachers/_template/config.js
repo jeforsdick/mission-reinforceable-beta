@@ -10,9 +10,9 @@ window.MR_TEACHER_CONFIG = {
   growthFocus: 'Write the one teacher-specific growth focus here.',
 
   assets: {
-    // These can point to shared assets or to this teacher folder, e.g. teachers/teacher-a/assets/classroom.png
-    landingClassroom: 'assets/skin-v2/landing-page-classroom.png',
-    sameDayClassroom: 'assets/skin-v2/same-day-return-page-classroom.png'
+    // These can point to shared assets or to this teacher folder, e.g. game/teachers/teacher-a/assets/classroom.png
+    landingClassroom: '../assets/game/skin-v2/landing-page-classroom.png',
+    sameDayClassroom: '../assets/game/skin-v2/same-day-return-page-classroom.png'
   },
 
   feedback: {
