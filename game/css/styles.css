@@ -243,10 +243,10 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .back-to-site-cottage {
   position: fixed;
   right: clamp(10px, 2vw, 28px);
-  bottom: clamp(76px, 9vh, 112px);
+  bottom: clamp(56px, 7vh, 86px);
   z-index: 9999;
   display: block;
-  width: clamp(90px, 11vw, 160px);
+  width: clamp(72px, 8.8vw, 128px);
   height: auto;
   text-decoration: none;
   cursor: pointer;
@@ -1826,8 +1826,8 @@ body {
   }
 
   .back-to-site-cottage {
-    width: clamp(74px, 20vw, 110px);
+    width: clamp(60px, 16vw, 88px);
     right: 8px;
-    bottom: 72px;
+    bottom: 54px;
   }
 }
