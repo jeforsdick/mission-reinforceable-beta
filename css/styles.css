@@ -905,6 +905,44 @@ body {
   background-image: url("../assets/skin-v2/speech-bubble-left.png");
 }
 
+.survey-rating {
+  margin: 16px 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.survey-rating legend {
+  margin: 0 0 8px;
+  font-weight: 900;
+}
+
+.survey-rating-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.survey-rating-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 54px;
+  min-height: 44px;
+  padding: 7px 10px;
+  color: #fff8d9;
+  background: #2b1648;
+  border: 3px solid #ffc54a;
+  box-shadow: inset 0 0 0 2px #6b3a8f, 2px 2px 0 #080008;
+  cursor: pointer;
+}
+
+.survey-rating-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: #ffc54a;
+}
+
 @media (min-width: 701px) {
   .scenario-scroll {
     max-height: 572px;
@@ -1415,6 +1453,22 @@ body {
   .mobile-results-score,
   .mobile-results-reminder {
     color: #ffffff;
+  }
+
+  .survey-rating {
+    margin: 14px 0 16px;
+  }
+
+  .survey-rating-options {
+    gap: 7px;
+  }
+
+  .survey-rating-option {
+    flex: 1 1 46px;
+    min-width: 46px;
+    min-height: 48px;
+    padding: 8px 6px;
+    font-size: 16px;
   }
 
   .wizard-modal-bubble .green-btn {

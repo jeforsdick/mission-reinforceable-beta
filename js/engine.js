@@ -453,6 +453,28 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     return '<option value="">Select</option>' + [1, 2, 3, 4, 5].map(value => `<option value="${value}">${value}</option>`).join('');
   }
 
+  function surveyRating(name, label) {
+    const escapedName = MR.escapeHTML(name);
+    const options = [1, 2, 3, 4, 5].map(value => {
+      const id = `${escapedName}-${value}`;
+      return `
+        <label class="survey-rating-option" for="${id}">
+          <input id="${id}" type="radio" name="${escapedName}" value="${value}" />
+          <span>${value}</span>
+        </label>
+      `;
+    }).join('');
+
+    return `
+      <fieldset class="survey-rating">
+        <legend>${MR.escapeHTML(label)}</legend>
+        <div class="survey-rating-options">
+          ${options}
+        </div>
+      </fieldset>
+    `;
+  }
+
   function selectOptions(options) {
     return '<option value="">Select</option>' + options.map(option => `<option value="${MR.escapeHTML(option)}">${MR.escapeHTML(option)}</option>`).join('');
   }
@@ -486,7 +508,6 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     ]);
     const difficultyOptions = selectOptions(['Too easy', 'About right', 'Too hard', "I'm not sure"]);
     const permissionOptions = selectOptions(['Yes', 'No']);
-    const ratings = ratingOptions();
 
     return `
       <section id="beta-survey-section">
@@ -497,14 +518,14 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
           <h3>About You</h3>
           ${surveySelect('testerRole', 'Which best describes you?', roleOptions)}
           <h3>Playtest Ratings</h3>
-          ${surveySelect('understoodTask', 'I understood what to do without needing extra help. (1 = strongly disagree, 5 = strongly agree)', ratings)}
-          ${surveySelect('bipClear', "Jordan's plan was clear enough to use during the mission. (1 = strongly disagree, 5 = strongly agree)", ratings)}
-          ${surveySelect('choicesMadeMeThink', 'The choices made me think carefully, not just guess. (1 = strongly disagree, 5 = strongly agree)', ratings)}
-          ${surveySelect('feedbackHelpful', 'The wizard feedback helped me understand what to do differently. (1 = strongly disagree, 5 = strongly agree)', ratings)}
-          ${surveySelect('easyToNavigate', 'The game was easy to navigate. (1 = strongly disagree, 5 = strongly agree)', ratings)}
-          ${surveySelect('lookedPolished', 'The game was fun enough that I would want to play another mission. (1 = strongly disagree, 5 = strongly agree)', ratings)}
-          ${surveySelect('resourcesHelpful', "The Resources page or BIP Briefing helped me understand Jordan's plan. (1 = strongly disagree, 5 = strongly agree)", ratings)}
-          ${surveySelect('missedReviewHelpful', 'The Results or missed-answer review helped me understand what to improve. (1 = strongly disagree, 5 = strongly agree)', ratings)}
+          ${surveyRating('understoodTask', 'I understood what to do without needing extra help. (1 = strongly disagree, 5 = strongly agree)')}
+          ${surveyRating('bipClear', "Jordan's plan was clear enough to use during the mission. (1 = strongly disagree, 5 = strongly agree)")}
+          ${surveyRating('choicesMadeMeThink', 'The choices made me think carefully, not just guess. (1 = strongly disagree, 5 = strongly agree)')}
+          ${surveyRating('feedbackHelpful', 'The wizard feedback helped me understand what to do differently. (1 = strongly disagree, 5 = strongly agree)')}
+          ${surveyRating('easyToNavigate', 'The game was easy to navigate. (1 = strongly disagree, 5 = strongly agree)')}
+          ${surveyRating('lookedPolished', 'The game was fun enough that I would want to play another mission. (1 = strongly disagree, 5 = strongly agree)')}
+          ${surveyRating('resourcesHelpful', "The Resources page or BIP Briefing helped me understand Jordan's plan. (1 = strongly disagree, 5 = strongly agree)")}
+          ${surveyRating('missedReviewHelpful', 'The Results or missed-answer review helped me understand what to improve. (1 = strongly disagree, 5 = strongly agree)')}
           ${surveySelect('difficulty', 'How did the challenge level feel?', difficultyOptions)}
           <h3>Open Feedback</h3>
           ${surveyTextarea('confusingPart', 'Where, if anywhere, did you feel stuck, confused, or unsure what to do?')}
