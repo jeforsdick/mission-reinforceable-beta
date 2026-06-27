@@ -1585,6 +1585,21 @@ body {
     line-height: 1.38;
   }
 
+  .wizard-modal[data-mode="welcome"] .wizard-modal-bubble h2 {
+    width: min(100%, 330px);
+    font-size: 17px;
+    line-height: 1.05;
+    margin-bottom: 8px;
+  }
+
+  .wizard-modal[data-mode="welcome"] .wizard-modal-bubble p {
+    width: min(100%, 340px);
+    font-size: 12px;
+    line-height: 1.2;
+    max-height: none;
+    overflow-y: hidden;
+  }
+
   .wizard-modal-img {
     cursor: pointer;
   }
