@@ -131,12 +131,10 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
   function updateHeartsForChoice(score) {
     const before = current.hearts;
-    if (score >= 10) {
-      if (current.hearts < current.maxHearts) current.hearts = Math.min(current.maxHearts, current.hearts + 0.5);
-    } else if (score >= 5) {
-      current.hearts = Math.max(0, current.hearts - 0.25);
-    } else {
+    if (score >= 5 && score < 10) {
       current.hearts = Math.max(0, current.hearts - 0.5);
+    } else if (score < 5) {
+      current.hearts = Math.max(0, current.hearts - 1);
     }
     current.hearts = Math.round(current.hearts * 4) / 4;
     return { before, after: current.hearts };
