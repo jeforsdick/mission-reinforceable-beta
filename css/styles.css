@@ -777,8 +777,8 @@ body {
 /* POLISH OVERRIDES — gameplay wizard hint alignment */
 
 .wizard-hint-wrap {
-  width: 615px;
-  height: 255px;
+  width: 585px;
+  height: 300px;
   top: -14px;
   right: 0;
 }
