@@ -5,77 +5,159 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mission: Reinforceable</title>
   <link rel="icon" href="favicon.png" />
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #1f2933;
-      background: #f4f7fb;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-    }
-
-    main {
-      width: min(920px, calc(100% - 32px));
-      padding: 48px 0;
-    }
-
-    h1 {
-      margin: 0 0 12px;
-      font-size: clamp(2rem, 5vw, 4rem);
-      line-height: 1;
-    }
-
-    p {
-      max-width: 620px;
-      margin: 0 0 28px;
-      font-size: 1.1rem;
-      line-height: 1.5;
-    }
-
-    nav {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-    }
-
-    a {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 52px;
-      padding: 0 18px;
-      border: 1px solid #c9d4e5;
-      border-radius: 8px;
-      background: #fff;
-      color: #183153;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    a:hover,
-    a:focus-visible {
-      border-color: #4f7ac7;
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(79, 122, 199, .18);
-    }
-  </style>
+  <link rel="stylesheet" href="assets/site/site.css" />
 </head>
 <body>
-  <main>
-    <h1>Mission: Reinforceable</h1>
-    <p>Temporary project landing page while the beta game and dissertation website are being organized for deployment.</p>
-    <nav aria-label="Site sections">
-      <a href="/game/">Open Game</a>
-      <a href="/research/">Research</a>
-      <a href="/intake/">Intake</a>
-      <a href="/beta/">Beta</a>
-    </nav>
-  </main>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="./" aria-label="Mission: Reinforceable home">
+          <span class="brand-mark">MR</span>
+          <span>Mission: Reinforceable</span>
+        </a>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="./">Home</a>
+          <a href="research/">Research</a>
+          <a href="beta/">Beta Game</a>
+          <a href="intake/">New Game Intake</a>
+          <a class="nav-cta" href="game/">Play Beta</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-inner">
+          <div>
+            <p class="eyebrow">Dissertation beta project</p>
+            <h1>Mission: Reinforceable</h1>
+            <p class="subtitle">Game-based practice for implementing behavior support plans when it matters most.</p>
+            <p class="lede">Mission: Reinforceable gives teachers brief, realistic classroom missions with immediate feedback, supporting decision-making practice in the kinds of moments that move quickly during the school day.</p>
+            <div class="actions">
+              <a class="button button-primary" href="game/">Play the Beta</a>
+              <a class="button button-secondary" href="research/">Learn About the Research</a>
+            </div>
+          </div>
+          <aside class="hero-card" aria-label="Mission preview">
+            <img class="hero-logo" src="assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
+            <h2>Brief practice. Clear feedback. Classroom fit.</h2>
+            <div class="mission-preview">
+              <div class="mission-row">
+                <span class="mission-step">1</span>
+                <strong>Read a classroom moment</strong>
+              </div>
+              <div class="mission-row">
+                <span class="mission-step">2</span>
+                <strong>Choose a support response</strong>
+              </div>
+              <div class="mission-row">
+                <span class="mission-step">3</span>
+                <strong>Review immediate feedback</strong>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div class="panel dark">
+          <p class="eyebrow">The problem</p>
+          <h2>Implementation support has to fit real classrooms.</h2>
+        </div>
+        <div class="panel">
+          <p>Teachers are often asked to implement individualized behavior support plans in fast-moving classrooms. Even strong plans can be hard to carry out consistently when decisions need to happen quickly, privately, and with many other classroom demands in motion.</p>
+          <p>Mission: Reinforceable is designed around low-burden practice: short decision points, realistic scenarios, and feedback that connects choices back to behavior support plan implementation.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-intro">
+          <p class="eyebrow">What it is</p>
+          <h2>A web-based practice tool for behavior support plan implementation.</h2>
+          <p>Mission: Reinforceable presents brief missions based on classroom scenarios. Teachers practice selecting responses, receive feedback, and can revisit progress over time.</p>
+        </div>
+        <div class="grid-3">
+          <article class="card">
+            <span class="number">1</span>
+            <h3>Read the classroom scenario</h3>
+            <p>Each mission starts with a short classroom situation connected to behavior support plan implementation.</p>
+          </article>
+          <article class="card">
+            <span class="number">2</span>
+            <h3>Choose a response</h3>
+            <p>Teachers choose from realistic options that vary in alignment with the plan and the likely function of behavior.</p>
+          </article>
+          <article class="card">
+            <span class="number">3</span>
+            <h3>Get immediate feedback</h3>
+            <p>Feedback explains why a response may support, weaken, or partially align with the intended plan.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-intro">
+          <p class="eyebrow">Why it matters</p>
+          <h2>Practice that respects teacher time.</h2>
+        </div>
+        <div class="grid-5">
+          <article class="feature-card">
+            <h3>Low-burden daily practice</h3>
+            <p>Short missions are intended to fit into small windows of time.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Realistic decision-making</h3>
+            <p>Scenarios focus on moments that require quick, plan-aligned choices.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Immediate feedback</h3>
+            <p>Teachers see feedback right after responding, while the scenario is still fresh.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Implementation fidelity</h3>
+            <p>The tool is designed to support consistent use of behavior support plan strategies.</p>
+          </article>
+          <article class="feature-card">
+            <h3>Classroom fit</h3>
+            <p>The experience is brief, web-based, and built around practical classroom routines.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div class="panel callout">
+          <p class="eyebrow">Research and pilot</p>
+          <h2>Part of dissertation research on teacher implementation support.</h2>
+        </div>
+        <div class="panel">
+          <p>This project is part of dissertation research focused on supporting teacher implementation of behavior support plans. The current beta is being used to refine usability, clarity, navigation, and the overall fit of game-based practice for educators.</p>
+          <p>Pilot feedback and usability findings will be summarized here as they become available. No effectiveness claims are being made from the public beta page.</p>
+          <div class="actions">
+            <a class="button button-secondary" href="research/">Read the Research Overview</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="cta-band">
+          <div>
+            <h2>Try the current beta.</h2>
+            <p>Explore the existing beta game, then return to the research and intake pages as the public site develops.</p>
+          </div>
+          <div class="actions">
+            <a class="button button-primary" href="game/">Play Beta</a>
+            <a class="button button-secondary" href="beta/">Beta Details</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>Mission: Reinforceable</span>
+        <span>Game-based practice for behavior support implementation.</span>
+      </div>
+    </footer>
+  </div>
 </body>
 </html>
