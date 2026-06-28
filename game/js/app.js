@@ -5,7 +5,7 @@
   let welcomeShownThisLoad = false;
   const WELCOME_STORAGE_KEY = 'mission-reinforceable:betaWelcomeShown';
   const SOUND_STORAGE_KEY = 'mrSoundEnabled';
-  const BGM_VOLUME = 0.07;
+  const BGM_VOLUME = 0.063;
   const SFX_VOLUME = 0.32;
   const AUDIO_PATHS = {
     bgm: '../assets/game/audio/bgm-loop.mp3',

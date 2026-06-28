@@ -243,7 +243,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .back-to-site-cottage {
   position: fixed;
   right: clamp(10px, 2vw, 28px);
-  bottom: clamp(56px, 7vh, 86px);
+  bottom: clamp(8px, 1.5vh, 18px);
   z-index: 9999;
   display: block;
   width: clamp(72px, 8.8vw, 128px);
@@ -1890,7 +1890,7 @@ body {
 
 .sound-toggle {
   position: fixed;
-  right: clamp(10px, 2vw, 28px);
+  left: clamp(10px, 2vw, 28px);
   bottom: clamp(8px, 1.5vh, 18px);
   z-index: 10000;
   display: inline-flex;
