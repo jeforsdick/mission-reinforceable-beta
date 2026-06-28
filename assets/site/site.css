@@ -455,6 +455,20 @@ p {
   text-transform: uppercase;
 }
 
+.preview-label-link {
+  text-decoration: none;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.preview-label-link:hover,
+.preview-label-link:focus-visible {
+  border-color: rgba(240, 201, 90, .72);
+  background: rgba(240, 201, 90, .16);
+  box-shadow: 0 10px 22px rgba(16, 36, 63, .12);
+  outline: none;
+  transform: translateY(-1px);
+}
+
 .preview-label img {
   width: 20px;
   height: 20px;
