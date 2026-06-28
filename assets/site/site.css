@@ -155,7 +155,7 @@ a {
 }
 
 .hero {
-  padding: 64px 0 46px;
+  padding: 51px 0 37px;
 }
 
 .hero-inner,
@@ -272,7 +272,7 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 30px;
+  margin-top: 24px;
 }
 
 .button {
@@ -371,7 +371,7 @@ p {
 .summary-steps {
   display: grid;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .mission-row,
@@ -400,7 +400,7 @@ p {
 
 .hero-preview-wide {
   width: min(1120px, calc(100% - 36px));
-  margin-top: 22px;
+  margin-top: 18px;
   padding: 10px;
   display: grid;
   grid-template-columns: minmax(0, 1.85fr) minmax(280px, .75fr);
@@ -481,7 +481,7 @@ p {
 
 .inside-game-intro {
   width: min(920px, calc(100% - 36px));
-  margin: 0 auto 26px;
+  margin: 0 auto 21px;
 }
 
 .inside-game-intro p:last-child {
@@ -559,7 +559,7 @@ p {
 
 .inside-game-note {
   width: min(1120px, calc(100% - 36px));
-  margin: 18px auto 0;
+  margin: 14px auto 0;
   padding: 16px 18px;
   border-left: 5px solid var(--gold);
   border-radius: var(--radius);
@@ -569,7 +569,7 @@ p {
 }
 
 .practice-loop-section {
-  padding-top: 44px;
+  padding-top: 35px;
 }
 
 .process-strip {
@@ -610,12 +610,12 @@ p {
 }
 
 .section {
-  padding: 56px 0;
+  padding: 45px 0;
 }
 
 .section-intro {
   max-width: 760px;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .section-intro p {
@@ -838,7 +838,7 @@ p {
 
 .section-note {
   width: min(1120px, calc(100% - 36px));
-  margin: 20px auto 0;
+  margin: 16px auto 0;
   padding: 18px 22px;
   border-left: 5px solid var(--gold);
   border-radius: var(--radius);
@@ -879,12 +879,12 @@ p {
 }
 
 .references-section {
-  padding-top: 28px;
+  padding-top: 22px;
 }
 
 .reference-list {
   width: min(1120px, calc(100% - 36px));
-  margin: 0 auto 56px;
+  margin: 0 auto 45px;
   padding: 24px 28px 24px 48px;
   border: 1px solid rgba(217, 224, 231, .92);
   border-radius: var(--radius);
@@ -914,7 +914,7 @@ p {
 }
 
 .cta-band {
-  margin: 34px auto 68px;
+  margin: 27px auto 54px;
   padding: 34px;
   display: flex;
   align-items: center;
@@ -971,7 +971,7 @@ p {
 }
 
 .site-footer {
-  padding: 34px 0;
+  padding: 27px 0;
   border-top: 1px solid var(--line);
   color: var(--muted);
   background: #fff;
@@ -995,7 +995,7 @@ p {
 }
 
 .beta-briefing {
-  padding: 58px 0 76px;
+  padding: 46px 0 61px;
 }
 
 .briefing-hero,
@@ -1007,7 +1007,7 @@ p {
 
 .briefing-hero {
   max-width: 900px;
-  margin-bottom: 34px;
+  margin-bottom: 27px;
   text-align: center;
 }
 
@@ -1021,7 +1021,7 @@ p {
   grid-template-columns: minmax(112px, 170px) 1fr;
   gap: 28px;
   align-items: center;
-  margin-top: 18px;
+  margin-top: 14px;
   padding: 26px 30px;
   overflow: hidden;
   border: 1px solid rgba(217, 224, 231, .92);
@@ -1119,7 +1119,7 @@ p {
 }
 
 .briefing-cta {
-  margin-top: 28px;
+  margin-top: 22px;
   padding: 32px;
   display: flex;
   align-items: center;
@@ -1319,7 +1319,7 @@ p {
   }
 
   .hero {
-    padding-top: 48px;
+    padding-top: 38px;
   }
 
   .preview-gif-row {
@@ -1331,7 +1331,7 @@ p {
   }
 
   .section {
-    padding: 40px 0;
+    padding: 32px 0;
   }
 
   .reference-list {
@@ -1340,7 +1340,7 @@ p {
   }
 
   .beta-briefing {
-    padding: 42px 0 58px;
+    padding: 34px 0 46px;
   }
 
   .briefing-hero,
