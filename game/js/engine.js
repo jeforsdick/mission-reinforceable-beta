@@ -332,12 +332,45 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
   function summaryForRun(run) {
     const config = MR.teacherConfig;
-    const level = classifyRun(run);
-    const feedback = config.feedback[level] || config.feedback.mid;
-    const actions = level === 'high' ? config.feedback.actionHigh : level === 'mid' ? config.feedback.actionMid : config.feedback.actionLow;
-    const lastStrong = run.history.slice().reverse().find(item => item.score >= 10);
+    const score = Number(run && run.score) || 0;
+    const maxScore = Number(run && run.maxScore) || 0;
+    const accuracy = maxScore > 0 ? Math.round((score / maxScore) * 100) : Number(run && run.accuracy) || 0;
+    const isPerfect = maxScore > 0 && (score >= maxScore || accuracy >= 100);
+    let result;
+
+    if (isPerfect) {
+      result = {
+        level: 'perfect',
+        title: 'Perfect Mission!',
+        message: 'You made every decision in alignment with the plan. The wizard is impressed - this was a flawless run.',
+        summary: 'All responses were plan-aligned.',
+        actions: '<p>Keep using the plan-aligned pattern: prevent, prompt, reinforce, and return to the routine.</p>'
+      };
+    } else if (accuracy >= 80) {
+      result = {
+        level: 'strong',
+        title: 'Strong Mission!',
+        message: 'You were mostly aligned with the plan. Review the feedback from any missed choices, then try again to sharpen your response pattern.',
+        summary: 'Almost all responses were plan-aligned.',
+        actions: config.feedback.actionHigh || '<p>Review any missed choices, then try again to sharpen your response pattern.</p>'
+      };
+    } else {
+      result = {
+        level: 'practice',
+        title: 'Keep Practicing',
+        message: 'Some choices moved away from the plan. Review the feedback, revisit the BIP Briefing, and try again.',
+        summary: 'Additional practice can help strengthen plan-aligned responding.',
+        actions: config.feedback.actionLow || '<p>Review the BIP Briefing and focus on calm, plan-aligned responses.</p>'
+      };
+    }
+
+    const history = Array.isArray(run && run.history) ? run.history : [];
+    const lastStrong = history.slice().reverse().find(item => item.score >= 10);
     const lastText = lastStrong ? `${config.studentAlias || 'Student'} contacted reinforcement for a plan-aligned response. The BIP pathway became stronger.` : `The final pathway needs one clearer bridge back to the routine before escape, attention, or escalation becomes more efficient.`;
-    return { level, feedback, actions, lastText };
+    return Object.assign(result, {
+      feedback: `${result.title}\n\n${result.message}`,
+      lastText: result.level === 'perfect' ? result.summary : lastText
+    });
   }
 
   function missedAnswerReview(run) {
@@ -386,9 +419,10 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
     return `
       <section class="mobile-results-summary">
-        <h1>${MR.escapeHTML(feedback.title)}</h1>
+        <h1>${MR.escapeHTML(summary.title || feedback.title)}</h1>
         <p class="mobile-results-score"><strong>Score:</strong> ${run.score} / ${run.maxScore} (${run.accuracy}%)</p>
-        <p>${MR.escapeHTML(feedback.body || summary.feedback)}</p>
+        <p>${MR.escapeHTML(summary.message || feedback.body || summary.feedback)}</p>
+        <p><strong>${MR.escapeHTML(summary.summary || '')}</strong></p>
         <h2>Quick feedback</h2>
         <ul>
           <li>Strong choices: ${strongCount}</li>
@@ -697,8 +731,10 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     MR.$('#results-score-label').textContent = `${run.score}`;
 
     MR.$('#results-content').innerHTML = isMobileView() ? mobileResultsHTML(run, summary) : `
-      <h1>Score: ${run.score} / ${run.maxScore} (${run.accuracy}%)</h1>
-      <p><strong>Overall feedback:</strong><br />${MR.escapeHTML(summary.feedback)}</p>
+      <h1>${MR.escapeHTML(summary.title)}</h1>
+      <p><strong>Score:</strong> ${run.score} / ${run.maxScore} (${run.accuracy}%)</p>
+      <p><strong>Overall feedback:</strong><br />${MR.escapeHTML(summary.message)}</p>
+      <p><strong>${MR.escapeHTML(summary.summary)}</strong></p>
       <p>${MR.escapeHTML(summary.lastText)}</p>
       <p><strong>Plan reminder:</strong></p>
       ${summary.actions}
