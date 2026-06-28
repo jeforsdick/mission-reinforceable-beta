@@ -464,6 +464,99 @@ p {
   line-height: 1.5;
 }
 
+.inside-game {
+  padding-top: 36px;
+}
+
+.inside-game-intro {
+  width: min(920px, calc(100% - 36px));
+  margin: 0 auto 26px;
+}
+
+.inside-game-intro p:last-child {
+  max-width: 840px;
+  margin-bottom: 0;
+  font-size: 1.05rem;
+}
+
+.game-feature-grid {
+  width: min(1120px, calc(100% - 36px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.game-feature-card {
+  position: relative;
+  min-height: 230px;
+  padding: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(217, 224, 231, .92);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 16px 38px rgba(16, 36, 63, .09);
+}
+
+.game-feature-card::before {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 5px;
+  margin-bottom: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--purple));
+}
+
+.game-feature-card::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  width: 34px;
+  height: 34px;
+  opacity: .86;
+  background: url("../game/skin-v2/behavior-xp-icon.png") center / contain no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 7px rgba(16, 36, 63, .18));
+}
+
+.game-feature-card:nth-child(5)::after {
+  background-image: url("../game/skin-v2/heart-icon.png");
+}
+
+.game-feature-card h3 {
+  max-width: calc(100% - 38px);
+  margin-top: 8px;
+}
+
+.game-feature-card p {
+  margin-bottom: 0;
+  color: #4c5b69;
+  line-height: 1.58;
+}
+
+.feature-kicker {
+  display: inline-flex;
+  color: var(--purple-dark);
+  font-size: .76rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.inside-game-note {
+  width: min(1120px, calc(100% - 36px));
+  margin: 18px auto 0;
+  padding: 16px 18px;
+  border-left: 5px solid var(--gold);
+  border-radius: var(--radius);
+  color: #3f5062;
+  background: rgba(255, 255, 255, .82);
+  font-weight: 750;
+}
+
 .practice-loop-section {
   padding-top: 44px;
 }
@@ -1112,6 +1205,10 @@ p {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .game-feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .reference-list {
     columns: 1;
   }
@@ -1197,12 +1294,16 @@ p {
   .outcome-grid,
   .stat-grid,
   .process-strip,
+  .game-feature-grid,
+  .inside-game-intro,
+  .inside-game-note,
   .section-note {
     width: min(100% - 24px, 1120px);
   }
 
   .outcome-grid,
-  .stat-grid {
+  .stat-grid,
+  .game-feature-grid {
     grid-template-columns: 1fr;
   }
 
