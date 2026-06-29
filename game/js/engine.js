@@ -574,12 +574,13 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
   function betaSurveyHTML() {
     const roleOptions = selectOptions([
-      'Classroom teacher',
-      'Behavior specialist',
-      'Student/graduate student',
-      'Parent/caregiver',
-      'Other educator',
-      'Other adult'
+      'General education teacher',
+      'Special education teacher',
+      'School/district behavior support personnel',
+      'Researcher/graduate student',
+      'Software/technology tester',
+      'Friend/family/community tester',
+      'Other'
     ]);
     const deviceOptions = selectOptions([
       'Desktop/laptop',
@@ -593,7 +594,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
     return `
       <section id="beta-survey-section">
-        <!-- beta-survey-fields-v2-device-email -->
+        <!-- beta-survey-device-email-v3 -->
         <h2>Beta Survey</h2>
         <p>Thank you for playtesting Mission: Reinforceable. Your feedback will help improve the game before it is used in research. Please do not include real student names, school names, or identifying information.</p>
         <p>For rating questions, use 1 = strongly disagree and 5 = strongly agree.</p>
@@ -631,8 +632,6 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     const data = new FormData(form);
     const history = Array.isArray(run.history) ? run.history : [];
     const scores = history.map(item => Number(item.score || 0));
-    const deviceType = data.get('device_type') || '';
-    const followUpEmail = data.get('follow_up_email') || '';
 
     return {
       action: 'betaSurvey',
@@ -649,12 +648,8 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       accuracy: run.accuracy,
       durationSeconds: run.durationSeconds,
       activeDurationSeconds: run.activeDurationSeconds,
-      device_type: deviceType,
-      deviceType,
-      follow_up_email: followUpEmail,
-      followUpEmail,
-      email: followUpEmail,
       testerRole: data.get('testerRole') || '',
+      device_type: data.get('device_type') || '',
       understoodTask: data.get('understoodTask') || '',
       bipClear: data.get('bipClear') || '',
       choicesMadeMeThink: data.get('choicesMadeMeThink') || '',
@@ -673,6 +668,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       changeSuggestion: data.get('changeSuggestion') || '',
       openComments: data.get('openComments') || '',
       permissionToUseFeedback: data.get('permissionToUseFeedback') || '',
+      follow_up_email: data.get('follow_up_email') || '',
       screenWidth: window.innerWidth,
       screenHeight: window.innerHeight,
       userAgent: navigator.userAgent,
@@ -696,11 +692,14 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     button.disabled = true;
     status.textContent = 'Submitting beta feedback...';
 
+    const payload = betaSurveyPayload(run, form);
+    console.info('Beta survey payload', payload);
+
     fetch(endpoint, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(betaSurveyPayload(run, form))
+      body: JSON.stringify(payload)
     }).then(() => {
       button.disabled = false;
       status.textContent = '';
@@ -735,6 +734,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       <p><button id="survey-back-results" class="pixel-btn brown-btn" type="button">Back to Results</button></p>
       ${betaSurveyHTML()}
     `;
+    console.info('Beta survey render version: device-email-v3');
     const backButton = MR.$('#survey-back-results');
     if (backButton) backButton.addEventListener('click', () => MR.setScreen('results'));
     wireBetaSurvey(run);
