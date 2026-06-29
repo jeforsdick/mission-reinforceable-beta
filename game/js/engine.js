@@ -594,7 +594,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
     return `
       <section id="beta-survey-section">
-        <!-- beta-survey-device-email-v3 -->
+        <div class="survey-debug-marker">Survey version: device/email v4</div>
         <h2>Beta Survey</h2>
         <p>Thank you for playtesting Mission: Reinforceable. Your feedback will help improve the game before it is used in research. Please do not include real student names, school names, or identifying information.</p>
         <p>For rating questions, use 1 = strongly disagree and 5 = strongly agree.</p>
@@ -693,7 +693,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     status.textContent = 'Submitting beta feedback...';
 
     const payload = betaSurveyPayload(run, form);
-    console.info('Beta survey payload', payload);
+    console.info('Submitting beta survey payload device/email v4', payload);
 
     fetch(endpoint, {
       method: 'POST',
@@ -734,7 +734,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       <p><button id="survey-back-results" class="pixel-btn brown-btn" type="button">Back to Results</button></p>
       ${betaSurveyHTML()}
     `;
-    console.info('Beta survey render version: device-email-v3');
+    console.info('Rendering beta survey device/email v4');
     const backButton = MR.$('#survey-back-results');
     if (backButton) backButton.addEventListener('click', () => MR.setScreen('results'));
     wireBetaSurvey(run);

@@ -988,6 +988,17 @@ body {
   font: 700 16px/1.35 var(--mono);
 }
 
+.survey-debug-marker {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 6px 10px;
+  color: #fff8d9;
+  background: #2b1648;
+  border: 3px solid #ffc54a;
+  box-shadow: 2px 2px 0 #080008;
+  font: 900 14px/1.2 var(--mono);
+}
+
 @media (min-width: 701px) {
   .scenario-scroll {
     max-height: 572px;
