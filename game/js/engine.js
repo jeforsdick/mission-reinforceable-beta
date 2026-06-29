@@ -593,6 +593,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
     return `
       <section id="beta-survey-section">
+        <!-- beta-survey-fields-v2-device-email -->
         <h2>Beta Survey</h2>
         <p>Thank you for playtesting Mission: Reinforceable. Your feedback will help improve the game before it is used in research. Please do not include real student names, school names, or identifying information.</p>
         <p>For rating questions, use 1 = strongly disagree and 5 = strongly agree.</p>
