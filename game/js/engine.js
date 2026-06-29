@@ -598,8 +598,8 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
         <p>For rating questions, use 1 = strongly disagree and 5 = strongly agree.</p>
         <form id="beta-survey-form">
           <h3>About You</h3>
-          ${surveySelect('device_type', 'What device did you primarily use to test the beta?', deviceOptions, true)}
           ${surveySelect('testerRole', 'Which best describes you?', roleOptions)}
+          ${surveySelect('device_type', 'What device did you primarily use to test the beta?', deviceOptions, true)}
           <h3>Playtest Ratings</h3>
           ${surveyRating('understoodTask', 'I understood what to do without needing extra help. (1 = strongly disagree, 5 = strongly agree)')}
           ${surveyRating('bipClear', "Jordan's plan was clear enough to use during the mission. (1 = strongly disagree, 5 = strongly agree)")}
