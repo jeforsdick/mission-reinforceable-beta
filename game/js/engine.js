@@ -576,7 +576,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     const roleOptions = selectOptions([
       'General education teacher',
       'Special education teacher',
-      'School/district behavior support personnel',
+      'Behavior specialist / BCBA / school or district support personnel',
       'Researcher/graduate student',
       'Software/technology tester',
       'Friend/family/community tester',
