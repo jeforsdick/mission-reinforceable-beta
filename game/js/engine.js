@@ -466,7 +466,6 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
   function coachingDebriefHTML(run, summary) {
     const buckets = scoreBuckets(run);
-    const total = buckets.answered.length || Number(run.expectedSteps || 0) || 0;
     const coaching = coachingSummary(run, buckets);
     const reviewHTML = buckets.missedQuestions.length
       ? `
@@ -491,7 +490,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
           <dl class="results-stats">
             <div><dt>Total Score</dt><dd>${MR.escapeHTML(String(run.score))} / ${MR.escapeHTML(String(run.maxScore))}</dd></div>
             <div><dt>Percent</dt><dd>${MR.escapeHTML(String(run.accuracy))}%</dd></div>
-            <div><dt>Best Choice</dt><dd>${buckets.bestChoices.length} / ${total}</dd></div>
+            <div><dt>Best Choice</dt><dd>${buckets.bestChoices.length}</dd></div>
             <div><dt>Workable, but Refine</dt><dd>${buckets.refineChoices.length}</dd></div>
             <div><dt>Missed Opportunity</dt><dd>${buckets.mismatchChoices.length}</dd></div>
           </dl>
