@@ -273,29 +273,6 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   border-radius: 10px;
 }
 
-@media (max-width: 980px) {
-  .mr-app { min-height: 820px; }
-  .title-logo { margin-top: 32px; width: 82vw; }
-  .home-panel, .play-panel, .results-panel, .progress-list { width: calc(100vw - 24px); }
-  .home-panel { padding: 46px 18px 30px; }
-  .home-layout, .play-panel { grid-template-columns: 1fr; }
-  .mission-menu { grid-template-columns: 1fr; margin-top: 28px; }
-  .hud { grid-template-columns: 1fr; gap: 10px; width: calc(100vw - 24px); }
-  .heart-row { justify-content: center; }
-  .choices-area { padding-top: 120px; }
-  .wizard-hint-wrap { left: 0; right: auto; width: 100%; }
-  .scenario-scroll { padding: 88px 50px 68px; }
-  .bottom-nav { height: auto; grid-template-columns: 1fr; gap: 6px; padding: 10px 22px; position: sticky; bottom: 0; transform: none; left: auto; margin: 20px auto 0; }
-  .scroll-nav-btn { height: 54px; font-size: 19px; }
-  .badge-row, .progress-list { grid-template-columns: 1fr; }
-  .progress-list { height: 380px; }
-  .run-card { grid-template-columns: 75px 1fr; }
-  .run-card button { grid-column: 1 / -1; width: 100%; }
-  .wizard-modal-bubble { inset: 0; padding: 82px 60px 130px; }
-  .wizard-modal-img { width: 170px; height: 250px; right: -15px; bottom: -20px; }
-}
-
-
 /* ============================================================
    CLEAN REBUILD STARTER ADJUSTMENTS — 2026-06-24
    Purpose: smaller overall containers, no duplicate home bubbles,
@@ -617,26 +594,6 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   right: 8px;
   bottom: 38px;
   transform: rotate(6deg);
-}
-
-@media (max-width: 980px) {
-  .mr-app { min-height: 780px; }
-  .wizard-modal-card { width: min(760px, 94vw); height: min(610px, 84vh); }
-  .wizard-modal-bubble { width: 100%; height: 78%; padding: 78px 54px 126px 66px; }
-  .wizard-modal-img { width: 132px; height: 192px; right: 0; bottom: 6px; }
-  .wizard-modal-img.briefing,
-  .wizard-modal-img.happy,
-  .wizard-modal-img.shocked,
-  .wizard-modal-img.questioning {
-    width: 160px;
-    height: 221px;
-  }
-  .wizard-modal-img.dead {
-    width: 230px;
-    height: 192px;
-    right: 0;
-    bottom: 22px;
-  }
 }
 
 /* ============================================================
@@ -1050,8 +1007,7 @@ body {
 }
 
 /* ============================================================
-   MOBILE FOUNDATION — phones only
-   Desktop layout stays unchanged.
+   MOBILE LAYOUT — SOURCE OF TRUTH
    ============================================================ */
 
 @media (max-width: 700px) {
@@ -1857,6 +1813,33 @@ body {
   .back-to-site-cottage {
     display: none;
   }
+
+  .sound-toggle {
+    position: static;
+    display: flex;
+    width: min(100% - 20px, 320px);
+    justify-content: center;
+    margin: 10px auto 14px;
+    padding: 7px 8px 8px;
+    font-size: 10px;
+    box-shadow:
+      inset 0 0 0 2px #3b237c,
+      3px 3px 0 #080008;
+  }
+
+  .sound-toggle__switch {
+    width: 38px;
+    height: 21px;
+  }
+
+  .sound-toggle__knob {
+    width: 11px;
+    height: 11px;
+  }
+
+  .sound-toggle[aria-pressed="true"] .sound-toggle__knob {
+    transform: translateX(17px);
+  }
 }
 
 /* BUG FIX OVERRIDES - partial hearts keep the full pixel silhouette, and decorative hint art cannot intercept answer clicks. */
@@ -1979,33 +1962,4 @@ body {
 
 .sound-toggle[aria-pressed="true"] .sound-toggle__knob {
   transform: translateX(17px);
-}
-
-@media (max-width: 700px) {
-  .sound-toggle {
-    position: static;
-    display: flex;
-    width: min(100% - 20px, 320px);
-    justify-content: center;
-    margin: 10px auto 14px;
-    padding: 7px 8px 8px;
-    font-size: 10px;
-    box-shadow:
-      inset 0 0 0 2px #3b237c,
-      3px 3px 0 #080008;
-  }
-
-  .sound-toggle__switch {
-    width: 38px;
-    height: 21px;
-  }
-
-  .sound-toggle__knob {
-    width: 11px;
-    height: 11px;
-  }
-
-  .sound-toggle[aria-pressed="true"] .sound-toggle__knob {
-    transform: translateX(17px);
-  }
 }
