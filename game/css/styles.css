@@ -226,20 +226,6 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .muted { color: #dad6ff; font: 700 15px var(--mono); }
 code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
-/* FEEDBACK MODAL */
-.wizard-modal { position: fixed; inset: 0; z-index: 200; }
-.modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.18); backdrop-filter: blur(1px); }
-.wizard-modal-card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(1020px, 88vw); height: min(690px, 78vh); }
-.wizard-modal-bubble { position: absolute; inset: 0 110px 75px 0; color: #090303; background: transparent url("../../assets/game/skin-v2/wizard-pop-up-scroll.png") center / 100% 100% no-repeat; padding: 96px 118px 140px 120px; filter: drop-shadow(18px 18px 0 #090000); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; }
-.wizard-modal-bubble h2 { margin: 0 0 28px; text-align: center; text-transform: uppercase; font: 900 27px var(--mono); letter-spacing: 2px; }
-.wizard-modal-bubble p { width: 100%; max-height: 260px; overflow-y: auto; margin: 0; font: 900 clamp(19px, 1.5vw, 24px)/1.35 var(--mono); text-align: center; white-space: pre-line; }
-.wizard-modal-bubble .green-btn { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); width: 220px; height: 62px; }
-.wizard-modal-img { position: absolute; right: 0; bottom: 0; width: 260px; height: 360px; object-fit: contain; image-rendering: auto; filter: drop-shadow(10px 10px 0 #070000); }
-.wizard-modal-img.dead { width: 390px; height: 320px; right: -18px; bottom: -4px; transform: rotate(6deg); }
-.wizard-modal-img.happy { width: 310px; }
-.wizard-modal-img.shocked { width: 300px; }
-.wizard-modal-img.questioning { width: 300px; }
-
 .back-to-site-cottage {
   position: fixed;
   right: clamp(10px, 2vw, 28px);
@@ -485,13 +471,20 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   z-index: 200;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .28);
+  backdrop-filter: blur(3px);
+}
+
 .wizard-modal-card {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(980px, 90vw);
-  height: min(630px, 82vh);
+  height: min(630px, calc(100dvh - 48px));
 }
 
 .wizard-modal-bubble {
@@ -528,8 +521,9 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
 .wizard-modal-bubble p {
   width: min(100%, 590px);
-  max-height: 282px;
+  max-height: min(282px, calc(100dvh - 300px));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   margin: 0 auto;
   font: 900 clamp(22px, 1.65vw, 29px)/1.38 var(--mono);
   text-align: center;
@@ -547,15 +541,15 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .wizard-modal[data-mode="welcome"] .wizard-modal-bubble p {
   width: 76%;
   max-width: 540px;
-  max-height: none;
-  overflow-y: hidden;
+  max-height: min(330px, calc(100dvh - 300px));
+  overflow-y: auto;
   font-size: 18px;
   line-height: 1.22;
 }
 
 .wizard-modal[data-mode="briefing"] .wizard-modal-bubble p {
-  max-height: 430px;
-  overflow-y: scroll;
+  max-height: min(430px, calc(100dvh - 220px));
+  overflow-y: auto;
   font: 900 clamp(15px, 1.1vw, 19px)/1.35 var(--mono);
 }
 
@@ -714,18 +708,6 @@ body {
   border-radius: 0;
   box-shadow: none;
 }
-
-.wizard-modal,
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-}
-
-.modal-backdrop {
-  background: rgba(0, 0, 0, .28);
-  backdrop-filter: blur(3px);
-}
-
 
 /* POLISH OVERRIDES — medium gameplay screen */
 
@@ -1667,21 +1649,21 @@ body {
   }
 
   .wizard-modal-bubble .green-btn {
-    position: static;
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 260px;
+    position: absolute;
+    bottom: 34px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(210px, 58vw);
     height: 52px;
-    margin: 14px auto 0;
+    margin: 0;
     font-size: 15px;
-    transform: none;
   }
 
   .wizard-modal {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    padding: 14px 10px calc(44px + env(safe-area-inset-bottom));
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    padding: 16px 10px;
   }
 
   .wizard-modal[hidden] {
@@ -1694,63 +1676,61 @@ body {
   }
 
   .wizard-modal-card {
-    position: relative;
-    left: auto;
-    top: auto;
-    transform: none;
-    width: 100%;
-    height: auto;
-    max-height: min(78svh, 620px);
-    display: grid;
-    grid-template-columns: 1fr 76px;
-    gap: 0;
-    align-items: end;
+    position: absolute;
+    left: 50%;
+    top: 48%;
+    transform: translate(-50%, -50%);
+    width: min(430px, calc(100vw - 20px));
+    height: min(540px, calc(100dvh - 32px));
+    max-height: calc(100dvh - 32px);
+    display: block;
     z-index: 1;
   }
 
   .wizard-modal-bubble {
-    position: relative;
-    left: auto;
-    top: auto;
+    position: absolute;
+    left: 0;
+    top: 0;
     right: auto;
     bottom: auto;
-    width: 100%;
-    height: auto;
-    max-height: min(66svh, 520px);
-    padding: 18px 16px 16px;
-    color: #fff8d9;
-    background:
-      linear-gradient(180deg, rgba(14, 25, 78, .98), rgba(9, 15, 55, .98));
-    border: 3px solid #ffc54a;
-    border-radius: 8px;
-    filter: none;
-    box-shadow:
-      inset 0 0 0 2px rgba(255, 226, 115, .2),
-      0 4px 0 #080008,
-      0 12px 28px rgba(0, 0, 0, .38);
-    overflow: hidden;
+    width: calc(100% - 58px);
+    height: 100%;
+    max-height: calc(100dvh - 32px);
+    padding: 58px 30px 92px 34px;
+    color: #090303;
+    background: transparent url("../../assets/game/skin-v2/speech-bubble-left.png") center / 100% 100% no-repeat;
+    border: 0;
+    border-radius: 0;
+    filter: drop-shadow(10px 10px 0 #090000);
+    box-shadow: none;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
   }
 
   .wizard-modal-bubble h2 {
     width: 100%;
     margin: 0 0 8px;
-    color: #ffc54a;
+    color: #090303;
     font-size: 18px;
     line-height: 1.1;
     letter-spacing: 0;
-    text-align: left;
-    text-shadow: 2px 2px 0 #281200;
+    text-align: center;
+    text-shadow: none;
   }
 
   .wizard-modal-bubble p {
     width: 100%;
-    max-height: min(46svh, 360px);
+    max-height: calc(100dvh - 226px);
     margin: 0;
     overflow-y: auto;
-    color: #fff8d9;
-    font: 700 15.5px/1.42 var(--mono);
-    text-align: left;
-    text-shadow: 1px 1px 0 #050019;
+    -webkit-overflow-scrolling: touch;
+    color: #090303;
+    font: 900 15px/1.35 var(--mono);
+    text-align: center;
+    text-shadow: none;
   }
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-bubble h2 {
@@ -1761,29 +1741,29 @@ body {
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-bubble p {
     width: 100%;
-    max-height: min(46svh, 360px);
+    max-height: calc(100dvh - 226px);
     overflow-y: auto;
     font-size: 14px;
-    line-height: 1.4;
+    line-height: 1.34;
   }
 
   .wizard-modal[data-mode="briefing"] .wizard-modal-bubble p,
   .wizard-modal[data-mode="feedback"] .wizard-modal-bubble p,
   .wizard-modal[data-mode="surveySuccess"] .wizard-modal-bubble p {
-    max-height: min(32svh, 250px);
+    max-height: calc(100dvh - 226px);
     overflow-y: auto;
-    font: 700 15.5px/1.42 var(--mono);
-    text-align: left;
+    -webkit-overflow-scrolling: touch;
+    font: 900 15px/1.35 var(--mono);
+    text-align: center;
   }
 
   .wizard-modal-img {
-    position: relative;
-    right: auto;
-    bottom: auto;
-    width: 76px;
-    height: 104px;
-    align-self: end;
-    margin-left: -20px;
+    position: absolute;
+    right: 0;
+    bottom: 22px;
+    width: 82px;
+    height: 118px;
+    margin-left: 0;
     cursor: pointer;
     filter: drop-shadow(4px 4px 0 #080008);
   }
@@ -1792,15 +1772,15 @@ body {
   .wizard-modal-img.happy,
   .wizard-modal-img.shocked,
   .wizard-modal-img.questioning {
-    width: 78px;
-    height: 108px;
+    width: 86px;
+    height: 124px;
   }
 
   .wizard-modal-img.dead {
-    width: 92px;
-    height: 80px;
-    right: auto;
-    bottom: auto;
+    width: 104px;
+    height: 88px;
+    right: -2px;
+    bottom: 24px;
     transform: rotate(6deg);
   }
 
@@ -1990,32 +1970,6 @@ body {
     display: none;
   }
 
-  .sound-toggle {
-    position: static;
-    display: flex;
-    width: min(100% - 20px, 320px);
-    justify-content: center;
-    margin: 10px auto 14px;
-    padding: 7px 8px 8px;
-    font-size: 10px;
-    box-shadow:
-      inset 0 0 0 2px #3b237c,
-      3px 3px 0 #080008;
-  }
-
-  .sound-toggle__switch {
-    width: 38px;
-    height: 21px;
-  }
-
-  .sound-toggle__knob {
-    width: 11px;
-    height: 11px;
-  }
-
-  .sound-toggle[aria-pressed="true"] .sound-toggle__knob {
-    transform: translateX(17px);
-  }
 }
 
 /* BUG FIX OVERRIDES - partial hearts keep the full pixel silhouette, and decorative hint art cannot intercept answer clicks. */
@@ -2079,8 +2033,8 @@ body {
 .sound-toggle {
   position: fixed;
   left: clamp(10px, 2vw, 28px);
-  bottom: clamp(8px, 1.5vh, 18px);
-  z-index: 10000;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  z-index: 150;
   display: inline-flex;
   align-items: center;
   gap: 6px;
