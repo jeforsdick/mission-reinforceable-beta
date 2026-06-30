@@ -227,10 +227,24 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 #resources-content { height: calc(100% - 62px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 12px; font: 700 19px/1.38 var(--mono); }
 .resource-map-wrap { position: relative; align-self: center; width: min(100%, 430px); aspect-ratio: 1071 / 1499; border: 4px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-dark), 0 12px 0 rgba(0, 0, 0, .25); background: #071245; }
 .resource-map-img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.map-hotspot { position: absolute; border: 3px solid transparent; border-radius: 6px; background: rgba(255, 231, 124, 0); cursor: pointer; }
-.map-hotspot:hover,
-.map-hotspot:focus-visible,
-.map-hotspot.is-active { background: rgba(255, 231, 124, .18); border-color: rgba(255, 244, 164, .95); box-shadow: 0 0 0 3px rgba(44, 18, 0, .62), 0 0 16px rgba(255, 224, 88, .72); outline: 0; }
+.map-hotspot { position: absolute; border: 0; border-radius: 999px; background: transparent; cursor: zoom-in; }
+.map-hotspot::before,
+.map-hotspot::after { content: ""; position: absolute; left: 50%; top: 50%; pointer-events: none; opacity: 0; transition: opacity .14s ease, transform .14s ease; }
+.map-hotspot::before { width: 34px; height: 34px; border: 5px solid #fff4a4; border-radius: 50%; background: rgba(7, 18, 69, .12); box-shadow: 0 0 0 3px #3a1d00, 0 0 18px rgba(255, 224, 88, .86); transform: translate(-50%, -50%) scale(.7); }
+.map-hotspot::after { width: 18px; height: 6px; border-radius: 999px; background: #fff4a4; box-shadow: 0 0 0 2px #3a1d00; transform: translate(6px, 10px) rotate(45deg) scale(.7); transform-origin: left center; }
+.map-hotspot:hover::before,
+.map-hotspot:hover::after,
+.map-hotspot:focus-visible::before,
+.map-hotspot:focus-visible::after,
+.map-hotspot.is-active::before,
+.map-hotspot.is-active::after { opacity: 1; }
+.map-hotspot:hover::before,
+.map-hotspot:focus-visible::before,
+.map-hotspot.is-active::before { transform: translate(-50%, -50%) scale(1); }
+.map-hotspot:hover::after,
+.map-hotspot:focus-visible::after,
+.map-hotspot.is-active::after { transform: translate(6px, 10px) rotate(45deg) scale(1); }
+.map-hotspot:focus-visible { outline: 3px solid #fff4a4; outline-offset: 4px; }
 .map-hotspot-prevention { left: 38%; top: 58%; width: 27%; height: 7%; }
 .map-hotspot-replacement { left: 78%; top: 52%; width: 20%; height: 8%; }
 .map-hotspot-reinforcement { left: 31%; top: 7%; width: 22%; height: 7%; }
