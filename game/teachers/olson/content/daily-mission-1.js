@@ -48,10 +48,10 @@ Jordan sits at their desk and looks at the blank paper. Their pencil is still on
             }
           },
           B: {
-            text: `Tell Jordan, "You have lots of good ideas. Just write whatever you want about animals."`,
+            text: `Say quietly, "Think about an animal you like. I will check back in a minute."`,
             score: 5,
-            feedback: `This is encouraging, but it still leaves the task open-ended. Jordan may need a smaller first step or a way to ask for help.`,
-            wizard: `A kind thought, but the path is still foggy. Jordan needs a clearer doorway into the writing task.`,
+            feedback: `This is calm and gives Jordan space, which may lower pressure. The missing piece is a clear first writing move or a prompt to ask for help. A stronger move would be to offer one small starter step and remind Jordan help is available.`,
+            wizard: `Hmm... the spell is gentle, but it does not fully land. Giving Jordan a minute may feel supportive, but the blank page is still too big. A stronger move would make the first step tiny and give Jordan a way to ask for help.`,
             next: "daily_step2_wobbly",
             meta: {
               bipComponent: "Prevent",
@@ -61,10 +61,10 @@ Jordan sits at their desk and looks at the blank paper. Their pencil is still on
             }
           },
           C: {
-            text: `Say to the class, "Everyone should already know how to write one sentence by now."`,
+            text: `Say, "The directions are on the board. Start your sentence when you are ready."`,
             score: 0,
-            feedback: `This adds public pressure and does not give Jordan a usable first step. It may make the writing task feel more stressful.`,
-            wizard: `Oof. The room grows tense, and the blank page feels even bigger to Jordan.`,
+            feedback: `This sounds neutral, but it leaves Jordan alone with the hard part of writing. If the function is escape from difficult writing, waiting without support can let avoidance grow. A stronger move would be to give one clear first step and prompt help if Jordan is stuck.`,
+            wizard: `Careful... the blank-page fog gets thicker here. Jordan may stay quiet, but they still do not have a bridge into writing. A stronger spell would shrink the task and point to help before refusal starts.`,
             next: "daily_step2_escalated",
             meta: {
               bipComponent: "Respond",
@@ -96,10 +96,10 @@ After a few seconds, Jordan whispers, "What animal should I pick?"`,
             }
           },
           B: {
-            text: `Say, "Think about the animals we talked about. I will give you a little more time."`,
+            text: `Say, "Take a moment and pick from the animals we named together."`,
             score: 5,
-            feedback: `This gives Jordan time, but it does not clearly teach what to do next. Jordan still may not know how to ask for help or start.`,
-            wizard: `The spell flickers. Time can help, but Jordan still needs a clear next step.`,
+            feedback: `This is understandable because it narrows the topic a little. It still does not teach Jordan what to do when stuck or prompt the help request. A stronger move would be to model asking for help and then guide Jordan to pick one animal.`,
+            wizard: `The spell flickers. A smaller topic helps, but Jordan still has to figure out the help move alone. A stronger spell would give Jordan the words to ask for help and then one small choice.`,
             next: "daily_step3_wobbly",
             meta: {
               bipComponent: "Teach",
@@ -109,10 +109,10 @@ After a few seconds, Jordan whispers, "What animal should I pick?"`,
             }
           },
           C: {
-            text: `Say, "You need to choose by yourself. I already explained the assignment."`,
+            text: `Say, "I already gave examples, so choose one and start on your own."`,
             score: 0,
-            feedback: `This does not match the plan. It removes support when Jordan is showing they need help getting started.`,
-            wizard: `Careful. Jordan reached toward support, but the bridge disappeared.`,
+            feedback: `This may look like encouraging independence, but it removes support right when Jordan is asking for it. Jordan may learn that asking does not help and return to avoidance. A stronger move would be to reinforce the ask and help Jordan take one small step.`,
+            wizard: `Careful. Jordan reached for a bridge, and this pulls the bridge away. That can make help-seeking feel less useful next time. A stronger spell would honor the ask, then guide one tiny writing move.`,
             next: "daily_step3_escalated",
             meta: {
               bipComponent: "Teach",
@@ -144,10 +144,10 @@ Jordan taps the pencil and says quietly, "I don't know what to write."`,
             }
           },
           B: {
-            text: `Say, "It is okay to think for a minute. I will check back after I help the next table."`,
+            text: `Say, "That's okay. Keep thinking while I help the next table."`,
             score: 5,
-            feedback: `This stays calm, which is helpful. But it does not prompt the help request or give Jordan a small writing step.`,
-            wizard: `A calm pause can help, but Jordan may still be standing at the edge of the maze.`,
+            feedback: `This stays calm and does not add pressure, which is helpful. The missing piece is teaching Jordan what to do instead of staying stuck. A stronger move would prompt a help request or give one sentence-starter step before walking away.`,
+            wizard: `A calm pause can help, but Jordan is still at the edge of the maze. The spell needs a doorway, not only extra time. A stronger move would prompt help or one small writing step before you leave.`,
             next: "daily_step3_wobbly",
             meta: {
               bipComponent: "Prevent",
@@ -157,10 +157,10 @@ Jordan taps the pencil and says quietly, "I don't know what to write."`,
             }
           },
           C: {
-            text: `Say, "You need to stop wasting time and start writing like everyone else."`,
+            text: `Say, "Everyone has started, so open your paper and begin now."`,
             score: 0,
-            feedback: `This adds pressure and comparison. It may increase Jordan's frustration instead of helping them use the plan.`,
-            wizard: `Storm clouds gather. Jordan hears the pressure, but still does not have a way to start.`,
+            feedback: `This repeats the demand but does not make writing clearer or smaller. The peer comparison may add pressure and strengthen escape from writing. A stronger move would be to move close, offer a starter, and prompt Jordan to ask for help if needed.`,
+            wizard: `Storm clouds gather. Jordan hears the demand, but the path into writing is still hidden. A stronger spell would shrink the task and give Jordan a help request to use.`,
             next: "daily_step3_escalated",
             meta: {
               bipComponent: "Respond",
@@ -192,10 +192,10 @@ Jordan mutters, "I'm not doing this."`,
             }
           },
           B: {
-            text: `Say, "Take a minute, then we will try again," and let Jordan put their head down.`,
+            text: `Say, "Take a minute to calm down, and then we will come back to writing."`,
             score: 5,
-            feedback: `This may reduce pressure briefly, but it does not clearly prompt Jordan to ask for a break or return to one small step.`,
-            wizard: `A pause can help, but without a return path, Jordan may drift farther from writing.`,
+            feedback: `This may reduce pressure briefly, so it is understandable. The missing piece is a specific break-and-return routine or a small next writing step. A stronger move would name the short break and the exact first step Jordan will return to.`,
+            wizard: `A pause can help, but the trail fades if there is no return marker. Jordan may drift farther from writing. A stronger spell would pair the break with one small step back.`,
             next: "daily_step3_escalated",
             meta: {
               bipComponent: "Respond",
@@ -205,10 +205,10 @@ Jordan mutters, "I'm not doing this."`,
             }
           },
           C: {
-            text: `Say, "If you do not write now, you will finish it during recess."`,
+            text: `Say, "Writing still has to get done, so you can finish this during recess if needed."`,
             score: 0,
-            feedback: `This adds a threat and may turn writing into a power struggle. It does not help Jordan ask for help or a break.`,
-            wizard: `The dragon wakes. Jordan may now fight the consequence instead of practicing the plan.`,
+            feedback: `This may feel practical, but it shifts the moment toward consequence instead of skill practice. Jordan may focus on escaping the consequence rather than asking for help or returning to writing. A stronger move would stay private, offer help or a short break, and set one small return step.`,
+            wizard: `Careful... that move may wake the escape dragon. Jordan may battle the consequence instead of practicing the support routine. A stronger spell would keep the demand small, private, and paired with help or a break.`,
             next: "daily_step3_escalated",
             meta: {
               bipComponent: "Respond",
@@ -223,7 +223,7 @@ Jordan mutters, "I'm not doing this."`,
       daily_step3_supported: {
         text: `Jordan says, "Can you help me pick one animal?"
 
-They are still not writing, but they used the help request from the plan. Their pencil is in their hand.`,
+They are still not writing, but they asked for help. Their pencil is in their hand.`,
         hint: `Reinforce the help request right away, then keep the next writing move small and doable.`,
         choices: {
           A: {
@@ -240,10 +240,10 @@ They are still not writing, but they used the help request from the plan. Their 
             }
           },
           B: {
-            text: `Say, "Sure. You could write about dogs, sharks, birds, cats, frogs, or snakes."`,
+            text: `Say, "Sure. You could pick a dog, shark, bird, cat, frog, or snake."`,
             score: 5,
-            feedback: `This is helpful, but too many choices may make the task feel big again. Jordan needs one small next step.`,
-            wizard: `Helpful, but too many doors opened at once. Jordan needs the easiest doorway back in.`,
+            feedback: `This responds to Jordan's help request, which is a good start. The list may be too broad and can make the decision feel big again. A stronger move would offer two choices and immediately connect the choice to one first word.`,
+            wizard: `Helpful magic, but too many doors open at once. Jordan asked for help, and the support should stay small. A stronger spell would offer two choices, then turn one choice into the first word.`,
             next: "daily_step4_wobbly",
             meta: {
               bipComponent: "Teach",
@@ -253,10 +253,10 @@ They are still not writing, but they used the help request from the plan. Their 
             }
           },
           C: {
-            text: `Say, "See, that was easy. You should have just asked me the first time."`,
+            text: `Say, "See, once you ask, this is easy. Next time try that sooner."`,
             score: 0,
-            feedback: `This may punish the help request. Jordan used the plan, and the adult response should make that skill more likely next time.`,
-            wizard: `Careful. The skill appeared, but that comment may scare it away next time.`,
+            feedback: `This tries to teach a lesson, but it may make the help request feel criticized. If asking for help feels uncomfortable, Jordan may avoid both writing and support next time. A stronger move would praise the ask and guide one small writing step.`,
+            wizard: `Careful. The skill appeared, but the comment may scare it back into hiding. A stronger spell would celebrate the help request and use it to start one small word.`,
             next: "daily_step4_wobbly",
             meta: {
               bipComponent: "Reinforce",
@@ -288,10 +288,10 @@ They have not fully refused, but they are getting closer.`,
             }
           },
           B: {
-            text: `Say, "You are a good writer. Take a deep breath and try your best."`,
+            text: `Say, "Take a breath. You have good ideas, and you can try one small part."`,
             score: 5,
-            feedback: `This is kind, but it does not make the task smaller or prompt the planned help or break response.`,
-            wizard: `A warm breeze, but not quite enough magic. Jordan still needs a concrete next step.`,
+            feedback: `This is warm and may lower emotion, which matters. It still leaves Jordan without the exact words or action to use next. A stronger move would prompt Jordan to ask for help or write one word with support.`,
+            wizard: `A warm breeze, but the magic needs a target. Jordan still needs a concrete move, not only reassurance. A stronger spell would give the help-request words or the one-word starting step.`,
             next: "daily_step4_wobbly",
             meta: {
               bipComponent: "Prevent",
@@ -301,10 +301,10 @@ They have not fully refused, but they are getting closer.`,
             }
           },
           C: {
-            text: `Take the pencil and write the first sentence for Jordan so the paper is no longer blank.`,
+            text: `Write a sentence starter on Jordan's paper and tell them to copy the rest when ready.`,
             score: 0,
-            feedback: `This removes the hard part instead of helping Jordan practice the plan. Jordan may learn that waiting leads adults to do the writing.`,
-            wizard: `The pencil moves, but the skill does not grow. Jordan escaped the task without learning the next step.`,
+            feedback: `This gives a lot of adult help, so it may look supportive. The risk is that Jordan escapes the hard part without practicing asking, choosing, or writing a small response. A stronger move would prompt the support request and have Jordan complete one small part.`,
+            wizard: `The pencil moves, but Jordan's skill does not grow much. Too much adult rescue can feed the escape dragon. A stronger spell would help Jordan practice one small response themselves.`,
             next: "daily_step4_escalated",
             meta: {
               bipComponent: "Respond",
@@ -336,10 +336,10 @@ Jordan says, "Leave me alone."`,
             }
           },
           B: {
-            text: `Say, "I can see you are frustrated. I will give you space for a few minutes."`,
+            text: `Say, "I can see this is frustrating. Take a little space and we can talk soon."`,
             score: 5,
-            feedback: `This acknowledges frustration, which can help. But it does not include the planned break request or a clear return to one small writing step.`,
-            wizard: `You softened the moment, but the return path is missing from the map.`,
+            feedback: `This validates Jordan and may help the moment cool down. The missing piece is a planned return to writing or a replacement response to practice. A stronger move would offer a short break and name the one small step Jordan will come back to.`,
+            wizard: `You softened the moment, but the return path is missing from the map. Space without a next step can turn into escape. A stronger spell would include a short break and one small writing step after it.`,
             next: "daily_step4_escalated",
             meta: {
               bipComponent: "Respond",
@@ -349,10 +349,10 @@ Jordan says, "Leave me alone."`,
             }
           },
           C: {
-            text: `Say, "Pick your head up. The class is waiting for you to make a better choice."`,
+            text: `Say, "Please sit up so we can finish this and keep the class moving."`,
             score: 0,
-            feedback: `This adds public pressure and may increase embarrassment. It does not help Jordan use the help or break option.`,
-            wizard: `The spotlight grows too bright. Jordan may now work harder to escape the attention.`,
+            feedback: `This is a common classroom move, but it puts attention on compliance instead of support. Public pressure can make escape from writing more valuable for Jordan. A stronger move would reduce the audience, offer help or a short break, and return to one small step.`,
+            wizard: `The spotlight grows too bright. Jordan may work harder to escape the attention, not just the writing. A stronger spell would lower the audience and offer the planned support path.`,
             next: "daily_step4_escalated",
             meta: {
               bipComponent: "Respond",
@@ -384,10 +384,10 @@ Jordan looks up as if checking whether this counts.`,
             }
           },
           B: {
-            text: `Say, "Good, now finish the whole sentence while I help someone else."`,
+            text: `Say, "Good start. Keep going while I check on another student."`,
             score: 5,
-            feedback: `This praises Jordan, but it makes the task big again too quickly. Jordan may still need one small next step.`,
-            wizard: `The bridge appeared, but then stretched too far. Keep the next step small.`,
+            feedback: `This gives praise, which is helpful. It also removes support before Jordan has a clear next step, so the task may feel big again. A stronger move would reinforce the first word and give one simple next phrase or help option.`,
+            wizard: `The bridge appeared, but then stretched a little too far. Jordan may still need one more stepping stone. A stronger spell would praise the first word and give one simple next phrase.`,
             next: "daily_step5_wobbly",
             meta: {
               bipComponent: "Reinforce",
@@ -397,10 +397,10 @@ Jordan looks up as if checking whether this counts.`,
             }
           },
           C: {
-            text: `Say, "Finally. That took way too long, but at least you wrote something."`,
+            text: `Say, "Okay, that's something. Now try to make it a real sentence."`,
             score: 0,
-            feedback: `This may discourage the small step. The plan says to reinforce progress so Jordan is more likely to try again.`,
-            wizard: `Ouch. The tiny spark dims when progress is met with criticism.`,
+            feedback: `This acknowledges the work, but the tone may make the small step feel insufficient. If progress contacts criticism, Jordan may avoid trying again. A stronger move would clearly reinforce the first word and keep the next step small.`,
+            wizard: `Ouch. The tiny spark dims when progress meets criticism. Jordan may decide the first step was not worth trying. A stronger spell would reinforce the start and offer a small next move.`,
             next: "daily_step5_wobbly",
             meta: {
               bipComponent: "Reinforce",
@@ -432,10 +432,10 @@ Jordan says, "I don't know if this is right."`,
             }
           },
           B: {
-            text: `Say, "It is okay if it is not perfect. Just keep thinking and do your best."`,
+            text: `Say, "It doesn't have to be perfect. Think for a moment and try again."`,
             score: 5,
-            feedback: `This lowers pressure, but it still does not give Jordan a concrete next step or prompt a help request.`,
-            wizard: `The message is kind, but the next step is still hiding in the mist.`,
+            feedback: `This lowers perfection pressure, which is useful. It still leaves the next action unclear and does not prompt help. A stronger move would pair reassurance with one word to write or a help request to use.`,
+            wizard: `The message is kind, but the next step is still hiding in the mist. Jordan needs a tiny target. A stronger spell would say what to write first or how to ask for help.`,
             next: "daily_step5_wobbly",
             meta: {
               bipComponent: "Teach",
@@ -445,10 +445,10 @@ Jordan says, "I don't know if this is right."`,
             }
           },
           C: {
-            text: `Say, "You erased it again. You need to stop making this harder than it is."`,
+            text: `Say, "You had a word started, so stop erasing and just finish it."`,
             score: 0,
-            feedback: `This adds criticism and may make Jordan more avoidant. It does not help Jordan use the plan.`,
-            wizard: `The spell backfires. Jordan may now worry more about being wrong than about starting.`,
+            feedback: `This may be meant to encourage follow-through, but it adds criticism when Jordan is already unsure. That can make writing feel riskier and increase avoidance. A stronger move would reduce the pressure and guide Jordan back to one small word with help available.`,
+            wizard: `The spell backfires. Jordan may worry more about mistakes than about starting. A stronger spell would make the next attempt feel safe and small.`,
             next: "daily_step5_escalated",
             meta: {
               bipComponent: "Respond",
@@ -480,10 +480,10 @@ A few students are watching. Jordan says, "I'm not writing."`,
             }
           },
           B: {
-            text: `Say, "I will give you space, but you still need to finish your writing later."`,
+            text: `Say, "Take some space by the shelf, and we will try writing again later."`,
             score: 5,
-            feedback: `This avoids arguing, but it does not teach Jordan what to do next or how to return to the task now.`,
-            wizard: `The battle paused, but the mission is still unresolved.`,
+            feedback: `This avoids arguing, which can keep the room calmer. The missing piece is practicing the replacement response or returning to one small writing step. A stronger move would make the break short and connect it to a specific return step.`,
+            wizard: `The battle paused, but the mission is still unresolved. Space can become escape if there is no return path. A stronger spell would pair the break with one small writing move afterward.`,
             next: "daily_step5_escalated",
             meta: {
               bipComponent: "Respond",
@@ -493,10 +493,10 @@ A few students are watching. Jordan says, "I'm not writing."`,
             }
           },
           C: {
-            text: `Say loudly, "Jordan, get back to your seat now. You are disrupting writing time."`,
+            text: `From across the room, say, "Jordan, come back so we can finish writing."`,
             score: 0,
-            feedback: `This makes the situation public and may increase refusal. It does not follow the calm, private response in the plan.`,
-            wizard: `The spotlight flashes. Jordan may now defend against attention instead of returning to writing.`,
+            feedback: `This may feel efficient, but it makes the interaction public. Attention and pressure can increase Jordan's need to escape the writing task. A stronger move would approach privately and offer a short break with a clear return to one word.`,
+            wizard: `The spotlight flashes. Jordan may now defend against the attention instead of returning to writing. A stronger spell would move close, stay private, and offer the small return step.`,
             next: "daily_step5_escalated",
             meta: {
               bipComponent: "Respond",
@@ -511,7 +511,7 @@ A few students are watching. Jordan says, "I'm not writing."`,
       daily_step5_supported: {
         text: `Jordan has written one word and is looking at the sentence starter. They quietly say, "Can you help me finish it?"
 
-Jordan is using the plan and is still connected to writing.`,
+Jordan is still connected to writing and waiting for your response.`,
         hint: `This is a replacement behavior success. Reinforce asking for help and keep the finish line simple.`,
         choices: {
           A: {
@@ -527,10 +527,10 @@ Jordan is using the plan and is still connected to writing.`,
             }
           },
           B: {
-            text: `Say, "Yes, I can help. Let's think of three different ways to make the sentence better."`,
+            text: `Say, "Yes, I can help. Let's think of a few ways to make the sentence stronger."`,
             score: 5,
-            feedback: `This is supportive, but it may make the task bigger than needed. Jordan needs a simple finish, not a more complicated writing task.`,
-            wizard: `Helpful energy, but too many sparkles at once. Keep the finish line simple.`,
+            feedback: `This honors the help request, which is positive. It also expands the writing task when Jordan needs a simple finish. A stronger move would reinforce asking for help and give one small completion step.`,
+            wizard: `Helpful energy, but too many sparkles at the finish line. Jordan asked for help, not a bigger writing challenge. A stronger spell would praise the ask and give one simple ending step.`,
             meta: {
               bipComponent: "Teach",
               mechanism: "Help request",
@@ -539,10 +539,10 @@ Jordan is using the plan and is still connected to writing.`,
             }
           },
           C: {
-            text: `Say, "No, you need to finish the rest independently since I already helped you start."`,
+            text: `Say, "I helped you start, so now try to finish the rest independently."`,
             score: 0,
-            feedback: `This may discourage Jordan from asking for help. The plan says help requests should be reinforced and shaped into small steps.`,
-            wizard: `The door closes just as Jordan knocks. Next time, they may not ask.`,
+            feedback: `This sounds like building independence, but it may punish the help request. If asking for help leads to less support, Jordan may avoid asking and avoid writing. A stronger move would reinforce the request and shape independence through one small supported step.`,
+            wizard: `The door closes just as Jordan knocks. Next time, they may not ask. A stronger spell would reward the help request and fade support one tiny step at a time.`,
             meta: {
               bipComponent: "Reinforce",
               mechanism: "Help request",
@@ -572,10 +572,10 @@ Jordan says, "Do I have to write the whole thing?"`,
             }
           },
           B: {
-            text: `Say, "Just do as much as you can before the timer goes off."`,
+            text: `Say, "Just do what you can before the timer ends, and we will call it progress."`,
             score: 5,
-            feedback: `This reduces pressure, but it is still unclear. Jordan may need a specific first step or help request.`,
-            wizard: `The pressure drops, but the target is blurry. Jordan still needs a clear mark to aim for.`,
+            feedback: `This lowers pressure and sounds supportive. The target is still blurry, so Jordan may not know what response will count. A stronger move would define one small writing step and offer help to complete it.`,
+            wizard: `The pressure drops, but the target is blurry. Jordan still needs a clear mark to aim for. A stronger spell would name the one small step and offer help getting there.`,
             meta: {
               bipComponent: "Prevent",
               mechanism: "Reduced pressure",
@@ -584,10 +584,10 @@ Jordan says, "Do I have to write the whole thing?"`,
             }
           },
           C: {
-            text: `Say, "Yes. Everyone else is writing a full sentence, so you need to do it too."`,
+            text: `Say, "Yes, the assignment is still one full sentence like everyone else."`,
             score: 0,
-            feedback: `This brings back comparison and pressure. It may make Jordan focus on escape instead of using the plan.`,
-            wizard: `The mountain grows again. Jordan may see the whole sentence as too much to climb.`,
+            feedback: `This restates the expectation, but it brings back the full demand without support. For Jordan, that can make escape from writing more valuable. A stronger move would keep the expectation small enough to start and reinforce the first step.`,
+            wizard: `The mountain grows again. Jordan may see the whole sentence as too much to climb. A stronger spell would shrink the climb to one word and reinforce that step.`,
             meta: {
               bipComponent: "Respond",
               mechanism: "Comparison",
@@ -617,10 +617,10 @@ The class is moving on soon, and the adult feels pressure to get Jordan to compl
             }
           },
           B: {
-            text: `Say, "We can talk about this later. For now, sit quietly so writing time can end."`,
+            text: `Say, "Sit quietly for now, and we will problem-solve writing later."`,
             score: 5,
-            feedback: `This may reduce disruption, but it lets Jordan avoid writing without practicing the help, break, or return routine.`,
-            wizard: `The room gets quieter, but the skill stays unpracticed.`,
+            feedback: `This may reduce disruption in the moment, which is understandable. It also lets writing end without practicing help, a break request, or a small return step. A stronger move would keep things calm while still asking for one tiny response before moving on.`,
+            wizard: `The room gets quieter, but the skill stays unpracticed. The escape dragon gets a small snack. A stronger spell would keep calm and still practice one tiny return step.`,
             meta: {
               bipComponent: "Respond",
               mechanism: "Delay",
@@ -629,10 +629,10 @@ The class is moving on soon, and the adult feels pressure to get Jordan to compl
             }
           },
           C: {
-            text: `Say, "You lost your chance. Now the writing has to be finished during recess."`,
+            text: `Say, "Since writing did not get done, we will use recess time to finish it."`,
             score: 0,
-            feedback: `This adds a consequence after escalation and may strengthen the power struggle. It does not teach Jordan how to return to writing.`,
-            wizard: `The dragon claims the treasure. Jordan may remember the battle more than the writing plan.`,
+            feedback: `This may seem like a logical consequence, but after escalation it can strengthen the power struggle. Jordan still does not practice asking for help, taking a short break, or returning to one small writing step. A stronger move would keep the return path small and reinforce any movement back toward writing.`,
+            wizard: `The dragon claims the treasure. Jordan may remember the battle more than the writing plan. A stronger spell would keep the return path tiny and reinforce the next step toward writing.`,
             meta: {
               bipComponent: "Respond",
               mechanism: "Consequence",
