@@ -46,6 +46,7 @@ function handleMissionRun_(ss, data) {
 
   appendMissionRun_(ss, session, data);
   appendChoices_(ss, choices);
+  appendCoachingReview_(ss, choices);
   appendLegacyMissionRun_(ss, data, choices);
 
   return jsonResponse_({
@@ -131,6 +132,41 @@ function appendChoices_(ss, choices) {
   if (!choices.length) return;
 
   const rows = choices.map(choice => buildRowFromHeaders_(finalHeaders, choice));
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, finalHeaders.length).setValues(rows);
+}
+
+function appendCoachingReview_(ss, choices) {
+  const reviewItems = choices.filter(choice => choice.isReviewItem === true);
+  const sheet = ss.getSheetByName("Coaching Review") || ss.insertSheet("Coaching Review");
+  const headers = [
+    "timestamp",
+    "sessionId",
+    "teacherId",
+    "teacherName",
+    "student",
+    "mode",
+    "missionId",
+    "missionTitle",
+    "stepIndex",
+    "stepId",
+    "scenarioTitle",
+    "selectedAnswerText",
+    "selectedScore",
+    "selectedType",
+    "resultLabel",
+    "feedbackText",
+    "bestAnswerText",
+    "hintOpened",
+    "hintOpenCount",
+    "timeFromQuestionStartToHintMs",
+    "timeFromHintToAnswerMs",
+    "responseTimeMs"
+  ];
+
+  const finalHeaders = ensureHeaders_(sheet, headers);
+  if (!reviewItems.length) return;
+
+  const rows = reviewItems.map(choice => buildRowFromHeaders_(finalHeaders, choice));
   sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, finalHeaders.length).setValues(rows);
 }
 

@@ -2,7 +2,7 @@
   'use strict';
 
   const MR = window.MR = window.MR || {};
-  const TEACHER_CONTENT_VERSION = '20260630-wizard-hints';
+  const TEACHER_CONTENT_VERSION = '20260701-data-logging';
 
   const DEFAULT_CONFIG = {
     teacherId: 'olson',
