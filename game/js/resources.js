@@ -108,12 +108,14 @@
   function renderResourceSection(sectionKey = 'bip') {
     const title = MR.$('#resources-title');
     const root = MR.$('#resources-content');
+    const backButton = MR.$('#back-to-bip');
     if (!title || !root) return;
 
     const item = resourceSections[sectionKey] || resourceSections.bip;
     title.textContent = item ? item.title : 'BIP at a Glance';
     root.innerHTML = contentHTML(sectionKey);
     setActiveHotspot(sectionKey === 'bip' ? '' : sectionKey);
+    if (backButton) backButton.hidden = sectionKey === 'bip';
     root.scrollTop = 0;
   }
 
@@ -129,6 +131,17 @@
         renderResourceSection(button.dataset.resourceSection);
       });
     });
+
+    const backButton = MR.$('#back-to-bip');
+    if (backButton && backButton.dataset.resourceWired !== 'true') {
+      backButton.dataset.resourceWired = 'true';
+      backButton.addEventListener('click', () => {
+        if (MR.audio && typeof MR.audio.playSfx === 'function') {
+          MR.audio.playSfx('click', 0.24);
+        }
+        renderResourceSection('bip');
+      });
+    }
   }
 
   MR.resources = {
