@@ -3,99 +3,98 @@
 
   const MR = window.MR = window.MR || {};
 
-  const RESOURCE_SECTIONS = {
+  const resourceSections = {
+    bip: {
+      title: 'BIP at a Glance',
+      body: `
+        <p><strong>Jordan does best when writing feels small, clear, and supported.</strong></p>
+        <p><strong>Function:</strong> Escape or avoidance of difficult writing tasks.</p>
+        <p><strong>Prevention:</strong> Give a clear first step, offer a sentence starter, reduce the task size, and remind Jordan that help is available.</p>
+        <p><strong>Replacement:</strong> Jordan can ask for help, ask for a break, or start with one small writing step.</p>
+        <p><strong>Reinforcement:</strong> Praise asking appropriately, starting the task, or returning to writing.</p>
+        <p><strong>Error correction:</strong> Stay calm, restate the small next step, prompt the replacement behavior, and reinforce the next right response.</p>
+      `
+    },
+
     prevention: {
       title: 'Prevention Palace',
-      body: ['Prevention strategies are the supports you use before behavior escalates. Look for ways to make the task clearer, smaller, more predictable, or more accessible.']
+      body: `
+        <p><strong>Set Jordan up before writing gets hard.</strong></p>
+        <p>Use a clear first step, sentence starter, choice, or smaller writing demand.</p>
+        <p><strong>Try:</strong> “First, write one animal. You can ask for help if you get stuck.”</p>
+      `
     },
+
     replacement: {
       title: 'Replacement Reservoir',
-      body: ['Replacement behaviors are what the student can do instead. Prompt the skill you want to see, such as asking for help, requesting a break, using a sentence starter, or starting with one small step.']
+      body: `
+        <p><strong>Prompt what Jordan can do instead.</strong></p>
+        <p>Jordan can ask for help, request a short break, or start with one word.</p>
+        <p><strong>Try:</strong> “If you’re stuck, say ‘help please,’ and we’ll do the first word together.”</p>
+      `
     },
+
     reinforcement: {
       title: 'Reinforcement Ridge',
-      body: ['Reinforcement strengthens the behavior you want to see again. Notice and reinforce the replacement behavior, task engagement, calm participation, and return to routine.']
+      body: `
+        <p><strong>Reinforce the small steps you want to see again.</strong></p>
+        <p>Notice when Jordan asks appropriately, starts writing, accepts help, or returns after a break.</p>
+        <p><strong>Try:</strong> “Nice job asking for help. That was exactly what to do.”</p>
+      `
     },
+
     errorCorrection: {
       title: 'Error Correction Canyon',
-      body: ['Error correction should be calm, brief, and plan-aligned. Restate the expectation, prompt the replacement behavior, and reinforce the next right step.']
+      body: `
+        <p><strong>Keep correction calm, brief, and plan-aligned.</strong></p>
+        <p>Restate the small next step, prompt the replacement behavior, and reinforce the next helpful response.</p>
+        <p><strong>Try:</strong> “First write one animal, or ask me for help.”</p>
+      `
     },
+
     library: {
       title: 'The BSP Library',
-      body: ['Use this area for plan details, definitions, examples, and quick reminders. This can hold the full behavior support plan or links to reference materials later.']
+      body: `
+        <p><strong>Key plan terms:</strong></p>
+        <p><strong>Function:</strong> Why the behavior works for Jordan.</p>
+        <p><strong>Prevention:</strong> Supports before behavior happens.</p>
+        <p><strong>Replacement:</strong> What Jordan should do instead.</p>
+        <p><strong>Reinforcement:</strong> What makes the helpful behavior more likely.</p>
+        <p><strong>Error correction:</strong> A calm reset back to the plan.</p>
+      `
     },
-    function: {
+
+    functionForest: {
       title: 'Function Forest',
-      body: ['Function helps explain why the behavior is happening. Ask: What is the student getting, avoiding, communicating, or needing in this moment?']
+      body: `
+        <p><strong>Look for the why.</strong></p>
+        <p>Jordan may be communicating, “This is too hard,” “I don’t know how to start,” or “I need help.”</p>
+        <p><strong>Respond to the function:</strong> make the task clearer, smaller, or more supported.</p>
+      `
     },
+
     coaching: {
       title: 'Coaching Cottage',
-      body: ['Coaching reminders help translate the plan into real classroom moves. Keep language brief, stay neutral, and focus on the next teachable step.']
+      body: `
+        <p><strong>Quick coaching reminder:</strong></p>
+        <p>Small step. Calm prompt. Quick reinforcement.</p>
+        <p>Keep language brief, reduce the audience, prompt before correcting, and reinforce the next right move.</p>
+      `
     },
+
     fidelity: {
       title: 'Fidelity Fortress',
-      body: ['Fidelity means using the important parts of the plan as intended. Check whether you used the prevention support, prompted the replacement behavior, reinforced the desired response, and followed the plan’s error-correction steps.']
+      body: `
+        <p><strong>Stay true to the plan.</strong></p>
+        <p>Check: Did I prevent? Did I prompt the replacement behavior? Did I reinforce? Did I correct calmly?</p>
+        <p><strong>Watch for drift:</strong> too much talking, skipping the prompt, correcting publicly, or letting Jordan escape without practicing the replacement response.</p>
+      `
     }
   };
 
-  function list(items) {
-    const clean = (items || []).filter(Boolean);
-    if (!clean.length) return '';
-    return `<ul>${clean.map(item => `<li>${MR.escapeHTML(item)}</li>`).join('')}</ul>`;
-  }
-
-  function section(title, body) {
-    return `
-      <section class="bip-section">
-        <h2>${MR.escapeHTML(title)}</h2>
-        ${body}
-      </section>
-    `;
-  }
-
-  function definitionsByTerm(items, term) {
-    if (!Array.isArray(items) || !items.length) return [];
-    return items
-      .filter(item => item && item.term === term)
-      .map(item => item.definition)
-      .filter(Boolean);
-  }
-
-  function defaultOverviewHTML() {
-    const data = MR.resourcesData || {};
-    const pathway = data.bipPathway || {};
-    const snap = data.studentSnapshot || {};
-    const reminder = definitionsByTerm(data.behaviorBasics, 'Remember');
-    const functionText = snap.function || 'Look for what the behavior may be communicating or helping the student access or avoid.';
-
-    return [
-      section('Function', `<p>${MR.escapeHTML(functionText)}</p>`),
-      section('Prevention', list(pathway.prevention && pathway.prevention.length ? pathway.prevention : [
-        'Make the task smaller, clearer, more predictable, or easier to start.'
-      ])),
-      section('Replacement Behavior', list(pathway.replacementBehavior && pathway.replacementBehavior.length ? pathway.replacementBehavior : [
-        'Prompt the student to ask for help, request a break, use a sentence starter, or begin with one small step.'
-      ])),
-      section('Reinforcement', list(pathway.reinforcement && pathway.reinforcement.length ? pathway.reinforcement : [
-        'Reinforce the replacement behavior, calm participation, task engagement, and return to routine.'
-      ])),
-      section('Error Correction', list(pathway.responsePlan && pathway.responsePlan.length ? pathway.responsePlan : [
-        'Keep language calm and brief, prompt the next plan-aligned step, and reinforce follow-through.'
-      ])),
-      section('Key Reminder', [
-        reminder.map(item => `<p>${MR.escapeHTML(item)}</p>`).join(''),
-        list(data.fidelityChecklist && data.fidelityChecklist.length ? data.fidelityChecklist : [
-          'Prevent, prompt, reinforce, and return to the routine calmly.'
-        ])
-      ].join(''))
-    ].join('');
-  }
-
   function contentHTML(sectionKey) {
-    if (!sectionKey || sectionKey === 'overview') return defaultOverviewHTML();
-    const item = RESOURCE_SECTIONS[sectionKey];
-    if (!item) return defaultOverviewHTML();
-    return item.body.map(paragraph => `<p>${MR.escapeHTML(paragraph)}</p>`).join('');
+    const item = resourceSections[sectionKey] || resourceSections.bip;
+    return item.body;
   }
 
   function setActiveHotspot(sectionKey) {
@@ -106,15 +105,15 @@
     });
   }
 
-  function renderResourceSection(sectionKey = 'overview') {
+  function renderResourceSection(sectionKey = 'bip') {
     const title = MR.$('#resources-title');
     const root = MR.$('#resources-content');
     if (!title || !root) return;
 
-    const item = RESOURCE_SECTIONS[sectionKey];
+    const item = resourceSections[sectionKey] || resourceSections.bip;
     title.textContent = item ? item.title : 'BIP at a Glance';
     root.innerHTML = contentHTML(sectionKey);
-    setActiveHotspot(item ? sectionKey : '');
+    setActiveHotspot(sectionKey === 'bip' ? '' : sectionKey);
     root.scrollTop = 0;
   }
 
@@ -135,7 +134,7 @@
   MR.resources = {
     render() {
       wireMap();
-      renderResourceSection('overview');
+      renderResourceSection('bip');
     },
     renderResourceSection
   };
