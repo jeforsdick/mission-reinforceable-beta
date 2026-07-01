@@ -149,6 +149,17 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
   function revealWizardHint() {
     if (!current) return;
+    const now = Date.now();
+    const tracker = current.hintTracking || {};
+    tracker.hintOpenCount = Number(tracker.hintOpenCount || 0) + 1;
+    if (!tracker.hintOpenedAt) {
+      tracker.hintOpened = true;
+      tracker.hintOpenedAt = new Date(now).toISOString();
+      tracker.timeFromQuestionStartToHintMs = tracker.questionStartTime
+        ? Math.max(0, now - tracker.questionStartTime)
+        : null;
+    }
+    current.hintTracking = tracker;
     current.hintOpenedForStep = true;
     playAudioCue('click', 0.18);
     renderWizardHint();
@@ -246,6 +257,13 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
     renderHUD();
     current.hintOpenedForStep = false;
+    current.hintTracking = {
+      questionStartTime: Date.now(),
+      hintOpened: false,
+      hintOpenCount: 0,
+      hintOpenedAt: null,
+      timeFromQuestionStartToHintMs: null
+    };
     wireWizardHintTrigger();
     MR.$('#scenario-text').innerHTML = scenarioHTML(step.text || '');
     renderWizardHint();
@@ -267,6 +285,11 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const score = getScore(choice);
     const maxScore = stepMax(step);
     const heartChange = updateHeartsForChoice(score);
+    const answerTime = Date.now();
+    const hintTracking = current.hintTracking || {};
+    const timeFromHintToAnswerMs = hintTracking.hintOpenedAt && hintTracking.timeFromQuestionStartToHintMs != null
+      ? Math.max(0, answerTime - Date.parse(hintTracking.hintOpenedAt))
+      : null;
     playAudioCue(soundForScore(score));
 
     current.score += score;
@@ -283,7 +306,11 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       maxScore,
       feedback: choice.feedback || '',
       wizard: choice.wizard || '',
-      hintOpened: Boolean(current.hintOpenedForStep),
+      hintOpened: Boolean(hintTracking.hintOpened),
+      hintOpenCount: Number(hintTracking.hintOpenCount || 0),
+      hintOpenedAt: hintTracking.hintOpenedAt || null,
+      timeFromQuestionStartToHintMs: hintTracking.timeFromQuestionStartToHintMs != null ? hintTracking.timeFromQuestionStartToHintMs : null,
+      timeFromHintToAnswerMs,
       hintText: current.hintOpenedForStep ? bspHintForCurrentStep() : '',
       bestChoiceKey: bestChoice ? bestChoice.key : '',
       bestChoiceText: bestChoice ? bestChoice.text || '' : '',
@@ -563,10 +590,32 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     img.alt = sprite.alt;
   }
 
+  function hintSummaryForHistory(history) {
+    const items = Array.isArray(history) ? history : [];
+    const questionsWithHints = items.filter(item => Boolean(item.hintOpened)).length;
+    const totalHintsOpened = items.reduce((sum, item) => sum + Number(item.hintOpenCount || 0), 0);
+    return {
+      hintsUsed: questionsWithHints > 0,
+      totalHintsOpened,
+      questionsWithHints,
+      hintUseRate: items.length ? questionsWithHints / items.length : 0,
+      perQuestionHintData: items.map(item => ({
+        stepId: item.stepId,
+        stepIndex: item.stepIndex,
+        hintOpened: Boolean(item.hintOpened),
+        hintOpenCount: Number(item.hintOpenCount || 0),
+        hintOpenedAt: item.hintOpenedAt || null,
+        timeFromQuestionStartToHintMs: item.timeFromQuestionStartToHintMs != null ? item.timeFromQuestionStartToHintMs : null,
+        timeFromHintToAnswerMs: item.timeFromHintToAnswerMs != null ? item.timeFromHintToAnswerMs : null
+      }))
+    };
+  }
+
   function finishMission() {
     const accuracy = current.maxScore ? Math.round((current.score / current.maxScore) * 100) : 0;
     const xp = behaviorXPFor(current.score, current.expectedSteps || 3, current.xpMax);
     const timing = MR.SessionTimer && MR.SessionTimer.stop ? MR.SessionTimer.stop() : null;
+    const hintSummary = hintSummaryForHistory(current.history);
     const run = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       teacherId: MR.teacherConfig.teacherId,
@@ -590,6 +639,11 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       durationSeconds: timing ? timing.durationSeconds : 0,
       activeDurationSeconds: timing ? timing.activeDurationSeconds : 0,
       durationFormatted: timing ? timing.durationFormatted : '0:00',
+      hintsUsed: hintSummary.hintsUsed,
+      totalHintsOpened: hintSummary.totalHintsOpened,
+      questionsWithHints: hintSummary.questionsWithHints,
+      hintUseRate: hintSummary.hintUseRate,
+      perQuestionHintData: hintSummary.perQuestionHintData,
       history: current.history
     };
 
@@ -731,6 +785,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     const data = new FormData(form);
     const history = Array.isArray(run.history) ? run.history : [];
     const scores = history.map(item => Number(item.score || 0));
+    const hintSummary = hintSummaryForHistory(history);
 
     return {
       action: 'betaSurvey',
@@ -774,6 +829,11 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       choiceHistory: history,
       scoreHistory: scores,
       branchPath: history.map(item => item.stepId),
+      hintsUsed: run.hintsUsed != null ? run.hintsUsed : hintSummary.hintsUsed,
+      totalHintsOpened: run.totalHintsOpened != null ? run.totalHintsOpened : hintSummary.totalHintsOpened,
+      questionsWithHints: run.questionsWithHints != null ? run.questionsWithHints : hintSummary.questionsWithHints,
+      hintUseRate: run.hintUseRate != null ? run.hintUseRate : hintSummary.hintUseRate,
+      perQuestionHintData: JSON.stringify(run.perQuestionHintData || hintSummary.perQuestionHintData),
       missedReviewCount: scores.filter(score => score < 10).length,
       neutralChoiceCount: scores.filter(score => score > 0 && score < 10).length,
       incorrectChoiceCount: scores.filter(score => score === 0).length,
