@@ -225,7 +225,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .resources-scroll { min-width: 0; height: 100%; color: #0b0400; background: transparent url("../../assets/game/skin-v2/feedback-scroll.png") center / 100% 100% no-repeat; padding: 94px 88px 86px 104px; overflow: hidden; }
 .resources-scroll h1 { margin: 0 0 28px; color: #130700; font: 900 31px/1 var(--display); letter-spacing: 2px; }
 #resources-content { height: calc(100% - 62px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 12px; font: 700 19px/1.38 var(--mono); }
-.resource-map-wrap { position: relative; align-self: center; width: min(100%, 430px); aspect-ratio: 1071 / 1499; border: 4px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-dark), 0 12px 0 rgba(0, 0, 0, .25); background: #071245; }
+.resource-map-wrap { position: relative; align-self: center; width: min(100%, 452px); aspect-ratio: 1071 / 1499; border: 4px solid var(--gold); box-shadow: 0 0 0 3px var(--gold-dark), 0 12px 0 rgba(0, 0, 0, .25); background: #071245; }
 .resource-map-img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .map-hotspot { position: absolute; border: 0; border-radius: 999px; background: transparent; cursor: zoom-in; }
 .map-hotspot::before,
@@ -245,14 +245,14 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .map-hotspot:focus-visible::after,
 .map-hotspot.is-active::after { transform: translate(6px, 10px) rotate(45deg) scale(1); }
 .map-hotspot:focus-visible { outline: 3px solid #fff4a4; outline-offset: 4px; }
-.map-hotspot-prevention { left: 33%; top: 48%; width: 32%; height: 8%; }
-.map-hotspot-replacement { left: 63.5%; top: 38%; width: 28%; height: 9%; }
-.map-hotspot-reinforcement { left: 23.5%; top: 5.3%; width: 28%; height: 8%; }
-.map-hotspot-error-correction { left: 62.5%; top: 78.8%; width: 34%; height: 8%; }
+.map-hotspot-prevention { left: 33%; top: 52.8%; width: 32%; height: 7.5%; }
+.map-hotspot-replacement { left: 68%; top: 45.4%; width: 28%; height: 7.5%; }
+.map-hotspot-reinforcement { left: 24%; top: 9.6%; width: 29%; height: 8%; }
+.map-hotspot-error-correction { left: 69%; top: 72.2%; width: 28%; height: 8%; }
 .map-hotspot-library { left: 3%; top: 61%; width: 31%; height: 7%; }
-.map-hotspot-function { left: 17%; top: 27%; width: 24%; height: 8%; }
-.map-hotspot-coaching { left: 6.5%; top: 88.2%; width: 25%; height: 7%; }
-.map-hotspot-fidelity { left: 50.5%; top: 16.5%; width: 34%; height: 8%; }
+.map-hotspot-function { left: 12%; top: 28%; width: 25%; height: 7.5%; }
+.map-hotspot-coaching { left: 3%; top: 86%; width: 24%; height: 7%; }
+.map-hotspot-fidelity { left: 54%; top: 19.5%; width: 37%; height: 7.5%; }
 .resources-footer { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(360px, .9fr); gap: 28px; align-items: center; }
 .resources-contact { margin: 18px auto 0; max-width: 900px; text-align: center; color: #fff5d2; font: 800 15px/1.25 var(--mono); text-shadow: 2px 2px 0 #050005; }
 .resources-contact a { color: #ffc54a; text-decoration: underline; }
