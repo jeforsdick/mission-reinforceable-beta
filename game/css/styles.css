@@ -254,7 +254,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .map-hotspot-coaching { left: 6.5%; top: 88.2%; width: 25%; height: 7%; }
 .map-hotspot-fidelity { left: 50.5%; top: 16.5%; width: 34%; height: 8%; }
 .resources-footer { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(360px, .9fr); gap: 28px; align-items: center; }
-.resources-contact { margin: 0 auto; max-width: 900px; text-align: center; color: #fff5d2; font: 800 15px/1.25 var(--mono); text-shadow: 2px 2px 0 #050005; }
+.resources-contact { margin: 18px auto 0; max-width: 900px; text-align: center; color: #fff5d2; font: 800 15px/1.25 var(--mono); text-shadow: 2px 2px 0 #050005; }
 .resources-contact a { color: #ffc54a; text-decoration: underline; }
 .back-to-bip-btn { justify-self: center; min-width: 285px; min-height: 54px; padding: 10px 22px; color: #130700; text-transform: uppercase; font: 900 15px/1.05 var(--mono); background: #f4c56a url("../../assets/game/skin-v2/brown-button.png") center / 100% 100% no-repeat; border: 0; cursor: pointer; filter: drop-shadow(4px 5px 0 rgba(0, 0, 0, .45)); }
 .back-to-bip-btn:hover,
