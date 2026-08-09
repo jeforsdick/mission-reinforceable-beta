@@ -215,9 +215,10 @@
 
   async function init() {
     try {
+      const assignment = await MR.auth.getAssignment();
+      console.info('Authenticated assignment', assignment);
       MR.setScreen('loading');
-      const teacherId = MR.getTeacherIdFromURL();
-      await MR.loadTeacher(teacherId);
+      await MR.loadTeacher(assignment.case.game_folder);
       applyAssets();
       initAudio();
       wireEvents();
@@ -233,7 +234,6 @@
       loading.innerHTML = `
         <h1>Mission failed to load</h1>
         <p>${MR.escapeHTML(error.message || error)}</p>
-        <p>Check the teacher folder name, config.js, and missionFiles list.</p>
       `;
       MR.setScreen('loading');
     }
