@@ -1,0 +1,32 @@
+.demo-label {
+  position: fixed;
+  z-index: 20;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  background: rgba(34, 25, 65, 0.88);
+  color: #fff5c7;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  pointer-events: none;
+}
+
+.demo-results-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.demo-results-actions a {
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+}
