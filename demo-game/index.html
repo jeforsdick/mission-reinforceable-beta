@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <base href="../game/" />
+  <title>Public Demo Game | Mission: Reinforceable</title>
+  <link rel="icon" href="../favicon.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="../demo-game/demo.css" />
+</head>
+<body>
+  <div class="demo-badge" aria-label="Public demo classroom">PUBLIC DEMO</div>
+  <main id="app" class="mr-app" aria-live="polite">
+    <section id="loading-screen" class="screen screen-loading is-active">
+      <div class="loading-card">
+        <img src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
+        <p>Summoning the demo classroom...</p>
+      </div>
+    </section>
+
+    <section id="home-screen" class="screen screen-home" aria-label="Mission menu">
+      <img class="title-logo" data-asset="title" alt="Mission: Reinforceable" />
+      <div class="home-panel gold-frame star-panel">
+        <div class="classroom-plaque" id="home-classroom-label">Demo Classroom</div>
+        <h1 class="home-tagline">Master classroom missions. One choice at a time.</h1>
+        <p class="home-subtitle">Embark on a journey to level up behavior support.</p>
+        <div class="home-layout">
+          <div class="classroom-stage">
+            <img id="home-classroom-img" class="classroom-img" alt="Pixel classroom" />
+            <button id="home-primary-btn" class="pixel-btn brown-btn start-classroom-btn" type="button">Start Your Daily Mission</button>
+          </div>
+          <aside class="mission-menu" aria-label="Mission options">
+            <div class="menu-title">Mission Options</div>
+            <article class="mission-card">
+              <img data-asset="dailyIcon" alt="" />
+              <div><h2>Daily Mission</h2><p>Practice plan-aligned support decisions.</p></div>
+              <button class="pixel-btn green-btn" data-start-mode="daily" type="button">Start Daily</button>
+            </article>
+            <article class="mission-card">
+              <img data-asset="mysteryIcon" alt="" />
+              <div><h2>Mystery Mission</h2><p>Try a random classroom scenario.</p></div>
+              <button class="pixel-btn green-btn" data-start-mode="wild" type="button">Start Mystery</button>
+            </article>
+            <article class="mission-card">
+              <img data-asset="crisisIcon" alt="" />
+              <div><h2>Crisis Mission</h2><p>Practice calm responses during higher-intensity moments.</p></div>
+              <button class="pixel-btn green-btn" data-start-mode="crisis" type="button">Start Crisis</button>
+            </article>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="play-screen" class="screen screen-play" aria-label="Mission play screen">
+      <div class="hud">
+        <div id="heart-row" class="heart-row" aria-label="Hearts"></div>
+        <div class="hud-meter mission-meter">
+          <strong id="mission-progress-label">Mission Progress: 1/5 Completed</strong>
+          <div class="meter"><span id="mission-progress-fill"></span></div>
+          <small id="mission-progress-count">1/5</small>
+        </div>
+        <div class="hud-meter xp-meter">
+          <strong id="xp-label">Behavior Plan XP: 0/1000</strong>
+          <div class="meter"><span id="xp-fill"></span></div>
+          <small id="score-label">0</small>
+        </div>
+      </div>
+      <div class="play-panel gold-frame">
+        <div class="scenario-area"><div class="scenario-scroll"><div id="scenario-text" class="scenario-text"></div></div></div>
+        <aside class="choices-area">
+          <div class="wizard-hint-wrap" id="wizard-hint-trigger" role="button" tabindex="0" aria-label="Ask the wizard for a BSP hint" aria-expanded="false">
+            <div class="speech speech-left scenario-hint" id="wizard-hint">Choose your move carefully.<br />Your decision changes what<br />happens next.</div>
+            <img id="wizard-sidekick" class="wizard-sidekick" data-asset="wizardGuide" alt="MR Wizard" />
+          </div>
+          <div id="choice-list" class="choice-list"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="results-screen" class="screen screen-results" aria-label="Mission results">
+      <div class="hud results-hud">
+        <div id="results-heart-row" class="heart-row" aria-label="Final hearts"></div>
+        <div class="hud-meter mission-meter"><strong>Mission Progress: Complete</strong><div class="meter"><span style="width: 100%"></span></div><small>5/5</small></div>
+        <div class="hud-meter xp-meter"><strong id="results-xp-label">Behavior Plan XP: 0/1000</strong><div class="meter"><span id="results-xp-fill"></span></div><small id="results-score-label">0</small></div>
+      </div>
+      <div class="results-panel gold-frame">
+        <div class="feedback-scroll"><div id="results-content" class="results-content"></div></div>
+      </div>
+    </section>
+
+    <section id="progress-screen" class="screen screen-progress" aria-label="Mission progress dashboard">
+      <h1 id="progress-title" class="progress-title">Mission Progress</h1>
+      <div class="progress-bubble-wrap">
+        <div id="growth-focus" class="progress-bubble">Growth focus: Keep prompts brief, private, and tied to the next safe classroom step.</div>
+        <img data-asset="wizardDead" class="progress-wizard" alt="A sleepy wizard" />
+      </div>
+      <div class="badge-row">
+        <div class="stat-badge purple"><strong id="stat-accuracy">0%</strong><span>Overall Accuracy</span></div>
+        <div class="stat-badge green"><strong id="stat-streak">0</strong><span>Day Streak</span></div>
+        <div class="stat-badge blue"><strong id="stat-completed">0</strong><span>Missions Completed</span></div>
+        <div class="stat-badge orange"><strong id="stat-best">0%</strong><span>Best Score</span></div>
+      </div>
+      <div class="progress-list gold-frame" id="progress-list"></div>
+    </section>
+
+    <section id="resources-screen" class="screen screen-resources" aria-label="BIP resources">
+      <div class="resources-panel gold-frame star-panel">
+        <div class="resources-layout">
+          <section class="resources-scroll" aria-labelledby="resources-title"><h1 id="resources-title">BIP at a Glance</h1><div id="resources-content"></div></section>
+          <section class="resource-map-wrap" aria-label="Strategy map">
+            <img class="resource-map-img" src="../assets/game/skin-v2/strategy-map.png" alt="Strategy map with eight behavior support landmarks" />
+            <button class="map-hotspot map-hotspot-prevention" type="button" data-resource-section="prevention" aria-label="Prevention Palace" title="Prevention Palace"></button>
+            <button class="map-hotspot map-hotspot-replacement" type="button" data-resource-section="replacement" aria-label="Replacement Reservoir" title="Replacement Reservoir"></button>
+            <button class="map-hotspot map-hotspot-reinforcement" type="button" data-resource-section="reinforcement" aria-label="Reinforcement Ridge" title="Reinforcement Ridge"></button>
+            <button class="map-hotspot map-hotspot-error-correction" type="button" data-resource-section="errorCorrection" aria-label="Error Correction Canyon" title="Error Correction Canyon"></button>
+            <button class="map-hotspot map-hotspot-library" type="button" data-resource-section="library" aria-label="The BSP Library" title="The BSP Library"></button>
+            <button class="map-hotspot map-hotspot-function" type="button" data-resource-section="functionForest" aria-label="Function Forest" title="Function Forest"></button>
+            <button class="map-hotspot map-hotspot-coaching" type="button" data-resource-section="coaching" aria-label="Coaching Cottage" title="Coaching Cottage"></button>
+            <button class="map-hotspot map-hotspot-fidelity" type="button" data-resource-section="fidelity" aria-label="Fidelity Fortress" title="Fidelity Fortress"></button>
+          </section>
+        </div>
+        <div class="resources-footer">
+          <button id="back-to-bip" class="back-to-bip-btn" type="button" hidden>&larr; Back to BIP at a Glance</button>
+        </div>
+      </div>
+    </section>
+
+    <nav class="bottom-nav gold-frame" aria-label="Game navigation">
+      <button id="nav-home" class="scroll-nav-btn" type="button"><img data-asset="startOverIcon" alt="" />Start Over</button>
+      <button id="nav-progress" class="scroll-nav-btn" type="button"><img data-asset="progressIcon" alt="" />Progress</button>
+      <button id="nav-resources" class="scroll-nav-btn" type="button"><img data-asset="resourcesIcon" alt="" />Resources</button>
+    </nav>
+  </main>
+
+  <div id="wizard-modal" class="wizard-modal" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title" hidden>
+    <div class="modal-backdrop"></div>
+    <div class="wizard-modal-card">
+      <div class="wizard-modal-bubble">
+        <h2 id="wizard-modal-title">Mission Feedback</h2>
+        <p id="wizard-modal-text"></p>
+        <button id="wizard-modal-continue" class="pixel-btn green-btn" type="button">Continue</button>
+      </div>
+      <img id="wizard-modal-img" class="wizard-modal-img" alt="MR Wizard reaction" />
+    </div>
+  </div>
+
+  <a class="back-to-site-cottage" href="../" aria-label="Back to main website"><img src="../assets/game/back-to-site-icon.png" alt="Back to Site" /></a>
+  <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Turn sound on" aria-pressed="false">
+    <span class="sound-toggle__label">SOUND</span><span class="sound-toggle__switch" aria-hidden="true"><span class="sound-toggle__knob"></span></span>
+  </button>
+
+  <script src="js/utils.js"></script>
+  <script src="js/session-timer.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/teacher-loader.js?v=20260701-data-logging"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/engine.js?v=20260701-data-logging"></script>
+  <script src="js/reminders.js"></script>
+  <script src="js/resources.js?v=20260630-strategy-map"></script>
+  <script src="js/demo-app.js"></script>
+  <script src="js/fit-screen.js"></script>
+</body>
+</html>
