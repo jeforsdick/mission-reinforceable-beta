@@ -42,6 +42,17 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .loading-card img { width: 100%; height: auto; display: block; }
 .loading-card p { font: 700 22px var(--mono); text-transform: uppercase; }
 
+.screen-login { align-items: center; justify-content: center; padding: 40px 20px; }
+.screen-login.is-active { display: flex; }
+.login-card { width: min(560px, 100%); padding: 32px; background: rgba(4, 8, 45, .94); }
+.login-card > img { display: block; width: 100%; height: auto; }
+.login-card h1, .login-card > p { text-align: center; }
+.login-card form { display: grid; gap: 10px; }
+.login-card label { font: 700 16px var(--mono); text-transform: uppercase; }
+.login-card input { width: 100%; padding: 12px; border: 3px solid var(--gold); background: var(--cream); color: var(--ink); }
+.login-card button { margin-top: 10px; }
+.login-error { min-height: 1.4em; margin: 4px 0 0; color: #ffb9b9; font-weight: 700; text-align: center; }
+
 .gold-frame {
   border: 6px solid var(--gold);
   border-radius: 8px;
