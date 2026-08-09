@@ -2,8 +2,8 @@
   'use strict';
 
   const MR = window.MR = window.MR || {};
-  const SUPABASE_URL = 'PASTE_SUPABASE_URL_HERE';
-  const SUPABASE_PUBLISHABLE_KEY = 'PASTE_PUBLISHABLE_KEY_HERE';
+  const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_rCL4M_2ffrCVf8vf7yoZrw_IE7eXCHHE';
 
   function client() {
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
