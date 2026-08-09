@@ -53,7 +53,7 @@
     const { data, error } = await supabaseClient
       .from('participants')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('auth_user_id', user.id)
       .eq('active', true)
       .maybeSingle();
 
@@ -63,10 +63,14 @@
   }
 
   async function activeCase(supabaseClient, participant) {
+    if (!participant.case_id) {
+      throw new Error('No case is assigned to this participant. Please contact the research team.');
+    }
+
     const { data, error } = await supabaseClient
       .from('cases')
       .select('*')
-      .eq('participant_id', participant.id)
+      .eq('id', participant.case_id)
       .eq('active', true)
       .maybeSingle();
 
