@@ -12,7 +12,7 @@
     <section id="login-screen" class="screen screen-login" aria-labelledby="login-title">
       <div class="login-card gold-frame">
         <img src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
-        <h1 id="login-title">Dissertation Participant Login</h1>
+        <h1 id="login-title">Teacher Login</h1>
         <p>Sign in with the email and password provided by the research team.</p>
         <form id="login-form">
           <label for="login-email">Email</label>
@@ -36,6 +36,10 @@
       <img class="title-logo" data-asset="title" alt="Mission: Reinforceable" />
 
       <div class="home-panel gold-frame star-panel">
+        <div class="participant-controls" aria-label="Participant session">
+          <span id="study-id">Study ID:</span>
+          <button id="logout-btn" type="button">Log Out</button>
+        </div>
         <div class="classroom-plaque" id="home-classroom-label">Beta Classroom</div>
         <h1 class="home-tagline">Master classroom missions. One choice at a time.</h1>
         <p class="home-subtitle">Embark on a journey to level up behavior support.</p>
@@ -126,22 +130,6 @@
       <div class="results-panel gold-frame">
         <div class="feedback-scroll">
           <div id="results-content" class="results-content"></div>
-        </div>
-        <div class="results-wizard-note" role="button" tabindex="0" aria-label="Complete beta survey">
-          <div class="speech speech-left small-result-bubble">One more quest! Tap me to<br />complete the beta survey!</div>
-          <img data-asset="wizardDead" alt="A sleepy wizard" />
-        </div>
-      </div>
-    </section>
-
-    <section id="survey-screen" class="screen screen-results" aria-label="Beta survey">
-      <div class="results-panel gold-frame">
-        <div class="feedback-scroll">
-          <div id="survey-content" class="results-content"></div>
-        </div>
-        <div class="survey-wizard-note" aria-hidden="true">
-          <div class="speech speech-left survey-wizard-bubble">Thank you for your time and feedback.</div>
-          <img data-asset="wizardSuccess" alt="Happy wizard" />
         </div>
       </div>
     </section>

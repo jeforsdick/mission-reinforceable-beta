@@ -4,12 +4,16 @@
   const MR = window.MR = window.MR || {};
   const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_rCL4M_2ffrCVf8vf7yoZrw_IE7eXCHHE';
+  let supabaseClient = null;
 
   function client() {
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
       throw new Error('Authentication could not load. Please refresh the page and try again.');
     }
-    return window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    }
+    return supabaseClient;
   }
 
   function showLogin(message = '') {
@@ -94,6 +98,11 @@
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
       return { user, participant, case: caseAssignment };
+    },
+
+    async signOut() {
+      const { error } = await client().auth.signOut();
+      if (error) throw new Error(`Unable to log out: ${error.message}`);
     }
   };
 })();

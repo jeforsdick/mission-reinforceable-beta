@@ -2,8 +2,6 @@
   'use strict';
 
   const MR = window.MR = window.MR || {};
-  let welcomeShownThisLoad = false;
-  const WELCOME_STORAGE_KEY = 'mission-reinforceable:betaWelcomeShown';
   const SOUND_STORAGE_KEY = 'mrSoundEnabled';
   const BGM_VOLUME = 0.063;
   const SFX_VOLUME = 0.32;
@@ -147,20 +145,6 @@
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
   }
 
-  function showWelcomeOnce() {
-    if (welcomeShownThisLoad) return;
-    let alreadyShown = false;
-    try {
-      alreadyShown = sessionStorage.getItem(WELCOME_STORAGE_KEY) === 'true';
-      if (!alreadyShown) sessionStorage.setItem(WELCOME_STORAGE_KEY, 'true');
-    } catch (error) {
-      alreadyShown = welcomeShownThisLoad;
-    }
-    if (alreadyShown) return;
-    welcomeShownThisLoad = true;
-    if (MR.engine && MR.engine.showWelcomePopup) MR.engine.showWelcomePopup();
-  }
-
   function wireEvents() {
     MR.$('#home-primary-btn').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.26);
@@ -203,6 +187,21 @@
     if (soundToggle) {
       soundToggle.addEventListener('click', () => setSoundEnabled(!soundEnabled, { playClick: true }));
     }
+    const logoutButton = MR.$('#logout-btn');
+    if (logoutButton) {
+      logoutButton.addEventListener('click', async () => {
+        logoutButton.disabled = true;
+        logoutButton.textContent = 'Logging Out...';
+        try {
+          await MR.auth.signOut();
+          window.location.reload();
+        } catch (error) {
+          console.error(error);
+          logoutButton.disabled = false;
+          logoutButton.textContent = 'Log Out';
+        }
+      });
+    }
     const saveReminder = MR.$('#save-reminder-btn');
     if (saveReminder) {
       saveReminder.addEventListener('click', async () => {
@@ -216,7 +215,8 @@
   async function init() {
     try {
       const assignment = await MR.auth.getAssignment();
-      console.info('Authenticated assignment', assignment);
+      MR.participantCode = assignment.participant.participant_code;
+      MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
       MR.setScreen('loading');
       await MR.loadTeacher(assignment.case.game_folder);
       applyAssets();
@@ -226,7 +226,6 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
-      showWelcomeOnce();
       console.info('Mission: Reinforceable loaded', { teacher: MR.teacherConfig, pool: MR.pool });
     } catch (error) {
       console.error(error);
