@@ -193,7 +193,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .scenario-area { min-width: 0; }
 .scenario-scroll { width: 100%; min-height: 485px; background: transparent url("../../assets/game/skin-v2/scenario-scroll.png") center / 100% 100% no-repeat; padding: 130px 78px 78px 98px; color: #0c0500; }
 .scenario-text {
-  font: 700 clamp(18px, 1.45vw, 22px)/1.36 var(--mono);
+  font: 700 clamp(20px, 1.45vw, 23px)/1.38 var(--mono);
   white-space: pre-line;
 }
 
@@ -510,12 +510,12 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 }
 
 .scenario-text {
-  font-size: clamp(16.8px, 1.16vw, 18.8px);
-  line-height: 1.34;
+  font-size: clamp(20px, 1.45vw, 23px);
+  line-height: 1.38;
 }
 
 .scenario-text .scene-label {
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .choices-area {
@@ -832,11 +832,11 @@ body {
 }
 
 .scenario-text {
-  font: 900 clamp(16.8px, 1.16vw, 18.8px)/1.34 var(--mono);
+  font: 900 clamp(20px, 1.45vw, 23px)/1.38 var(--mono);
 }
 
 .scenario-text .scene-label {
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .choices-area {
@@ -1750,14 +1750,14 @@ body {
   }
 
   #survey-screen .results-content h2 {
-    color: #ffc84a;
+    color: #ffc54a;
     font: 900 25px/1.05 var(--display);
     margin: 0 0 12px;
     text-shadow: 3px 3px 0 #281200;
   }
 
   #survey-screen .results-content h3 {
-    color: #ffc84a;
+    color: #ffc54a;
     font: 900 20px/1.1 var(--display);
     margin: 18px 0 8px;
     text-shadow: 2px 2px 0 #281200;
