@@ -27,7 +27,7 @@ jobs:
 
       - name: Commit generated seed
         run: |
-          if git diff --quiet -- research/supabase/003_seed_demo2_full_protected.sql; then
+          if [ -z "$(git status --porcelain -- research/supabase/003_seed_demo2_full_protected.sql)" ]; then
             echo "Seed is already current."
             exit 0
           fi
