@@ -58,6 +58,33 @@
     return result;
   }
 
+  function resetRuntime() {
+    window.POOL = { daily: [], wild: [], crisis: [] };
+    window.GAME_CONFIG = {};
+    window.MR_TEACHER_CONFIG = null;
+    window.MR_RESOURCES = null;
+  }
+
+  function applyTeacherConfig(rawConfig, teacherId, folder) {
+    const teacherConfig = deepMerge(DEFAULT_CONFIG, rawConfig || {});
+    teacherConfig.teacherId = teacherConfig.teacherId || teacherId || 'protected';
+    teacherConfig.folder = folder || null;
+    MR.teacherConfig = teacherConfig;
+
+    window.GAME_CONFIG = Object.assign(window.GAME_CONFIG || {}, {
+      resultEndpoint: teacherConfig.resultEndpoint || '',
+      defaultStudent: teacherConfig.studentAlias || 'Student',
+      fidelityHigh: teacherConfig.feedback.high,
+      fidelityMid: teacherConfig.feedback.mid,
+      fidelityLow: teacherConfig.feedback.low,
+      actionHigh: teacherConfig.feedback.actionHigh,
+      actionMid: teacherConfig.feedback.actionMid,
+      actionLow: teacherConfig.feedback.actionLow
+    });
+
+    return teacherConfig;
+  }
+
   MR.getTeacherIdFromURL = function getTeacherIdFromURL() {
     const params = new URLSearchParams(window.location.search);
     const fromQuery = params.get('teacher');
@@ -69,29 +96,12 @@
   };
 
   MR.loadTeacher = async function loadTeacher(teacherId) {
-    window.POOL = { daily: [], wild: [], crisis: [] };
-    window.GAME_CONFIG = {};
-    window.MR_TEACHER_CONFIG = null;
+    resetRuntime();
 
     const folder = `teachers/${teacherId}`;
     await MR.loadScript(`${folder}/config.js?v=${TEACHER_CONTENT_VERSION}`);
 
-    const teacherConfig = deepMerge(DEFAULT_CONFIG, window.MR_TEACHER_CONFIG || {});
-    teacherConfig.teacherId = teacherConfig.teacherId || teacherId;
-    teacherConfig.folder = folder;
-    MR.teacherConfig = teacherConfig;
-
-    // Backward compatibility for the original content files.
-    window.GAME_CONFIG = Object.assign(window.GAME_CONFIG || {}, {
-      resultEndpoint: teacherConfig.resultEndpoint || '',
-      defaultStudent: teacherConfig.studentAlias || 'Student',
-      fidelityHigh: teacherConfig.feedback.high,
-      fidelityMid: teacherConfig.feedback.mid,
-      fidelityLow: teacherConfig.feedback.low,
-      actionHigh: teacherConfig.feedback.actionHigh,
-      actionMid: teacherConfig.feedback.actionMid,
-      actionLow: teacherConfig.feedback.actionLow
-    });
+    const teacherConfig = applyTeacherConfig(window.MR_TEACHER_CONFIG || {}, teacherId, folder);
 
     for (const file of teacherConfig.missionFiles || []) {
       const src = file.startsWith('http') || file.startsWith('/') ? file : `${folder}/${file}`;
@@ -107,6 +117,38 @@
 
     MR.pool = window.POOL || { daily: [], wild: [], crisis: [] };
     MR.resourcesData = window.MR_RESOURCES || null;
+    return { config: teacherConfig, pool: MR.pool };
+  };
+
+  MR.loadProtectedGameContent = async function loadProtectedGameContent(content, caseAssignment) {
+    resetRuntime();
+
+    if (!content || typeof content !== 'object') {
+      throw new Error('Protected game content is missing or invalid. Please contact the research team.');
+    }
+
+    const rawConfig = Object.assign({}, content.config || {});
+    // Protected content is data, not a list of public scripts. Ignore any static-file fields.
+    rawConfig.missionFiles = [];
+    rawConfig.resourcesFile = '';
+
+    const teacherId = rawConfig.teacherId || (caseAssignment && caseAssignment.game_folder) || 'protected';
+    const teacherConfig = applyTeacherConfig(rawConfig, teacherId, null);
+
+    const daily = Array.isArray(content.daily_missions) ? content.daily_missions : [];
+    const wild = Array.isArray(content.wildcard_missions) ? content.wildcard_missions : [];
+    const crisis = Array.isArray(content.crisis_missions) ? content.crisis_missions : [];
+
+    window.POOL = { daily, wild, crisis };
+    window.MR_RESOURCES = content.resources || null;
+    MR.pool = window.POOL;
+    MR.resourcesData = window.MR_RESOURCES;
+
+    const missionCount = daily.length + wild.length + crisis.length;
+    if (!missionCount) {
+      throw new Error('No protected missions are configured for this case. Please contact the research team.');
+    }
+
     return { config: teacherConfig, pool: MR.pool };
   };
 
