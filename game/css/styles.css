@@ -53,21 +53,25 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .login-card button { margin-top: 10px; }
 .login-error { min-height: 1.4em; margin: 4px 0 0; color: #ffb9b9; font-weight: 700; text-align: center; }
 .participant-controls {
-  position: absolute;
-  top: 14px;
-  right: 18px;
-  z-index: 2;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  color: rgba(255, 255, 255, .78);
-  font: 600 12px var(--mono);
+  width: 100%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  padding: 8px 9px;
+  border: 2px solid var(--gold);
+  border-radius: 5px;
+  color: #fff5d2;
+  background: linear-gradient(180deg, rgba(25, 24, 78, .97), rgba(12, 9, 48, .97));
+  box-shadow: 0 0 0 2px rgba(91, 48, 15, .9), 0 7px 14px rgba(0, 0, 0, .42), inset 0 0 10px rgba(109, 83, 167, .2);
+  font: 700 11px/1.2 var(--mono);
+  text-align: center;
 }
 .participant-controls button {
-  padding: 5px 8px;
-  border: 1px solid rgba(255, 255, 255, .5);
+  padding: 4px 7px;
+  border: 1px solid rgba(249, 190, 37, .75);
   border-radius: 3px;
-  background: rgba(4, 8, 45, .7);
+  background: rgba(51, 34, 78, .92);
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -306,13 +310,25 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .muted { color: #dad6ff; font: 700 15px var(--mono); }
 code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 
-.back-to-site-cottage {
+.game-corner-controls {
   position: fixed;
   right: clamp(10px, 2vw, 28px);
-  bottom: clamp(8px, 1.5vh, 18px);
+  bottom: max(142px, calc(50vh - 317px));
   z-index: 9999;
+  display: none;
+  width: clamp(104px, 8.8vw, 128px);
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+body:has(#home-screen.is-active, #play-screen.is-active, #results-screen.is-active, #progress-screen.is-active, #resources-screen.is-active) .game-corner-controls {
+  display: flex;
+}
+
+.back-to-site-cottage {
   display: block;
-  width: clamp(72px, 8.8vw, 128px);
+  width: 100%;
   height: auto;
   text-decoration: none;
   cursor: pointer;
@@ -2211,7 +2227,20 @@ body {
   }
 
   .back-to-site-cottage {
-    display: none;
+    width: 68px;
+  }
+
+  .game-corner-controls {
+    right: max(10px, env(safe-area-inset-right, 0px));
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    width: 108px;
+    gap: 5px;
+  }
+
+  .participant-controls {
+    gap: 4px;
+    padding: 6px 7px;
+    font-size: 10px;
   }
 
   body .sound-toggle {
