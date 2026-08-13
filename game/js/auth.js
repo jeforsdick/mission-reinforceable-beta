@@ -80,10 +80,20 @@
 
     if (error) throw new Error(`Unable to load your case assignment: ${error.message}`);
     if (!data) throw new Error('No active case is assigned to this participant. Please contact the research team.');
-    if (!data.game_folder || !String(data.game_folder).trim()) {
-      throw new Error('Your active case does not have a game folder assignment. Please contact the research team.');
-    }
     return data;
+  }
+
+  async function protectedGameContent(supabaseClient, caseId) {
+    if (!caseId) throw new Error('No case is available for protected game content.');
+
+    const { data, error } = await supabaseClient
+      .from('case_game_content')
+      .select('case_id, config, resources, daily_missions, wildcard_missions, crisis_missions, version, updated_at')
+      .eq('case_id', caseId)
+      .maybeSingle();
+
+    if (error) throw new Error(`Unable to load protected game content: ${error.message}`);
+    return data || null;
   }
 
   MR.auth = {
@@ -98,6 +108,10 @@
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
       return { user, participant, case: caseAssignment };
+    },
+
+    async getGameContent(caseId) {
+      return protectedGameContent(client(), caseId);
     },
 
     async signOut() {
