@@ -33,6 +33,7 @@ window.MR_TEACHER_CONFIG = {
   missionFiles: [
     'content/daily-mission-1.js',
     'content/wildcard-mission-1.js',
-    'content/crisis-mission-1.js'
+    'content/crisis-mission-1.js',
+    'content/bip-briefing.js'
   ]
 };
