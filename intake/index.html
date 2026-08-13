@@ -5,11 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Request an Individualized Game | Mission: Reinforceable</title>
   <link rel="icon" href="../favicon.png" />
+  <link rel="stylesheet" href="../assets/site/site.css" />
   <link rel="stylesheet" href="intake.css" />
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="../"><img src="../favicon.png" alt="" /><span>Mission: Reinforceable</span></a>
+  <header class="site-header">
+    <div class="nav-wrap">
+      <a class="brand" href="../" aria-label="Mission: Reinforceable Home">
+        <img class="brand-icon" src="../favicon.png" alt="" />
+        <img class="brand-logo" src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="../">Home</a>
+        <a href="../research/">Research</a>
+        <a class="nav-active" href="./" aria-current="page">New Game Intake</a>
+        <a href="/demo/">Play Demo</a>
+        <a class="nav-cta" href="/game/">Teacher Login</a>
+      </nav>
+    </div>
   </header>
 
   <main>
@@ -22,7 +35,7 @@
       </section>
 
       <nav class="section-nav" aria-label="Intake sections">
-        <a href="#section-1"><b>1</b> Teacher, Coach &amp; Student</a><a href="#section-2"><b>2</b> Behavior &amp; Support Plan</a><a href="#section-3"><b>3</b> What Staff Should Do</a><a href="#section-4"><b>4</b> Key Fidelity Steps</a><a href="#section-5"><b>5</b> Classroom Context</a>
+        <a class="is-active" href="#section-1"><b>1</b> Teacher, Coach &amp; Student</a><a href="#section-2"><b>2</b> Behavior &amp; Support Plan</a><a href="#section-3"><b>3</b> What Staff Should Do</a><a href="#section-4"><b>4</b> Key Fidelity Steps</a><a href="#section-5"><b>5</b> Classroom Context</a>
       </nav>
 
       <form id="intake-form" novalidate>
@@ -85,7 +98,7 @@
       <section id="completion-panel" class="completion" hidden tabindex="-1"><div class="checkmark">✓</div><p class="eyebrow">Complete</p><h2>Intake Received</h2><p>Thank you. Your information has been submitted to the Mission: Reinforceable team. We’ll use it to prepare the individualized game and account access.</p><p>You do not need to do anything else right now. The study/research team will follow up using the contact information provided.</p><div class="actions"><a class="button primary" href="../">Return Home</a><button id="submit-another" class="button secondary" type="button">Submit Another Intake</button></div></section>
     </div>
   </main>
-  <footer><span>Mission: Reinforceable</span><span>Individualized game request</span></footer>
+  <footer class="site-footer"><div class="footer-inner"><span>Mission: Reinforceable</span><span>Individualized game request</span></div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="intake.js"></script>
 </body>
