@@ -314,7 +314,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .account-stack {
   position: fixed;
   right: clamp(10px, 2vw, 28px);
-  bottom: clamp(154px, 18vh, 174px);
+  bottom: clamp(18px, 3vh, 32px);
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -921,13 +921,16 @@ body {
 /* POLISH OVERRIDES — feedback page scroll fit */
 
 .screen-results .results-panel {
+  display: flex;
+  flex-direction: column;
   min-height: 620px;
   padding: 24px 48px;
 }
 
 .screen-results .feedback-scroll {
+  flex: 1 1 auto;
   min-height: 468px;
-  max-height: 507px;
+  max-height: none;
   padding: 72px 68px 70px 82px;
   overflow: hidden;
 }
