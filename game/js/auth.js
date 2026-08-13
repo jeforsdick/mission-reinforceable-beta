@@ -3,7 +3,7 @@
 
   const MR = window.MR = window.MR || {};
   const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_rCL4M_2ffrCVf8vf7yoZrw_IE7eXCHH';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W';
   let supabaseClient = null;
 
   function client() {
