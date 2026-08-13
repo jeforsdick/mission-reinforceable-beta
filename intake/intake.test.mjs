@@ -5,20 +5,28 @@ const html = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const js = fs.readFileSync(new URL('intake.js', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('intake.css', import.meta.url), 'utf8');
 
-// These dependency-free smoke checks guard the security and interaction contracts
-// in environments where a browser and live administrator credentials are absent.
-assert.match(js, /role !== 'research_admin' \|\| state\.profile\.active !== true/);
-assert.match(html, /Your account does not have research administrator access\./);
-assert.match(js, /\.upsert\(intakePayload\(status\), \{ onConflict: 'case_id' \}\)/);
-assert.match(js, /row\.id \? await state\.client\.from\('fidelity_targets'\)\.update/);
-assert.match(js, /wasSubmitted \? await state\.client\.from\('fidelity_targets'\)\.update\(\{ active: false \}\)/);
-assert.match(js, /status === 'submitted' && !validate\(\)/);
+assert.doesNotMatch(html + js, /research_admin|Admin sign in|case-select|case_intake|profiles|participants|signOut|sign-in/i);
+assert.doesNotMatch(js, /\.select\s*\(/);
+assert.match(js, /const DRAFT_KEY = 'mr-intake-draft-v1'/);
+assert.match(js, /localStorage\.setItem\(DRAFT_KEY, JSON\.stringify\(collectDraft\(\)\)\)/);
+assert.match(js, /localStorage\.getItem\(DRAFT_KEY\)/);
+assert.match(js, /localStorage\.removeItem\(DRAFT_KEY\)/);
+assert.match(js, /state\.client\.from\('intake_requests'\)\.insert\(submissionPayload\(\)\)/);
+assert.equal((js.match(/\.from\('/g) || []).length, 1);
+assert.match(js, /fidelity_targets: collectTargets\(\)/);
+assert.match(js, /\{ domain: card\.dataset\.domain, description, sort_order: index \+ 1 \}/);
+assert.match(js, /\['proactive', 'teaching', 'reinforcement', 'response'\]/);
+assert.match(js, /hasCrisis\(\) \? \['crisis'\] : \[\]/);
 assert.match(js, /card\.querySelector\('\.add-step'\)\.addEventListener/);
 assert.match(js, /wrapper\.querySelector\('\.remove-step'\)\.addEventListener/);
 assert.match(js, /card\.hidden = !enabled/);
-assert.match(js, /status === 'draft'/);
-assert.match(css, /@media\(max-width:760px\)/);
+assert.match(js, /if \(state\.busy \|\| !validate\(\)\) return/);
+assert.match(js, /clearSavedDraft\(false\);\s*\n\s*\$\('#intake-form'\)\.hidden = true/);
+assert.match(html, /Draft saved on this device\.|Save Draft/);
+assert.match(html, /Clear Saved Draft/);
+assert.match(html, /Intake Received/);
 assert.equal((html.match(/class="form-section"/g) || []).length, 5);
 assert.equal((html.match(/name="has_crisis_plan"/g) || []).length, 2);
+assert.match(css, /@media\(max-width:760px\)/);
 
-console.log('Intake security, save, validation, repeatable-step, crisis, and responsive smoke checks passed.');
+console.log('Public intake draft, validation, JSON fidelity targets, anonymous insert, crisis, and responsive smoke checks passed.');
