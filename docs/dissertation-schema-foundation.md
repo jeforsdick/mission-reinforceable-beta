@@ -43,10 +43,14 @@ is under `supabase/migrations/`. The older SQL setup and seed files remain in
 - `fidelity_targets`: multiple atomic targets per case in the five supported
   domains.
 - `game_sessions`: one future mission attempt linked to both participant and
-  case.
+  case. `participant_id` is the relational source of truth; `participant_code`
+  is intentionally not duplicated here and can be joined from `participants`
+  for authorized research exports or displays.
 - `game_responses`: one future decision linked to session, participant, case,
   and optionally a fidelity target. Composite foreign keys ensure all supplied
-  relational IDs belong to the same participant/case context.
+  relational IDs belong to the same participant/case context. When a
+  `fidelity_target_id` is supplied, the referenced target must match both the
+  response's case and `fidelity_domain`.
 
 `updated_at` triggers maintain timestamps for the three mutable tables that have
 that column. No gameplay logging is connected to the new telemetry tables yet.
@@ -57,11 +61,12 @@ RLS is enabled on every new table, anonymous privileges are revoked, and helper
 functions use `SECURITY DEFINER` with an empty `search_path` and fully qualified
 object names.
 
-- **Teacher/participant:** can read intake and fidelity targets only for an
-  active assigned case, and can create/read/update sessions and create/read
-  responses only when `auth.uid()` owns the active participant/case pair.
-  Response inserts must also match their session's participant and case.
-- **Coach:** can read only their own active assignment rows and read intake,
+- **Teacher/participant:** does not directly read the raw `case_intake` table.
+  Teachers may read fidelity targets for their active assigned case and may
+  create/read/update sessions and create/read responses only when `auth.uid()`
+  owns the active participant/case pair. Response inserts must also match their
+  session's participant and case.
+- **Coach:** can read only their own active assignment rows and may read intake,
   fidelity targets, sessions, responses, and the case for active assigned cases.
   Coach access is read-only.
 - **Research admin:** an active profile with the `research_admin` role can manage
@@ -73,6 +78,15 @@ object names.
 The service role continues to bypass RLS for trusted administration. Application
 role assignment should be performed only through the Supabase Dashboard, a
 trusted server, or another service-role-controlled process.
+
+## Data integrity
+
+`game_responses` uses composite relational constraints to prevent a response
+from mixing a session, participant, case, or fidelity target from different
+contexts. The fidelity-target relationship additionally includes the target's
+domain, so a response cannot reference a teaching target while labeling the
+same decision as reinforcement. If `fidelity_target_id` is present,
+`fidelity_domain` must also be present.
 
 ## Indexes
 
