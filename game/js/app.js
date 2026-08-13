@@ -212,13 +212,35 @@
     }
   }
 
+  function canUseStaticDemoFallback(gameFolder) {
+    const folder = String(gameFolder || '').trim().toLowerCase();
+    return folder === 'olson' || folder.startsWith('demo-');
+  }
+
+  async function loadAssignedGame(assignment) {
+    const protectedContent = await MR.auth.getGameContent(assignment.case.id);
+    if (protectedContent) {
+      return MR.loadProtectedGameContent(protectedContent, assignment.case);
+    }
+
+    if (canUseStaticDemoFallback(assignment.case.game_folder)) {
+      console.warn('Protected content row not found; using static fictional demo content.', {
+        caseCode: assignment.case.case_code,
+        gameFolder: assignment.case.game_folder
+      });
+      return MR.loadTeacher(assignment.case.game_folder);
+    }
+
+    throw new Error('Protected game content is not configured for this participant. Please contact the research team.');
+  }
+
   async function init() {
     try {
       const assignment = await MR.auth.getAssignment();
       MR.participantCode = assignment.participant.participant_code;
       MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
       MR.setScreen('loading');
-      await MR.loadTeacher(assignment.case.game_folder);
+      await loadAssignedGame(assignment);
       applyAssets();
       initAudio();
       wireEvents();
@@ -226,7 +248,11 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
-      console.info('Mission: Reinforceable loaded', { teacher: MR.teacherConfig, pool: MR.pool });
+      console.info('Mission: Reinforceable loaded', {
+        teacher: MR.teacherConfig,
+        pool: MR.pool,
+        protectedContent: !MR.teacherConfig.folder
+      });
     } catch (error) {
       console.error(error);
       const loading = MR.$('#loading-screen .loading-card');
