@@ -52,6 +52,29 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .login-card input { width: 100%; padding: 12px; border: 3px solid var(--gold); background: var(--cream); color: var(--ink); }
 .login-card button { margin-top: 10px; }
 .login-error { min-height: 1.4em; margin: 4px 0 0; color: #ffb9b9; font-weight: 700; text-align: center; }
+.participant-controls {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, .78);
+  font: 600 12px var(--mono);
+}
+.participant-controls button {
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 3px;
+  background: rgba(4, 8, 45, .7);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.participant-controls button:hover,
+.participant-controls button:focus-visible { color: #fff; border-color: var(--gold); }
+.participant-controls button:disabled { cursor: wait; opacity: .65; }
 
 .gold-frame {
   border: 6px solid var(--gold);

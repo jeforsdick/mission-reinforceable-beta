@@ -3,28 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mission: Reinforceable</title>
+  <title>Public Demo | Mission: Reinforceable</title>
+  <base href="../game/" />
   <link rel="icon" href="../favicon.png" />
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="../demo-game/demo.css" />
 </head>
 <body>
-  <main id="app" class="mr-app" aria-live="polite">
-    <section id="login-screen" class="screen screen-login" aria-labelledby="login-title">
-      <div class="login-card gold-frame">
-        <img src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
-        <h1 id="login-title">Teacher Login</h1>
-        <p>Sign in with the email and password provided by the research team.</p>
-        <form id="login-form">
-          <label for="login-email">Email</label>
-          <input id="login-email" name="email" type="email" autocomplete="username" required />
-          <label for="login-password">Password</label>
-          <input id="login-password" name="password" type="password" autocomplete="current-password" required />
-          <button id="login-submit" class="pixel-btn green-btn" type="submit">Enter the Mission</button>
-          <p id="login-error" class="login-error" role="alert" aria-live="assertive"></p>
-        </form>
-      </div>
-    </section>
-
+  <main id="app" class="mr-app demo-app" aria-live="polite">
+    <div class="demo-label" aria-label="Public demonstration version">PUBLIC DEMO</div>
     <section id="loading-screen" class="screen screen-loading is-active">
       <div class="loading-card">
         <img src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
@@ -36,11 +23,7 @@
       <img class="title-logo" data-asset="title" alt="Mission: Reinforceable" />
 
       <div class="home-panel gold-frame star-panel">
-        <div class="participant-controls" aria-label="Participant session">
-          <span id="study-id">Study ID:</span>
-          <button id="logout-btn" type="button">Log Out</button>
-        </div>
-        <div class="classroom-plaque" id="home-classroom-label">Beta Classroom</div>
+        <div class="classroom-plaque" id="home-classroom-label">Demo Classroom</div>
         <h1 class="home-tagline">Master classroom missions. One choice at a time.</h1>
         <p class="home-subtitle">Embark on a journey to level up behavior support.</p>
 
@@ -131,6 +114,10 @@
         <div class="feedback-scroll">
           <div id="results-content" class="results-content"></div>
         </div>
+        <div class="demo-results-actions" aria-label="Demo actions">
+          <button id="demo-play-again" class="pixel-btn green-btn" type="button">Play Again</button>
+          <a class="pixel-btn brown-btn" href="../demo/">Return to Public Site</a>
+        </div>
       </div>
     </section>
 
@@ -209,9 +196,7 @@
     </span>
   </button>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/utils.js"></script>
-  <script src="js/auth.js"></script>
   <script src="js/session-timer.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/teacher-loader.js?v=20260701-data-logging"></script>
@@ -219,7 +204,7 @@
   <script src="js/engine.js?v=20260701-data-logging"></script>
   <script src="js/reminders.js"></script>
   <script src="js/resources.js?v=20260630-strategy-map"></script>
-  <script src="js/app.js"></script>
+  <script src="js/demo-app.js"></script>
   <script src="js/fit-screen.js"></script>
 </body>
 </html>

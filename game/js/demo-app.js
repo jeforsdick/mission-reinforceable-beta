@@ -187,19 +187,12 @@
     if (soundToggle) {
       soundToggle.addEventListener('click', () => setSoundEnabled(!soundEnabled, { playClick: true }));
     }
-    const logoutButton = MR.$('#logout-btn');
-    if (logoutButton) {
-      logoutButton.addEventListener('click', async () => {
-        logoutButton.disabled = true;
-        logoutButton.textContent = 'Logging Out...';
-        try {
-          await MR.auth.signOut();
-          window.location.reload();
-        } catch (error) {
-          console.error(error);
-          logoutButton.disabled = false;
-          logoutButton.textContent = 'Log Out';
-        }
+    const playAgain = MR.$('#demo-play-again');
+    if (playAgain) {
+      playAgain.addEventListener('click', () => {
+        MR.audio.playSfx('click', 0.24);
+        renderHome();
+        MR.setScreen('home');
       });
     }
     const saveReminder = MR.$('#save-reminder-btn');
@@ -214,11 +207,18 @@
 
   async function init() {
     try {
-      const assignment = await MR.auth.getAssignment();
-      MR.participantCode = assignment.participant.participant_code;
-      MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
       MR.setScreen('loading');
-      await MR.loadTeacher(assignment.case.game_folder);
+      await MR.loadTeacher('olson');
+
+      // The public demo is intentionally ephemeral: no browser run history and no remote endpoint.
+      MR.teacherConfig.resultEndpoint = '';
+      MR.teacherConfig.displayName = 'Demo Classroom';
+      MR.teacherConfig.classroomLabel = 'Demo Classroom';
+      window.GAME_CONFIG.resultEndpoint = '';
+      MR.storage.getRuns = () => [];
+      MR.storage.saveRun = run => run;
+      MR.storage.getSettings = () => ({});
+      MR.storage.saveSettings = settings => settings || {};
       applyAssets();
       initAudio();
       wireEvents();
@@ -226,7 +226,7 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
-      console.info('Mission: Reinforceable loaded', { teacher: MR.teacherConfig, pool: MR.pool });
+      console.info('Mission: Reinforceable public demo loaded', { teacher: MR.teacherConfig, pool: MR.pool });
     } catch (error) {
       console.error(error);
       const loading = MR.$('#loading-screen .loading-card');

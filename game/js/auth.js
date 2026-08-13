@@ -3,13 +3,17 @@
 
   const MR = window.MR = window.MR || {};
   const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_rCL4M_2ffrCVf8vf7yoZrw_IE7eXCHH';
+  const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
+  let supabaseClient = null;
 
   function client() {
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
       throw new Error('Authentication could not load. Please refresh the page and try again.');
     }
-    return window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    if (!supabaseClient) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    }
+    return supabaseClient;
   }
 
   function showLogin(message = '') {
@@ -94,6 +98,11 @@
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
       return { user, participant, case: caseAssignment };
+    },
+
+    async signOut() {
+      const { error } = await client().auth.signOut();
+      if (error) throw new Error(`Unable to log out: ${error.message}`);
     }
   };
 })();
