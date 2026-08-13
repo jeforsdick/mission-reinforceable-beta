@@ -1,0 +1,38 @@
+name: Generate protected demo seed
+
+on:
+  push:
+    branches:
+      - protected-game-content
+    paths:
+      - 'game/teachers/demo-2/**'
+      - 'scripts/build-protected-seed.js'
+      - '.github/workflows/generate-protected-demo2-seed.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: protected-game-content
+
+      - name: Generate full MR-DEMO-2 protected seed
+        run: node scripts/build-protected-seed.js demo-2 CASE-DEMO-2 research/supabase/003_seed_demo2_full_protected.sql
+
+      - name: Commit generated seed
+        run: |
+          if git diff --quiet -- research/supabase/003_seed_demo2_full_protected.sql; then
+            echo "Seed is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/supabase/003_seed_demo2_full_protected.sql
+          git commit -m "Generate full MR-DEMO-2 protected seed"
+          git push origin HEAD:protected-game-content
