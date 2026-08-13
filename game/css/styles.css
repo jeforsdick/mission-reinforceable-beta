@@ -496,15 +496,18 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
 .scenario-scroll {
   min-height: 430px;
   padding: 88px 68px 68px 88px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
 }
 
 .scenario-text {
-  font-size: clamp(17px, 1.18vw, 19px);
-  line-height: 1.38;
+  font-size: clamp(16px, 1.08vw, 18px);
+  line-height: 1.32;
 }
 
 .scenario-text .scene-label {
-  font-size: 28px;
+  font-size: 26px;
 }
 
 .choices-area {
@@ -815,15 +818,17 @@ body {
 .scenario-scroll {
   min-height: 572px;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
   padding: 95px 76px 76px 96px;
 }
 
 .scenario-text {
-  font: 900 clamp(20px, 1.55vw, 24px)/1.48 var(--mono);
+  font: 900 clamp(16px, 1.08vw, 18px)/1.32 var(--mono);
 }
 
 .scenario-text .scene-label {
-  font-size: 30px;
+  font-size: 26px;
 }
 
 .choices-area {
