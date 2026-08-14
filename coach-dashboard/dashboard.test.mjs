@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { analyzeCase, coachingCopy, sessionPercent, statusFor, targetPerformance } from './dashboard-metrics.mjs';
+import { canAccessCoachDashboard, loadDashboardCases } from './dashboard-access.mjs';
 
 const now = new Date('2026-08-13T12:00:00Z');
 const sessions = [1, 2, 3].map(day => ({ id: `s${day}`, started_at: `2026-08-${10 + day}T12:00:00Z`, duration_seconds: 60 }));
@@ -71,10 +72,61 @@ test('target performance distinguishes unlinked and unscored opportunities', () 
   ]), { percent: null, emptyLabel: 'No scored opportunities' });
 });
 
-test('dashboard source gates data behind coach auth and assigned case IDs', async () => {
+function mockClient(dataByTable) {
+  const calls = [];
+  return {
+    calls,
+    from(table) {
+      const call = { table, operations: [] };
+      calls.push(call);
+      const query = {
+        select(columns) { call.operations.push(['select', columns]); return query; },
+        eq(column, value) { call.operations.push(['eq', column, value]); return query; },
+        in(column, value) { call.operations.push(['in', column, value]); return query; },
+        order(column, options) { call.operations.push(['order', column, options]); return query; },
+        then(resolve) { return Promise.resolve({ data: dataByTable[table] || [], error: null }).then(resolve); }
+      };
+      return query;
+    }
+  };
+}
+
+test('dashboard authorization allows only active coaches and research admins', () => {
+  assert.equal(canAccessCoachDashboard({ role: 'coach', active: true }), true);
+  assert.equal(canAccessCoachDashboard({ role: 'research_admin', active: true }), true);
+  assert.equal(canAccessCoachDashboard({ role: 'teacher', active: true }), false);
+  assert.equal(canAccessCoachDashboard({ role: 'research_admin', active: false }), false);
+  assert.equal(canAccessCoachDashboard(null), false);
+});
+
+test('coach still loads only active assigned cases', async () => {
+  const client = mockClient({ case_coaches: [{ case_id: 'assigned-case' }], cases: [{ id: 'assigned-case', active: true }] });
+  const cases = await loadDashboardCases(client, 'coach-user', 'coach');
+  assert.deepEqual(cases.map(row => row.id), ['assigned-case']);
+  assert.deepEqual(client.calls.find(call => call.table === 'case_coaches').operations, [
+    ['select', 'case_id'], ['eq', 'coach_user_id', 'coach-user'], ['eq', 'active', true]
+  ]);
+  assert.ok(client.calls.find(call => call.table === 'cases').operations.some(operation => operation[0] === 'in' && operation[1] === 'id' && operation[2][0] === 'assigned-case'));
+});
+
+test('research admin loads all active cases and their dashboard data without coach assignments', async () => {
+  const client = mockClient({ cases: [{ id: 'case-a', active: true }, { id: 'case-b', active: true }] });
+  const cases = await loadDashboardCases(client, 'admin-user', 'research_admin');
+  assert.deepEqual(cases.map(row => row.id), ['case-a', 'case-b']);
+  assert.deepEqual(client.calls.map(call => call.table), ['cases', 'case_intake', 'fidelity_targets', 'game_sessions', 'game_responses']);
+  assert.equal(client.calls.some(call => call.table === 'case_coaches'), false);
+  assert.equal(client.calls.some(call => call.operations.some(operation => ['insert', 'upsert', 'update'].includes(operation[0]))), false);
+  assert.deepEqual(client.calls[0].operations, [['select', 'id, active'], ['eq', 'active', true]]);
+  for (const call of client.calls.slice(1)) {
+    assert.ok(call.operations.some(operation => operation[0] === 'in' && operation[1] === 'case_id' && operation[2].join(',') === 'case-a,case-b'));
+  }
+});
+
+test('dashboard source uses shared authorization and displays the admin-view label', async () => {
   const source = await readFile(new URL('./dashboard.js', import.meta.url), 'utf8');
-  assert.match(source, /profile\.role !== 'coach' \|\| !profile\.active/);
-  assert.match(source, /from\('case_coaches'\).*eq\('coach_user_id', userId\).*eq\('active', true\)/s);
-  assert.match(source, /\.in\('case_id', caseIds\)/);
+  const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
+  assert.match(source, /canAccessCoachDashboard\(profile\)/);
+  assert.match(source, /loadDashboardCases\(state\.client, session\.user\.id, profile\.role\)/);
+  assert.match(html, /id="research-admin-label"[^>]*hidden>Research Admin View/);
   assert.doesNotMatch(source, /service[_-]?role/i);
 });
