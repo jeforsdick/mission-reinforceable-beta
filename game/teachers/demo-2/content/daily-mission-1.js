@@ -3,15 +3,13 @@
   if (typeof POOL === 'undefined') throw new Error('POOL must be defined before loading daily-mission-1.js');
   POOL.daily = POOL.daily || [];
 
-  const meta = (component, mechanism, errorType = 'none', fidelityTargetKey = null) => {
-    const metadata = {
+  const meta = (component, mechanism, errorType = 'none') => {
+    return {
       bipComponent: component,
       mechanism,
       errorType,
       function: 'escape'
     };
-    if (fidelityTargetKey) metadata.fidelityTargetKey = fidelityTargetKey;
-    return metadata;
   };
 
   POOL.daily.push({
@@ -26,6 +24,7 @@
 
     steps: {
       d1_start: {
+        meta: { fidelityTargetKey: 'proactive_01' },
         text: `Centers have been running for about 15 minutes. Kai finished the first activity and is now at a table with a sorting task.\n\nKai starts sliding the cards into a pile instead of sorting them. They glance toward the classroom jobs board and then toward the door.`,
         hint: `This is a good prevention moment. Make the next step clear and offer two manageable options before refusal grows.`,
         choices: {
@@ -35,7 +34,7 @@
             feedback: `This matches the plan. You kept the task available, made the expectation small, and offered two safe choices.`,
             wizard: `Strong move. Two clear paths make the next step easier to choose than escape.`,
             next: 'd2_supported',
-            meta: meta('Prevent', 'Two safe choices', 'none', 'proactive_01')
+            meta: meta('Prevent', 'Two safe choices')
           },
           B: {
             text: `Say, "You are almost done. Keep working and then we can move on."`,
@@ -43,7 +42,7 @@
             feedback: `This is calm and encouraging, but it does not give Kai a concrete next action or a choice.`,
             wizard: `Gentle, but vague. The plan works best when Kai can see exactly what to do next.`,
             next: 'd2_wobbly',
-            meta: meta('Prevent', 'General encouragement', 'unclear next step', 'proactive_01')
+            meta: meta('Prevent', 'General encouragement', 'unclear next step')
           },
           C: {
             text: `Say, "No. Stop playing with the cards and finish the center."`,
@@ -51,7 +50,7 @@
             feedback: `This adds a direct no/stop statement without a safe alternative. That pattern is more likely to increase escape or escalation.`,
             wizard: `Careful. The door to a power struggle just opened. Pair the limit with a clear action or choice.`,
             next: 'd2_escalated',
-            meta: meta('Respond', 'Limit statement', 'unpaired no/stop', 'proactive_01')
+            meta: meta('Respond', 'Limit statement', 'unpaired no/stop')
           }
         }
       },
