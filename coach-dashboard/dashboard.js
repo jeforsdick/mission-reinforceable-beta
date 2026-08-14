@@ -1,4 +1,5 @@
 import { DOMAIN_LABELS, analyzeCase, coachingCopy, sessionPercent, statusFor, targetPerformance } from './dashboard-metrics.mjs';
+import { canAccessCoachDashboard, loadDashboardCases } from './dashboard-access.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
@@ -14,24 +15,6 @@ function formatDate(value) { return value ? new Intl.DateTimeFormat(undefined, {
 function duration(seconds) { if (!seconds) return '—'; const minutes = Math.floor(seconds / 60); return `${minutes}:${String(Math.round(seconds % 60)).padStart(2, '0')}`; }
 function metric(label, value, note = '') { return `<article class="metric-card"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>${note ? `<small>${escapeHtml(note)}</small>` : ''}</article>`; }
 function empty(message) { return `<div class="empty-state"><strong>No data to show yet</strong><p>${escapeHtml(message)}</p></div>`; }
-
-async function loadCases(userId) {
-  // Query assignments first. All later reads are both ID-filtered and protected by case-aware RLS.
-  const { data: assignments, error: assignmentError } = await state.client.from('case_coaches').select('case_id').eq('coach_user_id', userId).eq('active', true);
-  if (assignmentError) throw assignmentError;
-  const caseIds = (assignments || []).map(row => row.case_id);
-  if (!caseIds.length) return [];
-  const queries = await Promise.all([
-    state.client.from('cases').select('id, active').in('id', caseIds).eq('active', true),
-    state.client.from('case_intake').select('case_id, teacher_name, student_initials, grade_level, has_crisis_plan').in('case_id', caseIds),
-    state.client.from('fidelity_targets').select('id, case_id, domain, description, sort_order').in('case_id', caseIds).eq('active', true).order('sort_order'),
-    state.client.from('game_sessions').select('id, case_id, mission_id, mission_title, started_at, ended_at, status, duration_seconds, active_duration_seconds, plan_aligned_count, refine_count, missed_count, total_hints_opened').in('case_id', caseIds).order('started_at', { ascending: false }),
-    state.client.from('game_responses').select('id, session_id, case_id, fidelity_target_id, fidelity_domain, alignment, hint_opened, hint_open_count, created_at').in('case_id', caseIds)
-  ]);
-  const failed = queries.find(result => result.error); if (failed) throw failed.error;
-  const [cases, intakes, targets, sessions, responses] = queries.map(result => result.data || []);
-  return cases.map(row => ({ id: row.id, intake: intakes.find(item => item.case_id === row.id) || null, targets: targets.filter(item => item.case_id === row.id), sessions: sessions.filter(item => item.case_id === row.id), responses: responses.filter(item => item.case_id === row.id) }));
-}
 
 function renderHome() {
   const analyzed = state.cases.map(item => ({ item, analysis: analyzeCase(item) }));
@@ -76,8 +59,9 @@ async function start() {
     const { data: { session }, error } = await state.client.auth.getSession(); if (error) throw error;
     if (!session) { show('login-view'); return; }
     const { data: profile, error: profileError } = await state.client.from('profiles').select('id, display_name, role, active').eq('id', session.user.id).maybeSingle(); if (profileError) throw profileError;
-    if (!profile || profile.role !== 'coach' || !profile.active) { show('unauthorized-view'); return; }
-    state.cases = await loadCases(session.user.id); renderHome();
+    if (!canAccessCoachDashboard(profile)) { show('unauthorized-view'); return; }
+    $('#research-admin-label').hidden = profile.role !== 'research_admin';
+    state.cases = await loadDashboardCases(state.client, session.user.id, profile.role); renderHome();
   } catch (error) { $('#error-message').textContent = error.message || 'Please try again.'; show('error-view'); }
 }
 
