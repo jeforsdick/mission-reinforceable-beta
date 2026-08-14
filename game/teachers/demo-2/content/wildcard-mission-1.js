@@ -17,6 +17,7 @@
 
     steps: {
       w1_start: {
+        meta: { fidelityTargetKey: 'proactive_01' },
         text: `Snack is ending and the class is moving to the rug for whole group. Kai usually does better when transitions are structured.\n\nToday, several students crowd around the sink and the usual end-of-row rug spot is blocked by a backpack. Kai stops moving and reaches toward another student's snack container.`,
         hint: `Reduce crowding and give Kai a clear role or position instead of only telling what not to do.`,
         choices: {
@@ -27,6 +28,7 @@
       },
 
       w2_supported: {
+        meta: { fidelityTargetKey: 'proactive_01' },
         text: `Kai takes the basket and moves toward the rug. The end spot is still partly crowded, and Kai says, "I want that spot," pointing to a seat between two peers.`,
         hint: `Hold the assigned-seating boundary while still offering two safe options.`,
         choices: {
@@ -87,6 +89,7 @@
       },
 
       w4_supported: {
+        meta: { fidelityTargetKey: 'reinforcement_01' },
         text: `Kai is in the safe spot and group begins. After a few minutes, Kai raises a hand and says, "Can I sit somewhere else?"`,
         hint: `This is the planned alternative-seating request. Reinforce it and offer an appropriate option.`,
         choices: {

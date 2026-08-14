@@ -24,7 +24,6 @@
 
     steps: {
       d1_start: {
-        meta: { fidelityTargetKey: 'proactive_01' },
         text: `Centers have been running for about 15 minutes. Kai finished the first activity and is now at a table with a sorting task.\n\nKai starts sliding the cards into a pile instead of sorting them. They glance toward the classroom jobs board and then toward the door.`,
         hint: `This is a good prevention moment. Make the next step clear and offer two manageable options before refusal grows.`,
         choices: {
@@ -56,6 +55,7 @@
       },
 
       d2_supported: {
+        meta: { fidelityTargetKey: 'teaching_01' },
         text: `Kai points to the side table and carries the cards over. They sort two correctly, then pause and say, "Can I be done?"`,
         hint: `Prompt the replacement response. Kai can ask for a short break or alternate work.`,
         choices: {
@@ -87,6 +87,7 @@
       },
 
       d2_wobbly: {
+        meta: { fidelityTargetKey: 'teaching_01' },
         text: `Kai sorts one card, then starts tapping the stack against the table. They say, "This is taking forever."`,
         hint: `Make the next response concrete: a safe choice, a short request, or a small task.`,
         choices: {
@@ -149,6 +150,7 @@
       },
 
       d3_supported: {
+        meta: { fidelityTargetKey: 'reinforcement_02' },
         text: `Kai says, "Can I take a short break?" They are still seated and the materials are safe.`,
         hint: `Reinforce the replacement request right away and make the return path predictable.`,
         choices: {

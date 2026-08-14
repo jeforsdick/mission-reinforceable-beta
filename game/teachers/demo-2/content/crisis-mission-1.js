@@ -27,6 +27,7 @@
       },
 
       c2_supported: {
+        meta: { fidelityTargetKey: 'teaching_01' },
         text: `Kai grabs the red bins but puts them down hard. They say, "I want my break now," while looking toward the door.`,
         hint: `Prompt the replacement request and reinforce the first step of following the direction.`,
         choices: {
@@ -57,6 +58,7 @@
       },
 
       c3_supported: {
+        meta: { fidelityTargetKey: 'reinforcement_01' },
         text: `Kai follows the direction and says, "Can I have my break after this?" Their voice is still tense, but their body is safer.`,
         hint: `Honor and reinforce the replacement request while keeping the remaining requirement small.`,
         choices: {
@@ -87,6 +89,7 @@
       },
 
       c4_supported: {
+        meta: { fidelityTargetKey: 'proactive_01' },
         text: `Kai begins the planned break. After several minutes, the break timer is almost finished.`,
         hint: `Prepare the return with two manageable choices or a clear small task.`,
         choices: {
@@ -97,6 +100,7 @@
       },
 
       c4_wobbly: {
+        meta: { fidelityTargetKey: 'reinforcement_01' },
         text: `Kai is calmer but still hesitant about returning. They ask, "Can I sit somewhere else?"`,
         hint: `This is the planned alternative-seating request. Reinforce it and offer an appropriate location.`,
         choices: {
@@ -107,6 +111,7 @@
       },
 
       c4_escalated: {
+        meta: { fidelityTargetKey: 'response_01' },
         text: `Kai is not yet ready to rejoin the full routine. The class is moving on, and you need a safe, plan-aligned next step.`,
         hint: `Use a smaller alternative task or location that still teaches an appropriate request and return.`,
         choices: {
@@ -117,6 +122,7 @@
       },
 
       c5_supported: {
+        meta: { fidelityTargetKey: 'reinforcement_01' },
         text: `Kai returns using the supported seat or alternate-work option. The crisis has de-escalated and the class routine continues.`,
         hint: `End by reinforcing the safe return and use of the replacement response.`,
         choices: {
@@ -137,6 +143,7 @@
       },
 
       c5_escalated: {
+        meta: { fidelityTargetKey: 'response_01' },
         text: `Kai still needs substantial support as the class moves into the next routine.`,
         hint: `Reset to a clear choice, productive role, or replacement request rather than escalating consequences.`,
         choices: {

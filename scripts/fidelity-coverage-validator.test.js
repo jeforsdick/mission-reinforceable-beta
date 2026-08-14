@@ -53,14 +53,28 @@ test('counts a decision once, ignores distractor domains, and flags legacy choic
   assert(report.warnings.some(warning => warning.rule === 'legacy_choice_level_target'));
 });
 
-test('detects the current demo-2 step-level proof annotation', () => {
+test('detects the full demo-2 step-level fidelity coverage', () => {
   const root = path.resolve(__dirname, '..');
   const teacherDir = path.join(root, 'game/teachers/demo-2');
   const manifest = readManifest(path.join(teacherDir, 'fidelity-targets.expected.json'));
   const report = validateCoverage(loadTeacher(teacherDir), manifest, 'demo-2');
-  const proactive = report.targets.find(target => target.target_key === 'proactive_01');
-  assert.equal(proactive.opportunities, 1);
-  assert.deepEqual(proactive.mission_ids, ['demo2-daily-long-center']);
-  assert.equal(report.targets.filter(target => target.opportunities === 0).length, 4);
+  const coverage = Object.fromEntries(report.targets.map(target => [target.target_key, {
+    opportunities: target.opportunities,
+    missions: target.mission_ids.length
+  }]));
+  assert.deepEqual(coverage, {
+    proactive_01: { opportunities: 3, missions: 2 },
+    teaching_01: { opportunities: 3, missions: 2 },
+    reinforcement_01: { opportunities: 4, missions: 2 },
+    reinforcement_02: { opportunities: 1, missions: 1 },
+    response_01: { opportunities: 2, missions: 1 }
+  });
   assert.equal(report.hard_errors.length, 0);
+  assert.deepEqual(report.warnings.map(warning => warning.rule).sort(), [
+    'over_concentrated',
+    'single_mission',
+    'single_mission',
+    'under_covered',
+    'under_covered'
+  ]);
 });

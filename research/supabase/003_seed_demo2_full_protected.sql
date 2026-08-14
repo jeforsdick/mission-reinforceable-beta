@@ -139,9 +139,6 @@ select
     ],
     "steps": {
       "d1_start": {
-        "meta": {
-          "fidelityTargetKey": "proactive_01"
-        },
         "text": "BIP Briefing:\nKai may have difficulty when routines are long, crowded, or when access to a preferred option changes.\nYour job is to choose responses that follow Kai's plan:\n* offer two safe, manageable choices,\n* use a brief, specific direction or an incompatible action,\n* prompt a break, alternate-work, or alternate-seating request,\n* reinforce the first appropriate response right away.\nAvoid unnecessary no/stop statements, public correction, threats, or turning the moment into a power struggle.\n\nScene:\nCenters have been running for about 15 minutes. Kai finished the first activity and is now at a table with a sorting task.\n\nKai starts sliding the cards into a pile instead of sorting them. They glance toward the classroom jobs board and then toward the door.",
         "hint": "This is a good prevention moment. Make the next step clear and offer two manageable options before refusal grows.",
         "choices": {
@@ -187,6 +184,9 @@ select
         }
       },
       "d2_supported": {
+        "meta": {
+          "fidelityTargetKey": "teaching_01"
+        },
         "text": "Kai points to the side table and carries the cards over. They sort two correctly, then pause and say, \"Can I be done?\"",
         "hint": "Prompt the replacement response. Kai can ask for a short break or alternate work.",
         "choices": {
@@ -232,6 +232,9 @@ select
         }
       },
       "d2_wobbly": {
+        "meta": {
+          "fidelityTargetKey": "teaching_01"
+        },
         "text": "Kai sorts one card, then starts tapping the stack against the table. They say, \"This is taking forever.\"",
         "hint": "Make the next response concrete: a safe choice, a short request, or a small task.",
         "choices": {
@@ -322,6 +325,9 @@ select
         }
       },
       "d3_supported": {
+        "meta": {
+          "fidelityTargetKey": "reinforcement_02"
+        },
         "text": "Kai says, \"Can I take a short break?\" They are still seated and the materials are safe.",
         "hint": "Reinforce the replacement request right away and make the return path predictable.",
         "choices": {
@@ -739,6 +745,9 @@ select
     ],
     "steps": {
       "w1_start": {
+        "meta": {
+          "fidelityTargetKey": "proactive_01"
+        },
         "text": "BIP Briefing:\nKai may have difficulty when routines are long, crowded, or when access to a preferred option changes.\nYour job is to choose responses that follow Kai's plan:\n* offer two safe, manageable choices,\n* use a brief, specific direction or an incompatible action,\n* prompt a break, alternate-work, or alternate-seating request,\n* reinforce the first appropriate response right away.\nAvoid unnecessary no/stop statements, public correction, threats, or turning the moment into a power struggle.\n\nScene:\nSnack is ending and the class is moving to the rug for whole group. Kai usually does better when transitions are structured.\n\nToday, several students crowd around the sink and the usual end-of-row rug spot is blocked by a backpack. Kai stops moving and reaches toward another student's snack container.",
         "hint": "Reduce crowding and give Kai a clear role or position instead of only telling what not to do.",
         "choices": {
@@ -784,6 +793,9 @@ select
         }
       },
       "w2_supported": {
+        "meta": {
+          "fidelityTargetKey": "proactive_01"
+        },
         "text": "Kai takes the basket and moves toward the rug. The end spot is still partly crowded, and Kai says, \"I want that spot,\" pointing to a seat between two peers.",
         "hint": "Hold the assigned-seating boundary while still offering two safe options.",
         "choices": {
@@ -1054,6 +1066,9 @@ select
         }
       },
       "w4_supported": {
+        "meta": {
+          "fidelityTargetKey": "reinforcement_01"
+        },
         "text": "Kai is in the safe spot and group begins. After a few minutes, Kai raises a hand and says, \"Can I sit somewhere else?\"",
         "hint": "This is the planned alternative-seating request. Reinforce it and offer an appropriate option.",
         "choices": {
@@ -1381,6 +1396,9 @@ select
         }
       },
       "c2_supported": {
+        "meta": {
+          "fidelityTargetKey": "teaching_01"
+        },
         "text": "Kai grabs the red bins but puts them down hard. They say, \"I want my break now,\" while looking toward the door.",
         "hint": "Prompt the replacement request and reinforce the first step of following the direction.",
         "choices": {
@@ -1516,6 +1534,9 @@ select
         }
       },
       "c3_supported": {
+        "meta": {
+          "fidelityTargetKey": "reinforcement_01"
+        },
         "text": "Kai follows the direction and says, \"Can I have my break after this?\" Their voice is still tense, but their body is safer.",
         "hint": "Honor and reinforce the replacement request while keeping the remaining requirement small.",
         "choices": {
@@ -1651,6 +1672,9 @@ select
         }
       },
       "c4_supported": {
+        "meta": {
+          "fidelityTargetKey": "proactive_01"
+        },
         "text": "Kai begins the planned break. After several minutes, the break timer is almost finished.",
         "hint": "Prepare the return with two manageable choices or a clear small task.",
         "choices": {
@@ -1696,6 +1720,9 @@ select
         }
       },
       "c4_wobbly": {
+        "meta": {
+          "fidelityTargetKey": "reinforcement_01"
+        },
         "text": "Kai is calmer but still hesitant about returning. They ask, \"Can I sit somewhere else?\"",
         "hint": "This is the planned alternative-seating request. Reinforce it and offer an appropriate location.",
         "choices": {
@@ -1741,6 +1768,9 @@ select
         }
       },
       "c4_escalated": {
+        "meta": {
+          "fidelityTargetKey": "response_01"
+        },
         "text": "Kai is not yet ready to rejoin the full routine. The class is moving on, and you need a safe, plan-aligned next step.",
         "hint": "Use a smaller alternative task or location that still teaches an appropriate request and return.",
         "choices": {
@@ -1786,6 +1816,9 @@ select
         }
       },
       "c5_supported": {
+        "meta": {
+          "fidelityTargetKey": "reinforcement_01"
+        },
         "text": "Kai returns using the supported seat or alternate-work option. The crisis has de-escalated and the class routine continues.",
         "hint": "End by reinforcing the safe return and use of the replacement response.",
         "choices": {
@@ -1870,6 +1903,9 @@ select
         }
       },
       "c5_escalated": {
+        "meta": {
+          "fidelityTargetKey": "response_01"
+        },
         "text": "Kai still needs substantial support as the class moves into the next routine.",
         "hint": "Reset to a clear choice, productive role, or replacement request rather than escalating consequences.",
         "choices": {

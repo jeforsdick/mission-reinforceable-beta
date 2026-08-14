@@ -74,18 +74,28 @@ assert.equal(row({ bipComponent: 'Teach', fidelityTargetKey: 'unknown_01' }).fid
 assert.equal(row({ bipComponent: 'Respond' }, { fidelityTargetKey: 'proactive_02' }).fidelity_domain, 'proactive');
 assert.equal(row({ bipComponent: 'Reinforce' }).fidelity_domain, 'reinforcement');
 
-const missionSource = fs.readFileSync(new URL('../teachers/demo-2/content/daily-mission-1.js', import.meta.url), 'utf8');
-const missionContext = browserContext({ POOL: { daily: [] } });
-vm.runInContext(missionSource, missionContext);
+const missionFiles = [
+  '../teachers/demo-2/content/daily-mission-1.js',
+  '../teachers/demo-2/content/wildcard-mission-1.js',
+  '../teachers/demo-2/content/crisis-mission-1.js'
+];
+const missionSources = missionFiles.map(file => fs.readFileSync(new URL(file, import.meta.url), 'utf8'));
+const missionContext = browserContext({ POOL: { daily: [], wild: [], crisis: [] } });
+for (const source of missionSources) vm.runInContext(source, missionContext);
 const annotated = [];
-for (const mission of missionContext.POOL.daily) {
+for (const mission of [...missionContext.POOL.daily, ...missionContext.POOL.wild, ...missionContext.POOL.crisis]) {
   for (const step of Object.values(mission.steps)) {
     if (step.meta?.fidelityTargetKey) annotated.push([mission.id, step.meta.fidelityTargetKey]);
     for (const choice of Object.values(step.choices)) assert.equal(choice.meta.fidelityTargetKey, undefined);
   }
 }
-assert.equal(annotated.length, 1);
-assert.equal(annotated.every(([missionId, key]) => missionId === 'demo2-daily-long-center' && key === 'proactive_01'), true);
-assert.doesNotMatch(missionSource, /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+assert.equal(annotated.length, 13);
+assert.deepEqual(
+  Object.fromEntries([...new Set(annotated.map(([, key]) => key))].map(key => [key, annotated.filter(([, value]) => value === key).length])),
+  { teaching_01: 3, reinforcement_02: 1, proactive_01: 3, reinforcement_01: 4, response_01: 2 }
+);
+for (const source of missionSources) {
+  assert.doesNotMatch(source, /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+}
 
 console.log('fidelity target linkage tests passed');
