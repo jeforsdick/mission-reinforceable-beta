@@ -234,6 +234,21 @@
     throw new Error('Protected game content is not configured for this participant. Please contact the research team.');
   }
 
+  async function loadFidelityTargetLookup(caseId) {
+    try {
+      const targets = await MR.auth.getFidelityTargets(caseId);
+      return targets.reduce((lookup, target) => {
+        if (target.case_id === caseId && target.target_key) {
+          lookup[target.target_key] = { id: target.id, domain: target.domain };
+        }
+        return lookup;
+      }, {});
+    } catch (error) {
+      console.warn('Fidelity targets could not be loaded; domain-only telemetry will continue.', error);
+      return {};
+    }
+  }
+
   async function init() {
     try {
       const assignment = await MR.auth.getAssignment();
@@ -241,10 +256,12 @@
       MR.telemetryContext = {
         participantId: assignment.participant.id,
         caseId: assignment.case.id,
-        gameContentVersion: null
+        gameContentVersion: null,
+        fidelityTargets: {}
       };
       MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
       MR.setScreen('loading');
+      MR.telemetryContext.fidelityTargets = await loadFidelityTargetLookup(assignment.case.id);
       await loadAssignedGame(assignment);
       applyAssets();
       initAudio();

@@ -71,6 +71,18 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     }[component] || null;
   }
 
+  function telemetryTarget(item, context) {
+    const key = String(item && item.meta && item.meta.fidelityTargetKey || '').trim();
+    if (!key) return { id: null, domain: telemetryDomain(item) };
+
+    const target = context && context.fidelityTargets && context.fidelityTargets[key];
+    if (!target) {
+      console.warn(`Fidelity target key "${key}" was not found for the current case; using domain-only telemetry.`);
+      return { id: null, domain: telemetryDomain(item) };
+    }
+    return { id: target.id, domain: target.domain };
+  }
+
   function telemetryUuid() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     const bytes = new Uint8Array(16);
@@ -102,34 +114,37 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   function responseRowsForTelemetry(run, sessionId, context) {
-    return (Array.isArray(run.history) ? run.history : []).map(item => ({
-      session_id: sessionId,
-      participant_id: context.participantId,
-      case_id: context.caseId,
-      fidelity_target_id: null,
-      fidelity_domain: telemetryDomain(item),
-      mission_id: run.missionId,
-      step_id: item.stepId,
-      step_index: item.stepIndex,
-      scenario_title: item.scenarioTitle || null,
-      scenario_text: item.context || item.prompt || null,
-      context_tag: null,
-      choice_id: item.choiceKey || null,
-      selected_answer_text: item.selectedAnswerText || item.choiceText || null,
-      selected_score: item.selectedScore != null ? item.selectedScore : item.score,
-      alignment: telemetryAlignment(item),
-      best_answer_text: item.bestAnswerText || item.bestChoiceText || null,
-      feedback_text: item.feedbackText || item.feedback || item.wizard || null,
-      mechanism: item.meta && item.meta.mechanism || null,
-      error_type: item.meta && item.meta.errorType || null,
-      function_tag: item.meta && item.meta.function || null,
-      hint_opened: Boolean(item.hintOpened),
-      hint_open_count: Number(item.hintOpenCount || 0),
-      time_to_hint_ms: item.timeFromQuestionStartToHintMs != null ? item.timeFromQuestionStartToHintMs : null,
-      time_hint_to_answer_ms: item.timeFromHintToAnswerMs != null ? item.timeFromHintToAnswerMs : null,
-      response_time_ms: item.responseTimeMs != null ? item.responseTimeMs : null,
-      game_content_version: context.gameContentVersion
-    }));
+    return (Array.isArray(run.history) ? run.history : []).map(item => {
+      const target = telemetryTarget(item, context);
+      return {
+        session_id: sessionId,
+        participant_id: context.participantId,
+        case_id: context.caseId,
+        fidelity_target_id: target.id,
+        fidelity_domain: target.domain,
+        mission_id: run.missionId,
+        step_id: item.stepId,
+        step_index: item.stepIndex,
+        scenario_title: item.scenarioTitle || null,
+        scenario_text: item.context || item.prompt || null,
+        context_tag: null,
+        choice_id: item.choiceKey || null,
+        selected_answer_text: item.selectedAnswerText || item.choiceText || null,
+        selected_score: item.selectedScore != null ? item.selectedScore : item.score,
+        alignment: telemetryAlignment(item),
+        best_answer_text: item.bestAnswerText || item.bestChoiceText || null,
+        feedback_text: item.feedbackText || item.feedback || item.wizard || null,
+        mechanism: item.meta && item.meta.mechanism || null,
+        error_type: item.meta && item.meta.errorType || null,
+        function_tag: item.meta && item.meta.function || null,
+        hint_opened: Boolean(item.hintOpened),
+        hint_open_count: Number(item.hintOpenCount || 0),
+        time_to_hint_ms: item.timeFromQuestionStartToHintMs != null ? item.timeFromQuestionStartToHintMs : null,
+        time_hint_to_answer_ms: item.timeFromHintToAnswerMs != null ? item.timeFromHintToAnswerMs : null,
+        response_time_ms: item.responseTimeMs != null ? item.responseTimeMs : null,
+        game_content_version: context.gameContentVersion
+      };
+    });
   }
 
   async function finishRelationalTelemetry(run, sessionId, sessionInsertPromise) {

@@ -3,12 +3,16 @@
   if (typeof POOL === 'undefined') throw new Error('POOL must be defined before loading daily-mission-1.js');
   POOL.daily = POOL.daily || [];
 
-  const meta = (component, mechanism, errorType = 'none') => ({
-    bipComponent: component,
-    mechanism,
-    errorType,
-    function: 'escape'
-  });
+  const meta = (component, mechanism, errorType = 'none', fidelityTargetKey = null) => {
+    const metadata = {
+      bipComponent: component,
+      mechanism,
+      errorType,
+      function: 'escape'
+    };
+    if (fidelityTargetKey) metadata.fidelityTargetKey = fidelityTargetKey;
+    return metadata;
+  };
 
   POOL.daily.push({
     id: 'demo2-daily-long-center',
@@ -31,7 +35,7 @@
             feedback: `This matches the plan. You kept the task available, made the expectation small, and offered two safe choices.`,
             wizard: `Strong move. Two clear paths make the next step easier to choose than escape.`,
             next: 'd2_supported',
-            meta: meta('Prevent', 'Two safe choices')
+            meta: meta('Prevent', 'Two safe choices', 'none', 'proactive_01')
           },
           B: {
             text: `Say, "You are almost done. Keep working and then we can move on."`,
@@ -39,7 +43,7 @@
             feedback: `This is calm and encouraging, but it does not give Kai a concrete next action or a choice.`,
             wizard: `Gentle, but vague. The plan works best when Kai can see exactly what to do next.`,
             next: 'd2_wobbly',
-            meta: meta('Prevent', 'General encouragement', 'unclear next step')
+            meta: meta('Prevent', 'General encouragement', 'unclear next step', 'proactive_01')
           },
           C: {
             text: `Say, "No. Stop playing with the cards and finish the center."`,
@@ -47,7 +51,7 @@
             feedback: `This adds a direct no/stop statement without a safe alternative. That pattern is more likely to increase escape or escalation.`,
             wizard: `Careful. The door to a power struggle just opened. Pair the limit with a clear action or choice.`,
             next: 'd2_escalated',
-            meta: meta('Respond', 'Limit statement', 'unpaired no/stop')
+            meta: meta('Respond', 'Limit statement', 'unpaired no/stop', 'proactive_01')
           }
         }
       },

@@ -96,6 +96,19 @@
     return data || null;
   }
 
+  async function activeFidelityTargets(supabaseClient, caseId) {
+    if (!caseId) throw new Error('No case is available for fidelity targets.');
+
+    const { data, error } = await supabaseClient
+      .from('fidelity_targets')
+      .select('id, case_id, domain, target_key')
+      .eq('case_id', caseId)
+      .eq('active', true);
+
+    if (error) throw new Error(`Unable to load fidelity targets: ${error.message}`);
+    return Array.isArray(data) ? data : [];
+  }
+
   async function createTelemetrySession(sessionRow) {
     const { error } = await client().from('game_sessions').insert(sessionRow);
     if (error) throw new Error(`Unable to create gameplay telemetry session: ${error.message}`);
@@ -133,6 +146,10 @@
 
     async getGameContent(caseId) {
       return protectedGameContent(client(), caseId);
+    },
+
+    async getFidelityTargets(caseId) {
+      return activeFidelityTargets(client(), caseId);
     },
 
     createTelemetrySession,
