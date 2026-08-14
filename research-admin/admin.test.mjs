@@ -7,6 +7,7 @@ const js = fs.readFileSync(new URL('admin.js', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('admin.css', import.meta.url), 'utf8');
 const baseSql = fs.readFileSync(new URL('../supabase/migrations/20260814020000_research_admin_onboarding.sql', import.meta.url), 'utf8');
 const cleanupSql = fs.readFileSync(new URL('../supabase/migrations/20260814030000_intake_admin_workflow_cleanup.sql', import.meta.url), 'utf8');
+const optionalGameFolderSql = fs.readFileSync(new URL('../supabase/migrations/20260814031000_cases_game_folder_optional.sql', import.meta.url), 'utf8');
 const sql = baseSql + '\n' + cleanupSql;
 const provision = cleanupSql.slice(cleanupSql.indexOf('create or replace function public.provision_intake_case'));
 
@@ -40,6 +41,19 @@ assert.match(provision, /student game alias is required/);
 assert.match(provision, /participant_code = study_id/); assert.match(provision, /case_code = new_case_code/);
 assert.doesNotMatch(js, /student_alias[^\n]*student_initials|student_game_alias:\s*state\.selected\.student_initials/);
 assert.match(js, /Do not enter the student's full name/);
+assert.match(js, /Study ID <small>— Example: MR-001<\/small>/);
+assert.match(js, /Case code <small>— automatically suggested from Study ID<\/small>/);
+assert.match(js, /Student game alias <small>— Example: Kai<\/small>/);
+assert.doesNotMatch(js, /placeholder="(?:MR-001|CASE-001|Kai)"/);
+assert.match(js, /Set up this study case in the prepared state\? Gameplay and reminders will remain OFF\./);
+
+// The legacy static-game folder is optional for protected-content cases.
+assert.match(optionalGameFolderSql, /information_schema\.columns/);
+assert.match(optionalGameFolderSql, /table_schema = 'public'/);
+assert.match(optionalGameFolderSql, /table_name = 'cases'/);
+assert.match(optionalGameFolderSql, /column_name = 'game_folder'/);
+assert.match(optionalGameFolderSql, /alter table public\.cases\s+alter column game_folder drop not null/i);
+assert.doesNotMatch(optionalGameFolderSql, /\b(?:insert|update|delete|truncate|drop table|create table)\b/i);
 
 // Deterministic reviewed target keys and crisis exclusion.
 const proposed = [{ domain: 'response', description: 'R', sort_order: 2 }, { domain: 'proactive', description: 'P', sort_order: 1 }, { domain: 'response', description: 'R2', sort_order: 1 }, { domain: 'crisis', description: 'C', sort_order: 1 }];
