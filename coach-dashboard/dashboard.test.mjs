@@ -127,6 +127,6 @@ test('dashboard source uses shared authorization and displays the admin-view lab
   const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
   assert.match(source, /canAccessCoachDashboard\(profile\)/);
   assert.match(source, /loadDashboardCases\(state\.client, session\.user\.id, profile\.role\)/);
-  assert.match(html, /id="research-admin-label"[^>]*hidden>Research Admin View/);
+  assert.match(html, /<a id="research-admin-label"[^>]*href="\.\.\/research-admin\/"[^>]*hidden>Research Admin View<\/a>/);
   assert.doesNotMatch(source, /service[_-]?role/i);
 });

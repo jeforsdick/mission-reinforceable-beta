@@ -9,7 +9,9 @@ const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateSty
 
 function show(id) {
   ['loading-view', 'login-view', 'unauthorized-view', 'error-view', 'home-view', 'detail-view'].forEach(name => { $(`#${name}`).hidden = name !== id; });
-  $('#sign-out').hidden = !['home-view', 'detail-view'].includes(id);
+  const authenticatedAdminView = ['home-view', 'detail-view'].includes(id);
+  $('#sign-out').hidden = !authenticatedAdminView;
+  $('#coaching-dashboard-link').hidden = !authenticatedAdminView;
 }
 
 function intakeDate(row) { return row.submitted_at || row.created_at; }
