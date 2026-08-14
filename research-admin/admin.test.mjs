@@ -10,6 +10,8 @@ const provision = sql.slice(sql.indexOf('create function public.provision_intake
 
 // Authorization is enforced in the browser and independently in every privileged RPC.
 assert.match(js, /profile\.role !== 'research_admin' \|\| profile\.active !== true/);
+assert.match(html, /id="coaching-dashboard-link"[^>]*href="\.\.\/coach-dashboard\/"[^>]*hidden>Coaching Dashboard<\/a>/);
+assert.match(js, /\$\('#coaching-dashboard-link'\)\.hidden = !authenticatedAdminView/);
 assert.equal((sql.match(/if not public\.is_research_admin\(\)/g) || []).length, 5);
 assert.match(sql, /revoke all on function public\.provision_intake_case[\s\S]*from public/);
 
