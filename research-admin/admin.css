@@ -247,3 +247,29 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
   .actions { flex-direction: column; }
   .actions .primary { width: 100%; }
 }
+.detail-navigation { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+.detail-navigation #back-home { margin: 0; }
+.print-heading, .print-target { display: none; }
+.account .primary { display: block; width: 100%; margin-top: 12px; }
+.account > small { overflow-wrap: anywhere; }
+#qa-result { margin-top: 12px; }
+#qa-result input { width: 100%; }
+@media print {
+  @page { size: portrait; margin: .6in; }
+  body { background: #fff; color: #111; font-size: 10.5pt; }
+  .site-header, .no-print, #loading-view, #login-view, #unauthorized-view, #error-view, #home-view { display: none !important; }
+  main { width: 100%; margin: 0; padding: 0; }
+  #detail-view, #detail { display: block !important; }
+  .print-heading { display: block; padding-bottom: 14px; border-bottom: 2px solid #222; }
+  .print-heading h1 { margin: 4px 0; font-size: 22pt; }
+  .hero { display: none; }
+  .detail-grid { display: block; }
+  .panel { break-inside: avoid; margin: 0 0 14px; padding: 14px 0; border: 0; border-bottom: 1px solid #bbb; border-radius: 0; box-shadow: none; }
+  .notice { border-left: 0; }
+  .fields { gap: 8px 18px; }
+  .target-row { break-inside: avoid; grid-template-columns: 110px 1fr; margin: 6px 0; }
+  .target-row input { display: none; }
+  .print-target { display: block; color: #111; font-size: 10.5pt; font-weight: 600; }
+  h2 { font-size: 15pt; }
+  p { orphans: 3; widows: 3; }
+}

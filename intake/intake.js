@@ -11,8 +11,8 @@
     response: ['Response', 'What should the teacher consistently do when the target behavior occurs?'],
     crisis: ['Crisis / Safety', 'What should the teacher consistently do to follow the crisis or safety plan?']
   };
-  const REQUIRED_FIELDS = ['teacher_name', 'teacher_email', 'coach_name', 'coach_email', 'grade_level', 'student_initials', 'target_behavior', 'behavior_topography', 'primary_function', 'replacement_behavior', 'desired_behavior', 'prevention_strategies', 'teaching_strategies', 'reinforcement_system', 'response_strategy', 'typical_settings', 'common_triggers', 'typical_antecedents', 'typical_consequences', 'current_staff_responses'];
-  const OPTIONAL_FIELDS = ['crisis_plan', 'requested_scenarios', 'additional_context'];
+  const REQUIRED_FIELDS = ['teacher_name', 'teacher_email', 'coach_name', 'coach_email', 'grade_level', 'student_initials', 'target_behavior', 'behavior_topography', 'primary_function', 'replacement_behavior', 'desired_behavior', 'typical_settings', 'common_triggers', 'typical_antecedents', 'typical_consequences', 'current_staff_responses'];
+  const OPTIONAL_FIELDS = ['student_strengths', 'preferred_items_activities', 'preference_assessment_notes', 'prevention_strategies', 'teaching_strategies', 'reinforcement_system', 'response_strategy', 'crisis_plan', 'requested_scenarios', 'additional_context'];
   const INTAKE_FIELDS = REQUIRED_FIELDS.concat(OPTIONAL_FIELDS);
   const state = { client: null, busy: false };
   const $ = selector => document.querySelector(selector);
@@ -33,7 +33,9 @@
     card.className = 'domain-card';
     card.dataset.domain = domain;
     card.hidden = domain === 'crisis' && !hasCrisis();
-    card.innerHTML = `<h3>${DOMAINS[domain][0]} <i>*</i></h3><p class="helper">${DOMAINS[domain][1]}</p><div class="step-list"></div><button class="add-step" type="button">+ Add another step</button><p class="domain-error" aria-live="polite"></p>`;
+    const contextFields = { proactive: 'prevention_strategies', teaching: 'teaching_strategies', reinforcement: 'reinforcement_system', response: 'response_strategy' };
+    const context = contextFields[domain] ? `<div class="field context-detail"><label for="${contextFields[domain]}">Additional plan details <span>Optional</span></label><textarea id="${contextFields[domain]}" name="${contextFields[domain]}"></textarea><p class="helper">Add useful context such as exact wording, timing, materials, schedules, prompting or reinforcement details, and things staff should avoid.</p></div>` : '';
+    card.innerHTML = `<h3>${DOMAINS[domain][0]} <i>*</i></h3><h4>Key staff actions</h4><p class="helper">Add the specific actions staff should do consistently. Each action will become an individual practice and coaching target.</p><p class="helper">${DOMAINS[domain][1]}</p><div class="step-list"></div><button class="add-step" type="button">+ Add another action</button><p class="domain-error" aria-live="polite"></p>${context}`;
     const list = card.querySelector('.step-list');
     (rows.length ? rows : [{ description: '' }]).forEach(row => addStep(list, row));
     card.querySelector('.add-step').addEventListener('click', () => addStep(list, { description: '' }));

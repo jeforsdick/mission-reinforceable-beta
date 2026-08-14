@@ -18,7 +18,8 @@ export function normalizeTargets(targets, hasCrisis) {
 export function accountState(rows, expectedRole) {
   if (!Array.isArray(rows) || rows.length !== 1) return { ready: false, label: 'Account not ready' };
   const row = rows[0];
-  return row.role === expectedRole && row.active === true
+  const allowedRole = row.role === expectedRole || (expectedRole === 'coach' && row.role === 'research_admin');
+  return allowedRole && row.active === true
     ? { ready: true, label: 'Ready', profileId: row.profile_id }
     : { ready: false, label: 'Account not ready' };
 }

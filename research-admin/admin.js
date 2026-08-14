@@ -2,7 +2,7 @@ import { accountState, normalizeTargets, readinessForCase } from './admin-model.
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
-const state = { client: null, intakes: [], selected: null, accounts: {} };
+const state = { client: null, intakes: [], selected: null, accounts: {}, qaLink: '' };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -45,21 +45,23 @@ async function openDetail(id) {
     ]);
     state.accounts = { teacher, coach };
     const targets = normalizeTargets(row.fidelity_targets, row.has_crisis_plan === true);
-    $('#detail').innerHTML = `<div class="hero"><div><p class="eyebrow">Practitioner-submitted intake/context</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>
+    $('#detail').innerHTML = `<div class="print-heading"><strong>Mission: Reinforceable</strong><h1>Submitted Intake</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))}</p></div><div class="hero"><div><p class="eyebrow">Submitted Intake</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>
       <div class="detail-grid"><div>
-      ${section('Practitioner information', [field('Teacher', row.teacher_name), field('Teacher email', row.teacher_email), field('Coach', row.coach_name), field('Coach email', row.coach_email)])}
-      ${section('Student and behavior context', [field('Student initials', row.student_initials), field('Grade', row.grade_level), field('Behavior description', row.target_behavior, true), field('Topography', row.behavior_topography, true), field('Function', row.primary_function), field('Replacement behavior', row.replacement_behavior, true), field('Desired behavior', row.desired_behavior, true)])}
-      ${section('Practitioner-submitted strategies', [field('Prevention', row.prevention_strategies, true), field('Teaching', row.teaching_strategies, true), field('Reinforcement', row.reinforcement_system, true), field('Response', row.response_strategy, true)])}
-      ${row.has_crisis_plan ? section('Crisis plan', [field('Practitioner-submitted crisis/safety plan', row.crisis_plan, true)]) : ''}
+      ${section('Contact Information', [field('Teacher', row.teacher_name), field('Teacher email', row.teacher_email), field('Coach', row.coach_name), field('Coach email', row.coach_email)])}
+      ${section('Student and behavior context', [field('Student initials', row.student_initials), field('Grade', row.grade_level), field('Behavior description', row.target_behavior, true), field('Topography', row.behavior_topography, true), field('Student strengths & interests', row.student_strengths, true), field('Preferences & known reinforcers', row.preferred_items_activities, true), field('Preference information', row.preference_assessment_notes, true), field('Function', row.primary_function), field('Replacement behavior', row.replacement_behavior, true), field('Desired behavior', row.desired_behavior, true)])}
+      ${section('Plan-Aligned Staff Actions', [field('Prevention details', row.prevention_strategies, true), field('Teaching details', row.teaching_strategies, true), field('Reinforcement details', row.reinforcement_system, true), field('Response details', row.response_strategy, true)])}
+      ${row.has_crisis_plan ? section('Crisis / Safety Plan', [field('Crisis / Safety Plan', row.crisis_plan, true)]) : ''}
       ${section('Classroom and additional context', [field('Typical settings', row.typical_settings, true), field('Common triggers', row.common_triggers, true), field('Typical antecedents', row.typical_antecedents, true), field('Typical consequences', row.typical_consequences, true), field('Current staff responses', row.current_staff_responses, true), field('Requested scenarios', row.requested_scenarios, true), field('Additional context', row.additional_context, true)])}
-      <section class="panel notice"><p class="eyebrow">Proposed fidelity targets</p><h2>Review and edit</h2><strong>Confirm final fidelity targets against the student’s BIP/BSP before provisioning.</strong><p>Each target must be one atomic, observable teacher behavior. Keys derive only from final domain/order.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"></label>`).join('')}</div></section>
-      </div><aside><section class="panel"><p class="eyebrow">Account readiness</p><h2>Verified exact-email matches</h2>${accountBox('Teacher Auth account', teacher)}${accountBox('Coach Auth account', coach)}<p>No invitation or password-reset email will be sent.</p></section>${converted ? readinessPanel(converted) : provisionPanel(row, teacher, coach)}${reviewActions(row)}</aside></div>`;
+      <section class="panel notice"><p class="eyebrow">Proposed / final reviewed fidelity targets</p><h2>Review and edit</h2><strong>Confirm final fidelity targets against the student’s BIP/BSP before setting up the case.</strong><p>Each target must be one atomic, observable teacher behavior. Keys derive only from final domain/order.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"><span class="print-target">${escapeHtml(target.description)}</span></label>`).join('')}</div></section>
+      </div><aside><section class="panel no-print"><p class="eyebrow">Account readiness</p><h2>Verified exact-email matches</h2>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>No invitation or password-reset email will be sent.</p></section>${converted ? readinessPanel(converted) : provisionPanel(row, teacher, coach)}${reviewActions(row)}</aside></div>`;
     bindDetail(); show('detail-view'); window.scrollTo(0, 0);
   } catch (error) { $('#error-message').textContent = error.message || 'Readiness checks failed.'; show('error-view'); }
 }
-function accountBox(label, result) { return `<div class="account"><strong>${label}</strong><br><span class="${result.ready ? 'ready' : 'needs'}">${result.label}</span></div>`; }
-function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel"><h2>Intake decision</h2><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
+function accountBox(label, email, result, type) { return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Generate Test Sign-In Link</button><small>QA only — no email will be sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? '<div id="qa-result"></div>' : ''}</div>`; }
+function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel no-print"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel no-print"><h2>Intake decision</h2><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
 function bindDetail() {
+  document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
+  $('.qa-link')?.addEventListener('click', generateQaLink);
   $('#approve')?.addEventListener('click', () => setStatus('approved'));
   $('#decline')?.addEventListener('click', () => { if (window.confirm('Decline this intake? This does not delete the submitted context.')) setStatus('declined'); });
   $('#study-id')?.addEventListener('input', event => {
@@ -69,13 +71,35 @@ function bindDetail() {
   $('#provision-form')?.addEventListener('submit', provisionCase);
 }
 
+async function adminApi(path, body) {
+  const { data: { session } } = await state.client.auth.getSession();
+  const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify(body) });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || 'Request failed');
+  return result;
+}
+async function createAccount(type, button) {
+  button.disabled = true;
+  try { await adminApi('/api/research-admin-create-account', { request_id: state.selected.request_id, account_type: type }); await openDetail(state.selected.request_id); }
+  catch (error) { button.insertAdjacentHTML('afterend', `<p class="message">${escapeHtml(error.message)}</p>`); button.disabled = false; }
+}
+async function generateQaLink(event) {
+  event.currentTarget.disabled = true;
+  try {
+    const result = await adminApi('/api/research-admin-qa-link', { request_id: state.selected.request_id });
+    state.qaLink = result.action_link;
+    $('#qa-result').innerHTML = `<label>Temporary test link<input value="${escapeHtml(state.qaLink)}" readonly></label><button id="copy-qa-link" class="quiet" type="button">Copy Link</button>`;
+    $('#copy-qa-link').addEventListener('click', () => navigator.clipboard.writeText(state.qaLink));
+  } catch (error) { $('#qa-result').textContent = error.message; event.currentTarget.disabled = false; }
+}
+
 function reviewedTargets() {
   return Array.from(document.querySelectorAll('#targets input')).map(input => ({ domain: input.dataset.domain, description: input.value.trim() })).filter(item => item.description);
 }
 function provisionPanel(row, teacher, coach) {
-  if (row.status !== 'approved') return '<section class="panel"><h2>Provision Study Case</h2><p class="needs">Approve this intake before provisioning.</p></section>';
+  if (row.status !== 'approved') return '<section class="panel no-print"><h2>Set Up Study Case</h2><p class="needs">Approve this intake before setting up the case.</p></section>';
   const disabled = !teacher.ready || !coach.ready;
-  return `<section class="panel notice"><p class="eyebrow">Prepared state only</p><h2>Provision Study Case</h2><form id="provision-form"><label>Study ID<input id="study-id" name="study_id" required pattern="MR-[0-9]{3}" placeholder="MR-001"></label><label>Case code<input id="case-code" name="case_code" required pattern="CASE-[0-9]{3}" placeholder="CASE-001"></label><label>Student game alias<input id="student-alias" name="student_alias" required autocomplete="off" placeholder="Kai"></label><small>Use a non-identifying game name or pseudonym. Do not enter the student's full name.</small><button class="primary" ${disabled ? 'disabled' : ''}>Provision inactive case</button><p id="provision-message" class="message" aria-live="polite"></p></form><p class="off">This creates a prepared case. Gameplay and reminders remain OFF.</p></section>`;
+  return `<section class="panel notice no-print"><p class="eyebrow">Prepared state only</p><h2>Set Up Study Case</h2><p>Create the study ID, game alias, teacher/coach connections, and finalized fidelity targets. Game access and reminders will remain off.</p><form id="provision-form"><label>Study ID<input id="study-id" name="study_id" required pattern="MR-[0-9]{3}" placeholder="MR-001"></label><label>Case code<input id="case-code" name="case_code" required pattern="CASE-[0-9]{3}" placeholder="CASE-001"></label><label>Student game alias<input id="student-alias" name="student_alias" required autocomplete="off" placeholder="Kai"></label><small>Use a non-identifying game name or pseudonym. Do not enter the student's full name.</small><button class="primary" ${disabled ? 'disabled' : ''}>Set Up Study Case</button><p id="provision-message" class="message" aria-live="polite"></p></form><p class="off">This creates a prepared case. Gameplay and reminders remain OFF.</p></section>`;
 }
 async function provisionCase(event) {
   event.preventDefault();
@@ -116,5 +140,5 @@ async function start() {
 }
 $('#login-form').addEventListener('submit', async event => { event.preventDefault(); const form = new FormData(event.currentTarget); const { error } = await state.client.auth.signInWithPassword({ email: String(form.get('email')).trim(), password: String(form.get('password')) }); if (error) $('#login-error').textContent = 'Sign-in failed. Check your email and password.'; else start(); });
 async function signOut() { await state.client?.auth.signOut(); state.intakes = []; show('login-view'); }
-$('#sign-out').addEventListener('click', signOut); $('.sign-out-action').addEventListener('click', signOut); $('#retry').addEventListener('click', start); $('#back-home').addEventListener('click', renderHome);
+$('#sign-out').addEventListener('click', signOut); $('.sign-out-action').addEventListener('click', signOut); $('#retry').addEventListener('click', start); $('#back-home').addEventListener('click', renderHome); $('#print-intake').addEventListener('click', () => window.print());
 start();

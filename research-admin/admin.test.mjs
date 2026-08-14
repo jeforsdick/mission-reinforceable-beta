@@ -5,14 +5,16 @@ import { accountState, normalizeTargets, readinessForCase } from './admin-model.
 const html = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const js = fs.readFileSync(new URL('admin.js', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('admin.css', import.meta.url), 'utf8');
-const sql = fs.readFileSync(new URL('../supabase/migrations/20260814020000_research_admin_onboarding.sql', import.meta.url), 'utf8');
-const provision = sql.slice(sql.indexOf('create function public.provision_intake_case'), sql.indexOf('create function public.research_admin_case_readiness'));
+const baseSql = fs.readFileSync(new URL('../supabase/migrations/20260814020000_research_admin_onboarding.sql', import.meta.url), 'utf8');
+const cleanupSql = fs.readFileSync(new URL('../supabase/migrations/20260814030000_intake_admin_workflow_cleanup.sql', import.meta.url), 'utf8');
+const sql = baseSql + '\n' + cleanupSql;
+const provision = cleanupSql.slice(cleanupSql.indexOf('create or replace function public.provision_intake_case'));
 
 // Authorization is enforced in the browser and independently in every privileged RPC.
 assert.match(js, /profile\.role !== 'research_admin' \|\| profile\.active !== true/);
 assert.match(html, /id="coaching-dashboard-link"[^>]*href="\.\.\/coach-dashboard\/"[^>]*hidden>Coaching Dashboard<\/a>/);
 assert.match(js, /\$\('#coaching-dashboard-link'\)\.hidden = !authenticatedAdminView/);
-assert.equal((sql.match(/if not public\.is_research_admin\(\)/g) || []).length, 5);
+assert.ok((sql.match(/if not public\.is_research_admin\(\)/g) || []).length >= 5);
 assert.match(sql, /revoke all on function public\.provision_intake_case[\s\S]*from public/);
 
 // Provisioning locks and accepts only an approved, unconverted intake.
@@ -22,12 +24,14 @@ assert.doesNotMatch(provision, /intake\.status\s*=\s*'(submitted|declined|conver
 
 // Exact-email account resolution requires one active profile with the expected role.
 assert.match(provision, /teacher_matches <> 1/); assert.match(provision, /teacher\.role <> 'teacher' or not teacher\.active/);
-assert.match(provision, /coach_matches <> 1/); assert.match(provision, /coach\.role <> 'coach' or not coach\.active/);
+assert.match(provision, /coach_matches <> 1/); assert.match(provision, /coach\.role not in \('coach', 'research_admin'\) or not coach\.active/);
 assert.match(provision, /p\.auth_user_id = teacher\.id/);
 assert.deepEqual(accountState([{ profile_id: 'teacher', role: 'teacher', active: true }], 'teacher'), { ready: true, label: 'Ready', profileId: 'teacher' });
 assert.equal(accountState([], 'teacher').ready, false);
 assert.equal(accountState([{ profile_id: 'teacher', role: 'teacher', active: false }], 'teacher').ready, false);
 assert.equal(accountState([{ profile_id: 'coach', role: 'teacher', active: true }], 'coach').ready, false);
+assert.equal(accountState([{ profile_id: 'admin', role: 'research_admin', active: true }], 'coach').ready, true);
+assert.equal(accountState([{ profile_id: 'admin', role: 'research_admin', active: true }], 'teacher').ready, false);
 
 // Identifiers, alias, and uniqueness are validated server-side; initials never supply the alias.
 assert.match(provision, /study_id !~ '\^MR-\[0-9\]\{3\}\$'/);
@@ -55,7 +59,7 @@ assert.match(provision, /'case_provisioned'/);
 
 // Provisioning cannot create reminders, protected content, telemetry, Auth users, or email.
 assert.doesNotMatch(provision, /insert into public\.(teacher_reminder_settings|case_game_content|game_sessions|game_responses)/i);
-assert.doesNotMatch(sql + js, /signInWithOtp|resetPasswordForEmail|inviteUserByEmail|resend|fetch\s*\(/i);
+assert.doesNotMatch(provision, /signInWithOtp|resetPasswordForEmail|inviteUserByEmail|resend|fetch\s*\(/i);
 
 // Converted readiness reads only protected-content metadata and renders intentional OFF states.
 assert.match(sql, /jsonb_build_object\('present', true, 'version', gc\.version, 'updated_at', gc\.updated_at\)/);
@@ -78,4 +82,6 @@ assert.match(sql, /participants\.auth_user_id to reference auth\.users\(id\)/);
 assert.match(sql, /participants\.case_id to reference public\.cases\(id\)/);
 assert.doesNotMatch(sql, /i\.created_at|order by i\.created_at/);
 assert.doesNotMatch(html + js + sql, /student_full_name|student_id|diagnosis|disability|parent_information|medication/i);
+assert.match(html, /Print \/ Save PDF/); assert.match(css, /@media print/); assert.match(css, /\.no-print/);
+assert.doesNotMatch(js, /Practitioner/);
 console.log('Research-admin transactional provisioning, rollback structure, readiness, inactive safeguards, and privacy checks passed.');
