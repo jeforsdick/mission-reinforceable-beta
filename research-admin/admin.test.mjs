@@ -45,7 +45,9 @@ assert.match(provision, /'crisis' and not intake\.has_crisis_plan/);
 // All preparation writes are one function transaction and are explicitly inactive.
 assert.match(provision, /insert into public\.cases\(case_code, student_alias, active\)[\s\S]*values \(new_case_code, btrim\(student_game_alias\), false\)/);
 assert.match(provision, /insert into public\.participants\(auth_user_id, participant_code, case_id, active\)[\s\S]*values \(teacher\.id, study_id, created_case_id, false\)/);
-assert.match(provision, /insert into public\.case_intake/); assert.match(provision, /insert into public\.fidelity_targets/); assert.match(provision, /insert into public\.case_coaches/);
+assert.match(provision, /insert into public\.case_intake/);
+assert.match(provision, /status, submitted_by, submitted_at[\s\S]*'submitted', auth\.uid\(\), now\(\)/);
+assert.match(provision, /insert into public\.fidelity_targets/); assert.match(provision, /insert into public\.case_coaches/);
 assert.match(provision, /status = 'converted', converted_case_id = created_case_id, converted_at = now\(\)/);
 assert.match(provision, /'case_provisioned'/);
 
@@ -62,6 +64,16 @@ assert.match(js, /OFF intentionally — intervention not activated/); assert.mat
 
 // Defensive deployed-schema assertions and privacy restrictions remain explicit.
 for (const column of ['request_id', 'status', 'converted_case_id', 'converted_at', 'submitted_at']) assert.match(sql, new RegExp(`\\('${column}'\\)`));
+for (const contract of [
+  "('cases', 'case_code')", "('cases', 'student_alias')", "('cases', 'active')",
+  "('participants', 'auth_user_id')", "('participants', 'participant_code')",
+  "('participants', 'case_id')", "('participants', 'active')", "('case_intake', 'status')"
+]) assert.match(sql, new RegExp(contract.replace(/[()]/g, '\\$&')));
+assert.match(sql, /unique cases\.case_code constraint/);
+assert.match(sql, /unique participants\.auth_user_id constraint/);
+assert.match(sql, /unique participants\.participant_code constraint/);
+assert.match(sql, /participants\.auth_user_id to reference auth\.users\(id\)/);
+assert.match(sql, /participants\.case_id to reference public\.cases\(id\)/);
 assert.doesNotMatch(sql, /i\.created_at|order by i\.created_at/);
 assert.doesNotMatch(html + js + sql, /student_full_name|student_id|diagnosis|disability|parent_information|medication/i);
 console.log('Research-admin transactional provisioning, rollback structure, readiness, inactive safeguards, and privacy checks passed.');

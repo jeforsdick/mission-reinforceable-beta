@@ -27,6 +27,91 @@ begin
 end;
 $$;
 
+-- Provisioning depends on these verified legacy columns and relationships. Fail
+-- before creating any onboarding objects rather than guessing or altering them.
+do $$
+declare missing_columns text;
+begin
+  select string_agg(required.table_name || '.' || required.column_name, ', ' order by required.table_name, required.column_name)
+  into missing_columns
+  from (values
+    ('cases', 'case_code'), ('cases', 'student_alias'), ('cases', 'active'),
+    ('participants', 'auth_user_id'), ('participants', 'participant_code'),
+    ('participants', 'case_id'), ('participants', 'active'),
+    ('case_intake', 'status')
+  ) required(table_name, column_name)
+  where not exists (
+    select 1 from information_schema.columns c
+    where c.table_schema = 'public' and c.table_name = required.table_name
+      and c.column_name = required.column_name
+  );
+  if missing_columns is not null then
+    raise exception 'onboarding legacy schema is missing required columns: %', missing_columns;
+  end if;
+
+  if not exists (
+    select 1 from pg_catalog.pg_index i
+    join pg_catalog.pg_class t on t.oid = i.indrelid
+    join pg_catalog.pg_namespace n on n.oid = t.relnamespace
+    join pg_catalog.pg_attribute a on a.attrelid = t.oid and a.attnum = any(i.indkey)
+    where n.nspname = 'public' and t.relname = 'cases' and a.attname = 'case_code'
+      and i.indisunique and i.indpred is null and i.indexprs is null and i.indnkeyatts = 1
+  ) then raise exception 'onboarding requires a unique cases.case_code constraint'; end if;
+
+  if not exists (
+    select 1 from pg_catalog.pg_index i
+    join pg_catalog.pg_class t on t.oid = i.indrelid
+    join pg_catalog.pg_namespace n on n.oid = t.relnamespace
+    join pg_catalog.pg_attribute a on a.attrelid = t.oid and a.attnum = any(i.indkey)
+    where n.nspname = 'public' and t.relname = 'participants' and a.attname = 'auth_user_id'
+      and i.indisunique and i.indpred is null and i.indexprs is null and i.indnkeyatts = 1
+  ) then raise exception 'onboarding requires a unique participants.auth_user_id constraint'; end if;
+
+  if not exists (
+    select 1 from pg_catalog.pg_index i
+    join pg_catalog.pg_class t on t.oid = i.indrelid
+    join pg_catalog.pg_namespace n on n.oid = t.relnamespace
+    join pg_catalog.pg_attribute a on a.attrelid = t.oid and a.attnum = any(i.indkey)
+    where n.nspname = 'public' and t.relname = 'participants' and a.attname = 'participant_code'
+      and i.indisunique and i.indpred is null and i.indexprs is null and i.indnkeyatts = 1
+  ) then raise exception 'onboarding requires a unique participants.participant_code constraint'; end if;
+
+  if not exists (
+    select 1 from pg_catalog.pg_constraint fk
+    join pg_catalog.pg_class source_table on source_table.oid = fk.conrelid
+    join pg_catalog.pg_namespace source_schema on source_schema.oid = source_table.relnamespace
+    join pg_catalog.pg_class target_table on target_table.oid = fk.confrelid
+    join pg_catalog.pg_namespace target_schema on target_schema.oid = target_table.relnamespace
+    join pg_catalog.pg_attribute source_column on source_column.attrelid = source_table.oid
+      and source_column.attnum = fk.conkey[1]
+    join pg_catalog.pg_attribute target_column on target_column.attrelid = target_table.oid
+      and target_column.attnum = fk.confkey[1]
+    where fk.contype = 'f' and cardinality(fk.conkey) = 1
+      and source_schema.nspname = 'public' and source_table.relname = 'participants'
+      and source_column.attname = 'auth_user_id'
+      and target_schema.nspname = 'auth' and target_table.relname = 'users'
+      and target_column.attname = 'id'
+  ) then raise exception 'onboarding requires participants.auth_user_id to reference auth.users(id)'; end if;
+
+  if not exists (
+    select 1 from pg_catalog.pg_constraint fk
+    join pg_catalog.pg_class source_table on source_table.oid = fk.conrelid
+    join pg_catalog.pg_namespace source_schema on source_schema.oid = source_table.relnamespace
+    join pg_catalog.pg_class target_table on target_table.oid = fk.confrelid
+    join pg_catalog.pg_namespace target_schema on target_schema.oid = target_table.relnamespace
+    join pg_catalog.pg_attribute source_column on source_column.attrelid = source_table.oid
+      and source_column.attnum = fk.conkey[1]
+    join pg_catalog.pg_attribute target_column on target_column.attrelid = target_table.oid
+      and target_column.attnum = fk.confkey[1]
+    where fk.contype = 'f' and cardinality(fk.conkey) = 1
+      and source_schema.nspname = 'public' and source_table.relname = 'participants'
+      and source_column.attname = 'case_id'
+      and target_schema.nspname = 'public' and target_table.relname = 'cases'
+      and target_column.attname = 'id'
+  ) then raise exception 'onboarding requires participants.case_id to reference public.cases(id)'; end if;
+end;
+$$;
+
 create table public.research_onboarding_actions (
   id uuid primary key default gen_random_uuid(),
   actor_user_id uuid not null references public.profiles(id),
@@ -166,7 +251,7 @@ begin
     prevention_strategies, teaching_strategies, reinforcement_system, response_strategy,
     has_crisis_plan, crisis_plan, typical_settings, common_triggers, typical_antecedents,
     typical_consequences, current_staff_responses, requested_scenarios, additional_context,
-    submitted_by, submitted_at
+    status, submitted_by, submitted_at
   ) values (
     created_case_id, intake.teacher_name, intake.teacher_email, intake.coach_name, intake.coach_email,
     intake.grade_level, intake.student_initials, intake.target_behavior, intake.behavior_topography,
@@ -175,7 +260,7 @@ begin
     intake.response_strategy, intake.has_crisis_plan, intake.crisis_plan, intake.typical_settings,
     intake.common_triggers, intake.typical_antecedents, intake.typical_consequences,
     intake.current_staff_responses, intake.requested_scenarios, intake.additional_context,
-    auth.uid(), now()
+    'submitted', auth.uid(), now()
   );
   insert into public.fidelity_targets(case_id, domain, description, sort_order, target_key, active)
   select created_case_id, t.domain, t.description, t.domain_order,
