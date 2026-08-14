@@ -152,7 +152,8 @@ select
               "bipComponent": "Prevent",
               "mechanism": "Two safe choices",
               "errorType": "none",
-              "function": "escape"
+              "function": "escape",
+              "fidelityTargetKey": "proactive_01"
             }
           },
           "B": {
@@ -165,7 +166,8 @@ select
               "bipComponent": "Prevent",
               "mechanism": "General encouragement",
               "errorType": "unclear next step",
-              "function": "escape"
+              "function": "escape",
+              "fidelityTargetKey": "proactive_01"
             }
           },
           "C": {
@@ -178,7 +180,8 @@ select
               "bipComponent": "Respond",
               "mechanism": "Limit statement",
               "errorType": "unpaired no/stop",
-              "function": "escape"
+              "function": "escape",
+              "fidelityTargetKey": "proactive_01"
             }
           }
         }
