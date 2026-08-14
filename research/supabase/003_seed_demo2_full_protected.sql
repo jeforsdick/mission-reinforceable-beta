@@ -139,6 +139,9 @@ select
     ],
     "steps": {
       "d1_start": {
+        "meta": {
+          "fidelityTargetKey": "proactive_01"
+        },
         "text": "BIP Briefing:\nKai may have difficulty when routines are long, crowded, or when access to a preferred option changes.\nYour job is to choose responses that follow Kai's plan:\n* offer two safe, manageable choices,\n* use a brief, specific direction or an incompatible action,\n* prompt a break, alternate-work, or alternate-seating request,\n* reinforce the first appropriate response right away.\nAvoid unnecessary no/stop statements, public correction, threats, or turning the moment into a power struggle.\n\nScene:\nCenters have been running for about 15 minutes. Kai finished the first activity and is now at a table with a sorting task.\n\nKai starts sliding the cards into a pile instead of sorting them. They glance toward the classroom jobs board and then toward the door.",
         "hint": "This is a good prevention moment. Make the next step clear and offer two manageable options before refusal grows.",
         "choices": {
@@ -152,8 +155,7 @@ select
               "bipComponent": "Prevent",
               "mechanism": "Two safe choices",
               "errorType": "none",
-              "function": "escape",
-              "fidelityTargetKey": "proactive_01"
+              "function": "escape"
             }
           },
           "B": {
@@ -166,8 +168,7 @@ select
               "bipComponent": "Prevent",
               "mechanism": "General encouragement",
               "errorType": "unclear next step",
-              "function": "escape",
-              "fidelityTargetKey": "proactive_01"
+              "function": "escape"
             }
           },
           "C": {
@@ -180,8 +181,7 @@ select
               "bipComponent": "Respond",
               "mechanism": "Limit statement",
               "errorType": "unpaired no/stop",
-              "function": "escape",
-              "fidelityTargetKey": "proactive_01"
+              "function": "escape"
             }
           }
         }

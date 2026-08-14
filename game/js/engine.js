@@ -72,13 +72,16 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   function telemetryTarget(item, context) {
-    const key = String(item && item.meta && item.meta.fidelityTargetKey || '').trim();
+    const stepKey = item && item.stepMeta && item.stepMeta.fidelityTargetKey;
+    const choiceKey = item && item.meta && item.meta.fidelityTargetKey;
+    const key = String(stepKey || choiceKey || '').trim();
     if (!key) return { id: null, domain: telemetryDomain(item) };
 
     const target = context && context.fidelityTargets && context.fidelityTargets[key];
     if (!target) {
       console.warn(`Fidelity target key "${key}" was not found for the current case; using domain-only telemetry.`);
-      return { id: null, domain: telemetryDomain(item) };
+      const targetDomain = /^(proactive|teaching|reinforcement|response|crisis)_\d{2}$/.exec(key);
+      return { id: null, domain: targetDomain ? targetDomain[1] : telemetryDomain(item) };
     }
     return { id: target.id, domain: target.domain };
   }
@@ -456,6 +459,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     current.history.push({
       stepId: current.stepId,
       stepIndex: current.history.length + 1,
+      stepMeta: step.meta || {},
       scenarioTitle: step.title || current.mission.title || '',
       prompt: splitScenarioText(step.text || ''),
       context: splitScenarioText(step.text || ''),

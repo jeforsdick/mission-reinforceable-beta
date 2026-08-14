@@ -1,0 +1,9 @@
+{
+  "targets": [
+    { "target_key": "proactive_01", "domain": "proactive" },
+    { "target_key": "teaching_01", "domain": "teaching" },
+    { "target_key": "reinforcement_01", "domain": "reinforcement" },
+    { "target_key": "reinforcement_02", "domain": "reinforcement" },
+    { "target_key": "response_01", "domain": "response" }
+  ]
+}

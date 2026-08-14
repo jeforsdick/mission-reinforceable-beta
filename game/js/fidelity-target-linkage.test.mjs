@@ -61,15 +61,17 @@ const context = {
     proactive_01: { id: 'target-uuid', domain: 'proactive' }
   }
 };
-const row = meta => engineContext.MR.__test.responseRowsForTelemetry({
+const row = (meta, stepMeta = {}) => engineContext.MR.__test.responseRowsForTelemetry({
   missionId: 'mission',
-  history: [{ stepId: 'step', stepIndex: 0, meta }]
+  history: [{ stepId: 'step', stepIndex: 0, meta, stepMeta }]
 }, 'session', context)[0];
 
-assert.equal(row({ bipComponent: 'Respond', fidelityTargetKey: 'proactive_01' }).fidelity_target_id, 'target-uuid');
-assert.equal(row({ bipComponent: 'Respond', fidelityTargetKey: 'proactive_01' }).fidelity_domain, 'proactive');
+assert.equal(row({ bipComponent: 'Respond' }, { fidelityTargetKey: 'proactive_01' }).fidelity_target_id, 'target-uuid');
+assert.equal(row({ bipComponent: 'Respond' }, { fidelityTargetKey: 'proactive_01' }).fidelity_domain, 'proactive');
+assert.equal(row({ bipComponent: 'Teach', fidelityTargetKey: 'unknown_01' }, { fidelityTargetKey: 'proactive_01' }).fidelity_target_id, 'target-uuid');
 assert.equal(row({ bipComponent: 'Teach', fidelityTargetKey: 'unknown_01' }).fidelity_target_id, null);
 assert.equal(row({ bipComponent: 'Teach', fidelityTargetKey: 'unknown_01' }).fidelity_domain, 'teaching');
+assert.equal(row({ bipComponent: 'Respond' }, { fidelityTargetKey: 'proactive_02' }).fidelity_domain, 'proactive');
 assert.equal(row({ bipComponent: 'Reinforce' }).fidelity_domain, 'reinforcement');
 
 const missionSource = fs.readFileSync(new URL('../teachers/demo-2/content/daily-mission-1.js', import.meta.url), 'utf8');
@@ -78,12 +80,11 @@ vm.runInContext(missionSource, missionContext);
 const annotated = [];
 for (const mission of missionContext.POOL.daily) {
   for (const step of Object.values(mission.steps)) {
-    for (const choice of Object.values(step.choices)) {
-      if (choice.meta.fidelityTargetKey) annotated.push([mission.id, choice.meta.fidelityTargetKey]);
-    }
+    if (step.meta?.fidelityTargetKey) annotated.push([mission.id, step.meta.fidelityTargetKey]);
+    for (const choice of Object.values(step.choices)) assert.equal(choice.meta.fidelityTargetKey, undefined);
   }
 }
-assert.equal(annotated.length, 3);
+assert.equal(annotated.length, 1);
 assert.equal(annotated.every(([missionId, key]) => missionId === 'demo2-daily-long-center' && key === 'proactive_01'), true);
 assert.doesNotMatch(missionSource, /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
 
