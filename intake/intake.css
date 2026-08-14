@@ -246,3 +246,13 @@ a:focus-visible { outline: 3px solid rgba(109, 75, 179, .25); outline-offset: 2p
   .button { padding-inline: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.intro { position: relative; padding-right: 150px; }
+.intro-wizard { position: absolute; right: 0; bottom: 5px; width: 130px; height: 130px; object-fit: contain; image-rendering: pixelated; }
+.subsection-title { display: flex; align-items: center; gap: 12px; margin: 30px 0 8px; padding-top: 24px; border-top: 1px solid var(--line); }
+.subsection-title img, .section-flare { object-fit: contain; image-rendering: pixelated; }
+.subsection-title h3 { margin: 2px 0; }
+.section-flare { margin-left: auto; width: 54px; height: 54px; }
+.domain-card h4 { margin: 15px 0 0; color: var(--navy); }
+.context-detail { margin: 20px 0 0; padding-top: 17px; border-top: 1px solid #e0d9ee; }
+@media(max-width:760px) { .intro { padding-right: 0; } .intro-wizard { position: static; display: block; width: 90px; height: 90px; margin: 12px 0 -10px auto; } .section-flare { width: 42px; height: 42px; } }

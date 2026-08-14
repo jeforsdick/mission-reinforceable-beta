@@ -28,7 +28,12 @@ function formatEmail(row) {
       ['Teacher name', row.teacher_name], ['Teacher email', row.teacher_email],
       ['Coach name', row.coach_name], ['Coach email', row.coach_email]
     ]],
-    ['Student', [['Student initials', row.student_initials], ['Grade', row.grade_level]]],
+    ['Student', [
+      ['Student initials', row.student_initials], ['Grade', row.grade_level],
+      ['Student strengths and interests', row.student_strengths],
+      ['Preferences and known reinforcers', row.preferred_items_activities],
+      ['Preference information', row.preference_assessment_notes]
+    ]],
     ['Behavior and support plan', [
       ['Target behavior', row.target_behavior], ['Behavior topography', row.behavior_topography],
       ['Primary function', row.primary_function], ['Replacement behavior', row.replacement_behavior],
