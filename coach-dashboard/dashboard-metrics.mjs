@@ -17,6 +17,21 @@ export function sessionPercent(session, responses = []) {
   return percent(Number(session.plan_aligned_count || 0), total);
 }
 
+const TARGET_ALIGNMENT_PERCENT = {
+  plan_aligned: 100,
+  workable_refine: 50,
+  missed_opportunity: 0
+};
+
+export function targetPerformance(responses = []) {
+  if (!responses.length) return { percent: null, emptyLabel: 'No linked opportunities' };
+  const scored = responses
+    .map(row => TARGET_ALIGNMENT_PERCENT[row.alignment])
+    .filter(value => value !== undefined);
+  if (!scored.length) return { percent: null, emptyLabel: 'No scored opportunities' };
+  return { percent: Math.round(scored.reduce((sum, value) => sum + value, 0) / scored.length), emptyLabel: null };
+}
+
 export function analyzeCase(caseData, now = new Date()) {
   const sessions = recentSessions(caseData.sessions || []);
   const ids = new Set(sessions.map(row => row.id));

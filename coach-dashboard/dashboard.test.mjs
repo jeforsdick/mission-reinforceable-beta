@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { analyzeCase, coachingCopy, sessionPercent, statusFor } from './dashboard-metrics.mjs';
+import { analyzeCase, coachingCopy, sessionPercent, statusFor, targetPerformance } from './dashboard-metrics.mjs';
 
 const now = new Date('2026-08-13T12:00:00Z');
 const sessions = [1, 2, 3].map(day => ({ id: `s${day}`, started_at: `2026-08-${10 + day}T12:00:00Z`, duration_seconds: 60 }));
@@ -43,6 +43,32 @@ test('crisis appears only for a case with a crisis plan', () => {
 test('session calculation falls back to counts and preserves no-opportunity null', () => {
   assert.equal(sessionPercent({ id: 'x', plan_aligned_count: 2, refine_count: 1, missed_count: 1 }), 50);
   assert.equal(sessionPercent({ id: 'x' }), null);
+});
+
+test('target performance uses the three alignment levels', () => {
+  assert.deepEqual(targetPerformance([{ alignment: 'plan_aligned' }]), { percent: 100, emptyLabel: null });
+  assert.deepEqual(targetPerformance([{ alignment: 'workable_refine' }]), { percent: 50, emptyLabel: null });
+  assert.deepEqual(targetPerformance([{ alignment: 'missed_opportunity' }]), { percent: 0, emptyLabel: null });
+  assert.deepEqual(targetPerformance([
+    { alignment: 'plan_aligned' },
+    { alignment: 'workable_refine' },
+    { alignment: 'missed_opportunity' }
+  ]), { percent: 50, emptyLabel: null });
+});
+
+test('target performance distinguishes unlinked and unscored opportunities', () => {
+  assert.deepEqual(targetPerformance([]), { percent: null, emptyLabel: 'No linked opportunities' });
+  assert.deepEqual(targetPerformance([
+    { alignment: 'plan_aligned' },
+    { alignment: 'unknown' },
+    {},
+    { alignment: null }
+  ]), { percent: 100, emptyLabel: null });
+  assert.deepEqual(targetPerformance([
+    { alignment: 'unknown' },
+    {},
+    { alignment: null }
+  ]), { percent: null, emptyLabel: 'No scored opportunities' });
 });
 
 test('dashboard source gates data behind coach auth and assigned case IDs', async () => {
