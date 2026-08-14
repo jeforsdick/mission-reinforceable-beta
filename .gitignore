@@ -1,0 +1,72 @@
+# Operating-system metadata
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# Environment files and local secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.secrets/
+credentials/
+credentials.json
+service-account*.json
+
+# Dependencies
+node_modules/
+
+# Build, cache, coverage, and temporary files
+dist/
+build/
+coverage/
+.nyc_output/
+.cache/
+.tmp/
+tmp/
+temp/
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Local Supabase state and database exports
+.supabase/
+supabase/.temp/
+supabase/.branches/
+*.dump
+*.backup
+*.sqlite
+*.sqlite3
+
+# Private research and participant exports
+private/
+private-data/
+participant-data/
+participant-exports/
+research/exports/
+exports/
+*.csv
+*.tsv
+*.xlsx
+
+# Generated real-participant protected content
+research/supabase/generated/
+research/supabase/private/
+generated-protected-content/
+generated-participant-content/
+*_participant_seed.sql
+*_participant_payload.json
+*_protected_private.sql
+
+# Private BIP/BSP source material
+bip-private/
+bsp-private/
+private-bip/
+private-bsp/
+**/participant-specific/

@@ -4,31 +4,27 @@ Mission: Reinforceable is organized as a static public website with the current 
 
 The repository is intentionally not a Next.js app yet. The public site pages are plain HTML, the public-site styling lives separately from the game styling, and the beta game keeps its existing static app structure.
 
-## Folder structure
+## Repository map
 
-```text
-mission-reinforceable/
-├── index.html                 # Public homepage
-├── research/
-│   └── index.html             # Research overview page
-├── intake/
-│   └── index.html             # New game intake placeholder page
-├── beta/
-│   └── index.html             # Legacy redirect to game/
-├── game/
-│   ├── index.html             # Existing beta game shell
-│   ├── css/styles.css         # Existing game styling only
-│   ├── js/                    # Existing game systems
-│   └── teachers/
-│       ├── _template/         # Teacher game template
-│       └── olson/             # Beta classroom content
-├── assets/
-│   ├── game/skin-v2/          # Existing game image assets
-│   └── site/site.css          # Public website styling
-├── docs/mockups/              # Mockup and reference images
-├── favicon.png
-└── README.md
-```
+| Path | Purpose |
+| --- | --- |
+| `/` | Public website and shared public-site entry point. |
+| `/game/` | Authenticated teacher game. |
+| `/demo/` | Public demo explanation and landing page. |
+| `/demo-game/` | Playable fictional demo. |
+| `/beta/` | Legacy compatibility redirect to the public demo. |
+| `/intake/` | Public individualized-game intake. |
+| `/coach-dashboard/` | Authenticated coach dashboard. |
+| `/supabase/migrations/` | Canonical location for current database migrations. |
+| `/research/supabase/` | Older/manual protected-content SQL and the generated fictional Demo-2 fixture. |
+| `/scripts/` | Protected-content generation and fidelity development tooling. |
+| `/google-apps-script/` | Legacy/current research spreadsheet logging integration. |
+| `/docs/` | Architecture, schema, design, and mockup documentation. |
+| `/assets/` | Shared public-site and game images, audio, previews, and styling. |
+
+Demo-2 is fictional test/reference content. Real teacher, student, or BIP-derived content must never be committed to public GitHub. Generated real-participant content belongs only in approved private or restricted storage.
+
+Supabase publishable browser keys are client configuration and may be used by the browser applications. Supabase service-role keys and all other secrets or credentials must never be committed.
 
 ## Public website routes
 
