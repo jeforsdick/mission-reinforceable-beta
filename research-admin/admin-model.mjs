@@ -24,17 +24,19 @@ export function accountState(rows, expectedRole) {
 }
 
 export function readinessForCase(item) {
-  const reminderOn = item.reminder?.enabled === true;
+  const reminderOn = item.reminders?.enabled === true;
+  const participant = item.participant;
+  const caseRow = item.case;
   return {
-    intake: item.intake ? 'Ready' : 'Needs action',
-    teacher: item.participant?.auth_user_id ? 'Ready' : 'Needs action',
+    intake: item.intake_snapshot ? 'Ready' : 'Needs action',
+    teacher: participant?.auth_user_id ? 'Ready' : 'Needs action',
     coach: item.coach?.coach_user_id ? 'Ready' : 'Needs action',
-    case: item.case?.id ? 'Ready' : 'Needs action',
-    snapshot: item.intake?.case_id ? 'Ready' : 'Needs action',
-    targets: item.targets?.length ? 'Ready' : 'Needs action',
+    case: caseRow?.id ? 'Ready' : 'Needs action',
+    snapshot: item.intake_snapshot ? 'Ready' : 'Needs action',
+    targets: Number(item.fidelity_target_count) > 0 ? 'Ready' : 'Needs action',
     assignment: item.coach?.active ? 'Ready' : 'Needs action',
-    content: item.content ? 'Ready' : 'Needs action',
-    game: item.case?.active && item.participant?.active ? 'Ready' : 'Off intentionally',
+    content: item.protected_content?.present ? 'Ready' : 'Needs action',
+    game: caseRow?.active && participant?.active ? 'Ready' : 'Off intentionally',
     reminders: reminderOn ? 'Ready' : 'Off intentionally'
   };
 }
