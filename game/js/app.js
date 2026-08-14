@@ -238,6 +238,11 @@
     try {
       const assignment = await MR.auth.getAssignment();
       MR.participantCode = assignment.participant.participant_code;
+      MR.telemetryContext = {
+        participantId: assignment.participant.id,
+        caseId: assignment.case.id,
+        gameContentVersion: null
+      };
       MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
       MR.setScreen('loading');
       await loadAssignedGame(assignment);

@@ -97,6 +97,7 @@
 
   MR.loadTeacher = async function loadTeacher(teacherId) {
     resetRuntime();
+    if (MR.telemetryContext) MR.telemetryContext.gameContentVersion = null;
 
     const folder = `teachers/${teacherId}`;
     await MR.loadScript(`${folder}/config.js?v=${TEACHER_CONTENT_VERSION}`);
@@ -125,6 +126,11 @@
 
     if (!content || typeof content !== 'object') {
       throw new Error('Protected game content is missing or invalid. Please contact the research team.');
+    }
+
+    if (MR.telemetryContext) {
+      const version = content.version == null || content.version === '' ? null : Number(content.version);
+      MR.telemetryContext.gameContentVersion = Number.isInteger(version) ? version : null;
     }
 
     const rawConfig = Object.assign({}, content.config || {});
