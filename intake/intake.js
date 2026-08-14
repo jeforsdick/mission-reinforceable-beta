@@ -164,9 +164,10 @@
     first.focus({ preventScroll: true });
     return false;
   }
-  function submissionPayload() {
+  function submissionPayload(requestId) {
     const payload = {};
     INTAKE_FIELDS.forEach(name => { payload[name] = fieldValue(name) || null; });
+    payload.request_id = requestId;
     payload.has_crisis_plan = hasCrisis();
     if (!payload.has_crisis_plan) payload.crisis_plan = null;
     payload.fidelity_targets = collectTargets();
@@ -184,8 +185,19 @@
     setBusy(true);
     try {
       state.client = state.client || makeClient();
-      const { error } = await state.client.from('intake_requests').insert(submissionPayload());
+      const requestId = crypto.randomUUID();
+      const { error } = await state.client.from('intake_requests').insert(submissionPayload(requestId));
       if (error) throw error;
+      try {
+        const response = await fetch('/api/intake-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_id: requestId })
+        });
+        if (!response.ok) console.error('Intake notification was not delivered.', { requestId, status: response.status });
+      } catch (notificationError) {
+        console.error('Intake notification request failed.', { requestId, error: notificationError });
+      }
       clearSavedDraft(false);
       $('#intake-form').hidden = true;
       $('.section-nav').hidden = true;
