@@ -106,3 +106,113 @@ staging Supabase project first (with the Supabase CLI migration workflow or SQL
 Editor). Test teacher, coach, and research-admin accounts before applying the
 same migration to production. Create profiles and case-coach assignments through
 the Dashboard/service role; no automatic Auth-to-profile trigger is included.
+
+## Stable fidelity target keys
+
+`fidelity_targets.target_key` is a nullable, human-readable identifier for a
+behavioral implementation target. Game content must not embed a Supabase UUID:
+UUIDs are environment-specific database identifiers, make authored content hard
+to review, and may differ when data is recreated in another project. Matching a
+target by `description` is also unsafe because descriptions are editable prose
+and may be duplicated or revised.
+
+Keys use a domain-and-sequence convention such as `proactive_01`,
+`proactive_02`, `teaching_01`, `reinforcement_01`, `response_01`, and
+`crisis_01`. They are stable identifiers, not display labels. Once a key is
+assigned, editing the target description does not require changing the key. A
+key must not be reused for a different behavioral implementation target in the
+same case, even after the original target becomes inactive.
+
+A unique index on `(case_id, target_key)` enforces uniqueness for non-null keys
+within each case while allowing the same key in different cases. The column is
+nullable so existing production rows remain valid before backfill. The migration
+does not infer or backfill keys: an administrator should review each case and
+assign keys from the target's domain and intended sequence. After review, the
+following guarded example can backfill the current five-target demo case. Replace
+`PASTE-DEMO-CASE-UUID-HERE` before running it. The block stops without updating
+if the case does not contain exactly one proactive, one teaching, two
+reinforcement, and one response target, if their sort orders are ambiguous, if
+any selected target already has a different key, or if a desired key is already
+used by another target.
+
+```sql
+do $$
+declare
+  demo_case_id uuid := 'PASTE-DEMO-CASE-UUID-HERE'::uuid;
+  selected_count integer;
+  distinct_order_count integer;
+  conflicting_count integer;
+begin
+  select count(*), count(distinct (domain, sort_order))
+  into selected_count, distinct_order_count
+  from public.fidelity_targets
+  where case_id = demo_case_id
+    and domain in ('proactive', 'teaching', 'reinforcement', 'response');
+
+  if selected_count <> 5 or distinct_order_count <> 5
+     or (select count(*) from public.fidelity_targets
+         where case_id = demo_case_id and domain = 'proactive') <> 1
+     or (select count(*) from public.fidelity_targets
+         where case_id = demo_case_id and domain = 'teaching') <> 1
+     or (select count(*) from public.fidelity_targets
+         where case_id = demo_case_id and domain = 'reinforcement') <> 2
+     or (select count(*) from public.fidelity_targets
+         where case_id = demo_case_id and domain = 'response') <> 1 then
+    raise exception 'Demo fidelity targets do not match the expected unambiguous five-target shape';
+  end if;
+
+  with ranked as (
+    select id,
+      domain || '_' || lpad(
+        row_number() over (partition by domain order by sort_order)::text,
+        2,
+        '0'
+      ) as desired_key
+    from public.fidelity_targets
+    where case_id = demo_case_id
+      and domain in ('proactive', 'teaching', 'reinforcement', 'response')
+  )
+  select count(*) into conflicting_count
+  from ranked r
+  join public.fidelity_targets ft on ft.case_id = demo_case_id
+  where (ft.id = r.id and ft.target_key is not null and ft.target_key <> r.desired_key)
+     or (ft.id <> r.id and ft.target_key = r.desired_key);
+
+  if conflicting_count <> 0 then
+    raise exception 'Existing target keys conflict with the proposed demo backfill';
+  end if;
+
+  with ranked as (
+    select id,
+      domain || '_' || lpad(
+        row_number() over (partition by domain order by sort_order)::text,
+        2,
+        '0'
+      ) as desired_key
+    from public.fidelity_targets
+    where case_id = demo_case_id
+      and domain in ('proactive', 'teaching', 'reinforcement', 'response')
+  )
+  update public.fidelity_targets ft
+  set target_key = r.desired_key
+  from ranked r
+  where ft.id = r.id and ft.target_key is null;
+end
+$$;
+```
+
+Future mission responses will use this metadata contract:
+
+```js
+meta: {
+  bipComponent: "Prevent",
+  fidelityTargetKey: "proactive_01"
+}
+```
+
+`bipComponent` remains the broad fidelity-domain metadata, while
+`fidelityTargetKey` identifies exactly one primary fidelity target. In V1, one
+response should have at most one primary fidelity target. Authored game content
+references the stable key rather than a Supabase UUID; a future runtime change
+will resolve `(case_id, target_key)` to `fidelity_targets.id`. This migration and
+documentation change do not implement that runtime resolution.
