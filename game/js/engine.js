@@ -54,6 +54,119 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return 'Missed Opportunity';
   }
 
+  function telemetryAlignment(item) {
+    const type = item.selectedType || choiceTypeForScore(item.selectedScore != null ? item.selectedScore : item.score);
+    if (type === 'best') return 'plan_aligned';
+    if (type === 'refine') return 'workable_refine';
+    return 'missed_opportunity';
+  }
+
+  function telemetryDomain(item) {
+    const component = String(item && item.meta && item.meta.bipComponent || '').trim().toLowerCase();
+    return {
+      prevent: 'proactive',
+      teach: 'teaching',
+      reinforce: 'reinforcement',
+      respond: 'response'
+    }[component] || null;
+  }
+
+  function telemetryUuid() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    window.crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const value = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+  }
+
+  function startRelationalTelemetry(attempt) {
+    const context = MR.telemetryContext;
+    if (!context || !context.participantId || !context.caseId) return Promise.resolve(false);
+    const sessionRow = {
+      id: attempt.telemetrySessionId,
+      participant_id: context.participantId,
+      case_id: context.caseId,
+      mode: attempt.mode,
+      mission_id: attempt.mission.id,
+      mission_title: attempt.mission.title || null,
+      game_content_version: context.gameContentVersion,
+      started_at: attempt.telemetryStartedAt,
+      status: 'started'
+    };
+    return MR.auth.createTelemetrySession(sessionRow).then(() => true).catch(error => {
+      console.warn('Supabase telemetry session insert failed; gameplay and existing logging will continue.', error);
+      return false;
+    });
+  }
+
+  function responseRowsForTelemetry(run, sessionId, context) {
+    return (Array.isArray(run.history) ? run.history : []).map(item => ({
+      session_id: sessionId,
+      participant_id: context.participantId,
+      case_id: context.caseId,
+      fidelity_target_id: null,
+      fidelity_domain: telemetryDomain(item),
+      mission_id: run.missionId,
+      step_id: item.stepId,
+      step_index: item.stepIndex,
+      scenario_title: item.scenarioTitle || null,
+      scenario_text: item.context || item.prompt || null,
+      context_tag: null,
+      choice_id: item.choiceKey || null,
+      selected_answer_text: item.selectedAnswerText || item.choiceText || null,
+      selected_score: item.selectedScore != null ? item.selectedScore : item.score,
+      alignment: telemetryAlignment(item),
+      best_answer_text: item.bestAnswerText || item.bestChoiceText || null,
+      feedback_text: item.feedbackText || item.feedback || item.wizard || null,
+      mechanism: item.meta && item.meta.mechanism || null,
+      error_type: item.meta && item.meta.errorType || null,
+      function_tag: item.meta && item.meta.function || null,
+      hint_opened: Boolean(item.hintOpened),
+      hint_open_count: Number(item.hintOpenCount || 0),
+      time_to_hint_ms: item.timeFromQuestionStartToHintMs != null ? item.timeFromQuestionStartToHintMs : null,
+      time_hint_to_answer_ms: item.timeFromHintToAnswerMs != null ? item.timeFromHintToAnswerMs : null,
+      response_time_ms: item.responseTimeMs != null ? item.responseTimeMs : null,
+      game_content_version: context.gameContentVersion
+    }));
+  }
+
+  async function finishRelationalTelemetry(run, sessionId, sessionInsertPromise) {
+    const context = MR.telemetryContext;
+    if (!context || !sessionId) return;
+    const sessionCreated = await sessionInsertPromise;
+    if (!sessionCreated) return;
+
+    try {
+      await MR.auth.insertTelemetryResponses(responseRowsForTelemetry(run, sessionId, context));
+    } catch (error) {
+      console.warn('Supabase telemetry response insert failed; gameplay and existing logging will continue.', error);
+    }
+
+    try {
+      await MR.auth.completeTelemetrySession(sessionId, context.participantId, context.caseId, {
+        ended_at: run.sessionEndedAt,
+        status: 'completed',
+        duration_seconds: run.durationSeconds,
+        active_duration_seconds: run.activeDurationSeconds,
+        score: run.score,
+        max_score: run.maxScore,
+        accuracy: run.accuracy,
+        total_questions: run.totalQuestions,
+        plan_aligned_count: run.bestChoiceCount,
+        refine_count: run.refineChoiceCount,
+        missed_count: run.missedOpportunityCount,
+        hints_used: run.hintsUsed,
+        total_hints_opened: run.totalHintsOpened,
+        questions_with_hints: run.questionsWithHints,
+        hint_use_rate: run.hintUseRate
+      });
+    } catch (error) {
+      console.warn('Supabase telemetry session completion failed; gameplay and existing logging will continue.', error);
+    }
+  }
+
   function countSummaryForHistory(history) {
     const scores = (Array.isArray(history) ? history : []).map(item => scoreValue(item.score));
     return {
@@ -795,6 +908,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       history
     };
 
+    void finishRelationalTelemetry(run, current.telemetrySessionId, current.telemetrySessionInsert);
     MR.storage.saveRun(run);
     sendRun(run);
     renderResults(run);
@@ -1117,9 +1231,12 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
   MR.engine = {
     start(mode) {
       const mission = chooseMission(mode);
+      const telemetryStartedAt = new Date().toISOString();
       current = {
         mode,
         mission,
+        telemetrySessionId: telemetryUuid(),
+        telemetryStartedAt,
         stepId: null,
         score: 0,
         maxScore: 0,
@@ -1131,6 +1248,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
         xpMultiplier: Number(MR.teacherConfig.xpMultiplier || 5),
         history: []
       };
+      current.telemetrySessionInsert = startRelationalTelemetry(current);
       current.stepId = current.mission.start || Object.keys(current.mission.steps || {})[0];
       if (MR.SessionTimer && MR.SessionTimer.start) MR.SessionTimer.start();
       if (MR.audio && MR.audio.startBgm) MR.audio.startBgm();

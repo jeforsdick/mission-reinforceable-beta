@@ -96,6 +96,27 @@
     return data || null;
   }
 
+  async function createTelemetrySession(sessionRow) {
+    const { error } = await client().from('game_sessions').insert(sessionRow);
+    if (error) throw new Error(`Unable to create gameplay telemetry session: ${error.message}`);
+  }
+
+  async function insertTelemetryResponses(responseRows) {
+    if (!Array.isArray(responseRows) || !responseRows.length) return;
+    const { error } = await client().from('game_responses').insert(responseRows);
+    if (error) throw new Error(`Unable to save gameplay telemetry responses: ${error.message}`);
+  }
+
+  async function completeTelemetrySession(sessionId, participantId, caseId, updates) {
+    const { error } = await client()
+      .from('game_sessions')
+      .update(updates)
+      .eq('id', sessionId)
+      .eq('participant_id', participantId)
+      .eq('case_id', caseId);
+    if (error) throw new Error(`Unable to complete gameplay telemetry session: ${error.message}`);
+  }
+
   MR.auth = {
     async getAssignment() {
       const supabaseClient = client();
@@ -113,6 +134,12 @@
     async getGameContent(caseId) {
       return protectedGameContent(client(), caseId);
     },
+
+    createTelemetrySession,
+
+    insertTelemetryResponses,
+
+    completeTelemetrySession,
 
     async signOut() {
       const { error } = await client().auth.signOut();
