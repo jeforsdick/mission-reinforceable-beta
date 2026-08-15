@@ -47,6 +47,8 @@ supabase/.branches/
 # Private research and participant exports
 private/
 private-data/
+.private-cases/
+private-cases/
 participant-data/
 participant-exports/
 research/exports/
