@@ -11,6 +11,7 @@
 
   let current = null;
   let pendingNext = null;
+  let pendingEnding = null;
   let modalMode = 'feedback';
 
   const DEFAULT_BETA_BIP_BRIEFING = `Jordan has a hard time during independent writing. When writing feels too big, Jordan may shut down, refuse, or leave the area.
@@ -38,6 +39,23 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
   function scoreValue(value) {
     return Number(value || 0);
+  }
+
+  function combinedFeedbackText(choice) {
+    return [choice && choice.consequence, choice && choice.feedback]
+      .map(value => String(value || '').trim())
+      .filter(Boolean)
+      .join('\n\n') || String(choice && choice.wizard || '').trim();
+  }
+
+  function endingForChoice(mission, choice, isTerminal) {
+    if (!isTerminal || !mission || !choice) return null;
+    const key = String(choice.ending || '').trim();
+    if (!['STRONG', 'MIXED', 'FRAGILE'].includes(key)) return null;
+    const ending = mission.endings && mission.endings[key];
+    return key && ending && typeof ending === 'object' && String(ending.text || '').trim()
+      ? { key, text: String(ending.text).trim(), wizard: String(ending.wizard || '').trim() }
+      : null;
   }
 
   function choiceTypeForScore(score) {
@@ -473,7 +491,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       isReviewItem: selectedScore < 10,
       maxScore,
       feedback: choice.feedback || '',
-      feedbackText: choice.feedback || choice.wizard || '',
+      consequence: choice.consequence || '',
+      feedbackText: combinedFeedbackText(choice),
       wizard: choice.wizard || '',
       hintOpened: Boolean(hintTracking.hintOpened),
       hintOpenCount: Number(hintTracking.hintOpenCount || 0),
@@ -493,6 +512,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
     const nextId = choice.next;
     pendingNext = nextId && current.mission.steps[nextId] ? nextId : null;
+    const isTerminalDecision = !pendingNext && current.history.length === 5;
+    pendingEnding = endingForChoice(current.mission, choice, isTerminalDecision);
     MR.$$('.choice-btn').forEach(button => button.disabled = true);
     renderHUD();
     showWizardFeedback(choice, score);
@@ -505,11 +526,32 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const img = MR.$('#wizard-modal-img');
     modal.dataset.mode = 'briefing';
     MR.$('#wizard-modal-title').textContent = 'BIP Briefing';
+    hideRichFeedbackContent();
     MR.$('#wizard-modal-text').textContent = text;
     img.src = MR.asset('wizardGuide') || MR.asset('wizardThink');
     img.className = 'wizard-modal-img briefing';
     MR.$('#wizard-modal-continue').textContent = 'Start Mission';
     modal.hidden = false;
+  }
+
+  function hideRichFeedbackContent() {
+    MR.$('#wizard-modal-text').hidden = false;
+    MR.$('#wizard-feedback-content').hidden = true;
+  }
+
+  function setFeedbackSection(sectionSelector, textSelector, value) {
+    const text = String(value || '').trim();
+    MR.$(sectionSelector).hidden = !text;
+    MR.$(textSelector).textContent = text;
+  }
+
+  function showRichFeedbackContent(content, consequenceHeading = 'What happens') {
+    MR.$('#wizard-modal-text').hidden = true;
+    MR.$('#wizard-feedback-content').hidden = false;
+    MR.$('#wizard-consequence-heading').textContent = consequenceHeading;
+    setFeedbackSection('#wizard-consequence-section', '#wizard-consequence-text', content.consequence);
+    setFeedbackSection('#wizard-reaction-section', '#wizard-reaction-text', content.wizard);
+    setFeedbackSection('#wizard-explanation-section', '#wizard-explanation-text', content.feedback);
   }
 
   function showWizardFeedback(choice, score) {
@@ -519,10 +561,28 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const img = MR.$('#wizard-modal-img');
     modal.dataset.mode = 'feedback';
     MR.$('#wizard-modal-title').textContent = sprite.title;
-    MR.$('#wizard-modal-text').textContent = choice.wizard || choice.feedback || 'The classroom shifts in response to your decision.';
+    if (choice.consequence || choice.wizard || choice.feedback) {
+      showRichFeedbackContent(choice);
+    } else {
+      hideRichFeedbackContent();
+      MR.$('#wizard-modal-text').textContent = 'The classroom shifts in response to your decision.';
+    }
     img.src = sprite.src;
     img.className = `wizard-modal-img ${sprite.cls}`;
-    MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission' : 'Complete Mission';
+    MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission' : pendingEnding ? 'See Mission Outcome' : 'Complete Mission';
+    modal.hidden = false;
+  }
+
+  function showMissionOutcome(ending) {
+    modalMode = 'outcome';
+    const modal = MR.$('#wizard-modal');
+    const img = MR.$('#wizard-modal-img');
+    modal.dataset.mode = 'outcome';
+    MR.$('#wizard-modal-title').textContent = 'Mission Outcome';
+    showRichFeedbackContent({ consequence: ending.text, wizard: ending.wizard }, 'Mission Outcome');
+    img.src = MR.asset('wizardSuccess') || MR.asset('wizardGuide');
+    img.className = 'wizard-modal-img happy';
+    MR.$('#wizard-modal-continue').textContent = 'View Results';
     modal.hidden = false;
   }
 
@@ -533,6 +593,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const img = MR.$('#wizard-modal-img');
     modal.dataset.mode = 'surveySuccess';
     MR.$('#wizard-modal-title').textContent = 'Quest Complete!';
+    hideRichFeedbackContent();
     MR.$('#wizard-modal-text').textContent = 'Thank you for helping improve Mission: Reinforceable. Your beta survey was submitted successfully.';
     img.src = sprite.src;
     img.className = `wizard-modal-img ${sprite.cls}`;
@@ -547,6 +608,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const img = MR.$('#wizard-modal-img');
     modal.dataset.mode = 'welcome';
     MR.$('#wizard-modal-title').textContent = 'Welcome to Mission: Reinforceable Beta Testing!';
+    hideRichFeedbackContent();
     MR.$('#wizard-modal-text').textContent = `Thank you for playtesting Mission: Reinforceable. Try a mission and notice what feels clear, confusing, fun, useful, or challenging.
 
 After the mission, tap the wizard on the Results screen to complete the beta survey.`;
@@ -564,6 +626,12 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
   function continueAfterFeedback() {
     hideWizardFeedback();
+    if (modalMode === 'outcome') {
+      pendingEnding = null;
+      modalMode = 'feedback';
+      finishMission();
+      return;
+    }
     if (modalMode === 'surveySuccess') {
       modalMode = 'feedback';
       MR.setScreen('results');
@@ -581,6 +649,10 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       current.stepId = pendingNext;
       pendingNext = null;
       renderStep();
+    } else if (pendingEnding) {
+      const ending = pendingEnding;
+      pendingEnding = null;
+      showMissionOutcome(ending);
     } else {
       finishMission();
     }
@@ -1267,6 +1339,8 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
         xpMultiplier: Number(MR.teacherConfig.xpMultiplier || 5),
         history: []
       };
+      pendingNext = null;
+      pendingEnding = null;
       current.telemetrySessionInsert = startRelationalTelemetry(current);
       current.stepId = current.mission.start || Object.keys(current.mission.steps || {})[0];
       if (MR.SessionTimer && MR.SessionTimer.start) MR.SessionTimer.start();

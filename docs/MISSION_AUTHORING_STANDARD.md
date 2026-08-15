@@ -501,6 +501,13 @@ This JavaScript/JSON-style example matches the current game structure:
   functionPressure: ["attention"],
   bipTargets: [],
 
+  // Optional narrative closure shown after (and not counted as) Decision 5.
+  endings: {
+    STRONG: { text: "NARRATIVE OUTCOME", wizard: "OPTIONAL WIZARD REACTION" },
+    MIXED: { text: "NARRATIVE OUTCOME", wizard: "OPTIONAL WIZARD REACTION" },
+    FRAGILE: { text: "NARRATIVE OUTCOME", wizard: "OPTIONAL WIZARD REACTION" }
+  },
+
   steps: {
     d1_start: {
       meta: {
@@ -515,8 +522,9 @@ This JavaScript/JSON-style example matches the current game structure:
         A: {
           text: "PLAUSIBLE TEACHER RESPONSE",
           score: 10,
-          feedback: "VIVID MODELED CONSEQUENCE + BEHAVIORAL EXPLANATION",
+          consequence: "SIMULATED CLASSROOM RESULT AFTER THIS CHOICE",
           wizard: "DRAMATIC BUT NONJUDGMENTAL WIZARD RESPONSE",
+          feedback: "BEHAVIORAL/BIP EXPLANATION OF WHY THE CHOICE ALIGNS OR DRIFTS",
           next: "d2_supported",
           meta: {
             bipComponent: "Prevent",
@@ -556,6 +564,30 @@ This JavaScript/JSON-style example matches the current game structure:
       }
     }
   }
+}
+```
+
+The executable choice fields have distinct jobs:
+
+- `consequence` is the simulated classroom result and is shown first. It is optional so legacy missions remain valid.
+- `wizard` is the Wizard's short theatrical reaction.
+- `feedback` is the behavioral/BIP explanation of why the choice did or did not align with the plan.
+- `ending` is an optional `STRONG`, `MIXED`, or `FRAGILE` narrative outcome key on a terminal Decision 5 choice only.
+- `mission.endings` optionally maps those keys to an outcome `text` and optional `wizard` reaction.
+
+An ending is narrative closure, not a decision: it must not add a step, choice, score, heart change, fidelity observation, or telemetry response. If the key is absent, invalid, or not configured, the engine proceeds directly from Decision 5 feedback to results as it does for legacy missions. A mission still has exactly five teacher decisions.
+
+A terminal Decision 5 choice may select the configured closure after its normal feedback:
+
+```js
+{
+  text: "FINAL TEACHER RESPONSE",
+  score: 10,
+  consequence: "FINAL SIMULATED CLASSROOM RESULT",
+  wizard: "FINAL THEATRICAL REACTION",
+  feedback: "FINAL BEHAVIORAL/BIP EXPLANATION",
+  ending: "STRONG",
+  meta: { /* descriptive choice metadata */ }
 }
 ```
 
