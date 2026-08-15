@@ -1,65 +1,75 @@
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+#!/usr/bin/env node
+'use strict';
 
-const teacherId = process.argv[2] || 'demo-2';
-const caseCode = process.argv[3] || 'CASE-DEMO-2';
-const outputPath = process.argv[4] || 'research/supabase/003_seed_demo2_full_protected.sql';
-const teacherDir = path.join(process.cwd(), 'game', 'teachers', teacherId);
+const fs = require('node:fs');
+const path = require('node:path');
+const childProcess = require('node:child_process');
+const { loadExecutableContent, missionGroups } = require('./protected-content-loader');
+const { validateStructure, formatReport } = require('./structural-content-validator');
 
-function runFile(filename, context) {
-  const source = fs.readFileSync(filename, 'utf8');
-  vm.runInContext(source, context, { filename });
+function sqlLiteral(value) { return String(value).replace(/'/g, "''"); }
+function jsonSql(value) { return `$mrjson$${JSON.stringify(value, null, 2)}$mrjson$::jsonb`; }
+
+function renderSql(payload, caseCode, sourceLabel) {
+  return `-- PROTECTED GAME CONTENT FOR ${caseCode}\n-- Generated locally from ${sourceLabel}; review before applying.\n-- This file does not connect to Supabase.\n\ninsert into public.case_game_content (\n  case_id, config, resources, daily_missions, wildcard_missions, crisis_missions, version, updated_at\n)\nselect\n  c.id,\n  ${jsonSql(payload.config)},\n  ${jsonSql(payload.resources)},\n  ${jsonSql(payload.daily_missions)},\n  ${jsonSql(payload.wildcard_missions)},\n  ${jsonSql(payload.crisis_missions)},\n  1, now()\nfrom public.cases c\nwhere c.case_code = '${sqlLiteral(caseCode)}'\non conflict (case_id) do update set\n  config = excluded.config, resources = excluded.resources, daily_missions = excluded.daily_missions,\n  wildcard_missions = excluded.wildcard_missions, crisis_missions = excluded.crisis_missions,\n  version = excluded.version, updated_at = now();\n`;
 }
 
-function sqlLiteral(value) {
-  return String(value).replace(/'/g, "''");
+function parseArgs(argv, cwd = process.cwd()) {
+  if (!argv.some(arg => arg.startsWith('--'))) {
+    const teacherId = argv[0] || 'demo-2';
+    return {
+      sourceDir: path.join(cwd, 'game', 'teachers', teacherId),
+      caseCode: argv[1] || 'CASE-DEMO-2',
+      output: argv[2] || path.join(cwd, 'research/supabase/003_seed_demo2_full_protected.sql'),
+      legacyTeacherId: teacherId
+    };
+  }
+  const values = {};
+  for (let index = 0; index < argv.length; index += 2) {
+    const flag = argv[index];
+    if (!['--source-dir', '--case-code', '--output', '--json-output'].includes(flag) || !argv[index + 1]) throw new Error(`Unknown or incomplete option: ${flag}`);
+    values[flag.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = argv[index + 1];
+  }
+  if (!values.sourceDir || !values.caseCode || (!values.output && !values.jsonOutput)) {
+    throw new Error('Usage: build-protected-seed.js --source-dir DIR --case-code CODE (--output FILE | --json-output FILE)');
+  }
+  return values;
 }
 
-const sandbox = {
-  console,
-  POOL: { daily: [], wild: [], crisis: [] },
-  GAME_CONFIG: {},
-  MR_TEACHER_CONFIG: null,
-  MR_RESOURCES: null
-};
-sandbox.window = sandbox;
-const context = vm.createContext(sandbox);
-
-runFile(path.join(teacherDir, 'config.js'), context);
-const config = JSON.parse(JSON.stringify(context.MR_TEACHER_CONFIG || {}));
-const missionFiles = Array.isArray(config.missionFiles) ? config.missionFiles.slice() : [];
-const resourcesFile = config.resourcesFile || '';
-
-for (const relativeFile of missionFiles) {
-  const cleanFile = String(relativeFile).split('?')[0];
-  runFile(path.join(teacherDir, cleanFile), context);
+function repositoryRoot(cwd) {
+  try { return childProcess.execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); }
+  catch { return null; }
 }
 
-if (resourcesFile) {
-  runFile(path.join(teacherDir, String(resourcesFile).split('?')[0]), context);
+function isInside(parent, child) {
+  const relative = path.relative(path.resolve(parent), path.resolve(child));
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
 }
 
-delete config.missionFiles;
-delete config.resourcesFile;
-config.teacherId = teacherId;
-config.contentSource = 'supabase-protected';
+function main(argv) {
+  const options = parseArgs(argv);
+  options.sourceDir = fs.realpathSync(path.resolve(options.sourceDir));
+  const root = repositoryRoot(process.cwd());
+  if (root && isInside(root, options.sourceDir)) {
+    console.warn('WARNING: source directory is inside the repository.\nReal participant content must remain outside Git or in an explicitly gitignored private workspace.');
+  }
+  const payload = loadExecutableContent(options.sourceDir);
+  if (options.legacyTeacherId) payload.config.teacherId = options.legacyTeacherId;
+  const structural = validateStructure(missionGroups(payload));
+  if (!structural.valid) throw new Error(`Protected content failed structural validation:\n${formatReport(structural, path.basename(options.sourceDir))}`);
 
-const payload = {
-  config,
-  resources: context.MR_RESOURCES || {},
-  daily_missions: context.POOL.daily || [],
-  wildcard_missions: context.POOL.wild || [],
-  crisis_missions: context.POOL.crisis || []
-};
+  for (const [filename, content] of [
+    [options.jsonOutput, options.jsonOutput && `${JSON.stringify(payload, null, 2)}\n`],
+    [options.output, options.output && renderSql(payload, options.caseCode, path.basename(options.sourceDir))]
+  ]) {
+    if (!filename) continue;
+    const resolved = path.resolve(filename);
+    fs.mkdirSync(path.dirname(resolved), { recursive: true });
+    fs.writeFileSync(resolved, content);
+    console.log(`Wrote ${resolved}`);
+  }
+  console.log(`Daily: ${payload.daily_missions.length}, Mystery: ${payload.wildcard_missions.length}, Crisis: ${payload.crisis_missions.length}`);
+}
 
-const tag = '$mrjson$';
-const json = value => `${tag}${JSON.stringify(value, null, 2)}${tag}::jsonb`;
-
-const sql = `-- FULL PROTECTED GAME SEED FOR ${caseCode}\n-- Generated from game/teachers/${teacherId}/ by scripts/build-protected-seed.js.\n-- Safe to re-run: upserts by case_id.\n\ninsert into public.case_game_content (\n  case_id,\n  config,\n  resources,\n  daily_missions,\n  wildcard_missions,\n  crisis_missions,\n  version,\n  updated_at\n)\nselect\n  c.id,\n  ${json(payload.config)},\n  ${json(payload.resources)},\n  ${json(payload.daily_missions)},\n  ${json(payload.wildcard_missions)},\n  ${json(payload.crisis_missions)},\n  1,\n  now()\nfrom public.cases c\nwhere c.case_code = '${sqlLiteral(caseCode)}'\non conflict (case_id) do update set\n  config = excluded.config,\n  resources = excluded.resources,\n  daily_missions = excluded.daily_missions,\n  wildcard_missions = excluded.wildcard_missions,\n  crisis_missions = excluded.crisis_missions,\n  version = excluded.version,\n  updated_at = now();\n\n-- Verification: expect 1 Daily, 1 Mystery, 1 Crisis mission.\nselect\n  c.case_code,\n  cgc.config->>'studentAlias' as student_alias,\n  cgc.config->>'contentSource' as content_source,\n  jsonb_array_length(cgc.daily_missions) as daily_count,\n  jsonb_array_length(cgc.wildcard_missions) as mystery_count,\n  jsonb_array_length(cgc.crisis_missions) as crisis_count,\n  cgc.version\nfrom public.case_game_content cgc\njoin public.cases c on c.id = cgc.case_id\nwhere c.case_code = '${sqlLiteral(caseCode)}';\n`;
-
-fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-fs.writeFileSync(outputPath, sql);
-
-console.log(`Wrote ${outputPath}`);
-console.log(`Daily: ${payload.daily_missions.length}, Mystery: ${payload.wildcard_missions.length}, Crisis: ${payload.crisis_missions.length}`);
+module.exports = { isInside, parseArgs, renderSql };
+if (require.main === module) main(process.argv.slice(2));
