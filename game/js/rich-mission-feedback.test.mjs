@@ -89,6 +89,15 @@ const endings = Object.fromEntries(['STRONG', 'MIXED', 'FRAGILE'].map(key => [ke
 for (const key of Object.keys(endings)) {
   assert.equal(api.endingForChoice({ endings }, { ending: key }, true).text, `${key} outcome`);
 }
+for (const [key, expected] of Object.entries({
+  STRONG: ['/assets/wizardSuccess.png', 'wizard-modal-img happy'],
+  MIXED: ['/assets/wizardMeh.png', 'wizard-modal-img questioning'],
+  FRAGILE: ['/assets/wizardDead.png', 'wizard-modal-img dead']
+})) {
+  api.showMissionOutcome({ key, ...endings[key] });
+  assert.equal(elements['#wizard-modal-img'].src, expected[0]);
+  assert.equal(elements['#wizard-modal-img'].className, expected[1]);
+}
 assert.equal(api.endingForChoice({ endings }, {}, true), null);
 assert.equal(api.endingForChoice({ endings }, { ending: 'UNKNOWN' }, true), null);
 assert.equal(api.endingForChoice({ endings: { OTHER: { text: 'Configured but unsupported' } } }, { ending: 'OTHER' }, true), null);

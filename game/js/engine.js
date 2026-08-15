@@ -575,13 +575,18 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
   function showMissionOutcome(ending) {
     modalMode = 'outcome';
+    const outcomeWizard = {
+      STRONG: { asset: 'wizardSuccess', cls: 'happy' },
+      MIXED: { asset: 'wizardMeh', cls: 'questioning' },
+      FRAGILE: { asset: 'wizardDead', cls: 'dead' }
+    }[ending.key];
     const modal = MR.$('#wizard-modal');
     const img = MR.$('#wizard-modal-img');
     modal.dataset.mode = 'outcome';
     MR.$('#wizard-modal-title').textContent = 'Mission Outcome';
     showRichFeedbackContent({ consequence: ending.text, wizard: ending.wizard }, 'Mission Outcome');
-    img.src = MR.asset('wizardSuccess') || MR.asset('wizardGuide');
-    img.className = 'wizard-modal-img happy';
+    img.src = MR.asset(outcomeWizard.asset) || MR.asset('wizardGuide');
+    img.className = `wizard-modal-img ${outcomeWizard.cls}`;
     MR.$('#wizard-modal-continue').textContent = 'View Results';
     modal.hidden = false;
   }
