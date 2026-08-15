@@ -22,6 +22,11 @@ The repository is intentionally not a Next.js app yet. The public site pages are
 | `/docs/` | Architecture, schema, design, and mockup documentation. |
 | `/assets/` | Shared public-site and game images, audio, previews, and styling. |
 
+Authoring documentation:
+
+- [Mission Authoring Standard](docs/MISSION_AUTHORING_STANDARD.md)
+- [Fictional Case Authoring Example](docs/examples/FICTIONAL_CASE_AUTHORING_EXAMPLE.md)
+
 Demo-2 is fictional test/reference content. Real teacher, student, or BIP-derived content must never be committed to public GitHub. Generated real-participant content belongs only in approved private or restricted storage.
 
 Supabase publishable browser keys are client configuration and may be used by the browser applications. Supabase service-role keys and all other secrets or credentials must never be committed.
