@@ -139,9 +139,23 @@
       }
 
       const user = data && data.user ? data.user : await waitForLogin(supabaseClient);
+      const qaCase = new URLSearchParams(window.location.search).get('qa_case');
+      if (qaCase) {
+        const { data: preview, error: previewError } = await supabaseClient
+          .rpc('research_admin_game_preview', { target_case_code: qaCase.trim() });
+        if (previewError) throw new Error(`QA preview denied: ${previewError.message}`);
+        if (!Array.isArray(preview) || preview.length !== 1) throw new Error('QA preview denied: assignment was not uniquely resolved.');
+        const row = preview[0];
+        return {
+          user,
+          qaMode: true,
+          participant: { id: row.participant_id, participant_code: row.participant_code, active: false },
+          case: { id: row.case_id, case_code: row.case_code, student_alias: row.student_alias, game_folder: row.game_folder, active: false }
+        };
+      }
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
-      return { user, participant, case: caseAssignment };
+      return { user, participant, case: caseAssignment, qaMode: false };
     },
 
     async getGameContent(caseId) {

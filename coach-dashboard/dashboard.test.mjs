@@ -14,6 +14,25 @@ test('zero telemetry produces honest empty metrics', () => {
   assert.equal(coachingCopy(result).summary, 'More practice data is needed before a coaching pattern can be identified.');
 });
 
+test('research QA attempts never affect coach performance summaries', () => {
+  const result = analyzeCase({
+    intake: { has_crisis_plan: false },
+    sessions: [
+      { id: 'study', started_at: '2026-08-13T10:00:00Z', qa_mode: false, duration_seconds: 60 },
+      { id: 'qa', started_at: '2026-08-13T11:00:00Z', qa_mode: true, duration_seconds: 999 }
+    ],
+    responses: [
+      { session_id: 'study', fidelity_domain: 'proactive', alignment: 'plan_aligned', qa_mode: false },
+      { session_id: 'qa', fidelity_domain: 'proactive', alignment: 'missed_opportunity', qa_mode: true }
+    ]
+  }, now);
+  assert.equal(result.sessions.length, 1);
+  assert.equal(result.responses.length, 1);
+  assert.equal(result.planAlignedPercent, 100);
+  assert.equal(result.thisWeek, 1);
+  assert.equal(result.totalSeconds, 60);
+});
+
 test('missing domains are not counted as failures and crisis is hidden when irrelevant', () => {
   const result = analyzeCase({ sessions, intake: { has_crisis_plan: false }, responses: [
     { session_id: 's3', fidelity_domain: 'proactive', alignment: 'plan_aligned' },
@@ -119,6 +138,9 @@ test('research admin loads all active cases and their dashboard data without coa
   assert.deepEqual(client.calls[0].operations, [['select', 'id, active'], ['eq', 'active', true]]);
   for (const call of client.calls.slice(1)) {
     assert.ok(call.operations.some(operation => operation[0] === 'in' && operation[1] === 'case_id' && operation[2].join(',') === 'case-a,case-b'));
+  }
+  for (const call of client.calls.filter(call => ['game_sessions', 'game_responses'].includes(call.table))) {
+    assert.ok(call.operations.some(operation => operation[0] === 'eq' && operation[1] === 'qa_mode' && operation[2] === false));
   }
 });
 

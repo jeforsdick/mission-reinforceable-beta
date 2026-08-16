@@ -256,17 +256,23 @@
       MR.telemetryContext = {
         participantId: assignment.participant.id,
         caseId: assignment.case.id,
+        qaMode: assignment.qaMode === true,
         gameContentVersion: null,
         fidelityTargets: {}
       };
-      MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
+      MR.$('#study-id').textContent = assignment.qaMode
+        ? `Study ID: ${MR.participantCode} · Case: ${assignment.case.case_code}`
+        : `Study ID: ${MR.participantCode}`;
+      document.body.classList.toggle('qa-preview', assignment.qaMode === true);
+      MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true;
+      MR.$('#back-to-research-admin').hidden = assignment.qaMode !== true;
       MR.setScreen('loading');
       MR.telemetryContext.fidelityTargets = await loadFidelityTargetLookup(assignment.case.id);
       await loadAssignedGame(assignment);
       applyAssets();
       initAudio();
       wireEvents();
-      MR.reminders.hydrateControls();
+      if (!assignment.qaMode) MR.reminders.hydrateControls();
       MR.resources.render();
       renderHome();
       MR.setScreen('home');

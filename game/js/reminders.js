@@ -32,6 +32,7 @@
 
   MR.reminders = {
     async save(time) {
+      if (MR.telemetryContext && MR.telemetryContext.qaMode) return 'Reminders are unavailable in Research Admin QA Preview.';
       if (!time) return 'Choose a reminder time first.';
       let permission = 'default';
       if ('Notification' in window) {
@@ -55,6 +56,7 @@
     },
 
     hydrateControls() {
+      if (MR.telemetryContext && MR.telemetryContext.qaMode) return;
       const input = MR.$('#reminder-time');
       const status = MR.$('#reminder-status');
       const settings = MR.storage.getSettings();

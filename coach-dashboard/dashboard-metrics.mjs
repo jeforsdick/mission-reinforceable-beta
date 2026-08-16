@@ -33,9 +33,10 @@ export function targetPerformance(responses = []) {
 }
 
 export function analyzeCase(caseData, now = new Date()) {
-  const sessions = recentSessions(caseData.sessions || []);
+  const studySessions = (caseData.sessions || []).filter(row => row.qa_mode !== true);
+  const sessions = recentSessions(studySessions);
   const ids = new Set(sessions.map(row => row.id));
-  const responses = (caseData.responses || []).filter(row => ids.has(row.session_id));
+  const responses = (caseData.responses || []).filter(row => row.qa_mode !== true && ids.has(row.session_id));
   const crisisRelevant = Boolean(caseData.intake?.has_crisis_plan);
   const domains = DOMAINS.filter(domain => domain !== 'crisis' || crisisRelevant).map(domain => {
     const rows = responses.filter(row => row.fidelity_domain === domain);
@@ -46,7 +47,7 @@ export function analyzeCase(caseData, now = new Date()) {
   const focus = weak[0] ? DOMAIN_LABELS[weak[0].domain] : eligible.length === domains.length && domains.length ? 'Maintain & generalize' : 'More practice needed';
   const allPercent = percent(responses.filter(row => row.alignment === 'plan_aligned').length, responses.length);
   const weekStart = new Date(now); weekStart.setUTCDate(weekStart.getUTCDate() - 6); weekStart.setUTCHours(0, 0, 0, 0);
-  const thisWeek = (caseData.sessions || []).filter(row => new Date(row.started_at) >= weekStart && new Date(row.started_at) <= now).length;
+  const thisWeek = studySessions.filter(row => new Date(row.started_at) >= weekStart && new Date(row.started_at) <= now).length;
   return { sessions, responses, domains, focus, planAlignedPercent: allPercent, thisWeek, hintCount: responses.filter(row => row.hint_opened || Number(row.hint_open_count) > 0).length, totalDecisions: responses.length, totalSeconds: sessions.reduce((sum, row) => sum + Number(row.active_duration_seconds ?? row.duration_seconds ?? 0), 0) };
 }
 
