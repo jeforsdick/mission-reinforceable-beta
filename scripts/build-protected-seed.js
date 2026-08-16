@@ -10,8 +10,8 @@ const { validateStructure, formatReport } = require('./structural-content-valida
 function sqlLiteral(value) { return String(value).replace(/'/g, "''"); }
 function jsonSql(value) { return `$mrjson$${JSON.stringify(value, null, 2)}$mrjson$::jsonb`; }
 
-function renderSql(payload, caseCode, sourceLabel) {
-  return `-- PROTECTED GAME CONTENT FOR ${caseCode}\n-- Generated locally from ${sourceLabel}; review before applying.\n-- This file does not connect to Supabase.\n\ninsert into public.case_game_content (\n  case_id, config, resources, daily_missions, wildcard_missions, crisis_missions, version, updated_at\n)\nselect\n  c.id,\n  ${jsonSql(payload.config)},\n  ${jsonSql(payload.resources)},\n  ${jsonSql(payload.daily_missions)},\n  ${jsonSql(payload.wildcard_missions)},\n  ${jsonSql(payload.crisis_missions)},\n  1, now()\nfrom public.cases c\nwhere c.case_code = '${sqlLiteral(caseCode)}'\non conflict (case_id) do update set\n  config = excluded.config, resources = excluded.resources, daily_missions = excluded.daily_missions,\n  wildcard_missions = excluded.wildcard_missions, crisis_missions = excluded.crisis_missions,\n  version = excluded.version, updated_at = now();\n`;
+function renderSql(payload, caseCode, sourceLabel, version) {
+  return `-- PROTECTED GAME CONTENT FOR ${caseCode}\n-- Generated locally from ${sourceLabel}; review before applying.\n-- This file does not connect to Supabase.\n\ninsert into public.case_game_content (\n  case_id, config, resources, daily_missions, wildcard_missions, crisis_missions, version, updated_at\n)\nselect\n  c.id,\n  ${jsonSql(payload.config)},\n  ${jsonSql(payload.resources)},\n  ${jsonSql(payload.daily_missions)},\n  ${jsonSql(payload.wildcard_missions)},\n  ${jsonSql(payload.crisis_missions)},\n  ${version}, now()\nfrom public.cases c\nwhere c.case_code = '${sqlLiteral(caseCode)}'\non conflict (case_id) do update set\n  config = excluded.config, resources = excluded.resources, daily_missions = excluded.daily_missions,\n  wildcard_missions = excluded.wildcard_missions, crisis_missions = excluded.crisis_missions,\n  version = excluded.version, updated_at = now();\n`;
 }
 
 function parseArgs(argv, cwd = process.cwd()) {
@@ -21,18 +21,23 @@ function parseArgs(argv, cwd = process.cwd()) {
       sourceDir: path.join(cwd, 'game', 'teachers', teacherId),
       caseCode: argv[1] || 'CASE-DEMO-2',
       output: argv[2] || path.join(cwd, 'research/supabase/003_seed_demo2_full_protected.sql'),
+      version: 1,
       legacyTeacherId: teacherId
     };
   }
   const values = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
-    if (!['--source-dir', '--case-code', '--output', '--json-output'].includes(flag) || !argv[index + 1]) throw new Error(`Unknown or incomplete option: ${flag}`);
+    if (!['--source-dir', '--case-code', '--version', '--output', '--json-output'].includes(flag) || !argv[index + 1]) throw new Error(`Unknown or incomplete option: ${flag}`);
     values[flag.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = argv[index + 1];
   }
-  if (!values.sourceDir || !values.caseCode || (!values.output && !values.jsonOutput)) {
-    throw new Error('Usage: build-protected-seed.js --source-dir DIR --case-code CODE (--output FILE | --json-output FILE)');
+  if (!values.sourceDir || !values.caseCode || values.version === undefined || (!values.output && !values.jsonOutput)) {
+    throw new Error('Usage: build-protected-seed.js --source-dir DIR --case-code CODE --version INTEGER (--output FILE | --json-output FILE)');
   }
+  if (!/^[1-9]\d*$/.test(values.version) || !Number.isSafeInteger(Number(values.version))) {
+    throw new Error('--version must be a positive integer');
+  }
+  values.version = Number(values.version);
   return values;
 }
 
@@ -60,7 +65,7 @@ function main(argv) {
 
   for (const [filename, content] of [
     [options.jsonOutput, options.jsonOutput && `${JSON.stringify(payload, null, 2)}\n`],
-    [options.output, options.output && renderSql(payload, options.caseCode, path.basename(options.sourceDir))]
+    [options.output, options.output && renderSql(payload, options.caseCode, path.basename(options.sourceDir), options.version)]
   ]) {
     if (!filename) continue;
     const resolved = path.resolve(filename);

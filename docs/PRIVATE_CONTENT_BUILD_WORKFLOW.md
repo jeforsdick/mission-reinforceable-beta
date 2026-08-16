@@ -53,15 +53,17 @@ node scripts/fidelity-coverage-validator.js \
 node scripts/build-protected-seed.js \
   --source-dir /srv/approved-private-content/CASE-EXAMPLE-001 \
   --case-code CASE-EXAMPLE-001 \
+  --version 1 \
   --json-output /srv/approved-private-content/CASE-EXAMPLE-001/protected-content.json
 
 node scripts/build-protected-seed.js \
   --source-dir /srv/approved-private-content/CASE-EXAMPLE-001 \
   --case-code CASE-EXAMPLE-001 \
+  --version 1 \
   --output /srv/approved-private-content/CASE-EXAMPLE-001/protected-seed.sql
 ```
 
-The builder always runs structural validation before writing. It warns—but does not block—when the source is inside the Git working tree, so fictional/demo content remains usable. JSON output has the exact keys consumed by `MR.loadProtectedGameContent()`: `config`, `resources`, `daily_missions`, `wildcard_missions`, and `crisis_missions`.
+The modern flag-based builder requires `--version` with a positive integer content-bank version. Generated SQL stores that version and updates it from `excluded.version` when a case already exists. The builder always runs structural validation before writing. It warns—but does not block—when the source is inside the Git working tree, so fictional/demo content remains usable. JSON output has the exact keys consumed by `MR.loadProtectedGameContent()`: `config`, `resources`, `daily_missions`, `wildcard_missions`, and `crisis_missions`.
 
 ## Structural validator behavior
 
