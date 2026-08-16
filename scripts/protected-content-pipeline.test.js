@@ -39,7 +39,7 @@ function writeFixture(base = fs.mkdtempSync(path.join(os.tmpdir(), 'mr-private-c
 }
 
 function runBuilder(source, ...outputArgs) {
-  return spawnSync(process.execPath, [builder, '--source-dir', source, '--case-code', 'CASE-FICTIONAL-001', ...outputArgs], { cwd: root, encoding: 'utf8' });
+  return spawnSync(process.execPath, [builder, '--source-dir', source, '--case-code', 'CASE-FICTIONAL-001', '--version', '2', ...outputArgs], { cwd: root, encoding: 'utf8' });
 }
 
 test('loads an external executable directory in protected runtime shape', () => {
@@ -61,14 +61,40 @@ test('writes protected JSON and does not warn for an outside source', () => {
   assert.equal(JSON.parse(fs.readFileSync(output)).daily_missions.length, 1);
 });
 
-test('writes SQL locally', () => {
+test('--version 2 writes version 2 to SQL', () => {
   const source = writeFixture();
   const output = path.join(source, 'protected-seed.sql');
   const result = runBuilder(source, '--output', output);
   assert.equal(result.status, 0, result.stderr);
   assert.match(fs.readFileSync(output, 'utf8'), /insert into public\.case_game_content/);
   assert.match(fs.readFileSync(output, 'utf8'), /CASE-FICTIONAL-001/);
+  assert.match(fs.readFileSync(output, 'utf8'), /\n  2, now\(\)/);
+  assert.match(fs.readFileSync(output, 'utf8'), /version = excluded\.version/);
 });
+
+test('accepts another positive integer version', () => {
+  const source = writeFixture();
+  const output = path.join(source, 'protected-seed.sql');
+  const result = spawnSync(process.execPath, [builder, '--source-dir', source, '--case-code', 'CASE-FICTIONAL-001', '--version', '37', '--output', output], { cwd: root, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(fs.readFileSync(output, 'utf8'), /\n  37, now\(\)/);
+});
+
+test('requires a version for the modern CLI', () => {
+  const source = writeFixture();
+  const result = spawnSync(process.execPath, [builder, '--source-dir', source, '--case-code', 'CASE-FICTIONAL-001', '--json-output', path.join(source, 'output.json')], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /--version INTEGER/);
+});
+
+for (const version of ['0', '-1', '1.5', 'not-a-number']) {
+  test(`rejects invalid version ${version}`, () => {
+    const source = writeFixture();
+    const result = spawnSync(process.execPath, [builder, '--source-dir', source, '--case-code', 'CASE-FICTIONAL-001', '--version', version, '--json-output', path.join(source, 'output.json')], { cwd: root, encoding: 'utf8' });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /--version must be a positive integer/);
+  });
+}
 
 test('warns without blocking when the source is inside the repository', t => {
   const source = path.join(root, '.tmp', `fictional-${process.pid}-${Date.now()}`);
@@ -85,6 +111,7 @@ test('supports the legacy positional Demo-2 invocation', () => {
   const result = spawnSync(process.execPath, [builder, 'demo-2', 'CASE-DEMO-2', output], { cwd: root, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.match(fs.readFileSync(output, 'utf8'), /CASE-DEMO-2/);
+  assert.match(fs.readFileSync(output, 'utf8'), /\n  1, now\(\)/);
 });
 
 test('external fixture passes structure then fidelity coverage', () => {
