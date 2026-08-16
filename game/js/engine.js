@@ -563,12 +563,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const img = MR.$('#wizard-modal-img');
     modal.dataset.mode = 'feedback';
     MR.$('#wizard-modal-title').textContent = sprite.title;
-    if (choice.consequence || choice.wizard || choice.feedback) {
-      showRichFeedbackContent(choice);
-    } else {
-      hideRichFeedbackContent();
-      MR.$('#wizard-modal-text').textContent = 'The classroom shifts in response to your decision.';
-    }
+    hideRichFeedbackContent();
+    MR.$('#wizard-modal-text').textContent = String(choice.wizard || '').trim()
+      || 'The classroom shifts in response to your decision.';
     img.src = sprite.src;
     img.className = `wizard-modal-img ${sprite.cls}`;
     MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission' : pendingEnding ? 'See Mission Outcome' : 'Complete Mission';

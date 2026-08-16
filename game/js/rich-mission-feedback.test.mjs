@@ -51,39 +51,30 @@ context.window = context;
 vm.runInContext(instrumented, vm.createContext(context));
 const api = context.MR.__test;
 
-// Legacy content now presents the Wizard and substantive explanation together.
+// Choice feedback is intentionally brief: only the Wizard's reaction is visible.
 api.showWizardFeedback({ wizard: 'A theatrical reaction.', feedback: 'A behavioral explanation.' }, 10);
-assert.equal(elements['#wizard-reaction-section'].hidden, false);
-assert.equal(elements['#wizard-reaction-text'].textContent, 'A theatrical reaction.');
-assert.equal(elements['#wizard-explanation-section'].hidden, false);
-assert.equal(elements['#wizard-explanation-text'].textContent, 'A behavioral explanation.');
-assert.equal(elements['#wizard-consequence-section'].hidden, true);
+assert.equal(elements['#wizard-modal-text'].hidden, false);
+assert.equal(elements['#wizard-modal-text'].textContent, 'A theatrical reaction.');
+assert.equal(elements['#wizard-feedback-content'].hidden, true);
 
 api.showWizardFeedback({ consequence: 'The class settles.', wizard: 'Portal sealed!', feedback: 'The prompt matched the plan.' }, 10);
-assert.equal(elements['#wizard-consequence-text'].textContent, 'The class settles.');
-assert.equal(elements['#wizard-reaction-text'].textContent, 'Portal sealed!');
-assert.equal(elements['#wizard-explanation-text'].textContent, 'The prompt matched the plan.');
-
-// Missing fields hide their complete section, including its heading.
-for (const [field, section] of [
-  ['consequence', '#wizard-consequence-section'],
-  ['wizard', '#wizard-reaction-section'],
-  ['feedback', '#wizard-explanation-section']
-]) {
-  api.showWizardFeedback({ [field]: 'Only field' }, 5);
-  for (const candidate of ['#wizard-consequence-section', '#wizard-reaction-section', '#wizard-explanation-section']) {
-    assert.equal(elements[candidate].hidden, candidate !== section);
-  }
-}
+assert.equal(elements['#wizard-modal-text'].textContent, 'Portal sealed!');
+assert.equal(elements['#wizard-feedback-content'].hidden, true);
+assert.equal(elements['#wizard-consequence-text'].textContent, '');
+assert.equal(elements['#wizard-reaction-text'].textContent, '');
+assert.equal(elements['#wizard-explanation-text'].textContent, '');
 
 // Content is assigned as text, never HTML.
 const unsafe = '<img src=x onerror="globalThis.compromised=true">';
 api.showWizardFeedback({ consequence: unsafe, wizard: unsafe, feedback: unsafe }, 0);
-assert.equal(elements['#wizard-consequence-text'].textContent, unsafe);
-assert.equal(elements['#wizard-reaction-text'].textContent, unsafe);
-assert.equal(elements['#wizard-explanation-text'].textContent, unsafe);
-assert.equal(elements['#wizard-consequence-text'].innerHTML, 'unchanged');
+assert.equal(elements['#wizard-modal-text'].textContent, unsafe);
+assert.equal(elements['#wizard-modal-text'].innerHTML, 'unchanged');
 assert.equal(context.compromised, undefined);
+
+// Legacy choices without a Wizard reaction remain playable without exposing their explanation.
+api.showWizardFeedback({ consequence: 'Legacy consequence.', feedback: 'Legacy explanation.' }, 5);
+assert.equal(elements['#wizard-modal-text'].textContent, 'The classroom shifts in response to your decision.');
+assert.equal(elements['#wizard-feedback-content'].hidden, true);
 
 const endings = Object.fromEntries(['STRONG', 'MIXED', 'FRAGILE'].map(key => [key, { text: `${key} outcome`, wizard: `${key} wizard` }]));
 for (const key of Object.keys(endings)) {
@@ -130,6 +121,9 @@ api.setTestCurrent(terminalCurrent({ text: 'Finish', score: 10, consequence: 'Cl
 api.selectChoice('A');
 state = api.testState();
 assert.equal(state.pendingEnding.key, 'STRONG');
+assert.equal(state.current.history[4].consequence, 'Closure.', 'consequence remains available internally');
+assert.equal(state.current.history[4].feedback, 'Aligned.', 'behavioral feedback remains available internally');
+assert.equal(state.current.history[4].wizard, 'Huzzah!', 'Wizard reaction remains available internally');
 const scoreAfterDecision = state.current.score;
 const maxScoreAfterDecision = state.current.maxScore;
 const heartsAfterDecision = state.current.hearts;
