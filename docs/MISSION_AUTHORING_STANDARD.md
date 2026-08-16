@@ -4,6 +4,8 @@ This is the canonical standard for individualized Mission: Reinforceable content
 
 Real participant BIPs, intake responses, missions, or generated protected-content payloads must **NEVER** be committed to public GitHub.
 
+**Participant-facing choices are shuffled at display time. Authoring order must never be relied upon.** Choice IDs, scores, branching, and fidelity metadata belong to the choice object and must remain correct independently of its displayed position.
+
 ## 1. Core Design Principle
 
 Every mission is a **five-decision interactive classroom story**, not a five-question quiz.

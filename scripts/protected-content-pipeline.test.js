@@ -49,7 +49,14 @@ test('loads an external executable directory in protected runtime shape', () => 
   assert.equal(payload.config.missionFiles, undefined);
   assert.equal(payload.config.resourcesFile, undefined);
   assert.equal(payload.config.game_folder, undefined);
+  assert.equal(payload.config.shuffleChoices, true);
   assert.equal(payload.daily_missions.length, 1);
+});
+
+test('normalizes an explicit false shuffle setting for protected builds', () => {
+  const source = writeFixture();
+  fs.writeFileSync(path.join(source, 'config.js'), "window.MR_TEACHER_CONFIG = { missionFiles: ['content/mission.js'], resourcesFile: 'content/resources.js', shuffleChoices: false };\n");
+  assert.equal(loadExecutableContent(source).config.shuffleChoices, true);
 });
 
 test('writes protected JSON and does not warn for an outside source', () => {
@@ -58,7 +65,9 @@ test('writes protected JSON and does not warn for an outside source', () => {
   const result = runBuilder(source, '--json-output', output);
   assert.equal(result.status, 0, result.stderr);
   assert.doesNotMatch(result.stderr, /inside the repository/);
-  assert.equal(JSON.parse(fs.readFileSync(output)).daily_missions.length, 1);
+  const payload = JSON.parse(fs.readFileSync(output));
+  assert.equal(payload.daily_missions.length, 1);
+  assert.equal(payload.config.shuffleChoices, true);
 });
 
 test('--version 2 writes version 2 to SQL', () => {
