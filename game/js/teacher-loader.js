@@ -137,6 +137,9 @@
     // Protected content is data, not a list of public scripts. Ignore any static-file fields.
     rawConfig.missionFiles = [];
     rawConfig.resourcesFile = '';
+    // Enforce the protected participant invariant even for payloads built before
+    // the protected-content pipeline normalized this setting.
+    rawConfig.shuffleChoices = true;
 
     const teacherId = rawConfig.teacherId || (caseAssignment && caseAssignment.game_folder) || 'protected';
     const teacherConfig = applyTeacherConfig(rawConfig, teacherId, null);
