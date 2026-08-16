@@ -2435,3 +2435,12 @@ body {
 .sound-toggle[aria-pressed="true"] .sound-toggle__knob {
   transform: translateX(17px);
 }
+body.qa-preview { padding-top: 4.25rem; }
+.qa-preview-banner {
+  position: fixed; inset: 0 0 auto; z-index: 10000; padding: .8rem 1rem;
+  display: flex; align-items: center; justify-content: center; gap: 2rem;
+  color: #fff; background: #7b1020; border-bottom: 4px solid #ffd36a;
+  font: 700 clamp(.8rem, 2vw, 1rem)/1.25 system-ui, sans-serif; text-align: center;
+}
+.qa-preview-banner[hidden] { display: none; }
+.qa-preview-banner a { color: #fff; text-decoration: underline; }

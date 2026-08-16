@@ -125,6 +125,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       mission_id: attempt.mission.id,
       mission_title: attempt.mission.title || null,
       game_content_version: context.gameContentVersion,
+      qa_mode: context.qaMode === true,
       started_at: attempt.telemetryStartedAt,
       status: 'started'
     };
@@ -163,7 +164,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         time_to_hint_ms: item.timeFromQuestionStartToHintMs != null ? item.timeFromQuestionStartToHintMs : null,
         time_hint_to_answer_ms: item.timeFromHintToAnswerMs != null ? item.timeFromHintToAnswerMs : null,
         response_time_ms: item.responseTimeMs != null ? item.responseTimeMs : null,
-        game_content_version: context.gameContentVersion
+        game_content_version: context.gameContentVersion,
+        qa_mode: context.qaMode === true
       };
     });
   }

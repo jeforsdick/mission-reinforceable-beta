@@ -62,6 +62,10 @@ function reviewActions(row) { return row.status === 'submitted' ? `<section clas
 function bindDetail() {
   document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
   $('.qa-link')?.addEventListener('click', generateQaLink);
+  $('#preview-protected-game')?.addEventListener('click', event => {
+    const caseCode = event.currentTarget.dataset.caseCode;
+    window.open(`../game/?qa_case=${encodeURIComponent(caseCode)}`, '_blank', 'noopener');
+  });
   $('#approve')?.addEventListener('click', () => setStatus('approved'));
   $('#decline')?.addEventListener('click', () => { if (window.confirm('Decline this intake? This does not delete the submitted context.')) setStatus('declined'); });
   $('#study-id')?.addEventListener('input', event => {
@@ -117,7 +121,8 @@ async function loadReadiness(requestId) {
 function readinessPanel(data) {
   const states = readinessForCase(data);
   const rows = [['Intake reviewed', 'Ready'], ['Teacher account linked', states.teacher], ['Coach account linked', states.coach], ['Case created', states.case], ['Case intake snapshot', states.snapshot], ['Fidelity targets finalized', states.targets], ['Coach assigned', states.assignment], ['Protected game content', states.content === 'Ready' ? `Ready — version ${escapeHtml(data.protected_content.version)}, updated ${formatDate(data.protected_content.updated_at)}` : 'Needs action — Not loaded'], ['Game access', states.game === 'Ready' ? 'Ready — intervention active' : 'OFF intentionally — intervention not activated'], ['Daily reminders', states.reminders === 'Ready' ? 'Ready — enabled' : 'OFF intentionally']];
-  return `<section class="panel"><p class="eyebrow">Prepared case readiness</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div><p><strong>Prepared does not mean intervention active.</strong></p></section>`;
+  const preview = states.content === 'Ready' ? `<button id="preview-protected-game" class="primary" type="button" data-case-code="${escapeHtml(data.case.case_code)}">Preview Protected Game</button><small>QA only — does not activate teacher gameplay or reminders. QA sessions are excluded from study data.</small>` : '';
+  return `<section class="panel"><p class="eyebrow">Prepared case readiness</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}<p><strong>Prepared does not mean intervention active.</strong></p></section>`;
 }
 async function setStatus(status) {
   const { error } = await state.client.rpc('research_admin_set_intake_status', { target_request_id: state.selected.request_id, target_status: status });
