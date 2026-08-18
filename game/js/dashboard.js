@@ -5,6 +5,7 @@
   const DENVER_TIME_ZONE = 'America/Denver';
   const LOAD_ERROR = 'Mission progress could not be loaded. Please try again or contact the research team.';
   const EMPTY_MESSAGE = 'Complete a mission and your game-practice progress will appear here.';
+  const PROGRESS_POLISH_HREF = '../game/css/progress-polish.css?v=20260818-compact';
 
   function value(run, camel, snake) {
     return run && run[camel] != null ? run[camel] : run && run[snake];
@@ -48,10 +49,30 @@
     return 'Daily Mission';
   }
 
-  function alignmentLabel(alignment, score) {
-    if (alignment === 'plan_aligned' || Number(score) === 10) return 'Plan-Aligned Choice';
-    if (alignment === 'workable_refine' || Number(score) === 5) return 'Workable, but Refine';
-    return 'Missed Opportunity';
+  function shortSummary(run) {
+    const score = percentage(run);
+    if (score >= 90) return 'Great work. Your choices stayed closely aligned with the plan.';
+    if (score >= 70) return 'Nice work. Most of your choices stayed aligned with the plan.';
+    if (score >= 50) return 'Good practice. You found some plan-aligned moves and a few places to tighten your response.';
+    return 'Keep practicing. Review the plan and focus on one clear move for your next mission.';
+  }
+
+  function ensureProgressPolish() {
+    const wizard = MR.$('.progress-wizard');
+    if (wizard) {
+      const src = MR.asset('wizardGuide');
+      if (src) wizard.src = src;
+      if (wizard.dataset) wizard.dataset.asset = 'wizardGuide';
+      wizard.alt = 'A helpful wizard';
+    }
+
+    if (!document || !document.head || typeof document.createElement !== 'function') return;
+    if (typeof document.querySelector === 'function' && document.querySelector('link[data-progress-polish]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = PROGRESS_POLISH_HREF;
+    link.dataset.progressPolish = 'true';
+    document.head.appendChild(link);
   }
 
   MR.dashboard = {
@@ -68,6 +89,7 @@
     },
 
     async render() {
+      ensureProgressPolish();
       const protectedMode = Boolean(MR.telemetryContext);
       let runs;
       try {
@@ -91,19 +113,15 @@
 
       list.innerHTML = `<h2 class="history-heading">Mission History</h2>${runs.map((run, index) => this.runCard(run, index)).join('')}`;
       MR.$$('.run-card button', list).forEach(button => {
-        button.addEventListener('click', async () => {
+        button.addEventListener('click', () => {
           const run = runs[Number(button.dataset.index)];
-          if (!run) return;
-          if (!protectedMode) {
-            MR.engine.showStoredRunDetails(run);
-            return;
-          }
-          await this.showProtectedDetails(run, button);
+          if (run) this.showSummaryDetails(run);
         });
       });
     },
 
     renderSummary(runs) {
+      ensureProgressPolish();
       const metrics = this.metrics(runs);
       MR.$('#progress-title').textContent = 'Mission Progress';
       MR.$('#growth-focus').textContent = 'Practice focus: Review your recent feedback and choose one plan-aligned move to carry into your next mission.';
@@ -116,62 +134,39 @@
     runCard(run, index) {
       const mode = value(run, 'mode', 'mode') || 'daily';
       const icon = mode === 'crisis' ? MR.asset('crisisIcon') : (mode === 'wild' || mode === 'wildcard') ? MR.asset('mysteryIcon') : MR.asset('dailyIcon');
-      const title = value(run, 'missionTitle', 'mission_title') || 'Mission';
-      const planAligned = Number(value(run, 'bestChoiceCount', 'plan_aligned_count')) || 0;
-      const refine = Number(value(run, 'refineChoiceCount', 'refine_count')) || 0;
-      const missed = Number(value(run, 'missedOpportunityCount', 'missed_count')) || 0;
       return `
-        <article class="run-card">
+        <article class="run-card compact-run-card">
           <img src="${MR.escapeHTML(icon)}" alt="" />
           <div>
             <h3>${MR.escapeHTML(formatDenverDate(run))}</h3>
-            <p><strong>${MR.escapeHTML(modeLabel(mode))}</strong> · ${MR.escapeHTML(title)}</p>
+            <p><strong>${MR.escapeHTML(modeLabel(mode))}</strong></p>
             <p><strong>Mission Score: ${percentage(run)}%</strong></p>
-            <p>Plan-Aligned Choices: ${planAligned} · Workable, but Refine: ${refine} · Missed Opportunities: ${missed}</p>
           </div>
           <button class="pixel-btn green-btn" data-index="${index}" type="button">Details</button>
         </article>`;
     },
 
-    async showProtectedDetails(run, button) {
+    showSummaryDetails(run) {
       const list = MR.$('#progress-list');
       let panel = MR.$('#mission-review', list);
       if (!panel) {
         panel = document.createElement('section');
         panel.id = 'mission-review';
-        panel.className = 'mission-review';
+        panel.className = 'mission-review compact-mission-review';
         list.appendChild(panel);
       }
-      panel.innerHTML = '<h2>Mission Review</h2><p>Loading feedback…</p>';
-      button.disabled = true;
-      try {
-        const responses = await MR.auth.getProgressResponses(run.id, MR.telemetryContext);
-        panel.innerHTML = this.detailsHTML(responses);
-      } catch (error) {
-        console.error('Mission review load failed:', error);
-        panel.innerHTML = '<h2>Mission Review</h2><p>Mission feedback could not be loaded. Please try again.</p>';
-      } finally {
-        button.disabled = false;
-        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
+      panel.innerHTML = this.detailsHTML(run);
+      if (typeof panel.scrollIntoView === 'function') panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     },
 
-    detailsHTML(responses) {
-      if (!Array.isArray(responses) || !responses.length) {
-        return '<h2>Mission Review</h2><p>No reviewable feedback is available for this mission.</p>';
-      }
-      return `<h2>Mission Review</h2>${responses.map((response, index) => {
-        const label = alignmentLabel(response.alignment, response.selected_score);
-        const stronger = response.best_answer_text && response.best_answer_text !== response.selected_answer_text
-          ? `<p><strong>Stronger Plan-Aligned Move:</strong> ${MR.escapeHTML(response.best_answer_text)}</p>` : '';
-        return `<article class="review-step">
-          <h3>${index + 1}. ${MR.escapeHTML(response.scenario_title || 'Mission decision')} — ${MR.escapeHTML(label)}</h3>
-          ${response.scenario_text ? `<p>${MR.escapeHTML(response.scenario_text)}</p>` : ''}
-          <p><strong>Your Choice:</strong> ${MR.escapeHTML(response.selected_answer_text || 'Choice unavailable')}</p>
-          <p><strong>Feedback:</strong> ${MR.escapeHTML(response.feedback_text || 'No additional feedback is available.')}</p>
-          ${stronger}
-        </article>`;
-      }).join('')}`;
+    detailsHTML(run) {
+      const mode = value(run, 'mode', 'mode') || 'daily';
+      return `<h2>Mission Summary</h2>
+        <div class="mission-summary-copy">
+          <p>You completed a <strong>${MR.escapeHTML(modeLabel(mode))}</strong> on ${MR.escapeHTML(formatDenverDate(run))}.</p>
+          <p><strong>Mission Score: ${percentage(run)}%</strong></p>
+          <p>${MR.escapeHTML(shortSummary(run))}</p>
+        </div>`;
     },
 
     DENVER_TIME_ZONE
