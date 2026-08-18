@@ -1,3 +1,4 @@
+import { correctionEvent, observationAttention } from './observations-model.mjs';
 export const CHECKLIST = [
   ['teacher_consent','Teacher consent obtained'],['parent_permission','Parent/guardian permission obtained'],['student_assent','Student assent obtained'],
   ['bsp_technical_review','BSP technical-adequacy review completed'],['safety_screen','Safety / delayed-intervention appropriateness reviewed'],
@@ -49,6 +50,7 @@ export function attentionForCase(item,today=new Date().toISOString().slice(0,10)
   if((item.tasks||[]).some(task=>task.status==='pending'&&task.due_date&&task.due_date<today)) attention.push('Operational task overdue');
   for(const event of (item.study_events||[]).filter(event=>!event.resolved_at)) attention.push(`${event.event_type.replaceAll('_',' ')} unresolved`);
   for(const missing of interventionReadiness(item).missing) attention.push(`Intervention mismatch: ${missing}`);
+  attention.push(...observationAttention(item));
   return attention;
 }
 export function studyWideAttention(tasks,today=new Date().toISOString().slice(0,10)){return (tasks||[]).filter(t=>t.status==='pending'&&t.due_date&&t.due_date<today).map(t=>`Study-wide task overdue: ${t.title}`);}
@@ -60,5 +62,6 @@ export function timelineForCase(item){
   for(const x of item.tasks||[]) if(x.completed_at) rows.push({date:x.completed_at,category:'Task',label:`${x.title} — ${x.status}`});
   for(const x of item.coaching_contacts||[]) rows.push({date:x.contact_date,category:'Coaching as usual',label:`${x.format.replaceAll('_',' ')} · ${x.provider_role}`});
   for(const x of item.study_events||[]){rows.push({date:x.event_date,category:'Study event',label:x.event_type.replaceAll('_',' ')});if(x.resolved_at)rows.push({date:x.resolved_at,category:'Study event',label:`${x.event_type.replaceAll('_',' ')} resolved`});}
+  for(const x of item.observation_data?.observations||[]){if(x.primary_record_id)rows.push({date:x.observation_date,category:'Observation',label:`${x.phase} observation #${x.session_number} completed`});const correctedAt=correctionEvent(x);if(correctedAt)rows.push({date:correctedAt,category:'Observation',label:`${x.phase} observation #${x.session_number} corrected`});if(x.ioa)rows.push({date:x.observation_date,category:'IOA',label:`Teacher ${x.ioa.teacher_fidelity_ioa_percent??'NC'}%, Student ${x.ioa.student_behavior_ioa_percent??'NC'}%`});}
   return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 }
