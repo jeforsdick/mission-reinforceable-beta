@@ -37,6 +37,8 @@ export function readinessForCase(item) {
     targets: Number(item.fidelity_target_count) > 0 ? 'Ready' : 'Needs action',
     assignment: item.coach?.active ? 'Ready' : 'Needs action',
     content: item.protected_content?.present ? 'Ready' : 'Needs action',
+    resourceMap: item.resource_map?.status || 'Needs content',
+    comparability: item.mission_bank_comparability?.status || 'Needs review',
     game: caseRow?.active && participant?.active ? 'Ready' : 'Off intentionally',
     reminders: reminderOn ? 'Ready' : 'Off intentionally'
   };

@@ -214,6 +214,9 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .checklist > div { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 13px 4px; border-bottom: 1px solid var(--line); }
 .checklist > div > span { color: var(--ink); font-weight: 650; }
 .checklist strong { flex: 0 1 auto; max-width: 58%; text-align: right; }
+.signoffs { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
+.signoff-action { width: 100%; margin: 5px 0; padding: 10px 12px; border: 1px solid var(--purple); border-radius: 9px; background: #fff; color: var(--purple); font-weight: 800; cursor: pointer; }
+.signoff-action.signed { border-color: var(--green); background: #e2f3eb; color: var(--green); cursor: default; opacity: 1; }
 
 @media (max-width: 1100px) {
   .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
