@@ -42,10 +42,10 @@ assert.match(provision, /participant_code = study_id/); assert.match(provision, 
 assert.doesNotMatch(js, /student_alias[^\n]*student_initials|student_game_alias:\s*state\.selected\.student_initials/);
 assert.match(js, /Do not enter the student's full name/);
 assert.match(js, /Study ID <small>— Example: MR-001<\/small>/);
-assert.match(js, /Case code <small>— automatically suggested from Study ID<\/small>/);
+assert.match(js, /Case code <small>— filled from Study ID<\/small>/);
 assert.match(js, /Student game alias <small>— Example: Kai<\/small>/);
 assert.doesNotMatch(js, /placeholder="(?:MR-001|CASE-001|Kai)"/);
-assert.match(js, /Set up this study case in the prepared state\? Gameplay and reminders will remain OFF\./);
+assert.match(js, /Set up this study case\? The game and reminders will stay off\./);
 
 // The legacy static-game folder is optional for protected-content cases.
 assert.match(optionalGameFolderSql, /information_schema\.columns/);
@@ -80,7 +80,7 @@ assert.match(sql, /jsonb_build_object\('present', true, 'version', gc\.version, 
 assert.doesNotMatch(sql.slice(sql.indexOf('create function public.research_admin_case_readiness')), /gc\.(config|resources|daily_missions|wildcard_missions|crisis_missions)/);
 const prepared = readinessForCase({ case: { id: 'c', active: false }, participant: { auth_user_id: 't', active: false }, intake_snapshot: true, coach: { coach_user_id: 'x', active: true }, fidelity_target_count: 4, protected_content: null, reminders: null });
 assert.equal(prepared.content, 'Needs action'); assert.equal(prepared.game, 'Off intentionally'); assert.equal(prepared.reminders, 'Off intentionally');
-assert.match(js, /OFF intentionally — intervention not activated/); assert.match(js, /Daily reminders/); assert.match(css, /\.off\{/);
+assert.match(js, /Off/); assert.match(js, /Reminders/); assert.match(css, /\.off\{/);
 
 // Defensive deployed-schema assertions and privacy restrictions remain explicit.
 for (const column of ['request_id', 'status', 'converted_case_id', 'converted_at', 'submitted_at']) assert.match(sql, new RegExp(`\\('${column}'\\)`));
@@ -110,7 +110,7 @@ assert.match(js, /openDetail\(button\.dataset\.id, 'intake'\)/);
 assert.match(js, /\['ArrowLeft', 'ArrowRight', 'Home', 'End'\]/);
 assert.match(js, /id="intake-panel"/);
 assert.match(js, /Contact Information/);
-assert.match(js, /Student and behavior context/);
-assert.match(js, /Plan-Aligned Staff Actions/);
+assert.match(js, /Student &amp; Behavior/);
+assert.match(js, /BIP\/BSP Strategies/);
 assert.match(js, /id="operations-panel"[\s\S]*readinessPanel\(converted\)/);
 assert.match(css, /\.operations-subnav \{ position:sticky/);

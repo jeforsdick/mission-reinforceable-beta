@@ -46,9 +46,9 @@ for (const type of ['resource_behavior_review', 'resource_privacy_review', 'reso
 assert.doesNotMatch(sql, /update public\.(?:cases|participants|teacher_reminder_settings)/i);
 
 // The admin workflow displays counts, all nine human judgments, privacy guidance, confirmation, and history.
-assert.match(js, /Mission Bank Comparability Review/);
-assert.match(js, /Mission modes describe scenario context, not dose or intervention strength/);
-assert.match(js, /Reviewing protected content version/);
+assert.match(js, /Mission Bank Comparability/);
+assert.match(js, /Check that Daily, Mystery, and Crisis differ by scenario—not by how much support they give/);
+assert.match(js, /Game content version/);
 assert.match(js, /Daily:[\s\S]*\/ 10/); assert.match(js, /Mystery:[\s\S]*\/ 5/); assert.match(js, /Crisis:[\s\S]*\/ 5/);
 assert.match(js, /Mission bank incomplete/);
 for (const key of keys) assert.match(js, new RegExp(`'${key}'`));
@@ -59,4 +59,4 @@ assert.doesNotMatch(js, /data-review-type="mission_bank_comparability"/);
 assert.match(js, /Review history/);
 assert.match(css, /\.comparability-criterion/);
 
-console.log('Structured Mission Bank Comparability Review security, validation, finalization, readiness, and UI checks passed.');
+console.log('Structured Mission Bank Comparability security, validation, finalization, readiness, and UI checks passed.');

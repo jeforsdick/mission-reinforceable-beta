@@ -1,10 +1,10 @@
 import { correctionEvent, observationAttention } from './observations-model.mjs';
 export const CHECKLIST = [
-  ['teacher_consent','Teacher consent obtained'],['parent_permission','Parent/guardian permission obtained'],['student_assent','Student assent obtained'],
-  ['bsp_technical_review','BSP technical-adequacy review completed'],['safety_screen','Safety / delayed-intervention appropriateness reviewed'],
-  ['target_routine_finalized','Target classroom routine finalized'],['target_behavior_definition','Student target behavior operational definition finalized'],
-  ['fidelity_checklist_finalized','Individualized teacher BSP fidelity checklist finalized'],['fidelity_checklist_second_review','Second behavior-support reviewer approved fidelity checklist'],
-  ['baseline_orientation','Baseline study orientation completed'],['intervention_orientation','Mission: Reinforceable intervention orientation completed']
+  ['teacher_consent','Teacher consent'],['parent_permission','Parent/guardian permission'],['student_assent','Student assent'],
+  ['bsp_technical_review','BIP/BSP reviewed'],['safety_screen','Safety review'],
+  ['target_routine_finalized','Observation routine finalized'],['target_behavior_definition','Target behavior definition finalized'],
+  ['fidelity_checklist_finalized','Teacher fidelity checklist finalized'],['fidelity_checklist_second_review','Second fidelity review completed'],
+  ['baseline_orientation','Baseline orientation'],['intervention_orientation','MR intervention orientation']
 ];
 export const MEASURES = [['tses_pre','TSES — Pre-Baseline'],['tses_post','TSES — Post-Intervention'],['urp_ir','URP-IR — Post-Intervention'],['teacher_interview','Teacher Interview — Post-Intervention']];
 export const PHASES = ['prebaseline','baseline','intervention','maintenance','complete','withdrawn'];
@@ -18,7 +18,7 @@ export function checklistStatuses(itemKey){return itemKey==='student_assent'?['p
 export function currentByKey(rows,key='item_key'){ return Object.fromEntries((rows||[]).map(row=>[row[key],row])); }
 export function baselineReadiness(item){
   const checklist=currentByKey(item.checklist), measures=currentByKey(item.measures,'measure_key'), missing=[];
-  if(!item.protocol) missing.push('Protocol stagger plan');
+  if(!item.protocol) missing.push('Baseline assignment');
   for(const key of requiredBaselineKeys){
     const acceptable=key==='student_assent'?['complete','not_applicable']:['complete'];
     if(!acceptable.includes(checklist[key]?.status)) missing.push(CHECKLIST.find(x=>x[0]===key)[1]);
@@ -35,33 +35,34 @@ export function measureNeeds(item){
 export function interventionReadiness(item){
   if(item.current_phase!=='intervention') return {ready:true,missing:[]};
   const checklist=currentByKey(item.checklist), missing=[];
-  if(checklist.intervention_orientation?.status!=='complete') missing.push('Intervention orientation');
-  if(!item.prepared_content?.protected_content_present) missing.push('Protected content');
+  if(checklist.intervention_orientation?.status!=='complete') missing.push('MR intervention orientation');
+  if(!item.prepared_content?.protected_content_present) missing.push('Game content');
   if(!item.prepared_content?.resource_map_ready) missing.push('Resource Map');
-  if(!item.prepared_content?.comparability_ready) missing.push('Mission Bank Comparability');
-  if(!(item.case_active&&item.participant_active)) missing.push('Game access ON');
-  if(!item.prepared_content?.reminders_enabled) missing.push('Reminders ON');
+  if(!item.prepared_content?.comparability_ready) missing.push('Mission review');
+  if(!(item.case_active&&item.participant_active)) missing.push('Game turned on');
+  if(!item.prepared_content?.reminders_enabled) missing.push('Reminders turned on');
   return {ready:missing.length===0,missing};
 }
 export function attentionForCase(item,today=new Date().toISOString().slice(0,10)) {
   const phase=item.current_phase||'prebaseline', attention=[], baseline=baselineReadiness(item);
   if(phase==='prebaseline'&&!baseline.ready) attention.push(`${baseline.remaining} baseline requirement${baseline.remaining===1?'':'s'} remaining`);
   for(const key of measureNeeds(item)) attention.push(`${MEASURES.find(x=>x[0]===key)[1]} is due`);
-  if((item.tasks||[]).some(task=>task.status==='pending'&&task.due_date&&task.due_date<today)) attention.push('Operational task overdue');
+  if((item.tasks||[]).some(task=>task.status==='pending'&&task.due_date&&task.due_date<today)) attention.push('Task overdue');
   for(const event of (item.study_events||[]).filter(event=>!event.resolved_at)) attention.push(`${event.event_type.replaceAll('_',' ')} unresolved`);
-  for(const missing of interventionReadiness(item).missing) attention.push(`Intervention mismatch: ${missing}`);
+  for(const missing of interventionReadiness(item).missing) attention.push(`${missing} needed for intervention`);
   attention.push(...observationAttention(item));
   return attention;
 }
-export function studyWideAttention(tasks,today=new Date().toISOString().slice(0,10)){return (tasks||[]).filter(t=>t.status==='pending'&&t.due_date&&t.due_date<today).map(t=>`Study-wide task overdue: ${t.title}`);}
+export function studyWideAttention(tasks,today=new Date().toISOString().slice(0,10)){return (tasks||[]).filter(t=>t.status==='pending'&&t.due_date&&t.due_date<today).map(t=>`Study task overdue: ${t.title}`);}
 export function timelineForCase(item){
   const rows=[];
-  for(const x of item.checklist_history||[]) rows.push({date:x.status_date,category:'Protocol',label:`${x.item_key.replaceAll('_',' ')} — ${x.status}`});
-  for(const x of item.phase_history||[]) rows.push({date:x.effective_date,category:'Phase',label:x.phase});
-  for(const x of item.measure_history||[]) rows.push({date:x.recorded_at,category:'Measure',label:`${x.measure_key.replaceAll('_',' ')} — ${x.status}`});
-  for(const x of item.tasks||[]) if(x.completed_at) rows.push({date:x.completed_at,category:'Task',label:`${x.title} — ${x.status}`});
-  for(const x of item.coaching_contacts||[]) rows.push({date:x.contact_date,category:'Coaching as usual',label:`${x.format.replaceAll('_',' ')} · ${x.provider_role}`});
-  for(const x of item.study_events||[]){rows.push({date:x.event_date,category:'Study event',label:x.event_type.replaceAll('_',' ')});if(x.resolved_at)rows.push({date:x.resolved_at,category:'Study event',label:`${x.event_type.replaceAll('_',' ')} resolved`});}
-  for(const x of item.observation_data?.observations||[]){if(x.primary_record_id)rows.push({date:x.observation_date,category:'Observation',label:`${x.phase} observation #${x.session_number} completed`});const correctedAt=correctionEvent(x);if(correctedAt)rows.push({date:correctedAt,category:'Observation',label:`${x.phase} observation #${x.session_number} corrected`});if(x.ioa)rows.push({date:x.observation_date,category:'IOA',label:`Teacher ${x.ioa.teacher_fidelity_ioa_percent??'NC'}%, Student ${x.ioa.student_behavior_ioa_percent??'NC'}%`});}
+  const display=value=>String(value||'').replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase());
+  for(const x of item.checklist_history||[]) rows.push({date:x.status_date,category:'Protocol',label:`${CHECKLIST.find(([key])=>key===x.item_key)?.[1]||display(x.item_key)} — ${display(x.status)}`});
+  for(const x of item.phase_history||[]) rows.push({date:x.effective_date,category:'Phase',label:display(x.phase)});
+  for(const x of item.measure_history||[]) rows.push({date:x.recorded_at,category:'Measure',label:`${MEASURES.find(([key])=>key===x.measure_key)?.[1]||display(x.measure_key)} — ${display(x.status)}`});
+  for(const x of item.tasks||[]) if(x.completed_at) rows.push({date:x.completed_at,category:'Task',label:`${x.title} — ${display(x.status)}`});
+  for(const x of item.coaching_contacts||[]) rows.push({date:x.contact_date,category:'Coaching',label:`${display(x.format)} · ${x.provider_role}`});
+  for(const x of item.study_events||[]){const event=display(x.event_type);rows.push({date:x.event_date,category:'Study event',label:event});if(x.resolved_at)rows.push({date:x.resolved_at,category:'Study event',label:`${event} — Resolved`});}
+  for(const x of item.observation_data?.observations||[]){if(x.primary_record_id)rows.push({date:x.observation_date,category:'Observation',label:`${display(x.phase)} observation #${x.session_number} completed`});const correctedAt=correctionEvent(x);if(correctedAt)rows.push({date:correctedAt,category:'Observation',label:`${display(x.phase)} observation #${x.session_number} corrected`});if(x.ioa)rows.push({date:x.observation_date,category:'IOA',label:`Teacher ${x.ioa.teacher_fidelity_ioa_percent??'NC'}%, Student ${x.ioa.student_behavior_ioa_percent??'NC'}%`});}
   return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 }

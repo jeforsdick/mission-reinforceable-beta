@@ -17,8 +17,8 @@ const fi=[0,1,2,3,4].map(i=>({target_key:`t${i}`,status:'no_opportunity'})),fi2=
 const a=defaultIntervals(),b=defaultIntervals();a[0].status='not_observed';b[1].status='not_observed';b[2].status='occurrence';const sioa=studentIoa(a,b);assert.equal(sioa.excluded,2);assert.equal(sioa.disagreements,1);assert.equal(sioa.agreements,117);
 assert.equal(qualification({teacher_fidelity_agreement:85,student_behavior_agreement:85}),true);assert.equal(qualification({teacher_fidelity_agreement:84.99,student_behavior_agreement:99}),false);assert.deepEqual(coverage(11,2),{completed:11,paired:2,percent:200/11,required:3,additional:1,meets:false});
 assert.match(sql,/>=85/g);assert.match(sql,/>80/g);assert.match(sql,/ceil\(totals\.n\*\.20\)/);assert.match(sql,/correction reason is required for a revision/);assert.match(sql,/order by revision_number desc limit 1/);assert.match(sql,/unique\(primary_record_id,secondary_record_id\)/);
-const grid=intervalGrid('primary');assert.equal((grid.match(/class="interval-cell"/g)||[]).length,120);assert.match(grid,/30/);assert.match(renderObserverTeam({observers:[]},x=>x),/Observer Team/);const obs={id:'o',fidelity_items_snapshot:[{target_key:'P-01',domain:'proactive',description:'Do it'}]};assert.match(recordForm(obs,'secondary',x=>x),/SECONDARY OBSERVER \/ IOA DATA/);assert.match(recordForm(obs,'primary',x=>x),/Unmarked intervals will be saved as observed with no target behavior/);
-assert.match(renderObservations({protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x),/Observations &amp; IOA/);assert.match(html,/id="observer-team"/);assert.match(js,/research_admin_observation_dashboard/);assert.match(js,/submitted_student_intervals:payload\.intervals/);assert.doesNotMatch(fs.readFileSync(new URL('../coach-dashboard/dashboard.js',import.meta.url),'utf8'),/classroom_observation|student_intervals|fidelity_scores/);
+const grid=intervalGrid('primary');assert.equal((grid.match(/class="interval-cell"/g)||[]).length,120);assert.match(grid,/30/);assert.match(renderObserverTeam({observers:[]},x=>x),/Observer Team/);const obs={id:'o',fidelity_items_snapshot:[{target_key:'P-01',domain:'proactive',description:'Do it'}]};assert.match(recordForm(obs,'secondary',x=>x),/IOA Observer/);assert.match(recordForm(obs,'primary',x=>x),/Blank<\/b> = observed, no target behavior/);
+assert.match(renderObservations({protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x),/Classroom Observations &amp; IOA/);assert.match(html,/id="observer-team"/);assert.match(js,/research_admin_observation_dashboard/);assert.match(js,/submitted_student_intervals:payload\.intervals/);assert.doesNotMatch(fs.readFileSync(new URL('../coach-dashboard/dashboard.js',import.meta.url),'utf8'),/classroom_observation|student_intervals|fidelity_scores/);
 assert.deepEqual(observationAttention({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{setups:[],observations:[],coverage:{completed:0},observers:[]}}),['Observation setup missing after baseline begins','Baseline observation count below assigned planned minimum']);
 console.log('Classroom observation setup, snapshots, scoring, IOA, coverage, revisions, UI, and security checks passed.');
 
@@ -29,7 +29,7 @@ assert.match(sql,/secondary observer must be an active qualified trained observe
 assert.match(sql,/o\.observer_type='trained_observer' and o\.active/);
 assert.match(sql,/primary and secondary observers must differ/);
 assert.match(sql,/cannot deactivate or change the type of the only active primary researcher/);
-assert.match(renderObserverTeam({observers:[{id:'1',observer_code:'OBS-02',display_name:'Observer',observer_type:'trained_observer',active:false,status:'inactive'}]},x=>x),/observer-edit-form[\s\S]*Active[\s\S]*inactive/);
+assert.match(renderObserverTeam({observers:[{id:'1',observer_code:'OBS-02',display_name:'Observer',observer_type:'trained_observer',active:false,status:'inactive'}]},x=>x),/observer-edit-form[\s\S]*Active[\s\S]*Inactive/);
 
 
 const primaryResearcher={active:true,observer_type:'primary_researcher',status:'qualified'},qualifiedTrained={active:true,observer_type:'trained_observer',status:'qualified'};
@@ -49,20 +49,20 @@ const primaryRecord={revision_number:2,fidelity_scores:[{target_key:'P-01',statu
 const secondaryRecord={revision_number:1,fidelity_scores:[{target_key:'P-01',status:'no_opportunity'}],student_intervals:defaultIntervals().map((x,i)=>i===0?{...x,status:'not_observed'}:x),observer_note:'Secondary note'};
 const correctionObs={...obs,primary_record:primaryRecord,secondary_record:secondaryRecord};
 const primaryCorrection=recordForm(correctionObs,'primary',x=>x),secondaryCorrection=recordForm(correctionObs,'secondary',x=>x);
-assert.match(primaryCorrection,/Correction to Primary Record/);assert.match(primaryCorrection,/value="implemented_as_written" checked/);assert.doesNotMatch(primaryCorrection,/value="no_opportunity" checked/);assert.match(primaryCorrection,/data-interval="1" data-status="occurrence"/);
-assert.match(secondaryCorrection,/Correction to Secondary Record/);assert.match(secondaryCorrection,/value="no_opportunity" checked/);assert.doesNotMatch(secondaryCorrection,/value="implemented_as_written" checked/);assert.match(secondaryCorrection,/data-interval="1" data-status="not_observed"/);assert.match(secondaryCorrection,/name="correction_reason" maxlength="1000" required/);
+assert.match(primaryCorrection,/Correct Primary Record/);assert.match(primaryCorrection,/value="implemented_as_written" checked/);assert.doesNotMatch(primaryCorrection,/value="no_opportunity" checked/);assert.match(primaryCorrection,/data-interval="1" data-status="occurrence"/);
+assert.match(secondaryCorrection,/Correct IOA Record/);assert.match(secondaryCorrection,/value="no_opportunity" checked/);assert.doesNotMatch(secondaryCorrection,/value="implemented_as_written" checked/);assert.match(secondaryCorrection,/data-interval="1" data-status="not_observed"/);assert.match(secondaryCorrection,/name="correction_reason" maxlength="1000" required/);
 assert.match(sql,/correction reason is required for a revision/);assert.match(sql,/prevent_research_operations_delete/);assert.match(sql,/unique\(primary_record_id,secondary_record_id\)/);
 
 // Null agreement is reviewable, neither pass nor automatic recalibration.
-assert.equal(ioaDisplay({overall_ioa_attention:false,teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null}),'IOA not calculable / review');
+assert.equal(ioaDisplay({overall_ioa_attention:false,teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null}),'Needs review');
 assert.equal(ioaDisplay({overall_ioa_attention:true,teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:null}),'Needs recalibration');
 assert.equal(ioaDisplay({overall_ioa_attention:false,teacher_fidelity_ioa_percent:81,student_behavior_ioa_percent:81}),'Meets criterion');
 assert.match(sql,/coalesce\(\(case when sa\+sd=0 then null else 100\.0\*sa\/\(sa\+sd\) end\)<=80,false\)/);
 
 const summary=renderStudyIoaSummary({coverage:{completed:10,ioa:2,percent:20,required_minimum:2,additional_needed:0,teacher_alerts:1,student_alerts:2,not_calculable:1},by_dyad:[{study_id:'MR-001',ioa:1,completed:5,percent:20}],by_phase:[{phase:'baseline',ioa:2,completed:10,percent:20}]},x=>x);
-assert.match(summary,/Study IOA Summary/);assert.match(summary,/MR-001: 1 \/ 5, 20\.0%/);assert.match(summary,/Baseline: 2 \/ 10/);assert.match(summary,/Teacher 1 · Student 2 · Not calculable 1/);
-const interventionUi=renderObservations({current_phase:'intervention',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x);assert.match(interventionUi,/This intervention week/);assert.match(interventionUi,/approximately 3\/week/);assert.deepEqual(denverWeek(new Date('2026-08-19T05:30:00Z')),{monday:'2026-08-17',sunday:'2026-08-23'});
-assert.match(renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{},observers:[],setups:[],observations:[{id:'o',observation_date:'2026-01-01',phase:'baseline',session_number:1,primary_observer_code:'JO',secondary_observer_code:'OBS-02',secondary_observer_id:'2',secondary_record_id:'sr',fidelity_items_snapshot:[],ioa:{teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null,overall_ioa_attention:false}}]}},x=>String(x??'')),/Primary: JO · Secondary\/IOA: OBS-02[\s\S]*IOA not calculable \/ review/);
+assert.match(summary,/Study IOA/);assert.match(summary,/MR-001: 1 \/ 5, 20\.0%/);assert.match(summary,/Baseline: 2 \/ 10/);assert.match(summary,/Teacher: 1 · Student: 2 · Not enough data: 1/);
+const interventionUi=renderObservations({current_phase:'intervention',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x);assert.match(interventionUi,/This Week/);assert.match(interventionUi,/about 3 observations\/week/);assert.deepEqual(denverWeek(new Date('2026-08-19T05:30:00Z')),{monday:'2026-08-17',sunday:'2026-08-23'});
+assert.match(renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{},observers:[],setups:[],observations:[{id:'o',observation_date:'2026-01-01',phase:'baseline',session_number:1,primary_observer_code:'JO',secondary_observer_code:'OBS-02',secondary_observer_id:'2',secondary_record_id:'sr',fidelity_items_snapshot:[],ioa:{teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null,overall_ioa_attention:false}}]}},x=>String(x??'')),/Primary observer: JO · IOA observer: OBS-02[\s\S]*Needs review/);
 for(const pattern of [/length\(target_routine\)<=1000/,/length\(target_behavior_definition\)<=2000/,/length\(change_note\)<=1000/,/length\(context_note\)<=1000/,/length\(observer_note\)<=1000/,/length\(brief_note\)<=1000/,/length\(correction_reason\)<=1000/])assert.match(sql,pattern);
 
 // Observer status reads only the IOA row tied to both highest-revision records.
@@ -91,7 +91,7 @@ assert.match(js,/IOA Review/);assert.match(js,/ioaNeedsReview\(x\.ioa\)/);assert
 
 const observationsUiSource = fs.readFileSync(new URL('observations-ui.mjs', import.meta.url), 'utf8');
 assert.match(observationsUiSource, /id="operations-observations"/);
-assert.match(observationsUiSource, /Independent observer qualification requires a Practice, Recalibration, or Retraining event with ≥85% agreement on both teacher fidelity and student behavior\./);
+assert.match(observationsUiSource, /To collect IOA independently, an observer needs ≥85% on both teacher fidelity and student behavior during Practice, Recalibration, or Retraining\./);
 assert.match(observationsUiSource, /id="observer-message" class="success-message" role="status" aria-live="polite"/);
 assert.match(observationsUiSource, /class="interval-cell"/);
 assert.match(observationsUiSource, /id="new-observation-form"/);

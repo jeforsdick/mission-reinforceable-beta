@@ -29,13 +29,13 @@ assert.match(sql,/target_external_reference/);assert.match(sql,/target_brief_not
 assert.doesNotMatch(sql,/update public\.(cases|participants|teacher_reminder_settings)/i);assert.doesNotMatch(sql,/resend|send_email|net\.http|cron/i);
 assert.match(sql,/enable row level security/);assert.match(sql,/public\.is_research_admin\(\)/);assert.match(sql,/prevent_research_operations_delete/);
 assert.match(html,/Study Overview/);assert.match(html,/Intake Queue/);assert.match(html,/id="study-wide-tasks"/);
-assert.match(ui,/Study-Wide Tasks/);assert.match(js,/target_case_id:caseId/);assert.match(js,/target_required:f\.has\('required'\)/);assert.match(js,/target_note:f\.get\('note'\)/);
-assert.match(ui,/data-status="not_applicable"/);assert.match(ui,/Required\?/);assert.match(ui,/Optional note/);
-assert.match(ui,/class="inline-record checklist-form"/);assert.match(ui,/maxlength="1000"[\s\S]*Optional brief note/);assert.match(ui,/name="status_date" type="date" required/);assert.match(js,/target_status_date:f\.get\('status_date'\)/);
+assert.match(ui,/Study Tasks/);assert.match(js,/target_case_id:caseId/);assert.match(js,/target_required:f\.has\('required'\)/);assert.match(js,/target_note:f\.get\('note'\)/);
+assert.match(ui,/data-status="not_applicable"/);assert.match(ui,/Required\?/);assert.match(ui,/Note — optional/);
+assert.match(ui,/class="inline-record checklist-form"/);assert.match(ui,/maxlength="1000"[\s\S]*Note/);assert.match(ui,/name="status_date" type="date" required/);assert.match(js,/target_status_date:f\.get\('status_date'\)/);
 assert.match(ui,/class="inline-record measure-form"/);assert.match(ui,/external_reference/);assert.match(js,/Completion date is required/);
 for(const field of ['affects_observation','affects_mr_exposure','affects_phase_interpretation','action_taken']){assert.match(ui,new RegExp(field));assert.match(js,new RegExp(field));}
 assert.match(js,/research_admin_resolve_study_event[\s\S]*target_action_taken:action/);
-assert.match(ui,/Approximate duration in minutes/);assert.match(js,/target_approximate_duration_minutes/);assert.match(ui,/name="focus"/);assert.match(js,/COACHING_FOCUSES\.includes/);
+assert.match(ui,/Duration — optional/);assert.match(js,/target_approximate_duration_minutes/);assert.match(ui,/name="focus"/);assert.match(js,/COACHING_FOCUSES\.includes/);
 const completeChecklist=CHECKLIST.map(([item_key])=>({item_key,status:'complete'}));
 const ready={current_phase:'prebaseline',protocol:{stagger_position:1},checklist:completeChecklist,measures:[{measure_key:'tses_pre',status:'complete'}],tasks:[],study_events:[]};
 assert.equal(baselineReadiness(ready).ready,true);assert.equal(baselineReadiness({...ready,protocol:null}).ready,false);
@@ -43,9 +43,9 @@ for(const [key] of CHECKLIST.slice(0,10)){const item={...ready,checklist:complet
 assert.equal(baselineReadiness({...ready,checklist:completeChecklist.map(x=>x.item_key==='student_assent'?{...x,status:'not_applicable'}:x)}).ready,true);
 assert.equal(baselineReadiness({...ready,measures:[]}).ready,false);
 assert.deepEqual(measureNeeds({...ready,current_phase:'maintenance'}),['tses_post','urp_ir','teacher_interview']);
-assert.equal(studyWideAttention([{title:'IRB follow-up',status:'pending',due_date:'2026-01-01'}],'2026-01-02')[0],'Study-wide task overdue: IRB follow-up');
+assert.equal(studyWideAttention([{title:'IRB follow-up',status:'pending',due_date:'2026-01-01'}],'2026-01-02')[0],'Study task overdue: IRB follow-up');
 const intervention={...ready,current_phase:'intervention',case_active:false,participant_active:false,prepared_content:{protected_content_present:false,resource_map_ready:false,comparability_ready:false,reminders_enabled:false},checklist:completeChecklist.filter(x=>x.item_key!=='intervention_orientation')};
-assert.deepEqual(interventionReadiness(intervention).missing,['Intervention orientation','Protected content','Resource Map','Mission Bank Comparability','Game access ON','Reminders ON']);
-assert.equal(attentionForCase(intervention).filter(x=>x.startsWith('Intervention mismatch:')).length,6);
-const timeline=timelineForCase({checklist_history:[{item_key:'teacher_consent',status:'complete',status_date:'2026-01-03',recorded_at:'2026-01-01'}],phase_history:[{phase:'baseline',effective_date:'2026-01-02'}]});assert.equal(timeline[0].category,'Protocol');assert.equal(timeline[0].date,'2026-01-03');
+assert.deepEqual(interventionReadiness(intervention).missing,['MR intervention orientation','Game content','Resource Map','Mission review','Game turned on','Reminders turned on']);
+assert.equal(attentionForCase(intervention).filter(x=>x.endsWith('needed for intervention')).length,6);
+const timeline=timelineForCase({checklist_history:[{item_key:'teacher_consent',status:'complete',status_date:'2026-01-03',recorded_at:'2026-01-01'}],phase_history:[{phase:'baseline',effective_date:'2026-01-02'}]});assert.equal(timeline[0].category,'Protocol');assert.equal(timeline[0].date,'2026-01-03');assert.equal(timeline[0].label,'Teacher consent — Complete');
 console.log('Research operations hardening, swaps, forms, readiness, attention, security, and timeline checks passed.');

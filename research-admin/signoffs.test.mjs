@@ -35,8 +35,8 @@ assert.doesNotMatch(readiness, /gc\.resources\s*[,)]/);
 
 // The existing activation/reminder states remain untouched, and UI makes version explicit.
 assert.doesNotMatch(migration, /update public\.(?:cases|participants|teacher_reminder_settings)/i);
-assert.match(adminJs, /BIP Resource Map finalized/);
-assert.match(adminJs, /Mission bank comparability reviewed/);
+assert.match(adminJs, /Resource Map/);
+assert.match(adminJs, /Mission review/);
 assert.match(adminJs, /Approving protected content <strong>version/);
 assert.match(adminJs, /research_admin_record_case_signoff/);
 
