@@ -8,6 +8,7 @@ const studyDateSource = await read('./study-date.js');
 const migration = await read('../../supabase/migrations/20260818000000_participant_daily_mission_lock.sql');
 const engine = await read('./engine.js');
 const app = await read('./app.js');
+const index = await read('../index.html');
 
 function studyDateApi() {
   const context = { window: {} };
@@ -46,6 +47,13 @@ test('completed QA session does not consume exposure and QA start bypass is expl
 test('QA Preview can run repeatedly without participant lock checks', () => {
   assert.match(app, /assignment\.qaMode \? false : await MR\.auth\.hasCompletedMissionToday\(\)/);
   assert.match(engine, /if \(context && !context\.qaMode\)/);
+});
+
+test('locked participant return UI gives next-day copy and exposes no replay controls', () => {
+  assert.match(index, /id="same-day-return-message"[^>]*hidden[^>]*>Come back tomorrow to play another mission!</);
+  assert.match(app, /#same-day-return-message'\)\.hidden = !participantLocked/);
+  assert.match(app, /#home-primary-btn'\)\.hidden = participantLocked/);
+  assert.match(app, /\.mission-menu \[data-start-mode\][\s\S]*button\.hidden = participantLocked/);
 });
 
 test('yesterday completion does not block today', () => {

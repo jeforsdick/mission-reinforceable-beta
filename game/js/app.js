@@ -144,6 +144,7 @@
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
     const participantLocked = hasDaily && MR.telemetryContext && !MR.telemetryContext.qaMode;
     MR.$('#home-primary-btn').hidden = participantLocked;
+    MR.$('#same-day-return-message').hidden = !participantLocked;
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
     MR.$('#daily-completion-message').hidden = !participantLocked;
     MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked; });
