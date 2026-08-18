@@ -9,7 +9,7 @@ const protectedHTML = fs.readFileSync(new URL('../index.html', import.meta.url),
 const demoHTML = fs.readFileSync(new URL('../../demo-game/index.html', import.meta.url), 'utf8');
 const demoApp = fs.readFileSync(new URL('./demo-app.js', import.meta.url), 'utf8');
 const engineSource = fs.readFileSync(new URL('./engine.js', import.meta.url), 'utf8');
-const progressPolish = fs.readFileSync(new URL('../css/progress-polish.css', import.meta.url), 'utf8');
+const progressSummaryCss = fs.readFileSync(new URL('../css/progress-summary-v2.css', import.meta.url), 'utf8');
 
 function loadDashboard() {
   const elements = new Map();
@@ -48,7 +48,7 @@ test('protected progress loads only from Supabase and never falls back to stale 
   await dashboard.render();
   assert.equal(storageReads, 0);
   assert.match(elements.get('#progress-list').innerHTML, /Mission progress could not be loaded/);
-  assert.doesNotMatch(elements.get('#progress-list').innerHTML, /Mission Score/);
+  assert.doesNotMatch(elements.get('#progress-list').innerHTML, /Mission Score:/);
 });
 
 test('public fictional demo progress uses localStorage history', async () => {
@@ -74,17 +74,38 @@ test('history cards stay short and teacher-facing', () => {
   assert.equal(dashboard.DENVER_TIME_ZONE, 'America/Denver');
 });
 
-test('Details uses one compact mission summary instead of full response replay', () => {
+test('Details restores the concise Results-style Mission Summary and Coaching Summary only', () => {
   const { dashboard } = loadDashboard();
   const details = dashboard.detailsHTML({
-    mode: 'crisis', score: 25, max_score: 50, ended_at: '2026-08-18T02:00:00Z'
+    mode: 'crisis', score: 35, max_score: 50,
+    plan_aligned_count: 3, refine_count: 1, missed_count: 1,
+    ended_at: '2026-08-18T02:00:00Z'
   });
+  assert.match(details, /Keep Practicing/);
   assert.match(details, /Mission Summary/);
-  assert.match(details, /You completed a <strong>Crisis Mission<\/strong>/);
-  assert.match(details, /Mission Score: 50%/);
-  assert.match(details, /Good practice/);
-  assert.doesNotMatch(details, /Scene:|Your Choice|Stronger Plan-Aligned Move|scenario|feedback_text/);
+  assert.match(details, /Total Score/);
+  assert.match(details, /35 \/ 50/);
+  assert.match(details, /Percent/);
+  assert.match(details, /70%/);
+  assert.match(details, /Best Choice/);
+  assert.match(details, /Workable, but Refine/);
+  assert.match(details, /Missed Opportunity/);
+  assert.match(details, /Coaching Summary/);
+  assert.match(details, /You identified some helpful responses/);
+  assert.doesNotMatch(details, /Scene:|Your Choice|Stronger Plan-Aligned Move|scenario|feedback_text|Mission Review/);
   assert.doesNotMatch(dashboardSource, /getProgressResponses\(/);
+});
+
+test('Mission History renders the classroom-fidelity disclaimer directly under its heading', async () => {
+  const { dashboard, MR, elements } = loadDashboard();
+  MR.telemetryContext = null;
+  MR.storage = { getRuns() { return [{ mode: 'daily', score: 40, maxScore: 50, dateKey: '2026-08-18' }]; } };
+  await dashboard.render();
+  const html = elements.get('#progress-list').innerHTML;
+  assert.match(html, /<h2 class="history-heading">Mission History<\/h2><p class="history-disclaimer">These scores summarize your choices/);
+  assert.match(progressSummaryCss, /\.score-disclaimer\s*\{[\s\S]*display:\s*none/);
+  assert.match(progressSummaryCss, /\.history-disclaimer/);
+  assert.match(progressSummaryCss, /font:\s*700 13px/);
 });
 
 test('participant page contains the approved four badges, disclaimer, and no removed teacher metrics', () => {
@@ -99,13 +120,11 @@ test('participant page contains the approved four badges, disclaimer, and no rem
   assert.doesNotMatch(dashboardSource, /fidelity_target_id|fidelity_domain|domain score|Plan Practice/);
 });
 
-test('progress presentation uses a helpful wizard and keeps disclaimer clear of badge plaques', () => {
+test('progress presentation uses a helpful wizard', () => {
   assert.match(dashboardSource, /wizardGuide/);
   assert.doesNotMatch(dashboardSource, /wizardDead/);
-  assert.match(progressPolish, /\.score-disclaimer/);
-  assert.match(progressPolish, /margin:\s*24px auto -38px/);
-  assert.match(progressPolish, /\.compact-run-card/);
-  assert.match(progressPolish, /\.compact-mission-review/);
+  assert.match(progressSummaryCss, /\.compact-run-card/);
+  assert.match(progressSummaryCss, /\.progress-summary-debrief/);
 });
 
 test('progress queries scope participant, case, completion, and QA mode without internal response fields', async () => {
