@@ -75,14 +75,18 @@ export function denverDateKey(value) {
   return `${byType.year}-${byType.month}-${byType.day}`;
 }
 
+const GRANITE_CLOSURES = new Set(['2026-09-07','2026-09-18','2026-10-15','2026-10-16','2026-10-19','2026-10-20','2026-11-25','2026-11-26','2026-11-27','2026-12-21','2026-12-22','2026-12-23','2026-12-24','2026-12-25','2026-12-28','2026-12-29','2026-12-30','2026-12-31','2027-01-01','2027-01-04','2027-01-18','2027-02-12','2027-02-15','2027-02-16','2027-03-12','2027-03-15','2027-03-29','2027-03-30','2027-03-31','2027-04-01','2027-04-02','2027-04-05']);
+function datePlus(key, days) { const date=new Date(`${key}T12:00:00Z`); date.setUTCDate(date.getUTCDate()+days); return date.toISOString().slice(0,10); }
+function mondayFor(key) { const date=new Date(`${key}T12:00:00Z`); return datePlus(key, -(date.getUTCDay() || 7) + 1); }
+function isStudyDay(key) { return key >= '2026-08-12' && key <= '2027-05-26' && !GRANITE_CLOSURES.has(key); }
+
 export function weeklyPracticeSnapshot(caseData) {
-  const checkin = (caseData.checkins || []).filter(row => row.qa_mode !== true).sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))[0];
-  if (!checkin) return null;
-  const sessions = (caseData.sessions || []).filter(row => row.qa_mode !== true && row.status === 'completed')
-    .filter(row => { const key = denverDateKey(row.ended_at || row.started_at); return key >= checkin.week_start && key <= checkin.week_end; })
-    .sort((a, b) => new Date(b.ended_at || b.started_at) - new Date(a.ended_at || a.started_at));
-  const scored = sessions.filter(row => Number(row.max_score) > 0 && Number.isFinite(Number(row.score)));
-  const score = scored.reduce((sum, row) => sum + Number(row.score), 0);
-  const maxScore = scored.reduce((sum, row) => sum + Number(row.max_score), 0);
-  return { checkin, missionsCompleted: sessions.length, averageScore: maxScore > 0 ? Math.round(score / maxScore * 100) : null, mostRecentScore: scored.length ? Math.round(Number(scored[0].score) / Number(scored[0].max_score) * 100) : null };
+  const completed=(caseData.sessions||[]).filter(row=>row.qa_mode!==true&&row.status==='completed').sort((a,b)=>new Date(b.ended_at||b.started_at)-new Date(a.ended_at||a.started_at));
+  if (!completed.length) return null;
+  const week_start=mondayFor(denverDateKey(completed[0].ended_at||completed[0].started_at)), week_end=datePlus(week_start,4);
+  const sessions=completed.filter(row=>{const key=denverDateKey(row.ended_at||row.started_at);return key>=week_start&&key<=week_end;});
+  const scored=sessions.filter(row=>Number(row.max_score)>0&&Number.isFinite(Number(row.score)));
+  const score=scored.reduce((sum,row)=>sum+Number(row.score),0), maxScore=scored.reduce((sum,row)=>sum+Number(row.max_score),0);
+  const scheduled_study_days=Array.from({length:5},(_,i)=>datePlus(week_start,i)).filter(isStudyDay).length;
+  return { checkin:{week_start,week_end,scheduled_study_days}, missionsCompleted:sessions.length, averageScore:maxScore>0?Math.round(score/maxScore*100):null, mostRecentScore:scored.length?Math.round(Number(scored[0].score)/Number(scored[0].max_score)*100):null };
 }
