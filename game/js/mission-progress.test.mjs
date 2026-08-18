@@ -9,6 +9,7 @@ const protectedHTML = fs.readFileSync(new URL('../index.html', import.meta.url),
 const demoHTML = fs.readFileSync(new URL('../../demo-game/index.html', import.meta.url), 'utf8');
 const demoApp = fs.readFileSync(new URL('./demo-app.js', import.meta.url), 'utf8');
 const engineSource = fs.readFileSync(new URL('./engine.js', import.meta.url), 'utf8');
+const progressPolish = fs.readFileSync(new URL('../css/progress-polish.css', import.meta.url), 'utf8');
 
 function loadDashboard() {
   const elements = new Map();
@@ -60,29 +61,30 @@ test('public fictional demo progress uses localStorage history', async () => {
   assert.doesNotMatch(demoApp, /MR\.storage\.getRuns\s*=/);
 });
 
-test('history and protected response review show approved teacher-facing fields only', () => {
+test('history cards stay short and teacher-facing', () => {
   const { dashboard } = loadDashboard();
   const card = dashboard.runCard({
     mode: 'crisis', mission_title: 'Calm Return', score: 20, max_score: 25,
     plan_aligned_count: 2, refine_count: 1, missed_count: 1, ended_at: '2026-08-18T02:00:00Z'
   }, 0);
   assert.match(card, /Crisis Mission/);
-  assert.match(card, /Calm Return/);
   assert.match(card, /Mission Score: 80%/);
-  assert.match(card, /Plan-Aligned Choices: 2 · Workable, but Refine: 1 · Missed Opportunities: 1/);
+  assert.doesNotMatch(card, /Calm Return/);
+  assert.doesNotMatch(card, /Plan-Aligned Choices|Workable, but Refine|Missed Opportunities/);
   assert.equal(dashboard.DENVER_TIME_ZONE, 'America/Denver');
+});
 
-  const details = dashboard.detailsHTML([{
-    scenario_title: 'Arrival', scenario_text: 'The routine begins.', selected_answer_text: 'Offer a prompt.',
-    selected_score: 5, alignment: 'workable_refine', best_answer_text: 'Use the plan prompt.', feedback_text: 'Good start.',
-    fidelity_target_id: 'secret', mechanism: 'internal', error_type: 'internal'
-  }]);
-  assert.match(details, /Workable, but Refine/);
-  assert.match(details, /Your Choice/);
-  assert.match(details, /Feedback/);
-  assert.match(details, /Stronger Plan-Aligned Move/);
-  assert.doesNotMatch(details, /secret|mechanism|error_type|fidelity_target_id/);
-  assert.match(dashboard.detailsHTML([]), /No reviewable feedback is available/);
+test('Details uses one compact mission summary instead of full response replay', () => {
+  const { dashboard } = loadDashboard();
+  const details = dashboard.detailsHTML({
+    mode: 'crisis', score: 25, max_score: 50, ended_at: '2026-08-18T02:00:00Z'
+  });
+  assert.match(details, /Mission Summary/);
+  assert.match(details, /You completed a <strong>Crisis Mission<\/strong>/);
+  assert.match(details, /Mission Score: 50%/);
+  assert.match(details, /Good practice/);
+  assert.doesNotMatch(details, /Scene:|Your Choice|Stronger Plan-Aligned Move|scenario|feedback_text/);
+  assert.doesNotMatch(dashboardSource, /getProgressResponses\(/);
 });
 
 test('participant page contains the approved four badges, disclaimer, and no removed teacher metrics', () => {
@@ -95,6 +97,15 @@ test('participant page contains the approved four badges, disclaimer, and no rem
     assert.doesNotMatch(html, /Overall Accuracy|Day Streak|Time Played/);
   }
   assert.doesNotMatch(dashboardSource, /fidelity_target_id|fidelity_domain|domain score|Plan Practice/);
+});
+
+test('progress presentation uses a helpful wizard and keeps disclaimer clear of badge plaques', () => {
+  assert.match(dashboardSource, /wizardGuide/);
+  assert.doesNotMatch(dashboardSource, /wizardDead/);
+  assert.match(progressPolish, /\.score-disclaimer/);
+  assert.match(progressPolish, /margin:\s*24px auto -38px/);
+  assert.match(progressPolish, /\.compact-run-card/);
+  assert.match(progressPolish, /\.compact-mission-review/);
 });
 
 test('progress queries scope participant, case, completion, and QA mode without internal response fields', async () => {
