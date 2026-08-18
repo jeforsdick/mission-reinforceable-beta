@@ -177,13 +177,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (!sessionCreated) return;
 
     try {
-      await MR.auth.insertTelemetryResponses(responseRowsForTelemetry(run, sessionId, context));
-    } catch (error) {
-      console.warn('Supabase telemetry response insert failed; gameplay and existing logging will continue.', error);
-    }
-
-    try {
-      await MR.auth.completeTelemetrySession(sessionId, context.participantId, context.caseId, {
+      const updates = {
         ended_at: run.sessionEndedAt,
         status: 'completed',
         duration_seconds: run.durationSeconds,
@@ -199,9 +193,33 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         total_hints_opened: run.totalHintsOpened,
         questions_with_hints: run.questionsWithHints,
         hint_use_rate: run.hintUseRate
-      });
+      };
+
+      if (!context.qaMode) {
+        const result = await MR.auth.completeParticipantMission(sessionId, updates);
+        if (result === 'already_completed') {
+          MR.dailyMissionCompleted = true;
+          if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
+          return false;
+        }
+      } else {
+        await MR.auth.completeTelemetrySession(sessionId, context.participantId, context.caseId, updates);
+      }
+
+      try {
+        await MR.auth.insertTelemetryResponses(responseRowsForTelemetry(run, sessionId, context));
+      } catch (error) {
+        console.warn('Supabase telemetry response insert failed; completed session remains authoritative.', error);
+      }
+
+      if (!context.qaMode) {
+        MR.dailyMissionCompleted = true;
+        if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
+      }
+      return true;
     } catch (error) {
       console.warn('Supabase telemetry session completion failed; gameplay and existing logging will continue.', error);
+      return null;
     }
   }
 
@@ -243,7 +261,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (!pool.length) throw new Error(`No missions found for mode: ${mode}`);
 
     if (mode === 'daily') {
-      const daySeed = Math.floor(Date.now() / 86400000);
+      const daySeed = MR.studyDate.dailySeed();
       return pool[daySeed % pool.length];
     }
 
@@ -951,7 +969,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     });
   }
 
-  function finishMission() {
+  async function finishMission() {
     const accuracy = current.maxScore ? Math.round((current.score / current.maxScore) * 100) : 0;
     const xp = behaviorXPFor(current.score, current.expectedSteps || 3, current.xpMax);
     const timing = MR.SessionTimer && MR.SessionTimer.stop ? MR.SessionTimer.stop() : null;
@@ -1003,7 +1021,8 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       history
     };
 
-    void finishRelationalTelemetry(run, current.telemetrySessionId, current.telemetrySessionInsert);
+    const telemetryResult = await finishRelationalTelemetry(run, current.telemetrySessionId, current.telemetrySessionInsert);
+    if (telemetryResult === false) return;
     MR.storage.saveRun(run);
     sendRun(run);
     renderResults(run);
@@ -1324,7 +1343,21 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
   }
 
   MR.engine = {
-    start(mode) {
+    async start(mode) {
+      const context = MR.telemetryContext;
+      if (context && !context.qaMode) {
+        try {
+          MR.dailyMissionCompleted = await MR.auth.hasCompletedMissionToday();
+        } catch (error) {
+          console.error(error);
+          window.alert('We could not verify today\'s mission status. Please try again before starting.');
+          return false;
+        }
+        if (MR.dailyMissionCompleted) {
+          if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
+          return false;
+        }
+      }
       const mission = chooseMission(mode);
       const telemetryStartedAt = new Date().toISOString();
       current = {
@@ -1354,6 +1387,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       renderStep();
       const firstStep = current.mission.steps[current.stepId];
       showBIPBriefing(extractBIPBriefing(firstStep && firstStep.text) || DEFAULT_BETA_BIP_BRIEFING);
+      return true;
     },
 
     continueAfterFeedback,
@@ -1367,6 +1401,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     renderHearts,
 
     hasDailyRunToday() {
+      if (MR.telemetryContext && !MR.telemetryContext.qaMode) return MR.dailyMissionCompleted === true;
       return MR.storage.getRuns().some(run => run.dateKey === MR.todayKey() && run.mode === 'daily');
     },
 
