@@ -27,9 +27,13 @@ assert.match(sql, /calculated_all_pass := calculated_all_pass and criterion->>'s
 assert.doesNotMatch(sql, /target_all_pass|submitted_all_pass/);
 
 // Only confirmed all-Pass reviews of an exact 10/5/5 bank create the existing signoff.
+for (const column of ['daily_missions', 'wildcard_missions', 'crisis_missions']) {
+  assert.match(sql, new RegExp(`coalesce\\(jsonb_array_length\\(gc\\.${column}\\), 0\\)`));
+}
 assert.match(sql, /daily_count <> 10 or mystery_count <> 5 or crisis_count <> 5/);
 assert.match(sql, /Mission bank incomplete/);
 assert.match(sql, /calculated_all_pass and final_confirmation is not true/);
+assert.ok(sql.indexOf('daily_count <> 10') < sql.indexOf("values (target_case_id, current_version, 'mission_bank_comparability'"), 'null-safe exact-count guard must run before signoff creation');
 assert.match(sql, /if calculated_all_pass then[\s\S]*'mission_bank_comparability'/);
 assert.match(sql, /'signoff_created', new_signoff_id is not null/);
 assert.match(sql, /protected_content_version = gc\.version and s\.review_type = 'mission_bank_comparability'/);

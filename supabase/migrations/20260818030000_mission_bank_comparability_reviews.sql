@@ -76,8 +76,9 @@ declare
 begin
   if not public.is_research_admin() then raise exception 'research admin required' using errcode = '42501'; end if;
 
-  select gc.version, jsonb_array_length(gc.daily_missions), jsonb_array_length(gc.wildcard_missions),
-    jsonb_array_length(gc.crisis_missions)
+  select gc.version, coalesce(jsonb_array_length(gc.daily_missions), 0),
+    coalesce(jsonb_array_length(gc.wildcard_missions), 0),
+    coalesce(jsonb_array_length(gc.crisis_missions), 0)
   into current_version, daily_count, mystery_count, crisis_count
   from public.case_game_content gc where gc.case_id = target_case_id for share;
   if not found then raise exception 'protected content not found' using errcode = 'P0002'; end if;
