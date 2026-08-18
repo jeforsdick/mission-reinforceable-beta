@@ -235,18 +235,23 @@
 
     async hasWeeklyCheckin(weekStart) {
       const { data, error } = await client().from('weekly_teacher_checkins').select('id').eq('week_start', weekStart).eq('qa_mode', false).maybeSingle();
-      if (error) throw new Error(`Unable to check this week's check-in status: ${error.message}`);
+      if (error) throw new Error(`Unable to check this week's teacher report status: ${error.message}`);
       return Boolean(data);
     },
 
-    async submitWeeklyCheckin(values) {
-      const { error } = await client().rpc('submit_weekly_teacher_checkin', {
-        p_helpfulness_rating: values.helpfulnessRating,
-        p_confidence_rating: values.confidenceRating,
-        p_plan_difficult: values.planDifficult,
-        p_coach_note: values.coachNote
+    async submitWeeklyTeacherReport(values) {
+      const { error } = await client().rpc('submit_weekly_teacher_report', {
+        p_access_rating: values.accessRating,
+        p_manageability_rating: values.manageabilityRating,
+        p_bsp_relevance_rating: values.bspRelevanceRating,
+        p_implementation_thinking_rating: values.implementationThinkingRating,
+        p_feedback_usefulness_rating: values.feedbackUsefulnessRating,
+        p_target_behavior_rating: values.targetBehaviorRating,
+        p_replacement_behavior_rating: values.replacementBehaviorRating,
+        p_barriers_facilitators: values.barriersFacilitators,
+        p_behavior_context_note: values.behaviorContextNote
       });
-      if (error) throw new Error(`Unable to submit the weekly check-in: ${error.message}`);
+      if (error) throw new Error(`Unable to submit the weekly teacher report: ${error.message}`);
     },
 
     async signOut() {

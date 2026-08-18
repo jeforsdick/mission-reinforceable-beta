@@ -132,14 +132,14 @@ test('research admin loads all active cases and their dashboard data without coa
   const client = mockClient({ cases: [{ id: 'case-a', active: true }, { id: 'case-b', active: true }] });
   const cases = await loadDashboardCases(client, 'admin-user', 'research_admin');
   assert.deepEqual(cases.map(row => row.id), ['case-a', 'case-b']);
-  assert.deepEqual(client.calls.map(call => call.table), ['cases', 'case_intake', 'fidelity_targets', 'game_sessions', 'game_responses', 'weekly_teacher_checkins']);
+  assert.deepEqual(client.calls.map(call => call.table), ['cases', 'case_intake', 'fidelity_targets', 'game_sessions', 'game_responses']);
   assert.equal(client.calls.some(call => call.table === 'case_coaches'), false);
   assert.equal(client.calls.some(call => call.operations.some(operation => ['insert', 'upsert', 'update'].includes(operation[0]))), false);
   assert.deepEqual(client.calls[0].operations, [['select', 'id, active'], ['eq', 'active', true]]);
   for (const call of client.calls.slice(1)) {
     assert.ok(call.operations.some(operation => operation[0] === 'in' && operation[1] === 'case_id' && operation[2].join(',') === 'case-a,case-b'));
   }
-  for (const call of client.calls.filter(call => ['game_sessions', 'game_responses', 'weekly_teacher_checkins'].includes(call.table))) {
+  for (const call of client.calls.filter(call => ['game_sessions', 'game_responses'].includes(call.table))) {
     assert.ok(call.operations.some(operation => operation[0] === 'eq' && operation[1] === 'qa_mode' && operation[2] === false));
   }
 });
@@ -172,8 +172,7 @@ test('weekly practice snapshot uses Denver dates, weighted scores, completed non
 test('weekly snapshot copy preserves self-report and classroom-fidelity boundaries', async () => {
   const source = await readFile(new URL('./dashboard.js', import.meta.url), 'utf8');
   assert.match(source, /scheduled study days/);
-  assert.match(source, /Teacher confidence \(self-report\)/);
-  assert.match(source, /MR helpfulness \(self-report\)/);
+  assert.doesNotMatch(source, /Teacher confidence|MR helpfulness|coach_note|target_behavior_rating|replacement_behavior_rating/);
   assert.match(source, /not classroom fidelity/);
   assert.doesNotMatch(source, /weekly[^\n]*(weakest|recommendation|teacher should)/i);
 });

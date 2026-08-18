@@ -39,6 +39,8 @@ Use the same executable contract as a public fictional teacher folder:
 
 `config.js` sets `window.MR_TEACHER_CONFIG.missionFiles` and `resourcesFile`. Files execute in the existing Node VM sandbox. The generated config removes those executable-file fields, sets `contentSource` to `supabase-protected`, and does not require `game_folder`.
 
+For dissertation participant builds, `config.js` must also contain a protected, case-specific `weeklyTeacherReport` object with substantive `targetBehavior`, `replacementBehavior`, and `targetRoutine` strings. Use only approved aliases and minimum-necessary descriptions, never a student full name. These labels remain inside the existing protected `case_game_content.config` payload. Fictional demos and legacy QA content may omit them and receive generic runtime wording.
+
 **Participant-facing choices are shuffled at display time. Authoring order must never be relied upon.** The protected-content build pipeline always normalizes `shuffleChoices` to `true`, even when a private source config omits it or sets it to `false`. This is a participant-safety invariant, not an authoring preference. Any exceptional fixed-order inspection must be confined to a clearly documented, non-participant QA tool; participant payloads and participant runtime do not provide an opt-out.
 
 ## Validate and build
