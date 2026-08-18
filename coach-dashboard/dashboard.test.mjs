@@ -132,14 +132,14 @@ test('research admin loads all active cases and their dashboard data without coa
   const client = mockClient({ cases: [{ id: 'case-a', active: true }, { id: 'case-b', active: true }] });
   const cases = await loadDashboardCases(client, 'admin-user', 'research_admin');
   assert.deepEqual(cases.map(row => row.id), ['case-a', 'case-b']);
-  assert.deepEqual(client.calls.map(call => call.table), ['cases', 'case_intake', 'fidelity_targets', 'game_sessions', 'game_responses']);
+  assert.deepEqual(client.calls.map(call => call.table), ['cases', 'case_intake', 'fidelity_targets', 'game_sessions', 'game_responses', 'weekly_teacher_checkins']);
   assert.equal(client.calls.some(call => call.table === 'case_coaches'), false);
   assert.equal(client.calls.some(call => call.operations.some(operation => ['insert', 'upsert', 'update'].includes(operation[0]))), false);
   assert.deepEqual(client.calls[0].operations, [['select', 'id, active'], ['eq', 'active', true]]);
   for (const call of client.calls.slice(1)) {
     assert.ok(call.operations.some(operation => operation[0] === 'in' && operation[1] === 'case_id' && operation[2].join(',') === 'case-a,case-b'));
   }
-  for (const call of client.calls.filter(call => ['game_sessions', 'game_responses'].includes(call.table))) {
+  for (const call of client.calls.filter(call => ['game_sessions', 'game_responses', 'weekly_teacher_checkins'].includes(call.table))) {
     assert.ok(call.operations.some(operation => operation[0] === 'eq' && operation[1] === 'qa_mode' && operation[2] === false));
   }
 });
@@ -151,4 +151,29 @@ test('dashboard source uses shared authorization and displays the admin-view lab
   assert.match(source, /loadDashboardCases\(state\.client, session\.user\.id, profile\.role\)/);
   assert.match(html, /<a id="research-admin-label"[^>]*href="\.\.\/research-admin\/"[^>]*hidden>Research Admin View<\/a>/);
   assert.doesNotMatch(source, /service[_-]?role/i);
+});
+
+test('weekly practice snapshot uses Denver dates, weighted scores, completed non-QA sessions only', async () => {
+  const { weeklyPracticeSnapshot } = await import('./dashboard-metrics.mjs');
+  const snapshot = weeklyPracticeSnapshot({
+    checkins: [{ week_start: '2026-09-14', week_end: '2026-09-18', scheduled_study_days: 4, submitted_at: '2026-09-18T00:00:00Z', qa_mode: false }],
+    sessions: [
+      { status: 'completed', ended_at: '2026-09-15T05:30:00Z', score: 4, max_score: 5, qa_mode: false },
+      { status: 'completed', ended_at: '2026-09-19T05:30:00Z', score: 5, max_score: 10, qa_mode: false },
+      { status: 'started', started_at: '2026-09-16T12:00:00Z', score: 10, max_score: 10, qa_mode: false },
+      { status: 'completed', ended_at: '2026-09-17T12:00:00Z', score: 10, max_score: 10, qa_mode: true }
+    ]
+  });
+  assert.equal(snapshot.missionsCompleted, 2);
+  assert.equal(snapshot.averageScore, 60);
+  assert.equal(snapshot.mostRecentScore, 50);
+});
+
+test('weekly snapshot copy preserves self-report and classroom-fidelity boundaries', async () => {
+  const source = await readFile(new URL('./dashboard.js', import.meta.url), 'utf8');
+  assert.match(source, /scheduled study days/);
+  assert.match(source, /Teacher confidence \(self-report\)/);
+  assert.match(source, /MR helpfulness \(self-report\)/);
+  assert.match(source, /not classroom fidelity/);
+  assert.doesNotMatch(source, /weekly[^\n]*(weakest|recommendation|teacher should)/i);
 });

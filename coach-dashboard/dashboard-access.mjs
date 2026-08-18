@@ -7,13 +7,14 @@ async function loadCaseDetails(client, caseIds, cases) {
   const queries = await Promise.all([
     client.from('case_intake').select('case_id, teacher_name, student_initials, grade_level, has_crisis_plan').in('case_id', caseIds),
     client.from('fidelity_targets').select('id, case_id, domain, description, sort_order').in('case_id', caseIds).eq('active', true).order('sort_order'),
-    client.from('game_sessions').select('id, case_id, mission_id, mission_title, started_at, ended_at, status, duration_seconds, active_duration_seconds, plan_aligned_count, refine_count, missed_count, total_hints_opened, qa_mode').in('case_id', caseIds).eq('qa_mode', false).order('started_at', { ascending: false }),
-    client.from('game_responses').select('id, session_id, case_id, fidelity_target_id, fidelity_domain, alignment, hint_opened, hint_open_count, created_at, qa_mode').in('case_id', caseIds).eq('qa_mode', false)
+    client.from('game_sessions').select('id, case_id, mission_id, mission_title, started_at, ended_at, status, score, max_score, duration_seconds, active_duration_seconds, plan_aligned_count, refine_count, missed_count, total_hints_opened, qa_mode').in('case_id', caseIds).eq('qa_mode', false).order('started_at', { ascending: false }),
+    client.from('game_responses').select('id, session_id, case_id, fidelity_target_id, fidelity_domain, alignment, hint_opened, hint_open_count, created_at, qa_mode').in('case_id', caseIds).eq('qa_mode', false),
+    client.from('weekly_teacher_checkins').select('id, case_id, week_start, week_end, scheduled_study_days, helpfulness_rating, confidence_rating, plan_difficult, coach_note, submitted_at, qa_mode').in('case_id', caseIds).eq('qa_mode', false).order('submitted_at', { ascending: false })
   ]);
   const failed = queries.find(result => result.error);
   if (failed) throw failed.error;
-  const [intakes, targets, sessions, responses] = queries.map(result => result.data || []);
-  return cases.map(row => ({ id: row.id, intake: intakes.find(item => item.case_id === row.id) || null, targets: targets.filter(item => item.case_id === row.id), sessions: sessions.filter(item => item.case_id === row.id), responses: responses.filter(item => item.case_id === row.id) }));
+  const [intakes, targets, sessions, responses, checkins] = queries.map(result => result.data || []);
+  return cases.map(row => ({ id: row.id, intake: intakes.find(item => item.case_id === row.id) || null, targets: targets.filter(item => item.case_id === row.id), sessions: sessions.filter(item => item.case_id === row.id), responses: responses.filter(item => item.case_id === row.id), checkins: checkins.filter(item => item.case_id === row.id) }));
 }
 
 export async function loadDashboardCases(client, userId, role) {

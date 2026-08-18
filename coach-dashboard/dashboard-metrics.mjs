@@ -68,3 +68,21 @@ export function statusFor(analysis) {
   const focused = analysis.domains.find(row => DOMAIN_LABELS[row.domain] === analysis.focus);
   return focused && focused.percent < 60 ? 'priority' : 'watch';
 }
+
+export function denverDateKey(value) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(value));
+  const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${byType.year}-${byType.month}-${byType.day}`;
+}
+
+export function weeklyPracticeSnapshot(caseData) {
+  const checkin = (caseData.checkins || []).filter(row => row.qa_mode !== true).sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))[0];
+  if (!checkin) return null;
+  const sessions = (caseData.sessions || []).filter(row => row.qa_mode !== true && row.status === 'completed')
+    .filter(row => { const key = denverDateKey(row.ended_at || row.started_at); return key >= checkin.week_start && key <= checkin.week_end; })
+    .sort((a, b) => new Date(b.ended_at || b.started_at) - new Date(a.ended_at || a.started_at));
+  const scored = sessions.filter(row => Number(row.max_score) > 0 && Number.isFinite(Number(row.score)));
+  const score = scored.reduce((sum, row) => sum + Number(row.score), 0);
+  const maxScore = scored.reduce((sum, row) => sum + Number(row.max_score), 0);
+  return { checkin, missionsCompleted: sessions.length, averageScore: maxScore > 0 ? Math.round(score / maxScore * 100) : null, mostRecentScore: scored.length ? Math.round(Number(scored[0].score) / Number(scored[0].max_score) * 100) : null };
+}
