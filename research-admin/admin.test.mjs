@@ -99,3 +99,18 @@ assert.doesNotMatch(html + js + sql, /student_full_name|student_id|diagnosis|dis
 assert.match(html, /Print \/ Save PDF/); assert.match(css, /@media print/); assert.match(css, /\.no-print/);
 assert.doesNotMatch(js, /Practitioner/);
 console.log('Research-admin transactional provisioning, rollback structure, readiness, inactive safeguards, and privacy checks passed.');
+
+// Prepared cases use accessible, source-aware primary tabs without changing routes.
+assert.match(js, /role="tablist" aria-label="Case detail sections"/);
+assert.match(js, /role="tab" aria-selected="false" aria-controls="intake-panel"/);
+assert.match(js, />Intake Information<\/button>/);
+assert.match(js, />Research Operations<\/button>/);
+assert.match(js, /openDetail\(intake\.request_id, 'operations'\)/);
+assert.match(js, /openDetail\(button\.dataset\.id, 'intake'\)/);
+assert.match(js, /\['ArrowLeft', 'ArrowRight', 'Home', 'End'\]/);
+assert.match(js, /id="intake-panel"/);
+assert.match(js, /Contact Information/);
+assert.match(js, /Student and behavior context/);
+assert.match(js, /Plan-Aligned Staff Actions/);
+assert.match(js, /id="operations-panel"[\s\S]*readinessPanel\(converted\)/);
+assert.match(css, /\.operations-subnav \{ position:sticky/);
