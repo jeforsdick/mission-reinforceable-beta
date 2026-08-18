@@ -66,6 +66,7 @@ function bindDetail() {
     const caseCode = event.currentTarget.dataset.caseCode;
     window.open(`../game/?qa_case=${encodeURIComponent(caseCode)}`, '_blank', 'noopener');
   });
+  document.querySelectorAll('.signoff-action:not(:disabled)').forEach(button => button.addEventListener('click', recordSignoff));
   $('#approve')?.addEventListener('click', () => setStatus('approved'));
   $('#decline')?.addEventListener('click', () => { if (window.confirm('Decline this intake? This does not delete the submitted context.')) setStatus('declined'); });
   $('#study-id')?.addEventListener('input', event => {
@@ -73,6 +74,20 @@ function bindDetail() {
     if (match && !$('#case-code').value) $('#case-code').value = `CASE-${match[1]}`;
   });
   $('#provision-form')?.addEventListener('submit', provisionCase);
+}
+
+async function recordSignoff(event) {
+  const button = event.currentTarget;
+  const version = state.readiness?.protected_content?.version;
+  if (!window.confirm(`Record this human review for protected content version ${version}?`)) return;
+  button.disabled = true;
+  const { error } = await state.client.rpc('research_admin_record_case_signoff', {
+    target_case_id: state.readiness.case.id,
+    target_protected_content_version: version,
+    target_review_type: button.dataset.reviewType
+  });
+  if (error) { $('#signoff-message').textContent = error.message; button.disabled = false; return; }
+  await openDetail(state.selected.request_id);
 }
 
 async function adminApi(path, body) {
@@ -116,13 +131,19 @@ async function provisionCase(event) {
 }
 async function loadReadiness(requestId) {
   const { data, error } = await state.client.rpc('research_admin_case_readiness', { target_request_id: requestId });
-  if (error) throw error; return data;
+  if (error) throw error; state.readiness = data; return data;
 }
 function readinessPanel(data) {
   const states = readinessForCase(data);
-  const rows = [['Intake reviewed', 'Ready'], ['Teacher account linked', states.teacher], ['Coach account linked', states.coach], ['Case created', states.case], ['Case intake snapshot', states.snapshot], ['Fidelity targets finalized', states.targets], ['Coach assigned', states.assignment], ['Protected game content', states.content === 'Ready' ? `Ready — version ${escapeHtml(data.protected_content.version)}, updated ${formatDate(data.protected_content.updated_at)}` : 'Needs action — Not loaded'], ['Game access', states.game === 'Ready' ? 'Ready — intervention active' : 'OFF intentionally — intervention not activated'], ['Daily reminders', states.reminders === 'Ready' ? 'Ready — enabled' : 'OFF intentionally']];
+  const rows = [['Intake reviewed', 'Ready'], ['Teacher account linked', states.teacher], ['Coach account linked', states.coach], ['Case created', states.case], ['Case intake snapshot', states.snapshot], ['Fidelity targets finalized', states.targets], ['Coach assigned', states.assignment], ['Protected game content', states.content === 'Ready' ? `Ready — version ${escapeHtml(data.protected_content.version)}, updated ${formatDate(data.protected_content.updated_at)}` : 'Needs action — Not loaded'], ['BIP Resource Map finalized', states.resourceMap], ['Mission bank comparability reviewed', states.comparability], ['Game access', states.game === 'Ready' ? 'Ready — intervention active' : 'OFF intentionally — intervention not activated'], ['Daily reminders', states.reminders === 'Ready' ? 'Ready — enabled' : 'OFF intentionally']];
   const preview = states.content === 'Ready' ? `<button id="preview-protected-game" class="primary" type="button" data-case-code="${escapeHtml(data.case.case_code)}">Preview Protected Game</button><small>QA only — does not activate teacher gameplay or reminders. QA sessions are excluded from study data.</small>` : '';
-  return `<section class="panel"><p class="eyebrow">Prepared case readiness</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}<p><strong>Prepared does not mean intervention active.</strong></p></section>`;
+  const signoffs = states.content === 'Ready' ? `<div class="signoffs no-print"><h3>Human review signoffs</h3><p>Approving protected content <strong>version ${escapeHtml(data.protected_content.version)}</strong>. A later version requires new signoffs.</p>${[
+    ['resource_behavior_review', 'Behavioral review complete', data.resource_map?.behavior_reviewed],
+    ['resource_privacy_review', 'Privacy review complete', data.resource_map?.privacy_reviewed],
+    ['resource_qa_preview', 'Resource QA Preview passed', data.resource_map?.qa_previewed],
+    ['mission_bank_comparability', 'Mission bank comparability reviewed', data.mission_bank_comparability?.reviewed]
+  ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
+  return `<section class="panel"><p class="eyebrow">Prepared case readiness</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}${signoffs}<p><strong>Prepared does not mean intervention active.</strong></p></section>`;
 }
 async function setStatus(status) {
   const { error } = await state.client.rpc('research_admin_set_intake_status', { target_request_id: state.selected.request_id, target_status: status });
