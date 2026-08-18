@@ -1,0 +1,80 @@
+/* Mission Progress presentation v2.
+   Keeps the server-backed data architecture while restoring the concise Results-style summary. */
+
+/* The original static disclaimer stays in markup for compatibility but is replaced
+   visually by the smaller history disclaimer rendered directly under the heading. */
+.score-disclaimer {
+  display: none !important;
+}
+
+.history-disclaimer {
+  grid-column: 1 / -1;
+  width: min(760px, 82%);
+  margin: -8px auto 2px;
+  color: #fff4ce;
+  text-align: center;
+  font: 700 13px/1.25 var(--display);
+  text-shadow: 2px 2px 0 #050005;
+}
+
+.compact-run-card {
+  min-height: 112px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.compact-run-card p {
+  margin: 2px 0;
+}
+
+/* Details intentionally mirrors the useful top portion of the Results screen:
+   summary metrics + one concise coaching summary, without replaying all decisions. */
+.compact-mission-review {
+  padding: 18px 24px 22px;
+  color: #1f1608;
+}
+
+.progress-summary-debrief > h1 {
+  margin: 0 0 16px;
+  font: 900 30px/1.1 var(--display);
+}
+
+.progress-summary-debrief .results-card {
+  margin-bottom: 14px;
+}
+
+.progress-summary-debrief .results-card:last-child {
+  margin-bottom: 0;
+}
+
+.progress-summary-debrief .results-stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.progress-summary-debrief .results-stats div {
+  min-width: 0;
+}
+
+.progress-summary-debrief .results-coaching-card p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .history-disclaimer {
+    width: 94%;
+    margin-top: -4px;
+    font-size: 12px;
+  }
+
+  .compact-run-card {
+    min-height: 0;
+  }
+
+  .progress-summary-debrief > h1 {
+    font-size: 25px;
+  }
+
+  .progress-summary-debrief .results-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
