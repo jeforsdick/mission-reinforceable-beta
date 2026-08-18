@@ -17,6 +17,19 @@ test('period calendar and append-only latest-authoritative reporting are frozen'
  assert.match(sql,/row_number\(\) over\(partition by[\s\S]*reviewed_at desc/); assert.match(sql,/distinct on\(review_scope,coalesce\(study_date,week_start\)\)/);
  assert.match(sql,/generate_series\(target_week_start,target_week_start\+4/);
 });
+test('server rejects only future America/Denver daily dates and study weeks',()=>{
+ const evidence=sql.match(/create function public\.research_admin_procedural_fidelity_evidence\([\s\S]*?end \$\$;/)?.[0]??'';
+ const submit=sql.match(/create function public\.research_admin_submit_procedural_fidelity_review\([\s\S]*?end \$\$;/)?.[0]??'';
+ for(const rpc of [evidence,submit]){
+  assert.match(rpc,/denver_today date := \(now\(\) at time zone 'America\/Denver'\)::date/,'America/Denver determines today');
+  assert.match(rpc,/current_week_monday := denver_today-\(extract\(isodow from denver_today\)::integer-1\)/,'the current week begins Monday in Denver');
+  assert.match(rpc,/target_study_date>denver_today then raise exception 'procedural fidelity cannot be recorded for a future study period'/,'a future Granite daily date is rejected');
+  assert.match(rpc,/target_week_start>current_week_monday then raise exception 'procedural fidelity cannot be recorded for a future study period'/,'a future study week is rejected');
+  assert.doesNotMatch(rpc,/target_study_date>=denver_today|target_week_start>=current_week_monday/,'today and the current study week remain allowed');
+ }
+ assert.match(sql,/is_mr_dissertation_study_day\(target_study_date\)/,'historical eligible daily dates remain allowed');
+ assert.match(sql,/generate_series\(target_week_start,target_week_start\+4/,'historical eligible weeks remain allowed');
+});
 test('evidence is minimal, excludes QA, and does not auto-score engagement',()=>{
  assert.match(sql,/teacher_reminder_events/); assert.match(sql,/No reminder event recorded\. This does not automatically mean No/);
  assert.match(sql,/not gs\.qa_mode/); assert.match(sql,/does not by itself indicate an access failure/);

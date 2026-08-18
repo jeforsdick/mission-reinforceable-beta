@@ -69,11 +69,15 @@ create function public.research_admin_procedural_fidelity_evidence(
   target_study_date date default null, target_week_start date default null
 ) returns jsonb language plpgsql stable security definer set search_path='' as $$
 declare result jsonb; target_week_end date;
+  denver_today date := (now() at time zone 'America/Denver')::date;
+  current_week_monday date;
 begin
+  current_week_monday := denver_today-(extract(isodow from denver_today)::integer-1);
   if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
   if not exists(select 1 from public.participants p where p.id=target_participant_id and p.case_id=target_case_id)
     then raise exception 'participant/case assignment not found' using errcode='P0002'; end if;
   if target_scope='daily' then
+    if target_study_date>denver_today then raise exception 'procedural fidelity cannot be recorded for a future study period' using errcode='22023'; end if;
     if not public.is_mr_dissertation_study_day(target_study_date) then raise exception 'daily target must be a scheduled Granite study day' using errcode='22023'; end if;
     select jsonb_build_object(
       'authoritative_timezone','America/Denver',
@@ -94,6 +98,7 @@ begin
     ) into result;
   elsif target_scope='weekly' then
     target_week_end := target_week_start+4;
+    if target_week_start>current_week_monday then raise exception 'procedural fidelity cannot be recorded for a future study period' using errcode='22023'; end if;
     if extract(isodow from target_week_start)<>1 or not exists(select 1 from generate_series(target_week_start,target_week_end,interval '1 day') d where public.is_mr_dissertation_study_day(d::date))
       then raise exception 'weekly target must be a Monday-Friday week containing a Granite study day' using errcode='22023'; end if;
     select jsonb_build_object('authoritative_timezone','America/Denver',
@@ -113,17 +118,22 @@ create function public.research_admin_submit_procedural_fidelity_review(
 ) returns jsonb language plpgsql security definer set search_path='' as $$
 declare expected text[]; component_key text; component jsonb; yeses smallint:=0; applicable smallint:=0;
   percent numeric(5,2); evidence jsonb; new_row public.mr_procedural_fidelity_reviews%rowtype; normalized_notes text;
+  denver_today date := (now() at time zone 'America/Denver')::date;
+  current_week_monday date;
 begin
+  current_week_monday := denver_today-(extract(isodow from denver_today)::integer-1);
   if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
   if not exists(select 1 from public.participants p join public.cases c on c.id=p.case_id
     where p.id=target_participant_id and p.case_id=target_case_id and p.active and c.active)
     then raise exception 'active participant/case assignment required' using errcode='42501'; end if;
   if target_review_scope='daily' then
     expected:=array['daily_prompt_delivered','mission_available','functional_access_available'];
+    if target_study_date>denver_today then raise exception 'procedural fidelity cannot be recorded for a future study period' using errcode='22023'; end if;
     if target_study_date is null or target_week_start is not null or not public.is_mr_dissertation_study_day(target_study_date)
       then raise exception 'daily target must be a scheduled Granite study day' using errcode='22023'; end if;
   elsif target_review_scope='weekly' then
     expected:=array['weekly_usage_summary_delivered','weekly_teacher_checkin_distributed'];
+    if target_week_start>current_week_monday then raise exception 'procedural fidelity cannot be recorded for a future study period' using errcode='22023'; end if;
     if target_study_date is not null or target_week_start is null or extract(isodow from target_week_start)<>1
       or not exists(select 1 from generate_series(target_week_start,target_week_start+4,interval '1 day') d where public.is_mr_dissertation_study_day(d::date))
       then raise exception 'weekly target must contain at least one scheduled Granite study day' using errcode='22023'; end if;
