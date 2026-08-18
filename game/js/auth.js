@@ -121,13 +121,17 @@
   }
 
   async function completeTelemetrySession(sessionId, participantId, caseId, updates) {
-    const { error } = await client()
+    const { data, error } = await client()
       .from('game_sessions')
       .update(updates)
       .eq('id', sessionId)
       .eq('participant_id', participantId)
-      .eq('case_id', caseId);
+      .eq('case_id', caseId)
+      .select('id');
     if (error) throw new Error(`Unable to complete gameplay telemetry session: ${error.message}`);
+    if (!Array.isArray(data) || data.length !== 1) {
+      throw new Error('Unable to complete gameplay telemetry session: the session was not updated.');
+    }
   }
 
   MR.auth = {
@@ -171,6 +175,12 @@
     insertTelemetryResponses,
 
     completeTelemetrySession,
+
+    async hasCompletedMissionToday() {
+      const { data, error } = await client().rpc('has_completed_mission_today');
+      if (error) throw new Error(`Unable to check today's mission status: ${error.message}`);
+      return data === true;
+    },
 
     async signOut() {
       const { error } = await client().auth.signOut();

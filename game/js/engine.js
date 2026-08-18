@@ -200,6 +200,10 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         questions_with_hints: run.questionsWithHints,
         hint_use_rate: run.hintUseRate
       });
+      if (!context.qaMode) {
+        MR.dailyMissionCompleted = true;
+        if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
+      }
     } catch (error) {
       console.warn('Supabase telemetry session completion failed; gameplay and existing logging will continue.', error);
     }
@@ -243,7 +247,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (!pool.length) throw new Error(`No missions found for mode: ${mode}`);
 
     if (mode === 'daily') {
-      const daySeed = Math.floor(Date.now() / 86400000);
+      const daySeed = MR.studyDate.dailySeed();
       return pool[daySeed % pool.length];
     }
 
@@ -1324,7 +1328,21 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
   }
 
   MR.engine = {
-    start(mode) {
+    async start(mode) {
+      const context = MR.telemetryContext;
+      if (context && !context.qaMode) {
+        try {
+          MR.dailyMissionCompleted = await MR.auth.hasCompletedMissionToday();
+        } catch (error) {
+          console.error(error);
+          window.alert('We could not verify today\'s mission status. Please try again before starting.');
+          return false;
+        }
+        if (MR.dailyMissionCompleted) {
+          if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
+          return false;
+        }
+      }
       const mission = chooseMission(mode);
       const telemetryStartedAt = new Date().toISOString();
       current = {
@@ -1354,6 +1372,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       renderStep();
       const firstStep = current.mission.steps[current.stepId];
       showBIPBriefing(extractBIPBriefing(firstStep && firstStep.text) || DEFAULT_BETA_BIP_BRIEFING);
+      return true;
     },
 
     continueAfterFeedback,
@@ -1367,6 +1386,7 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     renderHearts,
 
     hasDailyRunToday() {
+      if (MR.telemetryContext && !MR.telemetryContext.qaMode) return MR.dailyMissionCompleted === true;
       return MR.storage.getRuns().some(run => run.dateKey === MR.todayKey() && run.mode === 'daily');
     },
 
