@@ -1,4 +1,5 @@
 import { accountState, normalizeTargets, readinessForCase } from './admin-model.mjs';
+import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
@@ -80,6 +81,9 @@ function bindDetail() {
   });
   document.querySelectorAll('.signoff-action:not(:disabled)').forEach(button => button.addEventListener('click', recordSignoff));
   $('#comparability-form')?.addEventListener('submit', submitComparabilityReview);
+  $('#fidelity-scope')?.addEventListener('change', renderFidelityForm);
+  $('#fidelity-date')?.addEventListener('change', loadFidelityEvidence);
+  $('#fidelity-form')?.addEventListener('submit', submitFidelityReview);
   document.querySelectorAll('input[name^="criterion-"]').forEach(input => input.addEventListener('change', updateComparabilityConfirmation));
   $('#final-confirmation')?.addEventListener('change', updateComparabilityConfirmation);
   $('#approve')?.addEventListener('click', () => setStatus('approved'));
@@ -89,6 +93,7 @@ function bindDetail() {
     if (match && !$('#case-code').value) $('#case-code').value = `CASE-${match[1]}`;
   });
   $('#provision-form')?.addEventListener('submit', provisionCase);
+  if ($('#fidelity-form-wrap')) renderFidelityForm();
 }
 
 async function recordSignoff(event) {
@@ -175,7 +180,9 @@ async function provisionCase(event) {
 }
 async function loadReadiness(requestId) {
   const { data, error } = await state.client.rpc('research_admin_case_readiness', { target_request_id: requestId });
-  if (error) throw error; state.readiness = data; return data;
+  if (error) throw error;
+  const { data: fidelity, error: fidelityError } = await state.client.rpc('research_admin_procedural_fidelity_dashboard', { target_case_id: data.case.id });
+  if (fidelityError) throw fidelityError; state.fidelity = fidelity; state.readiness = data; return data;
 }
 function readinessPanel(data) {
   const states = readinessForCase(data);
@@ -186,7 +193,35 @@ function readinessPanel(data) {
     ['resource_privacy_review', 'Privacy review complete', data.resource_map?.privacy_reviewed],
     ['resource_qa_preview', 'Resource QA Preview passed', data.resource_map?.qa_previewed]
   ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
-  return `<section class="panel"><p class="eyebrow">Prepared case readiness</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}${signoffs}<p><strong>Prepared does not mean intervention active.</strong></p></section>${states.content === 'Ready' ? comparabilityPanel(data) : ''}`;
+  return `<section class="panel"><p class="eyebrow">Prepared case readiness</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}${signoffs}<p><strong>Prepared does not mean intervention active.</strong></p></section>${states.content === 'Ready' ? comparabilityPanel(data) : ''}${fidelityPanel()}`;
+}
+
+function fidelityPanel() {
+  const f=state.fidelity, s=f.summary || {}, enabled=f.case_active && f.participant_active;
+  const stat=(label,yes,applicable)=>`<div><span>${label}</span><strong>${percentage(yes,applicable)}</strong><small>${yes} / ${applicable} applicable components</small></div>`;
+  const history=(f.history||[]).map(r=>`<li><strong>${r.review_scope==='daily'?'Daily':'Weekly'} · ${escapeHtml(r.study_date||`${r.week_start}–${r.week_end}`)}</strong> · ${r.fidelity_percent===null?'Not applicable':`${r.fidelity_percent}%`} · ${r.yes_count} / ${r.applicable_count} · ${escapeHtml(r.reviewer)} · ${formatDate(r.reviewed_at)} · <span class="${r.is_current?'ready':'off'}">${r.is_current?'Current':'Superseded'}</span></li>`).join('');
+  return `<section class="panel procedural-fidelity no-print"><p class="eyebrow">Research operations</p><h2>MR Procedural Fidelity</h2><p>Procedural fidelity reflects whether Mission: Reinforceable was delivered as intended. Teacher participation and classroom implementation are analyzed separately.</p><div class="fidelity-summary">${stat('Daily Procedural Fidelity',s.daily_yes||0,s.daily_applicable||0)}${stat('Weekly Procedural Fidelity',s.weekly_yes||0,s.weekly_applicable||0)}${stat('Overall Recorded Procedural Fidelity',s.overall_yes||0,s.overall_applicable||0)}</div><p><strong>Recorded reviews:</strong> ${s.daily_dates||0} daily dates · ${s.study_weeks||0} study weeks. Missing periods are not scored.</p><p class="neutral-note">Teacher mission completion and Weekly Check-In completion are engagement/adherence measures. They are not scored as procedural-fidelity failures when the MR component was delivered as intended.</p>${enabled?`<label>Review type<select id="fidelity-scope"><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label><div id="fidelity-form-wrap"></div>`:'<p class="off">Procedural fidelity logging begins when the participant enters the intervention phase.</p>'}<details class="review-history"><summary>Review history (${(f.history||[]).length})</summary>${history?`<ol>${history}</ol>`:'<p>No procedural-fidelity reviews recorded.</p>'}</details></section>`;
+}
+function renderFidelityForm(){
+ const scope=$('#fidelity-scope')?.value||'daily', monday=scope==='weekly';
+ $('#fidelity-form-wrap').innerHTML=`<form id="fidelity-form"><label>${monday?'Week beginning Monday':'Eligible Granite study date'}<input id="fidelity-date" type="date" min="${STUDY_START}" max="${STUDY_END}" required></label><div id="fidelity-evidence" class="system-evidence">Select a ${monday?'study week':'study date'} to load supporting system evidence.</div>${COMPONENTS[scope].map(([key,title,help])=>`<fieldset class="fidelity-component"><legend>${escapeHtml(title)}</legend><p>${escapeHtml(help)}</p><div data-evidence="${key}"></div><div class="criterion-options">${[['yes','Yes'],['no','No'],['na','N/A']].map(([v,l])=>`<label><input type="radio" name="fidelity-${key}" value="${v}" required> ${l}</label>`).join('')}</div><label>Brief note <textarea name="fidelity-note-${key}" maxlength="1000" rows="2"></textarea></label><small>Required for No and N/A. Keep notes brief and operational. Do not include student names, diagnoses, or protected BIP content.</small></fieldset>`).join('')}<label>Optional overall review note<textarea id="fidelity-overall" maxlength="2000" rows="3"></textarea></label><button class="primary">Record ${monday?'Weekly':'Daily'} Fidelity Review</button><p id="fidelity-message" class="message" aria-live="polite"></p></form>`;
+ $('#fidelity-date').addEventListener('change',loadFidelityEvidence); $('#fidelity-form').addEventListener('submit',submitFidelityReview);
+}
+async function loadFidelityEvidence(){
+ const scope=$('#fidelity-scope').value,date=$('#fidelity-date').value;
+ if (!date || (scope==='daily'?!isStudyDay(date):(new Date(`${date}T00:00:00Z`).getUTCDay()!==1 || !weekHasStudyDay(date)))) { $('#fidelity-evidence').textContent=scope==='daily'?'Choose a scheduled Granite study day.':'Choose a Monday whose week contains a Granite study day.'; return; }
+ const args={target_participant_id:state.fidelity.participant_id,target_case_id:state.readiness.case.id,target_scope:scope,target_study_date:scope==='daily'?date:null,target_week_start:scope==='weekly'?date:null};
+ const {data,error}=await state.client.rpc('research_admin_procedural_fidelity_evidence',args); if(error){$('#fidelity-evidence').textContent=error.message;return;} state.fidelityEvidence=data;
+ $('#fidelity-evidence').textContent=`System evidence (${data.authoritative_timezone}): supporting evidence only; it does not select Yes, No, or N/A.`;
+ const evidenceFor=scope==='daily'?[data.daily_prompt,data.mission_availability,data.functional_access]:[data.weekly_usage_summary,data.weekly_teacher_checkin];
+ COMPONENTS[scope].forEach(([key],i)=>{document.querySelector(`[data-evidence="${key}"]`).innerHTML=`<small><strong>System Evidence:</strong> ${escapeHtml(JSON.stringify(evidenceFor[i]))}</small>`;});
+}
+async function submitFidelityReview(event){
+ event.preventDefault(); const scope=$('#fidelity-scope').value,date=$('#fidelity-date').value;
+ const components=Object.fromEntries(COMPONENTS[scope].map(([key])=>[key,{status:document.querySelector(`[name="fidelity-${key}"]:checked`)?.value,note:document.querySelector(`[name="fidelity-note-${key}"]`).value.trim()||null}]));
+ const missing=Object.entries(components).find(([,v])=>['no','na'].includes(v.status)&&!v.note); if(missing){$('#fidelity-message').textContent='A brief note is required for every No and N/A.';return;}
+ const {error}=await state.client.rpc('research_admin_submit_procedural_fidelity_review',{target_participant_id:state.fidelity.participant_id,target_case_id:state.readiness.case.id,target_review_scope:scope,target_study_date:scope==='daily'?date:null,target_week_start:scope==='weekly'?date:null,submitted_components:components,submitted_overall_notes:$('#fidelity-overall').value.trim()||null});
+ if(error){$('#fidelity-message').textContent=error.message;return;} await openDetail(state.selected.request_id);
 }
 
 function comparabilityPanel(data) {
