@@ -6,7 +6,7 @@
   const LOAD_ERROR = 'Mission progress could not be loaded. Please try again or contact the research team.';
   const EMPTY_MESSAGE = 'Complete a mission and your game-practice progress will appear here.';
   const SCORE_DISCLAIMER = 'These scores summarize your choices in Mission: Reinforceable. They are not classroom fidelity scores.';
-  const PROGRESS_POLISH_HREF = '../game/css/progress-summary-v2.css?v=20260818-summary-v3';
+  const PROGRESS_POLISH_HREF = '../game/css/progress-summary-v2.css?v=20260818-full-results';
 
   function value(run, camel, snake) {
     return run && run[camel] != null ? run[camel] : run && run[snake];
@@ -49,34 +49,46 @@
     return 'Daily Mission';
   }
 
-  function missionCounts(run) {
-    return {
-      best: Number(value(run, 'bestChoiceCount', 'plan_aligned_count')) || 0,
-      refine: Number(value(run, 'refineChoiceCount', 'refine_count')) || 0,
-      missed: Number(value(run, 'missedOpportunityCount', 'missed_count')) || 0
-    };
+  function responseHistory(responses) {
+    return (Array.isArray(responses) ? responses : []).map((response, index) => {
+      const score = Number(response.selected_score) || 0;
+      return {
+        stepIndex: Number(response.step_index) || index + 1,
+        scenarioTitle: response.scenario_title || '',
+        context: response.scenario_text || '',
+        prompt: response.scenario_text || '',
+        choiceText: response.selected_answer_text || '',
+        selectedAnswerText: response.selected_answer_text || '',
+        score,
+        selectedScore: score,
+        feedback: response.feedback_text || '',
+        feedbackText: response.feedback_text || '',
+        wizard: '',
+        bestChoiceText: response.best_answer_text || '',
+        bestAnswerText: response.best_answer_text || ''
+      };
+    });
   }
 
-  /* Keep these summary rules identical to the end-of-mission Results screen. */
-  function summaryTitle(run) {
-    const score = Number(value(run, 'score', 'score')) || 0;
+  function historicalRun(run, responses) {
+    const history = responseHistory(responses);
     const maxScore = Number(value(run, 'maxScore', 'max_score')) || 0;
-    const accuracy = percentage(run);
-    const isPerfect = maxScore > 0 && (score >= maxScore || accuracy >= 100);
-    if (isPerfect) return 'Perfect Mission!';
-    if (accuracy >= 80) return 'Strong Mission!';
-    return 'Keep Practicing';
-  }
-
-  function coachingSummary(run) {
-    const counts = missionCounts(run);
-    if (!counts.refine && !counts.missed) {
-      return 'Excellent work. Your choices consistently matched the plan and supported prevention, replacement behavior teaching, reinforcement, and calm error correction.';
-    }
-    if (counts.refine && !counts.missed) {
-      return 'Strong work. Your choices mostly stayed aligned with the plan. A few responses were workable, but could be tightened by prompting and reinforcing the replacement behavior more directly.';
-    }
-    return 'You identified some helpful responses, but a few choices moved away from the student’s plan. Review the coaching notes below to strengthen plan-aligned responding during tricky moments.';
+    const score = Number(value(run, 'score', 'score')) || 0;
+    const defaultHearts = Number(MR.teacherConfig && MR.teacherConfig.defaultHearts) || 5;
+    const xpMax = Number(MR.teacherConfig && MR.teacherConfig.xpMax) || 1000;
+    return Object.assign({}, run, {
+      id: run.id,
+      mode: value(run, 'mode', 'mode') || 'daily',
+      missionTitle: value(run, 'missionTitle', 'mission_title') || 'Mission',
+      score,
+      maxScore,
+      accuracy: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
+      hearts: defaultHearts,
+      maxHearts: defaultHearts,
+      behaviorXPMax: xpMax,
+      expectedSteps: history.length || 5,
+      history
+    });
   }
 
   function ensureProgressPolish() {
@@ -135,9 +147,14 @@
 
       list.innerHTML = `<h2 class="history-heading">Mission History</h2><p class="history-disclaimer">${SCORE_DISCLAIMER}</p>${runs.map((run, index) => this.runCard(run, index)).join('')}`;
       MR.$$('.run-card button', list).forEach(button => {
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
           const run = runs[Number(button.dataset.index)];
-          if (run) this.showSummaryDetails(run);
+          if (!run) return;
+          if (!protectedMode) {
+            MR.engine.showStoredRunDetails(run);
+            return;
+          }
+          await this.showProtectedResults(run, button);
         });
       });
     },
@@ -168,42 +185,31 @@
         </article>`;
     },
 
-    showSummaryDetails(run) {
-      const list = MR.$('#progress-list');
-      let panel = MR.$('#mission-review', list);
-      if (!panel) {
-        panel = document.createElement('section');
-        panel.id = 'mission-review';
-        panel.className = 'mission-review compact-mission-review';
-        list.appendChild(panel);
+    async showProtectedResults(run, button) {
+      button.disabled = true;
+      try {
+        const responses = await MR.auth.getProgressResponses(run.id, MR.telemetryContext);
+        if (!responses.length) {
+          throw new Error('No saved mission responses were found for this mission.');
+        }
+        MR.engine.showStoredRunDetails(historicalRun(run, responses));
+      } catch (error) {
+        console.error('Mission review load failed:', error);
+        const list = MR.$('#progress-list');
+        let message = MR.$('#mission-review-error', list);
+        if (!message) {
+          message = document.createElement('div');
+          message.id = 'mission-review-error';
+          message.className = 'progress-message progress-error';
+          list.appendChild(message);
+        }
+        message.textContent = 'Mission feedback could not be loaded. Please try again.';
+      } finally {
+        button.disabled = false;
       }
-      panel.innerHTML = this.detailsHTML(run);
-      if (typeof panel.scrollIntoView === 'function') panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     },
 
-    detailsHTML(run) {
-      const counts = missionCounts(run);
-      const maxScore = Number(value(run, 'maxScore', 'max_score')) || 0;
-      const score = Number(value(run, 'score', 'score')) || 0;
-      return `<section class="results-debrief progress-summary-debrief">
-        <h1>${MR.escapeHTML(summaryTitle(run))}</h1>
-        <section class="results-card results-summary-card">
-          <h2>Mission Summary</h2>
-          <dl class="results-stats">
-            <div><dt>Total Score</dt><dd>${score} / ${maxScore}</dd></div>
-            <div><dt>Percent</dt><dd>${percentage(run)}%</dd></div>
-            <div><dt>Best Choice</dt><dd>${counts.best}</dd></div>
-            <div><dt>Workable, but Refine</dt><dd>${counts.refine}</dd></div>
-            <div><dt>Missed Opportunity</dt><dd>${counts.missed}</dd></div>
-          </dl>
-        </section>
-        <section class="results-card results-coaching-card">
-          <h2>Coaching Summary</h2>
-          <p>${MR.escapeHTML(coachingSummary(run))}</p>
-        </section>
-      </section>`;
-    },
-
+    historicalRun,
     DENVER_TIME_ZONE
   };
 })();

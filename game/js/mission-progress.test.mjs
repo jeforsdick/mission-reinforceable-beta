@@ -22,7 +22,8 @@ function loadDashboard() {
     escapeHTML(value) {
       return String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
     },
-    asset(name) { return `${name}.png`; }
+    asset(name) { return `${name}.png`; },
+    teacherConfig: { defaultHearts: 5, xpMax: 1000 }
   };
   const context = { window: { MR }, console, Intl, Date, document: {} };
   vm.runInNewContext(dashboardSource, context);
@@ -74,26 +75,52 @@ test('history cards stay short and teacher-facing', () => {
   assert.equal(dashboard.DENVER_TIME_ZONE, 'America/Denver');
 });
 
-test('Details restores the concise Results-style Mission Summary and Coaching Summary only', () => {
+test('protected historical responses rebuild the full run history required by the exact Results debrief', () => {
   const { dashboard } = loadDashboard();
-  const details = dashboard.detailsHTML({
-    mode: 'crisis', score: 35, max_score: 50,
-    plan_aligned_count: 3, refine_count: 1, missed_count: 1,
-    ended_at: '2026-08-18T02:00:00Z'
-  });
-  assert.match(details, /Keep Practicing/);
-  assert.match(details, /Mission Summary/);
-  assert.match(details, /Total Score/);
-  assert.match(details, /35 \/ 50/);
-  assert.match(details, /Percent/);
-  assert.match(details, /70%/);
-  assert.match(details, /Best Choice/);
-  assert.match(details, /Workable, but Refine/);
-  assert.match(details, /Missed Opportunity/);
-  assert.match(details, /Coaching Summary/);
-  assert.match(details, /You identified some helpful responses/);
-  assert.doesNotMatch(details, /Scene:|Your Choice|Stronger Plan-Aligned Move|scenario|feedback_text|Mission Review/);
-  assert.doesNotMatch(dashboardSource, /getProgressResponses\(/);
+  const rebuilt = dashboard.historicalRun({
+    id: 'session-1', mode: 'crisis', mission_title: 'The Room Goes Quiet', score: 35, max_score: 50
+  }, [
+    {
+      step_index: 2,
+      scenario_title: 'Moment 2',
+      scenario_text: 'Anna holds up the talk card.',
+      selected_answer_text: 'Whisper a reminder.',
+      selected_score: 0,
+      best_answer_text: 'Prompt the replacement response.',
+      feedback_text: 'This moved away from the plan.'
+    },
+    {
+      step_index: 4,
+      scenario_title: 'Moment 4',
+      scenario_text: 'Anna returns to her spot.',
+      selected_answer_text: 'Give a thumbs-up.',
+      selected_score: 5,
+      best_answer_text: 'Use behavior-specific praise.',
+      feedback_text: 'Supportive, but praise could be more specific.'
+    }
+  ]);
+
+  assert.equal(rebuilt.accuracy, 70);
+  assert.equal(rebuilt.maxScore, 50);
+  assert.equal(rebuilt.history.length, 2);
+  assert.equal(rebuilt.history[0].score, 0);
+  assert.equal(rebuilt.history[0].context, 'Anna holds up the talk card.');
+  assert.equal(rebuilt.history[0].choiceText, 'Whisper a reminder.');
+  assert.equal(rebuilt.history[0].bestChoiceText, 'Prompt the replacement response.');
+  assert.equal(rebuilt.history[1].score, 5);
+  assert.equal(rebuilt.history[1].feedback, 'Supportive, but praise could be more specific.');
+});
+
+test('Progress Details uses saved responses and the same end-of-game Results renderer', () => {
+  assert.match(dashboardSource, /getProgressResponses\(run\.id, MR\.telemetryContext\)/);
+  assert.match(dashboardSource, /MR\.engine\.showStoredRunDetails\(historicalRun\(run, responses\)\)/);
+  assert.doesNotMatch(dashboardSource, /detailsHTML\(|progress-summary-debrief/);
+  assert.match(engineSource, /function coachingDebriefHTML\(run, summary\)/);
+  assert.match(engineSource, /<h2>Review<\/h2>/);
+  assert.match(engineSource, /Workable, but Refine/);
+  assert.match(engineSource, /Missed Opportunities/);
+  assert.match(engineSource, /Moment \$\{MR\.escapeHTML/);
+  assert.match(engineSource, /showStoredRunDetails\(run\)\s*\{\s*renderResults\(run, \{ playCompletion: false \}\)/s);
 });
 
 test('Mission History renders the classroom-fidelity disclaimer directly under its heading', async () => {
@@ -105,7 +132,7 @@ test('Mission History renders the classroom-fidelity disclaimer directly under i
   assert.match(html, /<h2 class="history-heading">Mission History<\/h2><p class="history-disclaimer">These scores summarize your choices/);
   assert.match(progressSummaryCss, /\.score-disclaimer\s*\{[\s\S]*display:\s*none/);
   assert.match(progressSummaryCss, /\.history-disclaimer/);
-  assert.match(progressSummaryCss, /font:\s*700 13px/);
+  assert.match(progressSummaryCss, /font:\s*700 12px/);
 });
 
 test('participant page contains the approved four badges, disclaimer, and no removed teacher metrics', () => {
@@ -120,11 +147,12 @@ test('participant page contains the approved four badges, disclaimer, and no rem
   assert.doesNotMatch(dashboardSource, /fidelity_target_id|fidelity_domain|domain score|Plan Practice/);
 });
 
-test('progress presentation uses a helpful wizard', () => {
+test('progress presentation uses a helpful wizard and smaller badge row', () => {
   assert.match(dashboardSource, /wizardGuide/);
   assert.doesNotMatch(dashboardSource, /wizardDead/);
+  assert.match(progressSummaryCss, /\.badge-row/);
+  assert.match(progressSummaryCss, /background-size:\s*195px 195px/);
   assert.match(progressSummaryCss, /\.compact-run-card/);
-  assert.match(progressSummaryCss, /\.progress-summary-debrief/);
 });
 
 test('progress queries scope participant, case, completion, and QA mode without internal response fields', async () => {
