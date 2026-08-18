@@ -139,15 +139,17 @@
     const config = MR.teacherConfig;
     MR.$('#home-classroom-label').textContent = config.classroomLabel || `${config.displayName}'s Classroom`;
     const hasDaily = MR.engine.hasDailyRunToday();
+    const calendarBlocked = Boolean(MR.telemetryContext && !MR.telemetryContext.qaMode && !MR.studyCalendar.isEligibleStudyDay());
     const classroomPath = hasDaily ? (config.assets.sameDayClassroom || config.assets.landingClassroom) : config.assets.landingClassroom;
     MR.$('#home-classroom-img').src = classroomPath;
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
     const participantLocked = hasDaily && MR.telemetryContext && !MR.telemetryContext.qaMode;
-    MR.$('#home-primary-btn').hidden = participantLocked;
+    MR.$('#home-primary-btn').hidden = participantLocked || calendarBlocked;
     MR.$('#same-day-return-message').hidden = !participantLocked;
+    MR.$('#no-mission-message').hidden = !calendarBlocked;
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
     MR.$('#daily-completion-message').hidden = !participantLocked;
-    MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked; });
+    MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked || calendarBlocked; });
   }
 
   function wireEvents() {
@@ -267,6 +269,10 @@
       };
       MR.dailyMissionCompleted = assignment.qaMode ? false : await MR.auth.hasCompletedMissionToday();
       MR.onDailyMissionCompleted = () => {
+        renderHome();
+        MR.setScreen('home');
+      };
+      MR.onStudyCalendarBlocked = () => {
         renderHome();
         MR.setScreen('home');
       };
