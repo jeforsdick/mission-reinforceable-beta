@@ -20,7 +20,7 @@ create table public.research_observers (
   active boolean not null default true, created_by uuid not null references auth.users(id), created_at timestamptz not null default now(),
   updated_by uuid references auth.users(id), updated_at timestamptz not null default now()
 );
-create unique index research_observers_one_primary on public.research_observers(observer_type) where observer_type='primary_researcher' and active;
+create index research_observers_primary_active_idx on public.research_observers(observer_type,active) where observer_type='primary_researcher';
 create table public.research_observer_training_events (
   id uuid primary key default gen_random_uuid(), observer_id uuid not null references public.research_observers(id),
   event_type text not null check (event_type in ('training','practice','recalibration','retraining')), event_date date not null,
@@ -68,7 +68,9 @@ create index research_training_observer_date_idx on public.research_observer_tra
 create function public.research_observer_status(target_observer_id uuid, as_of_date date default ((now() at time zone 'America/Denver')::date))
 returns text language sql stable security definer set search_path='' as $$
   with o as (select * from public.research_observers where id=target_observer_id),
-  low as (select s.observation_date low_date,r.created_at low_recorded_at from public.research_classroom_ioa_results r join public.research_classroom_observations s on s.id=r.observation_id where s.secondary_observer_id=target_observer_id and s.observation_date<=as_of_date and r.overall_ioa_attention order by s.observation_date desc,r.created_at desc,r.id desc limit 1),
+  current_records as (select distinct on(r.observation_id,r.observer_role) r.observation_id,r.observer_role,r.id from public.research_classroom_observation_records r order by r.observation_id,r.observer_role,r.revision_number desc,r.submitted_at desc,r.id desc),
+  current_ioa as (select i.*,s.observation_date from public.research_classroom_ioa_results i join public.research_classroom_observations s on s.id=i.observation_id join current_records p on p.observation_id=i.observation_id and p.observer_role='primary' and p.id=i.primary_record_id join current_records secondary on secondary.observation_id=i.observation_id and secondary.observer_role='secondary' and secondary.id=i.secondary_record_id),
+  low as (select i.observation_date low_date,i.created_at low_recorded_at from current_ioa i join public.research_classroom_observations s on s.id=i.observation_id where s.secondary_observer_id=target_observer_id and i.observation_date<=as_of_date and i.overall_ioa_attention order by i.observation_date desc,i.created_at desc,i.id desc limit 1),
   good as (select e.event_date good_date,e.recorded_at good_recorded_at from public.research_observer_training_events e where e.observer_id=target_observer_id and e.event_date<=as_of_date and e.event_type in('practice','recalibration','retraining') and e.teacher_fidelity_agreement>=85 and e.student_behavior_agreement>=85 order by e.event_date desc,e.recorded_at desc,e.id desc limit 1)
   select case when not o.active then 'inactive' when o.observer_type='primary_researcher' then 'qualified'
     when low.low_date is not null and (good.good_date is null or (good.good_date,good.good_recorded_at)<=(low.low_date,low.low_recorded_at)) then 'recalibration_required'
@@ -87,7 +89,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$ declare
 create function public.research_admin_save_observer(target_observer_id uuid,target_observer_code text,target_display_name text,target_observer_type text,target_active boolean default true)
 returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_observers%rowtype; begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
- if target_observer_id is not null and target_active=false and exists(select 1 from public.research_observers where id=target_observer_id and observer_type='primary_researcher' and active) and not exists(select 1 from public.research_observers where observer_type='primary_researcher' and active and id<>target_observer_id) then raise exception 'cannot deactivate the only active primary researcher' using errcode='55000'; end if;
+ if target_observer_id is not null and (target_active=false or target_observer_type<>'primary_researcher') and exists(select 1 from public.research_observers where id=target_observer_id and observer_type='primary_researcher' and active) and not exists(select 1 from public.research_observers where observer_type='primary_researcher' and active and id<>target_observer_id) then raise exception 'cannot deactivate or change the type of the only active primary researcher' using errcode='55000'; end if;
  if target_observer_id is null then insert into public.research_observers(observer_code,display_name,observer_type,active,created_by) values(upper(btrim(target_observer_code)),btrim(target_display_name),target_observer_type,target_active,auth.uid()) returning * into result;
  else update public.research_observers set observer_code=upper(btrim(target_observer_code)),display_name=btrim(target_display_name),observer_type=target_observer_type,active=target_active,updated_by=auth.uid(),updated_at=now() where id=target_observer_id returning * into result; end if; return to_jsonb(result); end $$;
 

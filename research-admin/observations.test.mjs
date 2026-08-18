@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {fidelitySummary,intervalSummary,teacherIoa,studentIoa,qualification,coverage,defaultIntervals,observationAttention,recalibrationState,ioaDisplay,denverWeek,mayAssignPrimary,mayAssignSecondary} from './observations-model.mjs';
+import {fidelitySummary,intervalSummary,teacherIoa,studentIoa,qualification,coverage,defaultIntervals,observationAttention,recalibrationState,ioaDisplay,denverWeek,mayAssignPrimary,mayAssignSecondary,ioaNeedsReview,correctionEvent} from './observations-model.mjs';
 import {intervalGrid,recordForm,renderObservations,renderObserverTeam,renderStudyIoaSummary} from './observations-ui.mjs';
 const sql=fs.readFileSync(new URL('../supabase/migrations/20260818070000_classroom_observations_ioa.sql',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
@@ -28,7 +28,7 @@ assert.match(sql,/o\.observer_type='primary_researcher' or \(o\.observer_type='t
 assert.match(sql,/secondary observer must be an active qualified trained observer/);
 assert.match(sql,/o\.observer_type='trained_observer' and o\.active/);
 assert.match(sql,/primary and secondary observers must differ/);
-assert.match(sql,/cannot deactivate the only active primary researcher/);
+assert.match(sql,/cannot deactivate or change the type of the only active primary researcher/);
 assert.match(renderObserverTeam({observers:[{id:'1',observer_code:'OBS-02',display_name:'Observer',observer_type:'trained_observer',active:false,status:'inactive'}]},x=>x),/observer-edit-form[\s\S]*Active[\s\S]*inactive/);
 
 
@@ -64,3 +64,27 @@ assert.match(summary,/Study IOA Summary/);assert.match(summary,/MR-001: 1 \/ 5, 
 const interventionUi=renderObservations({current_phase:'intervention',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x);assert.match(interventionUi,/This intervention week/);assert.match(interventionUi,/approximately 3\/week/);assert.deepEqual(denverWeek(new Date('2026-08-19T05:30:00Z')),{monday:'2026-08-17',sunday:'2026-08-23'});
 assert.match(renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{},observers:[],setups:[],observations:[{id:'o',observation_date:'2026-01-01',phase:'baseline',session_number:1,primary_observer_code:'JO',secondary_observer_code:'OBS-02',secondary_observer_id:'2',secondary_record_id:'sr',fidelity_items_snapshot:[],ioa:{teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null,overall_ioa_attention:false}}]}},x=>String(x??'')),/Primary: JO · Secondary\/IOA: OBS-02[\s\S]*IOA not calculable \/ review/);
 for(const pattern of [/length\(target_routine\)<=1000/,/length\(target_behavior_definition\)<=2000/,/length\(change_note\)<=1000/,/length\(context_note\)<=1000/,/length\(observer_note\)<=1000/,/length\(brief_note\)<=1000/,/length\(correction_reason\)<=1000/])assert.match(sql,pattern);
+
+// Observer status reads only the IOA row tied to both highest-revision records.
+const statusSql=sql.slice(sql.indexOf('create function public.research_observer_status'),sql.indexOf('create function public.research_admin_save_observation_setup'));
+assert.match(statusSql,/current_records as \(select distinct on\(r\.observation_id,r\.observer_role\)/);
+assert.match(statusSql,/p\.id=i\.primary_record_id/);assert.match(statusSql,/secondary\.id=i\.secondary_record_id/);
+assert.match(statusSql,/from current_ioa i/);assert.doesNotMatch(statusSql,/from public\.research_classroom_ioa_results r[\s\S]*r\.overall_ioa_attention/);
+assert.match(sql,/create table public\.research_classroom_ioa_results/);assert.match(sql,/unique\(primary_record_id,secondary_record_id\)/);assert.doesNotMatch(sql,/delete from public\.research_classroom_ioa_results/);
+// A corrected acceptable current pair excludes the superseded low pair; a corrected low pair remains eligible through current_ioa.
+const ioaRows=[{primary:'p1',secondary:'s1',attention:true},{primary:'p2',secondary:'s2',attention:false}];
+assert.equal(ioaRows.find(x=>x.primary==='p2'&&x.secondary==='s2').attention,false);
+assert.equal([{primary:'p1',secondary:'s1',attention:true},{primary:'p2',secondary:'s2',attention:true}].find(x=>x.primary==='p2'&&x.secondary==='s2').attention,true);
+assert.equal(recalibrationState(low,{date:'2026-09-04',recorded_at:'2026-09-04T09:00:00Z'}),'qualified');
+
+// The sole active primary cannot be removed by state or type; another active primary permits conversion.
+assert.match(sql,/\(target_active=false or target_observer_type<>'primary_researcher'\)/);
+assert.match(sql,/not exists\(select 1 from public\.research_observers where observer_type='primary_researcher' and active and id<>target_observer_id\)/);
+assert.match(sql,/create index research_observers_primary_active_idx/);assert.doesNotMatch(sql,/unique index research_observers_one_primary/);
+
+const corrected={observation_date:'2026-08-28',primary_record:{revision_number:2,submitted_at:'2026-09-02T16:30:00Z'},secondary_record:{revision_number:2,submitted_at:'2026-09-01T12:00:00Z'}};
+assert.equal(correctionEvent(corrected),'2026-09-02T16:30:00Z');assert.notEqual(correctionEvent(corrected),corrected.observation_date);
+assert.equal(ioaNeedsReview({overall_ioa_attention:false,teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null}),true);
+assert.equal(ioaNeedsReview({overall_ioa_attention:true,teacher_fidelity_ioa_percent:75,student_behavior_ioa_percent:90}),true);
+assert.equal(ioaNeedsReview({overall_ioa_attention:false,teacher_fidelity_ioa_percent:94,student_behavior_ioa_percent:94}),false);
+assert.match(js,/IOA Review/);assert.match(js,/ioaNeedsReview\(x\.ioa\)/);assert.doesNotMatch(js,/<dt>IOA Alerts<\/dt>/);

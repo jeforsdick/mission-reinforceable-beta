@@ -16,3 +16,5 @@ export function ioaDisplay(ioa){if(!ioa)return null;if(ioa.overall_ioa_attention
 export function recalibrationState(low,good){if(!low)return 'qualified';if(!good)return 'recalibration_required';return [good.date,good.recorded_at].join('|')>[low.date,low.recorded_at].join('|')?'qualified':'recalibration_required';}
 export function mayAssignPrimary(observer){return Boolean(observer?.active&&(observer.observer_type==='primary_researcher'||(observer.observer_type==='trained_observer'&&observer.status==='qualified')));}
 export function mayAssignSecondary(observer){return Boolean(observer?.active&&observer.observer_type==='trained_observer'&&observer.status==='qualified');}
+export function ioaNeedsReview(ioa){return Boolean(ioa&&(ioa.overall_ioa_attention||ioa.teacher_fidelity_ioa_percent==null||ioa.student_behavior_ioa_percent==null));}
+export function correctionEvent(observation){const records=[observation?.primary_record,observation?.secondary_record].filter(record=>(record?.revision_number||1)>1&&record.submitted_at);if(!records.length)return null;return records.sort((a,b)=>String(b.submitted_at).localeCompare(String(a.submitted_at)))[0].submitted_at;}
