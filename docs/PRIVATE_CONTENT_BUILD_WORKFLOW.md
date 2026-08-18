@@ -11,7 +11,7 @@ researcher-approved authoring draft
   ↓
 private external executable content directory
   ↓
-structural validation
+resource-content and structural validation
   ↓
 fidelity coverage validation
   ↓
@@ -56,16 +56,46 @@ node scripts/build-protected-seed.js \
   --source-dir /srv/approved-private-content/CASE-EXAMPLE-001 \
   --case-code CASE-EXAMPLE-001 \
   --version 1 \
-  --json-output /srv/approved-private-content/CASE-EXAMPLE-001/protected-content.json
+  --content-mode participant \
+  --json-output /srv/approved-private-content/CASE-EXAMPLE-001/protected-content.json \
+  --review-manifest /srv/approved-private-content/CASE-EXAMPLE-001/review-manifest.json
 
 node scripts/build-protected-seed.js \
   --source-dir /srv/approved-private-content/CASE-EXAMPLE-001 \
   --case-code CASE-EXAMPLE-001 \
   --version 1 \
+  --content-mode participant \
   --output /srv/approved-private-content/CASE-EXAMPLE-001/protected-seed.sql
 ```
 
-The modern flag-based builder requires `--version` with a positive integer content-bank version. Generated SQL stores that version and updates it from `excluded.version` when a case already exists. The builder always runs structural validation before writing. It warns—but does not block—when the source is inside the Git working tree, so fictional/demo content remains usable. JSON output has the exact keys consumed by `MR.loadProtectedGameContent()`: `config`, `resources`, `daily_missions`, `wildcard_missions`, and `crisis_missions`.
+The modern flag-based builder requires `--version` with a positive integer content-bank version. Generated SQL stores that version and updates it from `excluded.version` when a case already exists. Before any JSON, SQL, or manifest is written, the builder runs mission structural validation and dedicated Resource Map validation. JSON output retains the exact keys consumed by `MR.loadProtectedGameContent()`: `config`, `resources`, `daily_missions`, `wildcard_missions`, and `crisis_missions`; resources remain in the existing `payload.resources` / `case_game_content.resources` field.
+
+Modern builds default to `--content-mode participant`. In participant mode, both source and generated output paths inside the public repository are hard failures. Only wholly fictional public fixtures may use `--content-mode demo`; this mode warns when its source is in the repository. Never relabel participant material as demo. The optional review manifest contains case code, protected content version, Resource Map schema version, a SHA-256 resource digest, validator version/counts, and build time—never behavioral resource text.
+
+## Resource Map schema version 1
+
+`window.MR_RESOURCES` is data only: `{ schemaVersion: 1, studentAlias: "Alias", sections: { ... } }`. `studentAlias` must exactly equal the configured alias when the builder supplies one. All nine keys and titles are mandatory:
+
+| Key | Exact title |
+| --- | --- |
+| `bip` | BIP at a Glance |
+| `functionForest` | Function Forest |
+| `prevention` | Prevention Palace |
+| `replacement` | Replacement Reservoir |
+| `reinforcement` | Reinforcement Ridge |
+| `errorCorrection` | Error Correction Canyon |
+| `library` | BSP Library |
+| `coaching` | Coaching Cottage |
+| `fidelity` | Fidelity Fortress |
+
+Every section has its exact `title` and a non-empty `blocks` array. The only blocks are:
+
+- `{ "type": "paragraph", "text": "..." }`
+- `{ "type": "list", "items": ["..."] }`
+- `{ "type": "definitionList", "items": [{ "term": "...", "definition": "..." }] }`
+- `{ "type": "callout", "label": "...", "text": "..." }`
+
+Raw HTML, scripts, event handlers, arbitrary executable fields, URLs-as-fields, and file/path fields are forbidden. The validator also identifies high-confidence email, phone, URL, and obvious full-date patterns. Those privacy findings aid review; **automated scanning does not certify privacy**. The researcher must complete final behavioral accuracy, minimum-necessary-content, and privacy review before applying an artifact.
 
 ## Structural validator behavior
 

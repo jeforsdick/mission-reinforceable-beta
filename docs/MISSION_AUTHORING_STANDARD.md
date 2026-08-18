@@ -4,6 +4,18 @@ This is the canonical standard for individualized Mission: Reinforceable content
 
 Real participant BIPs, intake responses, missions, or generated protected-content payloads must **NEVER** be committed to public GitHub.
 
+## Participant Resource Map contract
+
+The current BIP/BSP remains the source of truth for the participant Resource Map. Use the participant's approved alias only and include the minimum information necessary for implementation; do not copy a plan wholesale. Real participant source and generated output must be authored and built outside this public repository. Repository fixtures must be explicitly fictional/demo content.
+
+Resource Maps use `schemaVersion: 1` and a `sections` object with all of these exact key/title pairs: `bip` / “BIP at a Glance”; `functionForest` / “Function Forest”; `prevention` / “Prevention Palace”; `replacement` / “Replacement Reservoir”; `reinforcement` / “Reinforcement Ridge”; `errorCorrection` / “Error Correction Canyon”; `library` / “BSP Library”; `coaching` / “Coaching Cottage”; and `fidelity` / “Fidelity Fortress”. Each section requires substantive blocks.
+
+Content is data, never markup. Allowed blocks are `paragraph` with non-empty `text`; `list` with non-empty text `items`; `definitionList` with non-empty `term`/`definition` pairs; and `callout` with non-empty `label` and `text`. Raw HTML, scripts, event handlers, executable values, and file/path fields are prohibited. When an expected student alias is supplied, the Resource Map `studentAlias` must match it exactly.
+
+Automated Resource Map checks detect schema errors and high-confidence privacy-risk patterns such as emails, phone numbers, URLs, obvious full dates, and HTML/script constructs. **This scan is an aid, not privacy certification.** A researcher must still review behavioral accuracy, alias/minimum-necessary use, and privacy before release.
+
+Mission-bank comparability is also a **human researcher review**. It must be based on the quality, difficulty, plan alignment, and fidelity opportunities of the complete bank; it must never be inferred from target-count quotas or validator coverage counts.
+
 **Participant-facing choices are shuffled at display time. Authoring order must never be relied upon.** Choice IDs, scores, branching, and fidelity metadata belong to the choice object and must remain correct independently of its displayed position.
 
 ## 1. Core Design Principle

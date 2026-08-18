@@ -4,8 +4,10 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
 const { loadExecutableContent, missionGroups } = require('./protected-content-loader');
 const { validateStructure, formatReport } = require('./structural-content-validator');
+const { validateResources, formatResourceReport } = require('./resource-content-validator');
 
 function sqlLiteral(value) { return String(value).replace(/'/g, "''"); }
 function jsonSql(value) { return `$mrjson$${JSON.stringify(value, null, 2)}$mrjson$::jsonb`; }
@@ -22,22 +24,25 @@ function parseArgs(argv, cwd = process.cwd()) {
       caseCode: argv[1] || 'CASE-DEMO-2',
       output: argv[2] || path.join(cwd, 'research/supabase/003_seed_demo2_full_protected.sql'),
       version: 1,
+      contentMode: 'demo',
       legacyTeacherId: teacherId
     };
   }
   const values = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
-    if (!['--source-dir', '--case-code', '--version', '--output', '--json-output'].includes(flag) || !argv[index + 1]) throw new Error(`Unknown or incomplete option: ${flag}`);
+    if (!['--source-dir', '--case-code', '--version', '--output', '--json-output', '--review-manifest', '--content-mode'].includes(flag) || !argv[index + 1]) throw new Error(`Unknown or incomplete option: ${flag}`);
     values[flag.slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())] = argv[index + 1];
   }
   if (!values.sourceDir || !values.caseCode || values.version === undefined || (!values.output && !values.jsonOutput)) {
-    throw new Error('Usage: build-protected-seed.js --source-dir DIR --case-code CODE --version INTEGER (--output FILE | --json-output FILE)');
+    throw new Error('Usage: build-protected-seed.js --source-dir DIR --case-code CODE --version INTEGER [--content-mode participant|demo] (--output FILE | --json-output FILE) [--review-manifest FILE]');
   }
   if (!/^[1-9]\d*$/.test(values.version) || !Number.isSafeInteger(Number(values.version))) {
     throw new Error('--version must be a positive integer');
   }
   values.version = Number(values.version);
+  values.contentMode ||= 'participant';
+  if (!['participant', 'demo'].includes(values.contentMode)) throw new Error('--content-mode must be participant or demo');
   return values;
 }
 
@@ -56,16 +61,36 @@ function main(argv) {
   options.sourceDir = fs.realpathSync(path.resolve(options.sourceDir));
   const root = repositoryRoot(process.cwd());
   if (root && isInside(root, options.sourceDir)) {
-    console.warn('WARNING: source directory is inside the repository.\nReal participant content must remain outside Git or in an explicitly gitignored private workspace.');
+    if (options.contentMode === 'participant') throw new Error('Participant source directory must be outside the repository. Real participant source and output artifacts must never be stored in the public repository.');
+    console.warn('WARNING: demo source directory is inside the repository; --content-mode demo is for fictional content only.');
   }
   const payload = loadExecutableContent(options.sourceDir);
   if (options.legacyTeacherId) payload.config.teacherId = options.legacyTeacherId;
   const structural = validateStructure(missionGroups(payload));
   if (!structural.valid) throw new Error(`Protected content failed structural validation:\n${formatReport(structural, path.basename(options.sourceDir))}`);
+  const resources = validateResources(payload.resources, { expectedAlias: payload.config.studentAlias });
+  if (!resources.valid) throw new Error(`Protected content failed resource validation:\n${formatResourceReport(resources)}`);
+  if (resources.warnings.length) console.warn(formatResourceReport(resources));
+
+  const outputs = [options.jsonOutput, options.output, options.reviewManifest].filter(Boolean).map(filename => path.resolve(filename));
+  if (root && options.contentMode === 'participant' && outputs.some(filename => isInside(root, filename))) {
+    throw new Error('Participant output paths must be outside the repository.');
+  }
+
+  const manifest = {
+    caseCode: options.caseCode,
+    protectedContentVersion: options.version,
+    resourceSchemaVersion: payload.resources.schemaVersion,
+    resourcesSha256: crypto.createHash('sha256').update(JSON.stringify(payload.resources)).digest('hex'),
+    validator: { version: resources.validatorVersion, valid: resources.valid, errorCount: resources.errors.length, warningCount: resources.warnings.length },
+    privacyReview: 'Automated privacy scanning is an aid, not certification; final privacy determination requires human review.',
+    builtAt: new Date().toISOString()
+  };
 
   for (const [filename, content] of [
     [options.jsonOutput, options.jsonOutput && `${JSON.stringify(payload, null, 2)}\n`],
-    [options.output, options.output && renderSql(payload, options.caseCode, path.basename(options.sourceDir), options.version)]
+    [options.output, options.output && renderSql(payload, options.caseCode, path.basename(options.sourceDir), options.version)],
+    [options.reviewManifest, options.reviewManifest && `${JSON.stringify(manifest, null, 2)}\n`]
   ]) {
     if (!filename) continue;
     const resolved = path.resolve(filename);
