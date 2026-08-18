@@ -27,6 +27,7 @@ create table public.research_protocol_checklist_events (
   id uuid primary key default gen_random_uuid(), case_id uuid not null references public.cases(id) on delete restrict,
   item_key text not null check (item_key in ('teacher_consent','parent_permission','student_assent','bsp_technical_review','safety_screen','target_routine_finalized','target_behavior_definition','fidelity_checklist_finalized','fidelity_checklist_second_review','baseline_orientation','intervention_orientation')),
   status text not null check (status in ('pending','complete','not_applicable')),
+  status_date date not null,
   brief_note text check (brief_note is null or char_length(brief_note)<=1000),
   recorded_by uuid not null references public.profiles(id) on delete restrict, recorded_at timestamptz not null default now()
 );
@@ -132,10 +133,12 @@ begin
  return jsonb_build_object('first',jsonb_build_object('case_id',first_case_id,'stagger_position',second_plan.stagger_position,'planned_baseline_observations',second_plan.planned_baseline_observations),'second',jsonb_build_object('case_id',second_case_id,'stagger_position',first_plan.stagger_position,'planned_baseline_observations',first_plan.planned_baseline_observations));
 end $$;
 
-create function public.research_admin_record_checklist_status(target_case_id uuid,target_item_key text,target_status text,target_brief_note text default null)
-returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_protocol_checklist_events%rowtype; begin
+create function public.research_admin_record_checklist_status(target_case_id uuid,target_item_key text,target_status text,target_status_date date,target_brief_note text default null)
+returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_protocol_checklist_events%rowtype; denver_today date:=(now() at time zone 'America/Denver')::date; begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
- insert into public.research_protocol_checklist_events(case_id,item_key,status,brief_note,recorded_by) values(target_case_id,target_item_key,target_status,nullif(btrim(target_brief_note),''),auth.uid()) returning * into result; return to_jsonb(result);
+ if target_status_date is null then raise exception 'checklist status date is required' using errcode='22023'; end if;
+ if target_status_date>denver_today then raise exception 'checklist status date cannot be in the future (America/Denver)' using errcode='22023'; end if;
+ insert into public.research_protocol_checklist_events(case_id,item_key,status,status_date,brief_note,recorded_by) values(target_case_id,target_item_key,target_status,target_status_date,nullif(btrim(target_brief_note),''),auth.uid()) returning * into result; return to_jsonb(result);
 end $$;
 
 create function public.research_admin_record_measure(target_case_id uuid,target_measure_key text,target_status text,target_completed_on date default null,target_external_reference text default null,target_brief_note text default null)
@@ -173,10 +176,12 @@ create function public.research_admin_set_task_status(target_task_id uuid,target
 returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_tasks%rowtype; begin if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
  update public.research_tasks set status=target_status,completed_by=case when target_status='pending' then null else auth.uid() end,completed_at=case when target_status='pending' then null else now() end where id=target_task_id returning * into result; if result.id is null then raise exception 'task not found' using errcode='P0002'; end if; return to_jsonb(result); end $$;
 create function public.research_admin_record_coaching_contact(target_case_id uuid,target_contact_date date,target_format text,target_provider_role text,target_focuses text[],target_approximate_duration_minutes integer default null,target_brief_note text default null)
-returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_coaching_contacts%rowtype; begin if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_coaching_contacts%rowtype; denver_today date:=(now() at time zone 'America/Denver')::date; begin if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+ if target_contact_date>denver_today then raise exception 'coaching contact date cannot be in the future (America/Denver)' using errcode='22023'; end if;
  insert into public.research_coaching_contacts(case_id,contact_date,format,provider_role,focuses,approximate_duration_minutes,brief_note,recorded_by) values(target_case_id,target_contact_date,target_format,btrim(target_provider_role),target_focuses,target_approximate_duration_minutes,nullif(btrim(target_brief_note),''),auth.uid()) returning * into result; return to_jsonb(result); end $$;
 create function public.research_admin_record_study_event(target_case_id uuid,target_event_date date,target_event_type text,target_brief_note text,target_affects_observation boolean default false,target_affects_mr_exposure boolean default false,target_affects_phase_interpretation boolean default false,target_action_taken text default null)
-returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_study_events%rowtype; begin if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_study_events%rowtype; denver_today date:=(now() at time zone 'America/Denver')::date; begin if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+ if target_event_date>denver_today then raise exception 'study event date cannot be in the future (America/Denver)' using errcode='22023'; end if;
  insert into public.research_study_events(case_id,event_date,event_type,brief_note,affects_observation,affects_mr_exposure,affects_phase_interpretation,action_taken,created_by) values(target_case_id,target_event_date,target_event_type,btrim(target_brief_note),target_affects_observation,target_affects_mr_exposure,target_affects_phase_interpretation,nullif(btrim(target_action_taken),''),auth.uid()) returning * into result; return to_jsonb(result); end $$;
 create function public.research_admin_resolve_study_event(target_event_id uuid,target_action_taken text default null)
 returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_study_events%rowtype; begin if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;

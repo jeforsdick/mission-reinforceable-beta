@@ -10,6 +10,10 @@ export const PHASES = ['prebaseline','baseline','intervention','maintenance','co
 export const COACHING_FOCUSES = ['observation','consultation','performance_feedback','modeling','data_review','problem_solving','responsive_support','other'];
 export const TASK_CATEGORIES = ['meeting','follow_up','scheduling','research_admin','observation_planning','measure_follow_up','closeout','other'];
 export const requiredBaselineKeys = CHECKLIST.slice(0,10).map(([key])=>key);
+export function denverToday(now=new Date()){
+  return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+}
+export function checklistStatuses(itemKey){return itemKey==='student_assent'?['pending','complete','not_applicable']:['pending','complete'];}
 export function currentByKey(rows,key='item_key'){ return Object.fromEntries((rows||[]).map(row=>[row[key],row])); }
 export function baselineReadiness(item){
   const checklist=currentByKey(item.checklist), measures=currentByKey(item.measures,'measure_key'), missing=[];
@@ -50,7 +54,7 @@ export function attentionForCase(item,today=new Date().toISOString().slice(0,10)
 export function studyWideAttention(tasks,today=new Date().toISOString().slice(0,10)){return (tasks||[]).filter(t=>t.status==='pending'&&t.due_date&&t.due_date<today).map(t=>`Study-wide task overdue: ${t.title}`);}
 export function timelineForCase(item){
   const rows=[];
-  for(const x of item.checklist_history||[]) rows.push({date:x.recorded_at,category:'Protocol',label:`${x.item_key.replaceAll('_',' ')} — ${x.status}`});
+  for(const x of item.checklist_history||[]) rows.push({date:x.status_date,category:'Protocol',label:`${x.item_key.replaceAll('_',' ')} — ${x.status}`});
   for(const x of item.phase_history||[]) rows.push({date:x.effective_date,category:'Phase',label:x.phase});
   for(const x of item.measure_history||[]) rows.push({date:x.recorded_at,category:'Measure',label:`${x.measure_key.replaceAll('_',' ')} — ${x.status}`});
   for(const x of item.tasks||[]) if(x.completed_at) rows.push({date:x.completed_at,category:'Task',label:`${x.title} — ${x.status}`});
