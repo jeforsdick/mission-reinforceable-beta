@@ -154,7 +154,7 @@
         justify-content: center;
         padding: 5% 4% 8%;
         color: #111;
-        background: transparent url("../../assets/game/skin-v2/speech-bubble-right.png") center / 100% 100% no-repeat;
+        background: transparent url("../assets/game/skin-v2/speech-bubble-right.png") center / 100% 100% no-repeat;
         font: 900 clamp(15px, 1.65vw, 27px)/1.35 var(--mono);
         text-align: center;
         text-shadow: none;
@@ -168,7 +168,7 @@
           height: 90%;
           aspect-ratio: auto;
           padding: 9% 9% 16%;
-          background-image: url("../../assets/game/skin-v2/speech-bubble-down.png");
+          background-image: url("../assets/game/skin-v2/speech-bubble-down.png");
           font-size: clamp(17px, 5.2vw, 25px);
           line-height: 1.3;
           filter: drop-shadow(7px 7px 0 #090000);
