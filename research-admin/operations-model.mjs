@@ -7,27 +7,54 @@ export const CHECKLIST = [
 ];
 export const MEASURES = [['tses_pre','TSES — Pre-Baseline'],['tses_post','TSES — Post-Intervention'],['urp_ir','URP-IR — Post-Intervention'],['teacher_interview','Teacher Interview — Post-Intervention']];
 export const PHASES = ['prebaseline','baseline','intervention','maintenance','complete','withdrawn'];
+export const COACHING_FOCUSES = ['observation','consultation','performance_feedback','modeling','data_review','problem_solving','responsive_support','other'];
+export const TASK_CATEGORIES = ['meeting','follow_up','scheduling','research_admin','observation_planning','measure_follow_up','closeout','other'];
 export const requiredBaselineKeys = CHECKLIST.slice(0,10).map(([key])=>key);
-
 export function currentByKey(rows,key='item_key'){ return Object.fromEntries((rows||[]).map(row=>[row[key],row])); }
+export function baselineReadiness(item){
+  const checklist=currentByKey(item.checklist), measures=currentByKey(item.measures,'measure_key'), missing=[];
+  if(!item.protocol) missing.push('Protocol stagger plan');
+  for(const key of requiredBaselineKeys){
+    const acceptable=key==='student_assent'?['complete','not_applicable']:['complete'];
+    if(!acceptable.includes(checklist[key]?.status)) missing.push(CHECKLIST.find(x=>x[0]===key)[1]);
+  }
+  if(measures.tses_pre?.status!=='complete') missing.push('TSES — Pre-Baseline');
+  return {ready:missing.length===0,missing,remaining:missing.length};
+}
+export function measureNeeds(item){
+  const current=currentByKey(item.measures,'measure_key'), phase=item.current_phase||'prebaseline', keys=[];
+  if(['baseline','intervention','maintenance','complete'].includes(phase)&&current.tses_pre?.status!=='complete') keys.push('tses_pre');
+  if(['maintenance','complete'].includes(phase)) for(const key of ['tses_post','urp_ir','teacher_interview']) if(current[key]?.status!=='complete') keys.push(key);
+  return keys;
+}
+export function interventionReadiness(item){
+  if(item.current_phase!=='intervention') return {ready:true,missing:[]};
+  const checklist=currentByKey(item.checklist), missing=[];
+  if(checklist.intervention_orientation?.status!=='complete') missing.push('Intervention orientation');
+  if(!item.prepared_content?.protected_content_present) missing.push('Protected content');
+  if(!item.prepared_content?.resource_map_ready) missing.push('Resource Map');
+  if(!item.prepared_content?.comparability_ready) missing.push('Mission Bank Comparability');
+  if(!(item.case_active&&item.participant_active)) missing.push('Game access ON');
+  if(!item.prepared_content?.reminders_enabled) missing.push('Reminders ON');
+  return {ready:missing.length===0,missing};
+}
 export function attentionForCase(item,today=new Date().toISOString().slice(0,10)) {
-  const checklist=currentByKey(item.checklist), measures=currentByKey(item.measures,'measure_key'), phase=item.current_phase||'prebaseline', attention=[];
-  if(!item.protocol) attention.push('Protocol stagger plan not assigned');
-  const missing=requiredBaselineKeys.filter(key=>key==='student_assent'?!['complete','not_applicable'].includes(checklist[key]?.status):checklist[key]?.status!=='complete');
-  if(phase==='prebaseline'&&missing.length) attention.push(`${missing.length} pre-baseline requirement${missing.length===1?'':'s'} incomplete`);
-  if(['baseline','intervention','maintenance','complete'].includes(phase)&&measures.tses_pre?.status!=='complete') attention.push('TSES Pre is missing after baseline start');
-  if(['maintenance','complete'].includes(phase)) for(const key of ['tses_post','urp_ir','teacher_interview']) if(measures[key]?.status!=='complete') attention.push(`${MEASURES.find(x=>x[0]===key)[1]} is due`);
-  if((item.tasks||[]).some(task=>task.status==='pending'&&task.due_date<today)) attention.push('Operational task overdue');
+  const phase=item.current_phase||'prebaseline', attention=[], baseline=baselineReadiness(item);
+  if(phase==='prebaseline'&&!baseline.ready) attention.push(`${baseline.remaining} baseline requirement${baseline.remaining===1?'':'s'} remaining`);
+  for(const key of measureNeeds(item)) attention.push(`${MEASURES.find(x=>x[0]===key)[1]} is due`);
+  if((item.tasks||[]).some(task=>task.status==='pending'&&task.due_date&&task.due_date<today)) attention.push('Operational task overdue');
   for(const event of (item.study_events||[]).filter(event=>!event.resolved_at)) attention.push(`${event.event_type.replaceAll('_',' ')} unresolved`);
+  for(const missing of interventionReadiness(item).missing) attention.push(`Intervention mismatch: ${missing}`);
   return attention;
 }
+export function studyWideAttention(tasks,today=new Date().toISOString().slice(0,10)){return (tasks||[]).filter(t=>t.status==='pending'&&t.due_date&&t.due_date<today).map(t=>`Study-wide task overdue: ${t.title}`);}
 export function timelineForCase(item){
   const rows=[];
-  for(const e of item.checklist_history||[]) rows.push({date:e.recorded_at,category:'Protocol',label:`${e.item_key.replaceAll('_',' ')} — ${e.status}`});
-  for(const e of item.phase_history||[]) rows.push({date:e.effective_date,category:'Phase',label:e.phase});
-  for(const e of item.measure_history||[]) rows.push({date:e.recorded_at,category:'Measure',label:`${e.measure_key.replaceAll('_',' ')} — ${e.status}`});
-  for(const e of item.tasks||[]) if(e.completed_at) rows.push({date:e.completed_at,category:'Task',label:`${e.title} — ${e.status}`});
-  for(const e of item.coaching_contacts||[]) rows.push({date:e.contact_date,category:'Coaching as usual',label:`${e.format.replaceAll('_',' ')} · ${e.provider_role}`});
-  for(const e of item.study_events||[]){ rows.push({date:e.event_date,category:'Study event',label:e.event_type.replaceAll('_',' ')}); if(e.resolved_at) rows.push({date:e.resolved_at,category:'Study event',label:`${e.event_type.replaceAll('_',' ')} resolved`}); }
+  for(const x of item.checklist_history||[]) rows.push({date:x.recorded_at,category:'Protocol',label:`${x.item_key.replaceAll('_',' ')} — ${x.status}`});
+  for(const x of item.phase_history||[]) rows.push({date:x.effective_date,category:'Phase',label:x.phase});
+  for(const x of item.measure_history||[]) rows.push({date:x.recorded_at,category:'Measure',label:`${x.measure_key.replaceAll('_',' ')} — ${x.status}`});
+  for(const x of item.tasks||[]) if(x.completed_at) rows.push({date:x.completed_at,category:'Task',label:`${x.title} — ${x.status}`});
+  for(const x of item.coaching_contacts||[]) rows.push({date:x.contact_date,category:'Coaching as usual',label:`${x.format.replaceAll('_',' ')} · ${x.provider_role}`});
+  for(const x of item.study_events||[]){rows.push({date:x.event_date,category:'Study event',label:x.event_type.replaceAll('_',' ')});if(x.resolved_at)rows.push({date:x.resolved_at,category:'Study event',label:`${x.event_type.replaceAll('_',' ')} resolved`});}
   return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 }

@@ -5,12 +5,13 @@
 
 create table public.research_case_protocol (
   case_id uuid primary key references public.cases(id) on delete restrict,
-  stagger_position smallint not null unique check (stagger_position between 1 and 5),
+  stagger_position smallint not null check (stagger_position between 1 and 5),
   planned_baseline_observations smallint not null,
   created_by uuid not null references public.profiles(id) on delete restrict,
   created_at timestamptz not null default now(),
   updated_by uuid not null references public.profiles(id) on delete restrict,
   updated_at timestamptz not null default now(),
+  constraint research_case_protocol_stagger_position_key unique(stagger_position) deferrable initially immediate,
   constraint research_case_protocol_mapping check (
     planned_baseline_observations = case stagger_position
       when 1 then 6 when 2 then 8 when 3 then 10 when 4 then 12 when 5 then 14 end)
@@ -50,7 +51,7 @@ create table public.research_measure_events (
   external_reference text check (external_reference is null or char_length(external_reference)<=250),
   brief_note text check (brief_note is null or char_length(brief_note)<=1000),
   recorded_by uuid not null references public.profiles(id) on delete restrict, recorded_at timestamptz not null default now(),
-  constraint research_measure_completion_date check (status='complete' or completed_on is null)
+  constraint research_measure_completion_date check ((status='complete' and completed_on is not null) or (status<>'complete' and completed_on is null))
 );
 create table public.research_coaching_contacts (
   id uuid primary key default gen_random_uuid(), case_id uuid not null references public.cases(id) on delete restrict,
@@ -99,6 +100,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$
 declare baseline_count smallint; result public.research_case_protocol%rowtype;
 begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+ perform pg_advisory_xact_lock(hashtext('research_case_protocol_swap'));
  if target_stagger_position not between 1 and 5 then raise exception 'stagger position must be 1 through 5' using errcode='22023'; end if;
  if exists(select 1 from public.research_case_phase_events where case_id=target_case_id and phase='baseline') then raise exception 'protocol plan cannot be corrected after baseline has begun' using errcode='55000'; end if;
  baseline_count:=case target_stagger_position when 1 then 6 when 2 then 8 when 3 then 10 when 4 then 12 when 5 then 14 end;
@@ -107,6 +109,27 @@ begin
  set stagger_position=excluded.stagger_position,planned_baseline_observations=excluded.planned_baseline_observations,updated_by=auth.uid(),updated_at=now() returning * into result;
  insert into public.research_case_protocol_events(case_id,stagger_position,planned_baseline_observations,recorded_by) values(target_case_id,target_stagger_position,baseline_count,auth.uid());
  return to_jsonb(result);
+end $$;
+
+create function public.research_admin_swap_case_protocol_positions(first_case_id uuid, second_case_id uuid)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare first_plan public.research_case_protocol%rowtype; second_plan public.research_case_protocol%rowtype;
+begin
+ if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+ if first_case_id=second_case_id then raise exception 'two different cases are required' using errcode='22023'; end if;
+ perform pg_advisory_xact_lock(hashtext('research_case_protocol_swap'));
+ if exists(select 1 from public.research_case_phase_events where case_id in(first_case_id,second_case_id) and phase='baseline') then raise exception 'protocol positions cannot be swapped after either case has begun baseline' using errcode='55000'; end if;
+ select * into first_plan from public.research_case_protocol where case_id=first_case_id for update;
+ select * into second_plan from public.research_case_protocol where case_id=second_case_id for update;
+ if first_plan.case_id is null or second_plan.case_id is null then raise exception 'both cases must have assigned protocol positions' using errcode='P0002'; end if;
+ -- A single deferred constraint check permits the atomic swap without weakening uniqueness.
+ set constraints research_case_protocol_stagger_position_key deferred;
+ update public.research_case_protocol set stagger_position=second_plan.stagger_position,planned_baseline_observations=second_plan.planned_baseline_observations,updated_by=auth.uid(),updated_at=now() where case_id=first_case_id;
+ update public.research_case_protocol set stagger_position=first_plan.stagger_position,planned_baseline_observations=first_plan.planned_baseline_observations,updated_by=auth.uid(),updated_at=now() where case_id=second_case_id;
+ insert into public.research_case_protocol_events(case_id,stagger_position,planned_baseline_observations,recorded_by) values
+  (first_case_id,second_plan.stagger_position,second_plan.planned_baseline_observations,auth.uid()),
+  (second_case_id,first_plan.stagger_position,first_plan.planned_baseline_observations,auth.uid());
+ return jsonb_build_object('first',jsonb_build_object('case_id',first_case_id,'stagger_position',second_plan.stagger_position,'planned_baseline_observations',second_plan.planned_baseline_observations),'second',jsonb_build_object('case_id',second_case_id,'stagger_position',first_plan.stagger_position,'planned_baseline_observations',first_plan.planned_baseline_observations));
 end $$;
 
 create function public.research_admin_record_checklist_status(target_case_id uuid,target_item_key text,target_status text,target_brief_note text default null)
@@ -118,6 +141,8 @@ end $$;
 create function public.research_admin_record_measure(target_case_id uuid,target_measure_key text,target_status text,target_completed_on date default null,target_external_reference text default null,target_brief_note text default null)
 returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_measure_events%rowtype; begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+ if target_status='complete' and target_completed_on is null then raise exception 'completion date is required when measure status is complete' using errcode='22023'; end if;
+ if target_completed_on>(now() at time zone 'America/Denver')::date then raise exception 'measure completion date cannot be in the future (America/Denver)' using errcode='22023'; end if;
  insert into public.research_measure_events(case_id,measure_key,status,completed_on,external_reference,brief_note,recorded_by)
  values(target_case_id,target_measure_key,target_status,case when target_status='complete' then target_completed_on end,nullif(btrim(target_external_reference),''),nullif(btrim(target_brief_note),''),auth.uid()) returning * into result; return to_jsonb(result);
 end $$;
@@ -129,6 +154,7 @@ begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
  if target_effective_date>denver_today then raise exception 'phase effective date cannot be in the future (America/Denver)' using errcode='22023'; end if;
  if target_phase='baseline' then
+   perform pg_advisory_xact_lock(hashtext('research_case_protocol_swap'));
    foreach key in array array['teacher_consent','parent_permission','bsp_technical_review','safety_screen','target_routine_finalized','target_behavior_definition','fidelity_checklist_finalized','fidelity_checklist_second_review','baseline_orientation'] loop
      if coalesce((select e.status from public.research_protocol_checklist_events e where e.case_id=target_case_id and e.item_key=key order by e.recorded_at desc,e.id desc limit 1),'pending')<>'complete' then missing:=array_append(missing,key); end if;
    end loop;
@@ -161,8 +187,15 @@ returns jsonb language plpgsql stable security definer set search_path='' as $$ 
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
  with case_rows as (select c.id,c.case_code,c.student_alias,p.participant_code study_id,c.active case_active,p.active participant_active,
    coalesce((select pe.phase from public.research_case_phase_events pe where pe.case_id=c.id order by pe.effective_date desc,pe.recorded_at desc,pe.id desc limit 1),'prebaseline') current_phase,
-   (select to_jsonb(cp) from public.research_case_protocol cp where cp.case_id=c.id) protocol
-   from public.cases c join public.participants p on p.case_id=c.id where target_case_id is null or c.id=target_case_id)
+   (select to_jsonb(cp) from public.research_case_protocol cp where cp.case_id=c.id) protocol,
+   jsonb_build_object(
+    'protected_content_present',gc.case_id is not null,
+    'resource_map_ready',gc.case_id is not null and coalesce(gc.resources->'schemaVersion'='1'::jsonb,false) and coalesce(gc.resources->'sections'?&array['bip','functionForest','prevention','replacement','reinforcement','errorCorrection','library','coaching','fidelity'],false)
+      and (select count(distinct s.review_type)=3 from public.case_protected_content_signoffs s where s.case_id=c.id and s.protected_content_version=gc.version and s.review_type in('resource_behavior_review','resource_privacy_review','resource_qa_preview')),
+    'comparability_ready',exists(select 1 from public.case_protected_content_signoffs s where s.case_id=c.id and s.protected_content_version=gc.version and s.review_type='mission_bank_comparability'),
+    'reminders_enabled',coalesce((select rs.enabled from public.teacher_reminder_settings rs where rs.participant_id=p.id),false)
+   ) prepared_content
+   from public.cases c join public.participants p on p.case_id=c.id left join public.case_game_content gc on gc.case_id=c.id where target_case_id is null or c.id=target_case_id)
  select jsonb_build_object('authoritative_timezone','America/Denver','cases',coalesce(jsonb_agg(
    to_jsonb(cr)||jsonb_build_object(
     'checklist',coalesce((select jsonb_agg(to_jsonb(x) order by x.item_key) from (select distinct on(e.item_key) e.* from public.research_protocol_checklist_events e where e.case_id=cr.id order by e.item_key,e.recorded_at desc,e.id desc)x),'[]'::jsonb),
@@ -178,4 +211,4 @@ returns jsonb language plpgsql stable security definer set search_path='' as $$ 
  return result;
 end $$;
 
-do $$ declare fn record; begin for fn in select p.oid::regprocedure signature from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname like 'research_admin_%' and p.proname in ('research_admin_set_case_protocol','research_admin_record_checklist_status','research_admin_record_measure','research_admin_record_phase','research_admin_create_task','research_admin_set_task_status','research_admin_record_coaching_contact','research_admin_record_study_event','research_admin_resolve_study_event','research_admin_operations_dashboard') loop execute format('revoke all on function %s from public, anon',fn.signature); execute format('grant execute on function %s to authenticated',fn.signature); end loop; end $$;
+do $$ declare fn record; begin for fn in select p.oid::regprocedure signature from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname like 'research_admin_%' and p.proname in ('research_admin_set_case_protocol','research_admin_swap_case_protocol_positions','research_admin_record_checklist_status','research_admin_record_measure','research_admin_record_phase','research_admin_create_task','research_admin_set_task_status','research_admin_record_coaching_contact','research_admin_record_study_event','research_admin_resolve_study_event','research_admin_operations_dashboard') loop execute format('revoke all on function %s from public, anon',fn.signature); execute format('grant execute on function %s to authenticated',fn.signature); end loop; end $$;
