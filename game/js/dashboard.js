@@ -5,7 +5,8 @@
   const DENVER_TIME_ZONE = 'America/Denver';
   const LOAD_ERROR = 'Mission progress could not be loaded. Please try again or contact the research team.';
   const EMPTY_MESSAGE = 'Complete a mission and your game-practice progress will appear here.';
-  const PROGRESS_POLISH_HREF = '../game/css/progress-polish.css?v=20260818-compact';
+  const SCORE_DISCLAIMER = 'These scores summarize your choices in Mission: Reinforceable. They are not classroom fidelity scores.';
+  const PROGRESS_POLISH_HREF = '../game/css/progress-summary-v2.css?v=20260818-summary-v2';
 
   function value(run, camel, snake) {
     return run && run[camel] != null ? run[camel] : run && run[snake];
@@ -32,7 +33,6 @@
   function formatDenverDate(run) {
     const raw = completedAt(run);
     if (!raw) return 'Date unavailable';
-    // Legacy demo date keys represent a calendar date rather than an instant.
     const date = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T12:00:00Z`) : new Date(raw);
     if (Number.isNaN(date.getTime())) return 'Date unavailable';
     return new Intl.DateTimeFormat('en-US', {
@@ -49,12 +49,30 @@
     return 'Daily Mission';
   }
 
-  function shortSummary(run) {
+  function missionCounts(run) {
+    return {
+      best: Number(value(run, 'bestChoiceCount', 'plan_aligned_count')) || 0,
+      refine: Number(value(run, 'refineChoiceCount', 'refine_count')) || 0,
+      missed: Number(value(run, 'missedOpportunityCount', 'missed_count')) || 0
+    };
+  }
+
+  function summaryTitle(run) {
     const score = percentage(run);
-    if (score >= 90) return 'Great work. Your choices stayed closely aligned with the plan.';
-    if (score >= 70) return 'Nice work. Most of your choices stayed aligned with the plan.';
-    if (score >= 50) return 'Good practice. You found some plan-aligned moves and a few places to tighten your response.';
-    return 'Keep practicing. Review the plan and focus on one clear move for your next mission.';
+    if (score >= 100) return 'Perfect Mission!';
+    if (score >= 80) return 'Strong Mission!';
+    return 'Keep Practicing';
+  }
+
+  function coachingSummary(run) {
+    const counts = missionCounts(run);
+    if (!counts.refine && !counts.missed) {
+      return 'Excellent work. Your choices consistently matched the plan and supported prevention, replacement behavior teaching, reinforcement, and calm error correction.';
+    }
+    if (counts.refine && !counts.missed) {
+      return 'Strong work. Your choices mostly stayed aligned with the plan. A few responses were workable, but could be tightened by prompting and reinforcing the replacement behavior more directly.';
+    }
+    return 'You identified some helpful responses, but a few choices moved away from the student’s plan. Keep focusing on calm, plan-aligned responding during tricky moments.';
   }
 
   function ensureProgressPolish() {
@@ -99,7 +117,7 @@
       } catch (error) {
         console.error('Mission progress load failed:', error);
         this.renderSummary([]);
-        MR.$('#progress-list').innerHTML = `<div class="progress-message progress-error" role="alert">${LOAD_ERROR}</div>`;
+        MR.$('#progress-list').innerHTML = `<h2 class="history-heading">Mission History</h2><p class="history-disclaimer">${SCORE_DISCLAIMER}</p><div class="progress-message progress-error" role="alert">${LOAD_ERROR}</div>`;
         return;
       }
 
@@ -107,11 +125,11 @@
       this.renderSummary(runs);
       const list = MR.$('#progress-list');
       if (!runs.length) {
-        list.innerHTML = `<div class="progress-message empty-progress">${EMPTY_MESSAGE}</div>`;
+        list.innerHTML = `<h2 class="history-heading">Mission History</h2><p class="history-disclaimer">${SCORE_DISCLAIMER}</p><div class="progress-message empty-progress">${EMPTY_MESSAGE}</div>`;
         return;
       }
 
-      list.innerHTML = `<h2 class="history-heading">Mission History</h2>${runs.map((run, index) => this.runCard(run, index)).join('')}`;
+      list.innerHTML = `<h2 class="history-heading">Mission History</h2><p class="history-disclaimer">${SCORE_DISCLAIMER}</p>${runs.map((run, index) => this.runCard(run, index)).join('')}`;
       MR.$$('.run-card button', list).forEach(button => {
         button.addEventListener('click', () => {
           const run = runs[Number(button.dataset.index)];
@@ -160,13 +178,26 @@
     },
 
     detailsHTML(run) {
-      const mode = value(run, 'mode', 'mode') || 'daily';
-      return `<h2>Mission Summary</h2>
-        <div class="mission-summary-copy">
-          <p>You completed a <strong>${MR.escapeHTML(modeLabel(mode))}</strong> on ${MR.escapeHTML(formatDenverDate(run))}.</p>
-          <p><strong>Mission Score: ${percentage(run)}%</strong></p>
-          <p>${MR.escapeHTML(shortSummary(run))}</p>
-        </div>`;
+      const counts = missionCounts(run);
+      const maxScore = Number(value(run, 'maxScore', 'max_score')) || 0;
+      const score = Number(value(run, 'score', 'score')) || 0;
+      return `<section class="results-debrief progress-summary-debrief">
+        <h1>${MR.escapeHTML(summaryTitle(run))}</h1>
+        <section class="results-card results-summary-card">
+          <h2>Mission Summary</h2>
+          <dl class="results-stats">
+            <div><dt>Total Score</dt><dd>${score} / ${maxScore}</dd></div>
+            <div><dt>Percent</dt><dd>${percentage(run)}%</dd></div>
+            <div><dt>Best Choice</dt><dd>${counts.best}</dd></div>
+            <div><dt>Workable, but Refine</dt><dd>${counts.refine}</dd></div>
+            <div><dt>Missed Opportunity</dt><dd>${counts.missed}</dd></div>
+          </dl>
+        </section>
+        <section class="results-card results-coaching-card">
+          <h2>Coaching Summary</h2>
+          <p>${MR.escapeHTML(coachingSummary(run))}</p>
+        </section>
+      </section>`;
     },
 
     DENVER_TIME_ZONE
