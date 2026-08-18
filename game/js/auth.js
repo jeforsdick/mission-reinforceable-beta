@@ -134,6 +134,18 @@
     }
   }
 
+  async function completeParticipantMission(sessionId, updates) {
+    const { data, error } = await client().rpc('complete_participant_mission', {
+      target_session_id: sessionId,
+      completion: updates
+    });
+    if (error) throw new Error(`Unable to complete gameplay telemetry session: ${error.message}`);
+    if (!['completed', 'already_completed'].includes(data)) {
+      throw new Error(`Unable to complete gameplay telemetry session: unexpected result "${data}".`);
+    }
+    return data;
+  }
+
   MR.auth = {
     async getAssignment() {
       const supabaseClient = client();
@@ -175,6 +187,8 @@
     insertTelemetryResponses,
 
     completeTelemetrySession,
+
+    completeParticipantMission,
 
     async hasCompletedMissionToday() {
       const { data, error } = await client().rpc('has_completed_mission_today');

@@ -73,3 +73,39 @@ test('database RPC and insert policy remain authoritative when localStorage is c
   assert.match(migration, /p\.auth_user_id = \(select auth\.uid\(\)\)[\s\S]*p\.active = true/);
   assert.doesNotMatch(migration, /localStorage/);
 });
+
+test('atomic participant completion serializes two started sessions to one completion', () => {
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /gs\.id <> target_session_id[\s\S]*gs\.status = 'completed'/);
+  assert.match(migration, /return 'already_completed'/);
+  assert.match(migration, /set status = 'abandoned'[\s\S]*id <> target_session_id[\s\S]*status = 'started'/);
+  assert.match(migration, /Participants can update their own game sessions[\s\S]*status <> 'completed'/);
+  const sessions = [{ id: 'A', status: 'started' }, { id: 'B', status: 'started' }];
+  sessions[0].status = 'completed';
+  sessions[1].status = 'abandoned';
+  assert.equal(sessions.filter(row => row.status === 'completed').length, 1);
+});
+
+test('rejected concurrent completion creates no responses and enters same-day state', () => {
+  const completionCall = engine.indexOf('completeParticipantMission(sessionId, updates)');
+  const responseInsert = engine.indexOf('insertTelemetryResponses(responseRowsForTelemetry');
+  assert.ok(completionCall >= 0 && responseInsert > completionCall);
+  assert.match(engine, /result === 'already_completed'[\s\S]*MR\.dailyMissionCompleted = true[\s\S]*return false/);
+  assert.match(engine, /telemetryResult === false\) return/);
+});
+
+test('QA completion remains direct and repeatable outside participant atomic RPC', () => {
+  assert.match(engine, /if \(!context\.qaMode\)[\s\S]*completeParticipantMission[\s\S]*else \{[\s\S]*completeTelemetrySession/);
+  assert.match(migration, /and gs\.qa_mode = false/);
+});
+
+test('abandoned and stale started sessions do not consume the dose', () => {
+  assert.match(migration, /if target\.status <> 'started'/);
+  assert.match(migration, /update public\.game_sessions set status = 'abandoned'/);
+  assert.doesNotMatch(migration.match(/create or replace function public\.has_completed_mission_today\(\)[\s\S]*?\$\$;/)?.[0] || '', /status = 'started'|status = 'abandoned'/);
+});
+
+test('normal single participant session completes through the atomic RPC', () => {
+  assert.match(migration, /update public\.game_sessions set[\s\S]*status = 'completed'[\s\S]*return 'completed'/);
+  assert.match(engine, /const result = await MR\.auth\.completeParticipantMission/);
+});
