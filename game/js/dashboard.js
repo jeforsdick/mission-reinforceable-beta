@@ -6,7 +6,7 @@
   const LOAD_ERROR = 'Mission progress could not be loaded. Please try again or contact the research team.';
   const EMPTY_MESSAGE = 'Complete a mission and your game-practice progress will appear here.';
   const SCORE_DISCLAIMER = 'These scores summarize your choices in Mission: Reinforceable. They are not classroom fidelity scores.';
-  const PROGRESS_POLISH_HREF = '../game/css/progress-summary-v2.css?v=20260818-summary-v2';
+  const PROGRESS_POLISH_HREF = '../game/css/progress-summary-v2.css?v=20260818-summary-v3';
 
   function value(run, camel, snake) {
     return run && run[camel] != null ? run[camel] : run && run[snake];
@@ -57,10 +57,14 @@
     };
   }
 
+  /* Keep these summary rules identical to the end-of-mission Results screen. */
   function summaryTitle(run) {
-    const score = percentage(run);
-    if (score >= 100) return 'Perfect Mission!';
-    if (score >= 80) return 'Strong Mission!';
+    const score = Number(value(run, 'score', 'score')) || 0;
+    const maxScore = Number(value(run, 'maxScore', 'max_score')) || 0;
+    const accuracy = percentage(run);
+    const isPerfect = maxScore > 0 && (score >= maxScore || accuracy >= 100);
+    if (isPerfect) return 'Perfect Mission!';
+    if (accuracy >= 80) return 'Strong Mission!';
     return 'Keep Practicing';
   }
 
@@ -72,7 +76,7 @@
     if (counts.refine && !counts.missed) {
       return 'Strong work. Your choices mostly stayed aligned with the plan. A few responses were workable, but could be tightened by prompting and reinforcing the replacement behavior more directly.';
     }
-    return 'You identified some helpful responses, but a few choices moved away from the student’s plan. Keep focusing on calm, plan-aligned responding during tricky moments.';
+    return 'You identified some helpful responses, but a few choices moved away from the student’s plan. Review the coaching notes below to strengthen plan-aligned responding during tricky moments.';
   }
 
   function ensureProgressPolish() {
