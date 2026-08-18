@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {fidelitySummary,intervalSummary,teacherIoa,studentIoa,qualification,coverage,defaultIntervals,observationAttention} from './observations-model.mjs';
-import {intervalGrid,recordForm,renderObservations,renderObserverTeam} from './observations-ui.mjs';
+import {fidelitySummary,intervalSummary,teacherIoa,studentIoa,qualification,coverage,defaultIntervals,observationAttention,recalibrationState,ioaDisplay,denverWeek,mayAssignPrimary,mayAssignSecondary} from './observations-model.mjs';
+import {intervalGrid,recordForm,renderObservations,renderObserverTeam,renderStudyIoaSummary} from './observations-ui.mjs';
 const sql=fs.readFileSync(new URL('../supabase/migrations/20260818070000_classroom_observations_ioa.sql',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
 const html=fs.readFileSync(new URL('./index.html',import.meta.url),'utf8');
@@ -21,3 +21,46 @@ const grid=intervalGrid('primary');assert.equal((grid.match(/class="interval-cel
 assert.match(renderObservations({protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x),/Observations &amp; IOA/);assert.match(html,/id="observer-team"/);assert.match(js,/research_admin_observation_dashboard/);assert.match(js,/submitted_student_intervals:payload\.intervals/);assert.doesNotMatch(fs.readFileSync(new URL('../coach-dashboard/dashboard.js',import.meta.url),'utf8'),/classroom_observation|student_intervals|fidelity_scores/);
 assert.deepEqual(observationAttention({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{setups:[],observations:[],coverage:{completed:0},observers:[]}}),['Observation setup missing after baseline begins','Baseline observation count below assigned planned minimum']);
 console.log('Classroom observation setup, snapshots, scoring, IOA, coverage, revisions, UI, and security checks passed.');
+
+// Hardened observer assignment is authoritative on the server.
+assert.match(sql,/primary observer must be an active primary researcher or qualified trained observer/);
+assert.match(sql,/o\.observer_type='primary_researcher' or \(o\.observer_type='trained_observer' and public\.research_observer_status/);
+assert.match(sql,/secondary observer must be an active qualified trained observer/);
+assert.match(sql,/o\.observer_type='trained_observer' and o\.active/);
+assert.match(sql,/primary and secondary observers must differ/);
+assert.match(sql,/cannot deactivate the only active primary researcher/);
+assert.match(renderObserverTeam({observers:[{id:'1',observer_code:'OBS-02',display_name:'Observer',observer_type:'trained_observer',active:false,status:'inactive'}]},x=>x),/observer-edit-form[\s\S]*Active[\s\S]*inactive/);
+
+
+const primaryResearcher={active:true,observer_type:'primary_researcher',status:'qualified'},qualifiedTrained={active:true,observer_type:'trained_observer',status:'qualified'};
+assert.equal(mayAssignPrimary(primaryResearcher),true);assert.equal(mayAssignPrimary(qualifiedTrained),true);
+assert.equal(mayAssignPrimary({...qualifiedTrained,status:'training_needed'}),false);assert.equal(mayAssignPrimary({...qualifiedTrained,status:'recalibration_required'}),false);assert.equal(mayAssignPrimary({...qualifiedTrained,active:false}),false);
+assert.equal(mayAssignSecondary(primaryResearcher),false);assert.equal(mayAssignSecondary(qualifiedTrained),true);assert.equal(mayAssignSecondary({...qualifiedTrained,active:false}),false);assert.equal(mayAssignSecondary({...qualifiedTrained,status:'training_needed'}),false);
+// Audit timestamp breaks same-day ties deterministically.
+const low={date:'2026-09-03',recorded_at:'2026-09-03T15:00:00Z'};
+assert.equal(recalibrationState(low,null),'recalibration_required');
+assert.equal(recalibrationState(low,{date:'2026-09-04',recorded_at:'2026-09-04T09:00:00Z'}),'qualified');
+assert.equal(recalibrationState(low,{date:'2026-09-03',recorded_at:'2026-09-03T16:00:00Z'}),'qualified');
+assert.equal(recalibrationState(low,{date:'2026-09-03',recorded_at:'2026-09-03T14:00:00Z'}),'recalibration_required');
+assert.match(sql,/\(good\.good_date,good\.good_recorded_at\)<=\(low\.low_date,low\.low_recorded_at\)/);
+
+// Corrections preload only the current record for the requested role.
+const primaryRecord={revision_number:2,fidelity_scores:[{target_key:'P-01',status:'implemented_as_written'}],student_intervals:defaultIntervals().map((x,i)=>i===0?{...x,status:'occurrence'}:x),observer_note:'Primary note'};
+const secondaryRecord={revision_number:1,fidelity_scores:[{target_key:'P-01',status:'no_opportunity'}],student_intervals:defaultIntervals().map((x,i)=>i===0?{...x,status:'not_observed'}:x),observer_note:'Secondary note'};
+const correctionObs={...obs,primary_record:primaryRecord,secondary_record:secondaryRecord};
+const primaryCorrection=recordForm(correctionObs,'primary',x=>x),secondaryCorrection=recordForm(correctionObs,'secondary',x=>x);
+assert.match(primaryCorrection,/Correction to Primary Record/);assert.match(primaryCorrection,/value="implemented_as_written" checked/);assert.doesNotMatch(primaryCorrection,/value="no_opportunity" checked/);assert.match(primaryCorrection,/data-interval="1" data-status="occurrence"/);
+assert.match(secondaryCorrection,/Correction to Secondary Record/);assert.match(secondaryCorrection,/value="no_opportunity" checked/);assert.doesNotMatch(secondaryCorrection,/value="implemented_as_written" checked/);assert.match(secondaryCorrection,/data-interval="1" data-status="not_observed"/);assert.match(secondaryCorrection,/name="correction_reason" maxlength="1000" required/);
+assert.match(sql,/correction reason is required for a revision/);assert.match(sql,/prevent_research_operations_delete/);assert.match(sql,/unique\(primary_record_id,secondary_record_id\)/);
+
+// Null agreement is reviewable, neither pass nor automatic recalibration.
+assert.equal(ioaDisplay({overall_ioa_attention:false,teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null}),'IOA not calculable / review');
+assert.equal(ioaDisplay({overall_ioa_attention:true,teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:null}),'Needs recalibration');
+assert.equal(ioaDisplay({overall_ioa_attention:false,teacher_fidelity_ioa_percent:81,student_behavior_ioa_percent:81}),'Meets criterion');
+assert.match(sql,/coalesce\(\(case when sa\+sd=0 then null else 100\.0\*sa\/\(sa\+sd\) end\)<=80,false\)/);
+
+const summary=renderStudyIoaSummary({coverage:{completed:10,ioa:2,percent:20,required_minimum:2,additional_needed:0,teacher_alerts:1,student_alerts:2,not_calculable:1},by_dyad:[{study_id:'MR-001',ioa:1,completed:5,percent:20}],by_phase:[{phase:'baseline',ioa:2,completed:10,percent:20}]},x=>x);
+assert.match(summary,/Study IOA Summary/);assert.match(summary,/MR-001: 1 \/ 5, 20\.0%/);assert.match(summary,/Baseline: 2 \/ 10/);assert.match(summary,/Teacher 1 · Student 2 · Not calculable 1/);
+const interventionUi=renderObservations({current_phase:'intervention',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x);assert.match(interventionUi,/This intervention week/);assert.match(interventionUi,/approximately 3\/week/);assert.deepEqual(denverWeek(new Date('2026-08-19T05:30:00Z')),{monday:'2026-08-17',sunday:'2026-08-23'});
+assert.match(renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{},observers:[],setups:[],observations:[{id:'o',observation_date:'2026-01-01',phase:'baseline',session_number:1,primary_observer_code:'JO',secondary_observer_code:'OBS-02',secondary_observer_id:'2',secondary_record_id:'sr',fidelity_items_snapshot:[],ioa:{teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null,overall_ioa_attention:false}}]}},x=>String(x??'')),/Primary: JO · Secondary\/IOA: OBS-02[\s\S]*IOA not calculable \/ review/);
+for(const pattern of [/length\(target_routine\)<=1000/,/length\(target_behavior_definition\)<=2000/,/length\(change_note\)<=1000/,/length\(context_note\)<=1000/,/length\(observer_note\)<=1000/,/length\(brief_note\)<=1000/,/length\(correction_reason\)<=1000/])assert.match(sql,pattern);

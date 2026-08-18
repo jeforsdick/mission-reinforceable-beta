@@ -4,14 +4,14 @@
 
 create table public.research_observation_setup (
   case_id uuid primary key references public.cases(id),
-  target_routine text not null check (btrim(target_routine) <> ''),
-  target_behavior_definition text not null check (btrim(target_behavior_definition) <> ''),
+  target_routine text not null check (btrim(target_routine) <> '' and length(target_routine)<=1000),
+  target_behavior_definition text not null check (btrim(target_behavior_definition) <> '' and length(target_behavior_definition)<=2000),
   created_by uuid not null references auth.users(id), created_at timestamptz not null default now(),
   updated_by uuid not null references auth.users(id), updated_at timestamptz not null default now()
 );
 create table public.research_observation_setup_events (
   id uuid primary key default gen_random_uuid(), case_id uuid not null references public.cases(id),
-  target_routine text not null, target_behavior_definition text not null, change_note text,
+  target_routine text not null check(length(target_routine)<=1000), target_behavior_definition text not null check(length(target_behavior_definition)<=2000), change_note text check(length(change_note)<=1000),
   recorded_by uuid not null references auth.users(id), recorded_at timestamptz not null default now()
 );
 create table public.research_observers (
@@ -25,7 +25,7 @@ create table public.research_observer_training_events (
   id uuid primary key default gen_random_uuid(), observer_id uuid not null references public.research_observers(id),
   event_type text not null check (event_type in ('training','practice','recalibration','retraining')), event_date date not null,
   teacher_fidelity_agreement numeric(5,2) check (teacher_fidelity_agreement between 0 and 100),
-  student_behavior_agreement numeric(5,2) check (student_behavior_agreement between 0 and 100), brief_note text,
+  student_behavior_agreement numeric(5,2) check (student_behavior_agreement between 0 and 100), brief_note text check(length(brief_note)<=1000),
   recorded_by uuid not null references auth.users(id), recorded_at timestamptz not null default now()
 );
 create table public.research_classroom_observations (
@@ -34,7 +34,7 @@ create table public.research_classroom_observations (
   target_routine_snapshot text not null, target_behavior_definition_snapshot text not null, fidelity_items_snapshot jsonb not null,
   primary_observer_id uuid not null references public.research_observers(id), secondary_observer_id uuid references public.research_observers(id),
   duration_minutes smallint not null default 30 check(duration_minutes=30), interval_seconds smallint not null default 15 check(interval_seconds=15),
-  interval_count smallint not null default 120 check(interval_count=120), start_time time, end_time time, context_note text,
+  interval_count smallint not null default 120 check(interval_count=120), start_time time, end_time time, context_note text check(length(context_note)<=1000),
   created_by uuid not null references auth.users(id), created_at timestamptz not null default now(),
   unique(case_id,phase,session_number), check(secondary_observer_id is null or secondary_observer_id<>primary_observer_id)
 );
@@ -45,8 +45,8 @@ create table public.research_classroom_observation_records (
   implemented_count integer not null, not_implemented_count integer not null, no_opportunity_count integer not null,
   scoreable_count integer not null, teacher_fidelity_percent numeric(7,4), occurrence_count integer not null,
   no_occurrence_count integer not null, not_observed_count integer not null, observed_interval_count integer not null,
-  student_target_behavior_percent numeric(7,4), observer_note text, submitted_by uuid not null references auth.users(id),
-  submitted_at timestamptz not null default now(), correction_reason text,
+  student_target_behavior_percent numeric(7,4), observer_note text check(length(observer_note)<=1000), submitted_by uuid not null references auth.users(id),
+  submitted_at timestamptz not null default now(), correction_reason text check(length(correction_reason)<=1000),
   unique(observation_id,observer_role,revision_number),
   check((revision_number=1 and correction_reason is null) or (revision_number>1 and nullif(btrim(correction_reason),'') is not null))
 );
@@ -68,17 +68,18 @@ create index research_training_observer_date_idx on public.research_observer_tra
 create function public.research_observer_status(target_observer_id uuid, as_of_date date default ((now() at time zone 'America/Denver')::date))
 returns text language sql stable security definer set search_path='' as $$
   with o as (select * from public.research_observers where id=target_observer_id),
-  low as (select max(s.observation_date) low_date from public.research_classroom_ioa_results r join public.research_classroom_observations s on s.id=r.observation_id where s.secondary_observer_id=target_observer_id and s.observation_date<=as_of_date and r.overall_ioa_attention),
-  good as (select max(e.event_date) good_date from public.research_observer_training_events e where e.observer_id=target_observer_id and e.event_date<=as_of_date and e.event_type in('practice','recalibration','retraining') and e.teacher_fidelity_agreement>=85 and e.student_behavior_agreement>=85)
+  low as (select s.observation_date low_date,r.created_at low_recorded_at from public.research_classroom_ioa_results r join public.research_classroom_observations s on s.id=r.observation_id where s.secondary_observer_id=target_observer_id and s.observation_date<=as_of_date and r.overall_ioa_attention order by s.observation_date desc,r.created_at desc,r.id desc limit 1),
+  good as (select e.event_date good_date,e.recorded_at good_recorded_at from public.research_observer_training_events e where e.observer_id=target_observer_id and e.event_date<=as_of_date and e.event_type in('practice','recalibration','retraining') and e.teacher_fidelity_agreement>=85 and e.student_behavior_agreement>=85 order by e.event_date desc,e.recorded_at desc,e.id desc limit 1)
   select case when not o.active then 'inactive' when o.observer_type='primary_researcher' then 'qualified'
-    when low.low_date is not null and (good.good_date is null or good.good_date<=low.low_date) then 'recalibration_required'
-    when good.good_date is not null then 'qualified' else 'training_needed' end from o cross join low cross join good
+    when low.low_date is not null and (good.good_date is null or (good.good_date,good.good_recorded_at)<=(low.low_date,low.low_recorded_at)) then 'recalibration_required'
+    when good.good_date is not null then 'qualified' else 'training_needed' end from o left join low on true left join good on true
 $$;
 
 create function public.research_admin_save_observation_setup(target_case_id uuid,target_routine text,target_behavior_definition text,target_change_note text default null)
 returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_observation_setup%rowtype; begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
  if nullif(btrim(target_routine),'') is null or nullif(btrim(target_behavior_definition),'') is null then raise exception 'target routine and operational definition are required' using errcode='22023'; end if;
+ if length(target_routine)>1000 or length(target_behavior_definition)>2000 or length(target_change_note)>1000 then raise exception 'observation setup text exceeds maximum length' using errcode='22001'; end if;
  insert into public.research_observation_setup(case_id,target_routine,target_behavior_definition,created_by,updated_by) values(target_case_id,btrim(target_routine),btrim(target_behavior_definition),auth.uid(),auth.uid())
  on conflict(case_id) do update set target_routine=excluded.target_routine,target_behavior_definition=excluded.target_behavior_definition,updated_by=auth.uid(),updated_at=now() returning * into result;
  insert into public.research_observation_setup_events(case_id,target_routine,target_behavior_definition,change_note,recorded_by) values(target_case_id,result.target_routine,result.target_behavior_definition,nullif(btrim(target_change_note),''),auth.uid()); return to_jsonb(result); end $$;
@@ -86,6 +87,7 @@ returns jsonb language plpgsql security definer set search_path='' as $$ declare
 create function public.research_admin_save_observer(target_observer_id uuid,target_observer_code text,target_display_name text,target_observer_type text,target_active boolean default true)
 returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_observers%rowtype; begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
+ if target_observer_id is not null and target_active=false and exists(select 1 from public.research_observers where id=target_observer_id and observer_type='primary_researcher' and active) and not exists(select 1 from public.research_observers where observer_type='primary_researcher' and active and id<>target_observer_id) then raise exception 'cannot deactivate the only active primary researcher' using errcode='55000'; end if;
  if target_observer_id is null then insert into public.research_observers(observer_code,display_name,observer_type,active,created_by) values(upper(btrim(target_observer_code)),btrim(target_display_name),target_observer_type,target_active,auth.uid()) returning * into result;
  else update public.research_observers set observer_code=upper(btrim(target_observer_code)),display_name=btrim(target_display_name),observer_type=target_observer_type,active=target_active,updated_by=auth.uid(),updated_at=now() where id=target_observer_id returning * into result; end if; return to_jsonb(result); end $$;
 
@@ -93,6 +95,7 @@ create function public.research_admin_record_observer_training(target_observer_i
 returns jsonb language plpgsql security definer set search_path='' as $$ declare result public.research_observer_training_events%rowtype; begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
  if target_event_date>(now() at time zone 'America/Denver')::date then raise exception 'training date cannot be in the future (America/Denver)' using errcode='22023'; end if;
+ if length(target_brief_note)>1000 then raise exception 'training note exceeds 1000 characters' using errcode='22001'; end if;
  insert into public.research_observer_training_events(observer_id,event_type,event_date,teacher_fidelity_agreement,student_behavior_agreement,brief_note,recorded_by) values(target_observer_id,target_event_type,target_event_date,target_teacher_fidelity_agreement,target_student_behavior_agreement,nullif(btrim(target_brief_note),''),auth.uid()) returning * into result; return to_jsonb(result); end $$;
 
 create function public.research_admin_create_classroom_observation(target_case_id uuid,target_observation_date date,target_primary_observer_id uuid,target_secondary_observer_id uuid default null,target_start_time time default null,target_end_time time default null,target_context_note text default null)
@@ -105,8 +108,9 @@ begin
  select e.phase into resolved_phase from public.research_case_phase_events e where e.case_id=target_case_id and e.effective_date<=target_observation_date order by e.effective_date desc,e.recorded_at desc,e.id desc limit 1;
  resolved_phase:=coalesce(resolved_phase,'prebaseline'); if resolved_phase not in('baseline','intervention','maintenance') then raise exception 'observations are not allowed during phase %',resolved_phase using errcode='55000'; end if;
  if target_secondary_observer_id=target_primary_observer_id then raise exception 'primary and secondary observers must differ' using errcode='22023'; end if;
- if not exists(select 1 from public.research_observers where id=target_primary_observer_id and active) then raise exception 'active primary observer required' using errcode='22023'; end if;
- if target_secondary_observer_id is not null and public.research_observer_status(target_secondary_observer_id,target_observation_date)<>'qualified' then raise exception 'secondary observer must be qualified and not require recalibration' using errcode='55000'; end if;
+ if not exists(select 1 from public.research_observers o where o.id=target_primary_observer_id and o.active and (o.observer_type='primary_researcher' or (o.observer_type='trained_observer' and public.research_observer_status(o.id,target_observation_date)='qualified'))) then raise exception 'primary observer must be an active primary researcher or qualified trained observer' using errcode='55000'; end if;
+ if target_secondary_observer_id is not null and not exists(select 1 from public.research_observers o where o.id=target_secondary_observer_id and o.observer_type='trained_observer' and o.active and public.research_observer_status(o.id,target_observation_date)='qualified') then raise exception 'secondary observer must be an active qualified trained observer' using errcode='55000'; end if;
+ if length(target_context_note)>1000 then raise exception 'context note exceeds 1000 characters' using errcode='22001'; end if;
  select jsonb_agg(jsonb_build_object('target_key',f.target_key,'domain',f.domain,'description',f.description,'sort_order',f.sort_order) order by f.sort_order,f.target_key) into items from public.fidelity_targets f where f.case_id=target_case_id and f.active;
  if items is null then raise exception 'at least one active fidelity target is required' using errcode='55000'; end if;
  if exists(select 1 from jsonb_array_elements(items) x where nullif(btrim(x->>'target_key'),'') is null) then raise exception 'every active fidelity target requires a stable target_key' using errcode='55000'; end if;
@@ -123,7 +127,8 @@ declare obs public.research_classroom_observations%rowtype; result public.resear
 begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
  select * into obs from public.research_classroom_observations where id=target_observation_id for update; if obs.id is null then raise exception 'observation not found' using errcode='P0002'; end if;
- if target_observer_role not in('primary','secondary') then raise exception 'observer role must be primary or secondary' using errcode='22023'; end if; assigned:=case when target_observer_role='primary' then obs.primary_observer_id else obs.secondary_observer_id end; if assigned is null then raise exception 'no observer assigned for role' using errcode='22023'; end if;
+ if target_observer_role not in('primary','secondary') then raise exception 'observer role must be primary or secondary' using errcode='22023'; end if;
+ if length(target_observer_note)>1000 or length(target_correction_reason)>1000 then raise exception 'observation record note exceeds 1000 characters' using errcode='22001'; end if; assigned:=case when target_observer_role='primary' then obs.primary_observer_id else obs.secondary_observer_id end; if assigned is null then raise exception 'no observer assigned for role' using errcode='22023'; end if;
  if jsonb_typeof(submitted_fidelity_scores)<>'array' then raise exception 'fidelity scores must be an array' using errcode='22023'; end if;
  select array_agg(x->>'target_key' order by x->>'target_key') into snapshot_keys from jsonb_array_elements(obs.fidelity_items_snapshot)x;
  select array_agg(x->>'target_key' order by x->>'target_key'),count(*) filter(where x->>'status' not in('implemented_as_written','not_implemented_as_written','no_opportunity')),count(*) filter(where x->>'status'='implemented_as_written'),count(*) filter(where x->>'status'='not_implemented_as_written'),count(*) filter(where x->>'status'='no_opportunity') into score_keys,rev,impl,notimpl,noop from jsonb_array_elements(submitted_fidelity_scores)x;
@@ -150,15 +155,34 @@ begin
 
 create function public.research_admin_observation_dashboard(target_case_id uuid default null) returns jsonb language plpgsql stable security definer set search_path='' as $$ declare result jsonb; begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
- with current_records as (select distinct on(observation_id,observer_role)* from public.research_classroom_observation_records order by observation_id,observer_role,revision_number desc), rows as (
- select o.*,pr.teacher_fidelity_percent,pr.student_target_behavior_percent,pr.id primary_record_id,sr.id secondary_record_id,
- (select to_jsonb(i) from public.research_classroom_ioa_results i where i.primary_record_id=pr.id and i.secondary_record_id=sr.id order by i.created_at desc limit 1) ioa
- from public.research_classroom_observations o left join current_records pr on pr.observation_id=o.id and pr.observer_role='primary' left join current_records sr on sr.observation_id=o.id and sr.observer_role='secondary' where target_case_id is null or o.case_id=target_case_id), totals as(select count(*) filter(where primary_record_id is not null)n,count(*) filter(where primary_record_id is not null and secondary_record_id is not null)paired from rows)
- select jsonb_build_object('observers',coalesce((select jsonb_agg(to_jsonb(o)||jsonb_build_object('status',public.research_observer_status(o.id),'latest_training',(select to_jsonb(e) from public.research_observer_training_events e where e.observer_id=o.id order by e.event_date desc,e.recorded_at desc limit 1)) order by o.observer_code) from public.research_observers o),'[]'::jsonb),
- 'setups',coalesce((select jsonb_agg(to_jsonb(s)) from public.research_observation_setup s where target_case_id is null or s.case_id=target_case_id),'[]'::jsonb),
- 'observations',coalesce((select jsonb_agg(to_jsonb(r) order by r.observation_date desc,r.session_number desc) from rows r),'[]'::jsonb),
- 'coverage',jsonb_build_object('completed',totals.n,'ioa',totals.paired,'percent',case when totals.n=0 then 0 else round(100.0*totals.paired/totals.n,1) end,'required_minimum',ceil(totals.n*.20),'additional_needed',greatest(ceil(totals.n*.20)-totals.paired,0)),
- 'by_phase',coalesce((select jsonb_agg(x) from(select phase,count(*) filter(where primary_record_id is not null) completed,count(*) filter(where primary_record_id is not null and secondary_record_id is not null) ioa from rows group by phase)x),'[]'::jsonb)) into result from totals; return result; end $$;
+ with current_records as (
+   select distinct on(observation_id,observer_role)* from public.research_classroom_observation_records order by observation_id,observer_role,revision_number desc
+ ), rows as (
+   select o.*,po.observer_code primary_observer_code,so.observer_code secondary_observer_code,
+     pr.teacher_fidelity_percent,pr.student_target_behavior_percent,pr.id primary_record_id,sr.id secondary_record_id,
+     case when pr.id is null then null else jsonb_build_object('id',pr.id,'revision_number',pr.revision_number,'fidelity_scores',pr.fidelity_scores,'student_intervals',pr.student_intervals,'observer_note',pr.observer_note,'submitted_at',pr.submitted_at) end primary_record,
+     case when sr.id is null then null else jsonb_build_object('id',sr.id,'revision_number',sr.revision_number,'fidelity_scores',sr.fidelity_scores,'student_intervals',sr.student_intervals,'observer_note',sr.observer_note,'submitted_at',sr.submitted_at) end secondary_record,
+     (select to_jsonb(i) from public.research_classroom_ioa_results i where i.primary_record_id=pr.id and i.secondary_record_id=sr.id order by i.created_at desc limit 1) ioa
+   from public.research_classroom_observations o
+   join public.research_observers po on po.id=o.primary_observer_id left join public.research_observers so on so.id=o.secondary_observer_id
+   left join current_records pr on pr.observation_id=o.id and pr.observer_role='primary'
+   left join current_records sr on sr.observation_id=o.id and sr.observer_role='secondary'
+   where target_case_id is null or o.case_id=target_case_id
+ ), totals as (
+   select count(*) filter(where primary_record_id is not null)n,count(*) filter(where primary_record_id is not null and secondary_record_id is not null)paired,
+     count(*) filter(where ioa is not null and (ioa->>'teacher_fidelity_ioa_percent')::numeric<=80) teacher_alerts,
+     count(*) filter(where ioa is not null and (ioa->>'student_behavior_ioa_percent')::numeric<=80) student_alerts,
+     count(*) filter(where ioa is not null and ((ioa->>'teacher_fidelity_ioa_percent') is null or (ioa->>'student_behavior_ioa_percent') is null)) not_calculable
+   from rows
+ )
+ select jsonb_build_object(
+   'observers',coalesce((select jsonb_agg(to_jsonb(o)||jsonb_build_object('status',public.research_observer_status(o.id),'latest_training',(select to_jsonb(e) from public.research_observer_training_events e where e.observer_id=o.id order by e.event_date desc,e.recorded_at desc limit 1),'training_history',coalesce((select jsonb_agg(to_jsonb(e) order by e.event_date desc,e.recorded_at desc) from public.research_observer_training_events e where e.observer_id=o.id),'[]'::jsonb)) order by o.observer_code) from public.research_observers o),'[]'::jsonb),
+   'setups',coalesce((select jsonb_agg(to_jsonb(s)) from public.research_observation_setup s where target_case_id is null or s.case_id=target_case_id),'[]'::jsonb),
+   'observations',coalesce((select jsonb_agg(to_jsonb(r) order by r.observation_date desc,r.session_number desc) from rows r),'[]'::jsonb),
+   'coverage',jsonb_build_object('completed',totals.n,'ioa',totals.paired,'percent',case when totals.n=0 then 0 else round(100.0*totals.paired/totals.n,1) end,'required_minimum',ceil(totals.n*.20),'additional_needed',greatest(ceil(totals.n*.20)-totals.paired,0),'teacher_alerts',totals.teacher_alerts,'student_alerts',totals.student_alerts,'not_calculable',totals.not_calculable),
+   'by_phase',coalesce((select jsonb_agg(x order by x.phase) from(select phase,count(*) filter(where primary_record_id is not null) completed,count(*) filter(where primary_record_id is not null and secondary_record_id is not null) ioa,case when count(*) filter(where primary_record_id is not null)=0 then 0 else round(100.0*count(*) filter(where primary_record_id is not null and secondary_record_id is not null)/count(*) filter(where primary_record_id is not null),1) end percent from rows group by phase)x),'[]'::jsonb),
+   'by_dyad',coalesce((select jsonb_agg(x order by x.study_id) from(select p.participant_code study_id,count(*) filter(where r.primary_record_id is not null) completed,count(*) filter(where r.primary_record_id is not null and r.secondary_record_id is not null) ioa,case when count(*) filter(where r.primary_record_id is not null)=0 then 0 else round(100.0*count(*) filter(where r.primary_record_id is not null and r.secondary_record_id is not null)/count(*) filter(where r.primary_record_id is not null),1) end percent from rows r join public.participants p on p.case_id=r.case_id group by p.participant_code)x),'[]'::jsonb)
+ ) into result from totals; return result; end $$;
 
 do $$ declare t text; begin foreach t in array array['research_observation_setup','research_observation_setup_events','research_observers','research_observer_training_events','research_classroom_observations','research_classroom_observation_records','research_classroom_ioa_results'] loop
  execute format('alter table public.%I enable row level security',t); execute format('revoke all on table public.%I from anon,authenticated',t); execute format('grant select on table public.%I to authenticated',t); execute format('create policy "Research admins read %s" on public.%I for select to authenticated using ((select public.is_research_admin()))',t,t); end loop; end $$;
