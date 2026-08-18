@@ -303,3 +303,18 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
   h2 { font-size: 15pt; }
   p { orphans: 3; widows: 3; }
 }
+/* Dissertation operations command center */
+#study-case-list { margin-bottom: 48px; }
+.attention { border-left: 6px solid #b5473c; background: #fff8f6; }
+.attention-summary { margin-bottom: 20px; }
+.high-attention { margin: 8px 0; padding: 10px; border-left: 5px solid #b5473c; background: #fff1ee; }
+.command-status { border-top: 6px solid var(--purple); }
+.operations-checklist > div { flex-wrap: wrap; }
+.operations-checklist .quiet { margin-left: auto; }
+.panel form > label { display: block; margin: 14px 0; color: var(--navy); font-weight: 750; }
+.panel form input, .panel form select, .panel form textarea { display: block; width: 100%; min-height: 44px; margin-top: 5px; padding: 10px; border: 1px solid #b8bdc6; border-radius: 9px; font: inherit; }
+.privacy-help { display: block; margin: 8px 0 16px; color: var(--muted); }
+.timeline { list-style: none; padding: 0; }
+.timeline li { display: grid; grid-template-columns: 110px 150px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.timeline time { color: var(--muted); }
+@media(max-width:650px){.timeline li{grid-template-columns:1fr;gap:3px}.operations-checklist .quiet{margin-left:0}}

@@ -1,9 +1,11 @@
 import { accountState, normalizeTargets, readinessForCase } from './admin-model.mjs';
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
+import { attentionForCase } from './operations-model.mjs';
+import { renderOperations } from './operations-ui.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
-const state = { client: null, intakes: [], selected: null, accounts: {}, qaLink: '' };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '' };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -35,9 +37,17 @@ function renderCounts() {
 }
 function renderHome() {
   renderCounts();
+  renderStudyOverview();
   $('#intake-list').innerHTML = state.intakes.length ? state.intakes.map(row => `<article class="intake-card"><div class="card-top"><span class="pill">${escapeHtml(row.status)}</span><span class="id">${escapeHtml(row.request_id)}</span></div><h3>${escapeHtml(row.teacher_name)}</h3><dl><div><dt>Teacher email</dt><dd>${escapeHtml(row.teacher_email)}</dd></div><div><dt>Coach</dt><dd>${escapeHtml(row.coach_name)}</dd></div><div><dt>Coach email</dt><dd>${escapeHtml(row.coach_email)}</dd></div><div><dt>Student / grade</dt><dd>${escapeHtml(row.student_initials)} · ${escapeHtml(row.grade_level)}</dd></div><div><dt>Submitted</dt><dd>${formatDate(intakeDate(row))}</dd></div></dl><button class="primary review" data-id="${escapeHtml(row.request_id)}">Review intake</button></article>`).join('') : '<article class="panel"><h3>No intake requests</h3><p>The operational queue is clear.</p></article>';
   document.querySelectorAll('.review').forEach(button => button.addEventListener('click', () => openDetail(button.dataset.id)));
   show('home-view');
+}
+
+function renderStudyOverview() {
+  const cases=state.operations.cases||[], all=cases.flatMap(item=>attentionForCase(item).map(reason=>({item,reason})));
+  $('#study-attention').innerHTML=all.length?`<section class="panel attention"><h3>Needs Attention</h3><ul>${all.map(({item,reason})=>`<li><strong>${escapeHtml(item.study_id)}</strong> — ${escapeHtml(reason)}</li>`).join('')}</ul></section>`:'<section class="panel"><strong>No actionable study needs right now.</strong></section>';
+  $('#study-case-list').innerHTML=cases.length?cases.map(item=>{const attention=attentionForCase(item); return `<article class="intake-card study-card"><div class="card-top"><span class="pill">${escapeHtml(item.current_phase)}</span><span class="id">${escapeHtml(item.case_code)}</span></div><h3>${escapeHtml(item.study_id)}</h3><p>Student alias: <strong>${escapeHtml(item.student_alias)}</strong></p><dl><div><dt>Planned minimum</dt><dd>${item.protocol?`${item.protocol.planned_baseline_observations} observations`:'Not assigned'}</dd></div><div><dt>Protocol readiness</dt><dd>${attention.some(x=>x.includes('pre-baseline'))?'Needs action':'Complete'}</dd></div><div><dt>Measures</dt><dd>${(item.measures||[]).length} / 4 tracked</dd></div><div><dt>Open tasks</dt><dd>${(item.tasks||[]).filter(x=>x.status==='pending').length}</dd></div><div><dt>Study events</dt><dd>${(item.study_events||[]).filter(x=>!x.resolved_at).length} unresolved</dd></div><div><dt>Attention</dt><dd>${attention.length||'None'}</dd></div></dl><button class="primary open-case" data-case="${item.id}">Open Case</button></article>`}).join(''):'<article class="panel"><h3>No prepared study cases</h3><p>Converted cases will appear here without being activated.</p></article>';
+  document.querySelectorAll('.open-case').forEach(button=>button.addEventListener('click',()=>{const intake=state.intakes.find(row=>row.converted_case_id===button.dataset.case); if(intake) openDetail(intake.request_id);}));
 }
 
 async function exactAccount(email, role) {
@@ -73,6 +83,7 @@ async function openDetail(id) {
 function accountBox(label, email, result, type) { return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Generate Test Sign-In Link</button><small>QA only — no email will be sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? '<div id="qa-result"></div>' : ''}</div>`; }
 function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel no-print"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel no-print"><h2>Intake decision</h2><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
 function bindDetail() {
+  bindOperations();
   document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
   $('.qa-link')?.addEventListener('click', generateQaLink);
   $('#preview-protected-game')?.addEventListener('click', event => {
@@ -94,6 +105,19 @@ function bindDetail() {
   });
   $('#provision-form')?.addEventListener('submit', provisionCase);
   if ($('#fidelity-form-wrap')) renderFidelityForm();
+}
+
+async function operationRpc(name,args){const {error}=await state.client.rpc(name,args);if(error){window.alert(error.message);return;}await openDetail(state.selected.request_id);}
+function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)return;
+ $('#protocol-form')?.addEventListener('submit',event=>{event.preventDefault();operationRpc('research_admin_set_case_protocol',{target_case_id:caseId,target_stagger_position:Number(new FormData(event.currentTarget).get('position'))});});
+ document.querySelectorAll('.checklist-action').forEach(button=>button.addEventListener('click',()=>{const status=window.prompt('Status: pending, complete, or not_applicable','complete');if(status)operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:button.dataset.key,target_status:status,target_brief_note:null});}));
+ document.querySelectorAll('.measure-action').forEach(button=>button.addEventListener('click',()=>{const status=window.prompt('Status: pending, complete, declined, or not_applicable','complete');if(status)operationRpc('research_admin_record_measure',{target_case_id:caseId,target_measure_key:button.dataset.key,target_status:status,target_completed_on:status==='complete'?new Date().toISOString().slice(0,10):null});}));
+ $('#phase-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_phase',{target_case_id:caseId,target_phase:f.get('phase'),target_effective_date:f.get('effective_date'),target_decision_note:f.get('note')||null});});
+ $('#task-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_create_task',{target_case_id:caseId,target_title:f.get('title'),target_category:f.get('category'),target_due_date:f.get('due_date')||null,target_required:false,target_note:null});});
+ document.querySelectorAll('.task-action').forEach(button=>button.addEventListener('click',()=>operationRpc('research_admin_set_task_status',{target_task_id:button.dataset.id,target_status:button.dataset.status})));
+ $('#coaching-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_coaching_contact',{target_case_id:caseId,target_contact_date:f.get('date'),target_format:f.get('format'),target_provider_role:f.get('provider'),target_focuses:String(f.get('focuses')).split(',').map(x=>x.trim()),target_approximate_duration_minutes:null,target_brief_note:null});});
+ $('#event-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_study_event',{target_case_id:caseId,target_event_date:f.get('date'),target_event_type:f.get('type'),target_brief_note:f.get('note'),target_affects_observation:false,target_affects_mr_exposure:false,target_affects_phase_interpretation:false,target_action_taken:null});});
+ document.querySelectorAll('.resolve-event').forEach(button=>button.addEventListener('click',()=>operationRpc('research_admin_resolve_study_event',{target_event_id:button.dataset.id,target_action_taken:null})));
 }
 
 async function recordSignoff(event) {
@@ -182,7 +206,8 @@ async function loadReadiness(requestId) {
   const { data, error } = await state.client.rpc('research_admin_case_readiness', { target_request_id: requestId });
   if (error) throw error;
   const { data: fidelity, error: fidelityError } = await state.client.rpc('research_admin_procedural_fidelity_dashboard', { target_case_id: data.case.id });
-  if (fidelityError) throw fidelityError; state.fidelity = fidelity; state.readiness = data; return data;
+  if (fidelityError) throw fidelityError; state.fidelity = fidelity; state.readiness = data;
+  const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{target_case_id:data.case.id}); if(operationsError) throw operationsError; state.caseOperations=operations.cases?.[0]; return data;
 }
 function readinessPanel(data) {
   const states = readinessForCase(data);
@@ -193,7 +218,7 @@ function readinessPanel(data) {
     ['resource_privacy_review', 'Privacy review complete', data.resource_map?.privacy_reviewed],
     ['resource_qa_preview', 'Resource QA Preview passed', data.resource_map?.qa_previewed]
   ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
-  return `<section class="panel"><p class="eyebrow">Prepared case readiness</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}${signoffs}<p><strong>Prepared does not mean intervention active.</strong></p></section>${states.content === 'Ready' ? comparabilityPanel(data) : ''}${fidelityPanel()}`;
+  return `${renderOperations(state.caseOperations,data,escapeHtml)}<section class="panel"><p class="eyebrow">Prepared Case / Review Checks</p><h2>${escapeHtml(data.case.case_code)}</h2><p><strong>Study ID:</strong> ${escapeHtml(data.participant?.participant_code || '—')}<br><strong>Game alias:</strong> ${escapeHtml(data.case.student_alias)}</p><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('OFF') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}${signoffs}<p><strong>Prepared does not mean intervention active.</strong></p></section>${states.content === 'Ready' ? comparabilityPanel(data) : ''}${fidelityPanel()}`;
 }
 
 function fidelityPanel() {
@@ -239,7 +264,7 @@ async function setStatus(status) {
   if (error) { $('#action-message').textContent = error.message; return; }
   state.selected.status = status; renderHome();
 }
-async function loadIntakes() { const { data, error } = await state.client.rpc('research_admin_intakes'); if (error) throw error; state.intakes = data || []; }
+async function loadIntakes() { const { data, error } = await state.client.rpc('research_admin_intakes'); if (error) throw error; state.intakes = data || []; const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{}); if(operationsError) throw operationsError; state.operations=operations; }
 async function start() {
   show('loading-view');
   try {
