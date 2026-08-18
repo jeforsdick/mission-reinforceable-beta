@@ -32,7 +32,8 @@ function validMission() {
 function writeFixture(base = fs.mkdtempSync(path.join(os.tmpdir(), 'mr-private-case-'))) {
   fs.mkdirSync(path.join(base, 'content'), { recursive: true });
   fs.writeFileSync(path.join(base, 'config.js'), "window.MR_TEACHER_CONFIG = { missionFiles: ['content/mission.js'], resourcesFile: 'content/resources.js', studentAlias: 'Fictional' };\n");
-  fs.writeFileSync(path.join(base, 'content/resources.js'), "window.MR_RESOURCES = { briefing: 'fictional' };\n");
+  const sections = Object.fromEntries(Object.entries(require('./resource-content-validator').REQUIRED_SECTIONS).map(([key, title]) => [key, { title, blocks: [{ type: 'paragraph', text: `Fictional guidance for ${title}.` }] }]));
+  fs.writeFileSync(path.join(base, 'content/resources.js'), `window.MR_RESOURCES = ${JSON.stringify({ schemaVersion: 1, studentAlias: 'Fictional', sections })};\n`);
   fs.writeFileSync(path.join(base, 'content/mission.js'), `POOL.daily.push(${JSON.stringify(validMission())});\n`);
   fs.writeFileSync(path.join(base, 'fidelity-targets.expected.json'), JSON.stringify({ targets: [{ target_key: 'proactive_01', domain: 'proactive' }] }));
   return base;
@@ -68,6 +69,8 @@ test('writes protected JSON and does not warn for an outside source', () => {
   const payload = JSON.parse(fs.readFileSync(output));
   assert.equal(payload.daily_missions.length, 1);
   assert.equal(payload.config.shuffleChoices, true);
+  assert.equal(payload.resources.schemaVersion, 1);
+  assert.equal(Object.keys(payload.resources.sections).length, 9);
 });
 
 test('--version 2 writes version 2 to SQL', () => {
@@ -105,22 +108,58 @@ for (const version of ['0', '-1', '1.5', 'not-a-number']) {
   });
 }
 
-test('warns without blocking when the source is inside the repository', t => {
+test('demo mode warns without blocking when the source is inside the repository', t => {
   const source = path.join(root, '.tmp', `fictional-${process.pid}-${Date.now()}`);
   t.after(() => fs.rmSync(source, { recursive: true, force: true }));
   writeFixture(source);
-  const result = runBuilder(source, '--json-output', path.join(source, 'output.json'));
+  const result = spawnSync(process.execPath, [builder, '--source-dir', source, '--case-code', 'CASE-FICTIONAL-001', '--version', '2', '--content-mode', 'demo', '--json-output', path.join(source, 'output.json')], { cwd: root, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stderr, /WARNING: source directory is inside the repository/);
-  assert.match(result.stderr, /Real participant content must remain outside Git/);
+  assert.match(result.stderr, /demo source directory is inside the repository/);
+});
+
+test('participant mode blocks repository source and output paths', t => {
+  const source = path.join(root, '.tmp', `fictional-${process.pid}-${Date.now()}`);
+  t.after(() => fs.rmSync(source, { recursive: true, force: true }));
+  writeFixture(source);
+  const sourceResult = runBuilder(source, '--json-output', path.join(os.tmpdir(), 'unused.json'));
+  assert.notEqual(sourceResult.status, 0);
+  assert.match(sourceResult.stderr, /Participant source directory must be outside/);
+
+  const external = writeFixture();
+  const outputResult = runBuilder(external, '--json-output', path.join(root, '.tmp', 'participant-output.json'));
+  assert.notEqual(outputResult.status, 0);
+  assert.match(outputResult.stderr, /Participant output paths must be outside/);
 });
 
 test('supports the legacy positional Demo-2 invocation', () => {
   const output = path.join(os.tmpdir(), `demo-2-${process.pid}-${Date.now()}.sql`);
   const result = spawnSync(process.execPath, [builder, 'demo-2', 'CASE-DEMO-2', output], { cwd: root, encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /resource validation/);
+});
+
+test('builder refuses invalid resources before generating protected output', () => {
+  const source = writeFixture();
+  const output = path.join(source, 'must-not-exist.json');
+  fs.writeFileSync(path.join(source, 'content/resources.js'), 'window.MR_RESOURCES = { schemaVersion: 1, sections: {} };\n');
+  const result = runBuilder(source, '--json-output', output);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /resource validation/);
+  assert.equal(fs.existsSync(output), false);
+});
+
+test('builder emits a content-free review manifest digest', () => {
+  const source = writeFixture();
+  const output = path.join(source, 'payload.json');
+  const manifestFile = path.join(source, 'review.json');
+  const result = runBuilder(source, '--json-output', output, '--review-manifest', manifestFile);
   assert.equal(result.status, 0, result.stderr);
-  assert.match(fs.readFileSync(output, 'utf8'), /CASE-DEMO-2/);
-  assert.match(fs.readFileSync(output, 'utf8'), /\n  1, now\(\)/);
+  const manifest = JSON.parse(fs.readFileSync(manifestFile));
+  assert.equal(manifest.caseCode, 'CASE-FICTIONAL-001');
+  assert.equal(manifest.resourceSchemaVersion, 1);
+  assert.match(manifest.resourcesSha256, /^[a-f0-9]{64}$/);
+  assert.equal(manifest.validator.valid, true);
+  assert.doesNotMatch(JSON.stringify(manifest), /Fictional guidance/);
 });
 
 test('external fixture passes structure then fidelity coverage', () => {
