@@ -217,6 +217,22 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .signoffs { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--line); }
 .signoff-action { width: 100%; margin: 5px 0; padding: 10px 12px; border: 1px solid var(--purple); border-radius: 9px; background: #fff; color: var(--purple); font-weight: 800; cursor: pointer; }
 .signoff-action.signed { border-color: var(--green); background: #e2f3eb; color: var(--green); cursor: default; opacity: 1; }
+.comparability { border-top: 6px solid var(--purple); }
+.mission-counts { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.mission-counts span { padding: 9px 12px; border-radius: 9px; background: #f5f1f8; }
+.comparability-criterion { margin: 18px 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; }
+.comparability-criterion legend { padding: 0 7px; color: var(--navy); font-weight: 850; }
+.comparability-criterion p { margin-top: 3px; color: var(--muted); }
+.criterion-options { display: flex; gap: 24px; margin: 12px 0; }
+.criterion-options label { display: flex; align-items: center; gap: 7px; font-weight: 800; }
+.comparability textarea { width: 100%; margin-top: 6px; resize: vertical; }
+.comparability small { display: block; color: var(--muted); }
+.final-confirmation { margin: 20px 0; padding: 16px; border: 1px solid var(--green); border-radius: 10px; background: #eef8f3; }
+.final-confirmation label { display: flex; gap: 10px; font-weight: 750; }
+#submit-comparability { margin-top: 20px; }
+.review-history { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.review-history summary { color: var(--navy); font-weight: 800; cursor: pointer; }
+.review-history li { margin: 9px 0; }
 
 @media (max-width: 1100px) {
   .card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
