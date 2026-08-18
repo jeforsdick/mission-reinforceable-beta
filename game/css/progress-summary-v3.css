@@ -1,0 +1,102 @@
+/* Mission Progress presentation v3.
+   Keeps the server-backed progress architecture while tightening the badge row
+   and reusing the actual Results summary generator for historical missions. */
+
+/* The static disclaimer remains in markup for compatibility but the Progress
+   runtime renders a smaller copy directly under the Mission History heading. */
+.score-disclaimer {
+  display: none !important;
+}
+
+/* Slightly smaller badge set so the plaques no longer crowd Mission History. */
+.badge-row {
+  width: min(1000px, 82vw);
+  margin: -34px auto 6px;
+  gap: 20px;
+}
+
+.stat-badge {
+  min-height: 205px;
+  padding-top: 68px;
+  background-size: 195px 195px;
+}
+
+.stat-badge strong {
+  font-size: 38px;
+}
+
+.stat-badge span {
+  bottom: 8px;
+  min-width: 178px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 15px;
+  line-height: 1.05;
+}
+
+.history-disclaimer {
+  grid-column: 1 / -1;
+  width: min(720px, 82%);
+  margin: -8px auto 4px;
+  color: #fff4ce;
+  text-align: center;
+  font: 700 12px/1.2 var(--display);
+  text-shadow: 2px 2px 0 #050005;
+}
+
+.compact-run-card {
+  min-height: 112px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.compact-run-card p {
+  margin: 2px 0;
+}
+
+/* Historical Details uses the exact same summary/card markup as Results,
+   but intentionally omits the longer Review section. */
+.compact-mission-review {
+  padding: 18px 24px 22px;
+  color: #1f1608;
+}
+
+.compact-mission-review .results-debrief > h1 {
+  margin-top: 0;
+}
+
+@media (max-width: 700px) {
+  .badge-row {
+    width: 100%;
+    margin: 0 auto 8px;
+    gap: 8px;
+  }
+
+  .stat-badge {
+    min-height: 150px;
+    padding-top: 50px;
+    background-size: 142px 142px;
+  }
+
+  .stat-badge strong {
+    font-size: 28px;
+  }
+
+  .stat-badge span {
+    min-width: 0;
+    width: 100%;
+    min-height: 38px;
+    padding: 6px 5px;
+    font-size: 11px;
+  }
+
+  .history-disclaimer {
+    width: 94%;
+    margin-top: -4px;
+    font-size: 11px;
+  }
+
+  .compact-run-card {
+    min-height: 0;
+  }
+}
