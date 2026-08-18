@@ -1346,6 +1346,10 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     async start(mode) {
       const context = MR.telemetryContext;
       if (context && !context.qaMode) {
+        if (!MR.studyCalendar.isEligibleStudyDay()) {
+          if (typeof MR.onStudyCalendarBlocked === 'function') MR.onStudyCalendarBlocked();
+          return false;
+        }
         try {
           MR.dailyMissionCompleted = await MR.auth.hasCompletedMissionToday();
         } catch (error) {
