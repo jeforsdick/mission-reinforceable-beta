@@ -1,81 +1,172 @@
 window.MR_RESOURCES = {
-  title: "Beta Mission Briefing: Jordan",
-
-  studentSnapshot: {
-    student: "Jordan",
-    routine: "Independent writing",
-    targetBehavior: "Staring at the blank page, saying \"I don't know what to write,\" pushing the paper away, putting their head down, saying \"I'm not doing this,\" or leaving the writing area.",
-    function: "Jordan's behavior seems to help them escape writing when the task feels overwhelming."
-  },
-
-  bipPathway: {
-    settingEvents: [
-      "You do not need to be a teacher to play.",
-      "Read Jordan's short plan, then choose the response that best follows the plan during each mission.",
-      "Some choices may sound helpful, but the best choice is the one that most closely matches Jordan's plan.",
-      "Please do not include real student names or identifying information in your beta feedback."
-    ],
-    antecedents: [
-      "Independent writing feels too hard or too open-ended.",
-      "Jordan sees a blank page.",
-      "Jordan is not sure how to start."
-    ],
-    prevention: [
-      "Make the first writing step small and clear.",
-      "Offer help before refusal grows.",
-      "Offer a short break if Jordan starts to shut down.",
-      "Stay calm, brief, and private.",
-      "Avoid threats, arguing, or public correction.",
-      "Praise any small step back toward writing."
-    ],
-    replacementBehavior: [
-      "Ask for help: \"Can you help me start?\"",
-      "Ask for a short break: \"Can I take a break?\"",
-      "Start with one small step: write one word, pick one idea, or use a sentence starter."
-    ],
-    reinforcement: [
-      "\"Great job asking for help.\"",
-      "\"You wrote the first word. That's the start.\"",
-      "Notice and praise any small step back toward writing."
-    ],
-    responsePlan: [
-      "\"First, write one animal.\"",
-      "\"You can ask me for help.\"",
-      "\"Take a short break, then come back for one word.\""
-    ]
-  },
-
-  behaviorBasics: [
-    {
-      term: "Less helpful",
-      definition: "\"Everyone else is writing.\""
+  "schemaVersion": 1,
+  "studentAlias": "Jordan",
+  "sections": {
+    "bip": {
+      "title": "BIP at a Glance",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Jordan's plan supports independent writing when the task feels overwhelming."
+        },
+        {
+          "type": "definitionList",
+          "items": [
+            {
+              "term": "Target behavior",
+              "definition": "Staring at the blank page, saying they do not know what to write, pushing the paper away, putting their head down, refusing, or leaving the writing area."
+            },
+            {
+              "term": "Function",
+              "definition": "The behavior seems to help Jordan escape writing when the task feels overwhelming."
+            }
+          ]
+        },
+        {
+          "type": "callout",
+          "label": "Plan sequence",
+          "text": "Help, break, small step, calm return."
+        }
+      ]
     },
-    {
-      term: "Less helpful",
-      definition: "\"You should already know what to do.\""
+    "functionForest": {
+      "title": "Function Forest",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Jordan's behavior seems to help them escape writing when the task feels overwhelming."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Independent writing feels too hard or too open-ended.",
+            "Jordan sees a blank page.",
+            "Jordan is not sure how to start."
+          ]
+        }
+      ]
     },
-    {
-      term: "Less helpful",
-      definition: "\"If you don't finish, you'll miss recess.\""
+    "prevention": {
+      "title": "Prevention Palace",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Make the first writing step small and clear.",
+            "Offer help before refusal grows.",
+            "Offer a short break if Jordan starts to shut down.",
+            "Stay calm, brief, and private.",
+            "Avoid threats, arguing, or public correction."
+          ]
+        }
+      ]
     },
-    {
-      term: "Less helpful",
-      definition: "\"Fine, I'll write it for you.\""
+    "replacement": {
+      "title": "Replacement Reservoir",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Ask for help: Can you help me start?",
+            "Ask for a short break: Can I take a break?",
+            "Start with one small step: write one word, pick one idea, or use a sentence starter."
+          ]
+        }
+      ]
     },
-    {
-      term: "Less helpful",
-      definition: "\"You are making this harder than it needs to be.\""
+    "reinforcement": {
+      "title": "Reinforcement Ridge",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Great job asking for help.",
+            "You wrote the first word. That is the start.",
+            "Notice and praise any small step back toward writing."
+          ]
+        }
+      ]
     },
-    {
-      term: "Remember",
-      definition: "The goal is not to force Jordan through writing. The goal is to help Jordan use the plan: help, break, small step, calm return."
+    "errorCorrection": {
+      "title": "Error Correction Canyon",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "First, write one animal.",
+            "You can ask me for help.",
+            "Take a short break, then come back for one word."
+          ]
+        },
+        {
+          "type": "callout",
+          "label": "Keep it calm",
+          "text": "Use a brief, private prompt and reinforce the next small step."
+        }
+      ]
+    },
+    "library": {
+      "title": "BSP Library",
+      "blocks": [
+        {
+          "type": "definitionList",
+          "items": [
+            {
+              "term": "Less helpful",
+              "definition": "Everyone else is writing."
+            },
+            {
+              "term": "Less helpful",
+              "definition": "You should already know what to do."
+            },
+            {
+              "term": "Less helpful",
+              "definition": "Threatening loss of recess for unfinished work."
+            },
+            {
+              "term": "Less helpful",
+              "definition": "Completing the writing for Jordan."
+            },
+            {
+              "term": "Less helpful",
+              "definition": "Saying Jordan is making the task harder than necessary."
+            }
+          ]
+        }
+      ]
+    },
+    "coaching": {
+      "title": "Coaching Cottage",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The goal is not to force Jordan through writing. Help Jordan use the plan."
+        },
+        {
+          "type": "callout",
+          "label": "Remember",
+          "text": "Offer help or a break, prompt a small step, and support a calm return."
+        }
+      ]
+    },
+    "fidelity": {
+      "title": "Fidelity Fortress",
+      "blocks": [
+        {
+          "type": "list",
+          "items": [
+            "Help.",
+            "Break.",
+            "Small step.",
+            "Calm return."
+          ]
+        },
+        {
+          "type": "callout",
+          "label": "Check",
+          "text": "Did I make the next writing step clear and reinforce movement back toward writing?"
+        }
+      ]
     }
-  ],
-
-  fidelityChecklist: [
-    "Help",
-    "Break",
-    "Small step",
-    "Calm return"
-  ]
+  }
 };

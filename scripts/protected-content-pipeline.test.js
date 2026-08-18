@@ -131,11 +131,12 @@ test('participant mode blocks repository source and output paths', t => {
   assert.match(outputResult.stderr, /Participant output paths must be outside/);
 });
 
-test('supports the legacy positional Demo-2 invocation', () => {
+test('supports the legacy positional Demo-2 invocation with canonical resources', t => {
   const output = path.join(os.tmpdir(), `demo-2-${process.pid}-${Date.now()}.sql`);
+  t.after(() => fs.rmSync(output, { force: true }));
   const result = spawnSync(process.execPath, [builder, 'demo-2', 'CASE-DEMO-2', output], { cwd: root, encoding: 'utf8' });
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /resource validation/);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(fs.existsSync(output), true);
 });
 
 test('builder refuses invalid resources before generating protected output', () => {
