@@ -42,7 +42,7 @@ test('QA UI is unmistakable, returns to admin, and does not hydrate reminders', 
   assert.match(html, /Back to Research Admin/);
   assert.match(app, /if \(!assignment\.qaMode\) MR\.reminders\.hydrateControls\(\)/);
   assert.match(reminders, /qaMode[\s\S]*Reminders are unavailable/);
-  assert.match(admin, /Preview Protected Game/);
-  assert.match(admin, /QA only — does not activate teacher gameplay or reminders\. QA sessions are excluded from study data\./);
+  assert.match(admin, /Preview Game/);
+  assert.match(admin, /QA only\. This does not turn the game on or count as study data\./);
   assert.match(admin, /game\/\?qa_case=/);
 });
