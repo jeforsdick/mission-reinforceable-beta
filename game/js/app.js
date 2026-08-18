@@ -142,7 +142,11 @@
     const classroomPath = hasDaily ? (config.assets.sameDayClassroom || config.assets.landingClassroom) : config.assets.landingClassroom;
     MR.$('#home-classroom-img').src = classroomPath;
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
+    const participantLocked = hasDaily && MR.telemetryContext && !MR.telemetryContext.qaMode;
+    MR.$('#home-primary-btn').hidden = participantLocked;
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
+    MR.$('#daily-completion-message').hidden = !participantLocked;
+    MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked; });
   }
 
   function wireEvents() {
@@ -259,6 +263,11 @@
         qaMode: assignment.qaMode === true,
         gameContentVersion: null,
         fidelityTargets: {}
+      };
+      MR.dailyMissionCompleted = assignment.qaMode ? false : await MR.auth.hasCompletedMissionToday();
+      MR.onDailyMissionCompleted = () => {
+        renderHome();
+        MR.setScreen('home');
       };
       MR.$('#study-id').textContent = assignment.qaMode
         ? `Study ID: ${MR.participantCode} · Case: ${assignment.case.case_code}`
