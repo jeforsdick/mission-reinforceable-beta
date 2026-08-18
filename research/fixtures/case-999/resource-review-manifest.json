@@ -1,0 +1,15 @@
+{
+  "caseCode": "CASE-999",
+  "participantCode": "MR-999",
+  "protectedContentVersion": 5,
+  "resourceSchemaVersion": 1,
+  "resourcesSha256": "9ae6babeb5398fdda2284e3a21810e21dbed9dd862d67c8595629ad06a1c0c7c",
+  "validator": {
+    "version": "1.0.0",
+    "valid": true,
+    "errorCount": 0,
+    "warningCount": 0
+  },
+  "privacyReview": "Automated privacy scanning is an aid, not certification; final privacy determination requires human review.",
+  "builtAt": "2026-08-18T00:00:00.000Z"
+}
