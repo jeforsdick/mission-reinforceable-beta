@@ -88,3 +88,11 @@ assert.equal(ioaNeedsReview({overall_ioa_attention:false,teacher_fidelity_ioa_pe
 assert.equal(ioaNeedsReview({overall_ioa_attention:true,teacher_fidelity_ioa_percent:75,student_behavior_ioa_percent:90}),true);
 assert.equal(ioaNeedsReview({overall_ioa_attention:false,teacher_fidelity_ioa_percent:94,student_behavior_ioa_percent:94}),false);
 assert.match(js,/IOA Review/);assert.match(js,/ioaNeedsReview\(x\.ioa\)/);assert.doesNotMatch(js,/<dt>IOA Alerts<\/dt>/);
+
+const observationsUiSource = fs.readFileSync(new URL('observations-ui.mjs', import.meta.url), 'utf8');
+assert.match(observationsUiSource, /id="operations-observations"/);
+assert.match(observationsUiSource, /Independent observer qualification requires a Practice, Recalibration, or Retraining event with ≥85% agreement on both teacher fidelity and student behavior\./);
+assert.match(observationsUiSource, /id="observer-message" class="success-message" role="status" aria-live="polite"/);
+assert.match(observationsUiSource, /class="interval-cell"/);
+assert.match(observationsUiSource, /id="new-observation-form"/);
+assert.match(observationsUiSource, /class="observation-record-form"/);

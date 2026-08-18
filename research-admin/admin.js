@@ -41,7 +41,7 @@ function renderHome() {
   renderCounts();
   renderStudyOverview();
   $('#intake-list').innerHTML = state.intakes.length ? state.intakes.map(row => `<article class="intake-card"><div class="card-top"><span class="pill">${escapeHtml(row.status)}</span><span class="id">${escapeHtml(row.request_id)}</span></div><h3>${escapeHtml(row.teacher_name)}</h3><dl><div><dt>Teacher email</dt><dd>${escapeHtml(row.teacher_email)}</dd></div><div><dt>Coach</dt><dd>${escapeHtml(row.coach_name)}</dd></div><div><dt>Coach email</dt><dd>${escapeHtml(row.coach_email)}</dd></div><div><dt>Student / grade</dt><dd>${escapeHtml(row.student_initials)} · ${escapeHtml(row.grade_level)}</dd></div><div><dt>Submitted</dt><dd>${formatDate(intakeDate(row))}</dd></div></dl><button class="primary review" data-id="${escapeHtml(row.request_id)}">Review intake</button></article>`).join('') : '<article class="panel"><h3>No intake requests</h3><p>The operational queue is clear.</p></article>';
-  document.querySelectorAll('.review').forEach(button => button.addEventListener('click', () => openDetail(button.dataset.id)));
+  document.querySelectorAll('.review').forEach(button => button.addEventListener('click', () => openDetail(button.dataset.id, 'intake')));
   show('home-view');
 }
 
@@ -52,7 +52,8 @@ function renderStudyOverview() {
   $('#study-case-list').innerHTML=cases.length?cases.map(item=>{const attention=attentionForCase(item), baseline=baselineReadiness(item), measureCount=measureNeeds(item).length; return `<article class="intake-card study-card"><div class="card-top"><span class="pill">${escapeHtml(item.current_phase)}</span><span class="id">${escapeHtml(item.case_code)}</span></div><h3>${escapeHtml(item.study_id)}</h3><p>Student alias: <strong>${escapeHtml(item.student_alias)}</strong></p><dl><div><dt>Planned minimum</dt><dd>${item.protocol?`${item.protocol.planned_baseline_observations} observations`:'Not assigned'}</dd></div><div><dt>Protocol readiness</dt><dd>${baseline.ready?'Complete':`${baseline.remaining} need action`}</dd></div><div><dt>Measures</dt><dd>${measureCount?`${measureCount} need action`:'Current'}</dd></div><div><dt>Open tasks</dt><dd>${(item.tasks||[]).filter(x=>x.status==='pending').length}</dd></div><div><dt>Study events</dt><dd>${(item.study_events||[]).filter(x=>!x.resolved_at).length} unresolved</dd></div><div><dt>Observations</dt><dd>${item.observation_data?.observations?.filter(x=>x.primary_record_id).length||0}</dd></div><div><dt>IOA</dt><dd>${item.observation_data?.coverage?.percent||0}% coverage</dd></div><div><dt>IOA Review</dt><dd>${item.observation_data?.observations?.filter(x=>ioaNeedsReview(x.ioa)).length||0}</dd></div><div><dt>Attention</dt><dd>${attention.length||'None'}</dd></div></dl><button class="primary open-case" data-case="${item.id}">Open Case</button></article>`}).join(''):'<article class="panel"><h3>No prepared study cases</h3><p>Converted cases will appear here without being activated.</p></article>';
   $('#study-wide-tasks').innerHTML=renderStudyWideTasks(studyTasks,escapeHtml);
   $('#observer-team').innerHTML=renderStudyIoaSummary(state.observationData||{},escapeHtml)+renderObserverTeam(state.observationData||{observers:[]},escapeHtml);
-  document.querySelectorAll('.open-case').forEach(button=>button.addEventListener('click',()=>{const intake=state.intakes.find(row=>row.converted_case_id===button.dataset.case); if(intake) openDetail(intake.request_id);}));
+  if (state.observerMessage && $('#observer-message')) { $('#observer-message').textContent = state.observerMessage; state.observerMessage = ''; }
+  document.querySelectorAll('.open-case').forEach(button=>button.addEventListener('click',()=>{const intake=state.intakes.find(row=>row.converted_case_id===button.dataset.case); if(intake) openDetail(intake.request_id, 'operations');}));
   bindTaskControls(null,'#study-task-form');
   bindObserverTeam();
 }
@@ -65,9 +66,11 @@ async function exactAccount(email, role) {
 const field = (label, value, wide = false) => value ? `<div class="${wide ? 'wide' : ''}"><dt>${label}</dt><dd><p>${escapeHtml(value)}</p></dd></div>` : '';
 const section = (title, fields) => `<section class="panel"><h2>${title}</h2><dl class="fields">${fields.join('')}</dl></section>`;
 
-async function openDetail(id) {
+async function openDetail(id, preferredTab = null) {
   const row = state.intakes.find(item => item.request_id === id); if (!row) return;
   show('loading-view'); state.selected = row;
+  if (preferredTab) state.selectedTab = preferredTab;
+  $('#print-intake').hidden = false;
   try {
     const [teacher, coach, converted] = await Promise.all([
       exactAccount(row.teacher_email, 'teacher'), exactAccount(row.coach_email, 'coach'),
@@ -75,21 +78,52 @@ async function openDetail(id) {
     ]);
     state.accounts = { teacher, coach };
     const targets = normalizeTargets(row.fidelity_targets, row.has_crisis_plan === true);
-    $('#detail').innerHTML = `<div class="print-heading"><strong>Mission: Reinforceable</strong><h1>Submitted Intake</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))}</p></div><div class="hero"><div><p class="eyebrow">Submitted Intake</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>
-      <div class="detail-grid"><div>
-      ${section('Contact Information', [field('Teacher', row.teacher_name), field('Teacher email', row.teacher_email), field('Coach', row.coach_name), field('Coach email', row.coach_email)])}
+    const intakeContent = `${section('Contact Information', [field('Teacher', row.teacher_name), field('Teacher email', row.teacher_email), field('Coach', row.coach_name), field('Coach email', row.coach_email)])}
       ${section('Student and behavior context', [field('Student initials', row.student_initials), field('Grade', row.grade_level), field('Behavior description', row.target_behavior, true), field('Topography', row.behavior_topography, true), field('Student strengths & interests', row.student_strengths, true), field('Preferences & known reinforcers', row.preferred_items_activities, true), field('Preference information', row.preference_assessment_notes, true), field('Function', row.primary_function), field('Replacement behavior', row.replacement_behavior, true), field('Desired behavior', row.desired_behavior, true)])}
       ${section('Plan-Aligned Staff Actions', [field('Prevention details', row.prevention_strategies, true), field('Teaching details', row.teaching_strategies, true), field('Reinforcement details', row.reinforcement_system, true), field('Response details', row.response_strategy, true)])}
       ${row.has_crisis_plan ? section('Crisis / Safety Plan', [field('Crisis / Safety Plan', row.crisis_plan, true)]) : ''}
       ${section('Classroom and additional context', [field('Typical settings', row.typical_settings, true), field('Common triggers', row.common_triggers, true), field('Typical antecedents', row.typical_antecedents, true), field('Typical consequences', row.typical_consequences, true), field('Current staff responses', row.current_staff_responses, true), field('Requested scenarios', row.requested_scenarios, true), field('Additional context', row.additional_context, true)])}
       <section class="panel notice"><p class="eyebrow">Proposed / final reviewed fidelity targets</p><h2>Review and edit</h2><strong>Confirm final fidelity targets against the student’s BIP/BSP before setting up the case.</strong><p>Each target must be one atomic, observable teacher behavior. Keys derive only from final domain/order.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"><span class="print-target">${escapeHtml(target.description)}</span></label>`).join('')}</div></section>
-      </div><aside><section class="panel no-print"><p class="eyebrow">Account readiness</p><h2>Verified exact-email matches</h2>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>No invitation or password-reset email will be sent.</p></section>${converted ? readinessPanel(converted) : provisionPanel(row, teacher, coach)}${reviewActions(row)}</aside></div>`;
-    bindDetail(); show('detail-view'); window.scrollTo(0, 0);
+      <section class="panel no-print"><p class="eyebrow">Account readiness</p><h2>Verified exact-email matches</h2>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>No invitation or password-reset email will be sent.</p></section>
+      ${converted ? '' : provisionPanel(row, teacher, coach)}${reviewActions(row)}`;
+    const preparedHeader = converted ? `<div class="case-header"><div><p class="eyebrow">Prepared research case</p><h1>${escapeHtml(converted.participant?.participant_code || 'Study case')}</h1><p><strong>Case code:</strong> ${escapeHtml(converted.case.case_code)} · <strong>Student alias:</strong> ${escapeHtml(converted.case.student_alias)}</p></div><div class="case-status" aria-label="Case status"><span class="pill">${escapeHtml(state.caseOperations?.current_phase || 'prebaseline')}</span><span class="${converted.case.active ? 'ready' : 'off'}">Game ${converted.case.active ? 'ON' : 'OFF intentionally'}</span><span class="${converted.protected_content?.present ? 'ready' : 'needs'}">Content ${converted.protected_content?.present ? 'ready' : 'needs action'}</span></div></div>`
+      : `<div class="hero"><div><p class="eyebrow">Submitted Intake</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>`;
+    const tabs = converted ? `<div class="case-tabs no-print" role="tablist" aria-label="Case detail sections"><button id="intake-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="intake-panel" tabindex="-1" data-tab="intake">Intake Information</button><button id="operations-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="operations-panel" tabindex="-1" data-tab="operations">Research Operations</button></div>` : '';
+    $('#detail').innerHTML = `<div class="print-heading"><strong>Mission: Reinforceable</strong><h1>Submitted Intake</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))}</p></div>${preparedHeader}${tabs}
+      <div id="intake-panel" class="tab-panel intake-workspace" role="tabpanel" aria-labelledby="intake-tab">${intakeContent}</div>
+      ${converted ? `<div id="operations-panel" class="tab-panel operations-workspace" role="tabpanel" aria-labelledby="operations-tab">${readinessPanel(converted)}</div>` : ''}`;
+    bindDetail();
+    if (converted) selectCaseTab(preferredTab || state.selectedTab || 'intake');
+    show('detail-view'); window.scrollTo(0, 0);
   } catch (error) { $('#error-message').textContent = error.message || 'Readiness checks failed.'; show('error-view'); }
+}
+function selectCaseTab(name, focus = false) {
+  const selected = name === 'operations' ? 'operations' : 'intake';
+  state.selectedTab = selected;
+  document.querySelectorAll('.case-tab').forEach(tab => {
+    const active = tab.dataset.tab === selected;
+    tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
+    if (active && focus) tab.focus();
+  });
+  ['intake', 'operations'].forEach(tab => { const panel = $(`#${tab}-panel`); if (panel) panel.hidden = tab !== selected; });
+  $('#print-intake').hidden = selected !== 'intake';
+}
+function bindCaseTabs() {
+  const tabs = [...document.querySelectorAll('.case-tab')];
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => selectCaseTab(tab.dataset.tab));
+    tab.addEventListener('keydown', event => {
+      if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+      selectCaseTab(tabs[next].dataset.tab, true);
+    });
+  });
 }
 function accountBox(label, email, result, type) { return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Generate Test Sign-In Link</button><small>QA only — no email will be sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? '<div id="qa-result"></div>' : ''}</div>`; }
 function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel no-print"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel no-print"><h2>Intake decision</h2><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
 function bindDetail() {
+  bindCaseTabs();
   bindOperations();
   document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
   $('.qa-link')?.addEventListener('click', generateQaLink);
@@ -114,7 +148,7 @@ function bindDetail() {
   if ($('#fidelity-form-wrap')) renderFidelityForm();
 }
 
-async function operationRpc(name,args,reload='case'){const {error}=await state.client.rpc(name,args);if(error){window.alert(error.message);return false;}await loadIntakes();if(reload==='home')renderHome();else await openDetail(state.selected.request_id);return true;}
+async function operationRpc(name,args,reload='case',successMessage=''){const {error}=await state.client.rpc(name,args);if(error){window.alert(error.message);return false;}if(successMessage)state.observerMessage=successMessage;await loadIntakes();if(reload==='home')renderHome();else await openDetail(state.selected.request_id, state.selectedTab);return true;}
 function taskArgs(form,caseId){const f=new FormData(form);return {target_case_id:caseId,target_title:f.get('title'),target_category:f.get('category'),target_due_date:f.get('due_date')||null,target_required:f.has('required'),target_note:f.get('note')||null};}
 function bindTaskControls(caseId,formSelector='#task-form'){
  const reload=caseId===null?'home':'case';
@@ -123,8 +157,8 @@ function bindTaskControls(caseId,formSelector='#task-form'){
  scope?.querySelectorAll('.task-action').forEach(button=>button.addEventListener('click',()=>operationRpc('research_admin_set_task_status',{target_task_id:button.dataset.id,target_status:button.dataset.status},reload)));
 }
 function bindObserverTeam(){
- $('#observer-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_save_observer',{target_observer_id:null,target_observer_code:f.get('code'),target_display_name:f.get('name'),target_observer_type:f.get('type'),target_active:true},'home');});
- document.querySelectorAll('.observer-edit-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form);operationRpc('research_admin_save_observer',{target_observer_id:form.dataset.id,target_observer_code:f.get('code'),target_display_name:f.get('name'),target_observer_type:f.get('type'),target_active:f.has('active')},'home');}));
+ $('#observer-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_save_observer',{target_observer_id:null,target_observer_code:f.get('code'),target_display_name:f.get('name'),target_observer_type:f.get('type'),target_active:true},'home','Observer saved.');});
+ document.querySelectorAll('.observer-edit-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form);operationRpc('research_admin_save_observer',{target_observer_id:form.dataset.id,target_observer_code:f.get('code'),target_display_name:f.get('name'),target_observer_type:f.get('type'),target_active:f.has('active')},'home','Observer saved.');}));
  $('#training-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_observer_training',{target_observer_id:f.get('observer_id'),target_event_type:f.get('event_type'),target_event_date:f.get('event_date'),target_teacher_fidelity_agreement:Number(f.get('teacher')),target_student_behavior_agreement:Number(f.get('student')),target_brief_note:f.get('note')||null},'home');});
 }
 function bindObservationControls(caseId){
@@ -156,7 +190,7 @@ async function recordSignoff(event) {
     target_review_type: button.dataset.reviewType
   });
   if (error) { $('#signoff-message').textContent = error.message; button.disabled = false; return; }
-  await openDetail(state.selected.request_id);
+  await openDetail(state.selected.request_id, state.selectedTab);
 }
 
 function updateComparabilityConfirmation() {
@@ -185,7 +219,7 @@ async function submitComparabilityReview(event) {
     final_confirmation: allPass && $('#final-confirmation').checked
   });
   if (error) { $('#comparability-message').textContent = error.message; updateComparabilityConfirmation(); return; }
-  await openDetail(state.selected.request_id);
+  await openDetail(state.selected.request_id, state.selectedTab);
 }
 
 async function adminApi(path, body) {
@@ -197,7 +231,7 @@ async function adminApi(path, body) {
 }
 async function createAccount(type, button) {
   button.disabled = true;
-  try { await adminApi('/api/research-admin-create-account', { request_id: state.selected.request_id, account_type: type }); await openDetail(state.selected.request_id); }
+  try { await adminApi('/api/research-admin-create-account', { request_id: state.selected.request_id, account_type: type }); await openDetail(state.selected.request_id, state.selectedTab); }
   catch (error) { button.insertAdjacentHTML('afterend', `<p class="message">${escapeHtml(error.message)}</p>`); button.disabled = false; }
 }
 async function generateQaLink(event) {
@@ -225,7 +259,7 @@ async function provisionCase(event) {
   const args = { target_request_id: state.selected.request_id, study_id: String(form.get('study_id')).trim(), new_case_code: String(form.get('case_code')).trim(), student_game_alias: String(form.get('student_alias')).trim(), reviewed_targets: reviewedTargets() };
   const { data, error } = await state.client.rpc('provision_intake_case', args);
   if (error) { $('#provision-message').textContent = error.message; button.disabled = false; return; }
-  state.selected.status = 'converted'; state.selected.converted_case_id = data?.[0]?.case_id; await openDetail(state.selected.request_id);
+  state.selected.status = 'converted'; state.selected.converted_case_id = data?.[0]?.case_id; await openDetail(state.selected.request_id, state.selectedTab);
 }
 async function loadReadiness(requestId) {
   const { data, error } = await state.client.rpc('research_admin_case_readiness', { target_request_id: requestId });
@@ -271,7 +305,7 @@ async function submitFidelityReview(event){
  const components=Object.fromEntries(COMPONENTS[scope].map(([key])=>[key,{status:document.querySelector(`[name="fidelity-${key}"]:checked`)?.value,note:document.querySelector(`[name="fidelity-note-${key}"]`).value.trim()||null}]));
  const missing=Object.entries(components).find(([,v])=>['no','na'].includes(v.status)&&!v.note); if(missing){$('#fidelity-message').textContent='A brief note is required for every No and N/A.';return;}
  const {error}=await state.client.rpc('research_admin_submit_procedural_fidelity_review',{target_participant_id:state.fidelity.participant_id,target_case_id:state.readiness.case.id,target_review_scope:scope,target_study_date:scope==='daily'?date:null,target_week_start:scope==='weekly'?date:null,submitted_components:components,submitted_overall_notes:$('#fidelity-overall').value.trim()||null});
- if(error){$('#fidelity-message').textContent=error.message;return;} await openDetail(state.selected.request_id);
+ if(error){$('#fidelity-message').textContent=error.message;return;} await openDetail(state.selected.request_id, state.selectedTab);
 }
 
 function comparabilityPanel(data) {
