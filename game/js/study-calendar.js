@@ -34,10 +34,55 @@
     return weekday >= 1 && weekday <= 5;
   }
 
+  function addDays(key, days) {
+    const date = new Date(`${key}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + days);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function weekStart(dateOrDateKey = new Date()) {
+    const key = studyDateKey(dateOrDateKey);
+    if (!key) return null;
+    const weekday = new Date(`${key}T00:00:00Z`).getUTCDay();
+    return addDays(key, -(weekday === 0 ? 6 : weekday - 1));
+  }
+
+  function eligibleStudyDatesForWeek(dateOrDateKey = new Date()) {
+    const monday = weekStart(dateOrDateKey);
+    if (!monday) return [];
+    return Array.from({ length: 5 }, (_, offset) => addDays(monday, offset)).filter(isEligibleStudyDay);
+  }
+
+  function lastEligibleStudyDayForWeek(dateOrDateKey = new Date()) {
+    return eligibleStudyDatesForWeek(dateOrDateKey).at(-1) || null;
+  }
+
+  function weeklyCheckinWindow(dateOrDateKey = new Date()) {
+    const today = studyDateKey(dateOrDateKey);
+    const monday = weekStart(today);
+    if (!today || !monday) return null;
+    const eligibleDates = eligibleStudyDatesForWeek(monday);
+    if (!eligibleDates.length) return null;
+    const availableOn = eligibleDates.at(-1);
+    const closesOn = addDays(monday, 7);
+    return {
+      weekStart: monday,
+      weekEnd: addDays(monday, 4),
+      availableOn,
+      closesOn,
+      scheduledStudyDays: eligibleDates.length,
+      eligibleDates,
+      isAvailable: today >= availableOn && today < closesOn
+    };
+  }
+
   MR.studyCalendar = {
     timeZone: MR.studyDate && MR.studyDate.timeZone,
     startDate: START_DATE,
     endDate: END_DATE,
-    isEligibleStudyDay
+    isEligibleStudyDay,
+    eligibleStudyDatesForWeek,
+    lastEligibleStudyDayForWeek,
+    weeklyCheckinWindow
   };
 })();

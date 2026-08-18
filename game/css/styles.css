@@ -2477,6 +2477,7 @@ body {
   transform: translateX(17px);
 }
 body.qa-preview { padding-top: 4.25rem; }
+.weekly-checkin-entry{display:flex;justify-content:center;min-height:42px;margin:.5rem auto 0}.weekly-checkin-entry p{margin:.6rem 0;color:#fff4cf;font-weight:700}.weekly-checkin-card{width:min(760px,calc(100% - 28px));margin:2rem auto 7rem;padding:clamp(20px,4vw,42px);background:#fff8dd;color:#271747}.weekly-checkin-card h1{text-align:center}.weekly-kicker{text-align:center;text-transform:uppercase;font-weight:700;color:#69459a}.weekly-checkin-card fieldset{margin:1.25rem 0;padding:1rem;border:3px solid #d2a63d;border-radius:10px}.weekly-checkin-card legend{font-weight:700;line-height:1.45}.rating-options{display:grid;gap:.65rem;margin-top:.5rem}.rating-options.horizontal{display:flex;gap:2rem}.rating-options label{display:flex;align-items:flex-start;gap:.5rem}.weekly-checkin-card textarea{box-sizing:border-box;width:100%;margin:.5rem 0;padding:.8rem;font:inherit}.weekly-actions{display:flex;justify-content:space-between;gap:1rem;margin-top:1.25rem}
 .qa-preview-banner {
   position: fixed; inset: 0 0 auto; z-index: 10000; padding: .8rem 1rem;
   display: flex; align-items: center; justify-content: center; gap: 2rem;

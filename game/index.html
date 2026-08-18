@@ -51,6 +51,10 @@
         <p class="home-subtitle">Embark on a journey to level up behavior support.</p>
         <p id="daily-completion-message" class="home-subtitle" hidden>Today's Mission: Reinforceable practice is complete. Another mission will be available next study day.</p>
         <p id="no-mission-message" class="home-subtitle" hidden>No mission scheduled today. Come back on your next school day!</p>
+        <aside id="weekly-checkin-entry" class="weekly-checkin-entry" hidden>
+          <button id="weekly-checkin-open" class="pixel-btn green-btn" type="button">Weekly Check-In</button>
+          <p id="weekly-checkin-complete" hidden>Weekly Check-In complete — thank you!</p>
+        </aside>
 
         <div class="home-layout">
           <div class="classroom-stage">
@@ -88,6 +92,22 @@
           </aside>
         </div>
       </div>
+    </section>
+
+    <section id="weekly-checkin-screen" class="screen screen-weekly-checkin" aria-labelledby="weekly-checkin-title">
+      <form id="weekly-checkin-form" class="weekly-checkin-card gold-frame">
+        <p class="weekly-kicker">A brief weekly reflection</p><h1 id="weekly-checkin-title">Weekly Check-In</h1>
+        <fieldset><legend>Mission: Reinforceable helped me think through how to use <span data-alias></span>'s behavior support plan this week.</legend>
+          <div class="rating-options"> <label><input type="radio" name="helpfulness_rating" value="1" required>1 — Strongly disagree</label><label><input type="radio" name="helpfulness_rating" value="2">2 — Disagree</label><label><input type="radio" name="helpfulness_rating" value="3">3 — Neither agree nor disagree</label><label><input type="radio" name="helpfulness_rating" value="4">4 — Agree</label><label><input type="radio" name="helpfulness_rating" value="5">5 — Strongly agree</label></div>
+        </fieldset>
+        <fieldset><legend>Right now, I feel confident using <span data-alias></span>'s behavior support plan during classroom routines.</legend>
+          <div class="rating-options"><label><input type="radio" name="confidence_rating" value="1" required>1 — Not at all confident</label><label><input type="radio" name="confidence_rating" value="2">2 — Slightly confident</label><label><input type="radio" name="confidence_rating" value="3">3 — Moderately confident</label><label><input type="radio" name="confidence_rating" value="4">4 — Very confident</label><label><input type="radio" name="confidence_rating" value="5">5 — Extremely confident</label></div>
+        </fieldset>
+        <fieldset><legend>Was there anything about <span data-alias></span>'s plan that felt difficult to use this week?</legend><div class="rating-options horizontal"><label><input type="radio" name="plan_difficult" value="true" required>Yes</label><label><input type="radio" name="plan_difficult" value="false">No</label></div></fieldset>
+        <label for="coach-note"><strong>Anything you want your coach to know about using the plan this week?</strong></label><textarea id="coach-note" name="coach_note" maxlength="1000" rows="5"></textarea><small>Optional. Please do not include student names or other identifying information.</small>
+        <p id="weekly-checkin-error" class="login-error" role="alert"></p><p id="weekly-checkin-confirmation" hidden>Thank you — your Weekly Check-In is complete.</p>
+        <div class="weekly-actions"><button id="weekly-checkin-cancel" class="pixel-btn brown-btn" type="button">Back to Home</button><button class="pixel-btn green-btn" type="submit">Submit</button></div>
+      </form>
     </section>
 
     <section id="play-screen" class="screen screen-play" aria-label="Mission play screen">
@@ -244,6 +264,7 @@
   <script src="js/utils.js"></script>
   <script src="js/study-date.js"></script>
   <script src="js/study-calendar.js"></script>
+  <script src="js/weekly-checkin.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/session-timer.js"></script>
   <script src="js/storage.js"></script>

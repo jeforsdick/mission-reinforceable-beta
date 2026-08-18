@@ -233,6 +233,22 @@
       return data === true;
     },
 
+    async hasWeeklyCheckin(weekStart) {
+      const { data, error } = await client().from('weekly_teacher_checkins').select('id').eq('week_start', weekStart).eq('qa_mode', false).maybeSingle();
+      if (error) throw new Error(`Unable to check this week's check-in status: ${error.message}`);
+      return Boolean(data);
+    },
+
+    async submitWeeklyCheckin(values) {
+      const { error } = await client().rpc('submit_weekly_teacher_checkin', {
+        p_helpfulness_rating: values.helpfulnessRating,
+        p_confidence_rating: values.confidenceRating,
+        p_plan_difficult: values.planDifficult,
+        p_coach_note: values.coachNote
+      });
+      if (error) throw new Error(`Unable to submit the weekly check-in: ${error.message}`);
+    },
+
     async signOut() {
       const { error } = await client().auth.signOut();
       if (error) throw new Error(`Unable to log out: ${error.message}`);
