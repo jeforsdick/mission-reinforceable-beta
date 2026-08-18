@@ -135,6 +135,58 @@
     });
   }
 
+  function ensureReturnTomorrowBubble() {
+    let bubble = MR.$('#return-tomorrow-bubble');
+    if (bubble) return bubble;
+
+    const style = document.createElement('style');
+    style.id = 'return-tomorrow-bubble-style';
+    style.textContent = `
+      .return-tomorrow-bubble {
+        position: absolute;
+        z-index: 4;
+        top: 23%;
+        right: 1.5%;
+        width: 31%;
+        aspect-ratio: 400 / 265;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5% 4% 8%;
+        color: #111;
+        background: transparent url("../../assets/game/skin-v2/speech-bubble-right.png") center / 100% 100% no-repeat;
+        font: 900 clamp(15px, 1.65vw, 27px)/1.35 var(--mono);
+        text-align: center;
+        text-shadow: none;
+        filter: drop-shadow(9px 9px 0 #090000);
+      }
+      @media (max-width: 700px) {
+        .return-tomorrow-bubble {
+          top: 3%;
+          right: 2%;
+          width: 96%;
+          height: 90%;
+          aspect-ratio: auto;
+          padding: 9% 9% 16%;
+          background-image: url("../../assets/game/skin-v2/speech-bubble-down.png");
+          font-size: clamp(17px, 5.2vw, 25px);
+          line-height: 1.3;
+          filter: drop-shadow(7px 7px 0 #090000);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    bubble = document.createElement('div');
+    bubble.id = 'return-tomorrow-bubble';
+    bubble.className = 'return-tomorrow-bubble';
+    bubble.setAttribute('role', 'status');
+    bubble.textContent = 'Come back tomorrow to play another mission!';
+    bubble.hidden = true;
+    MR.$('.classroom-stage').appendChild(bubble);
+    return bubble;
+  }
+
   function renderHome() {
     const config = MR.teacherConfig;
     MR.$('#home-classroom-label').textContent = config.classroomLabel || `${config.displayName}'s Classroom`;
@@ -146,6 +198,7 @@
     MR.$('#home-primary-btn').hidden = participantLocked;
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
     MR.$('#daily-completion-message').hidden = !participantLocked;
+    ensureReturnTomorrowBubble().hidden = !participantLocked;
     MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked; });
   }
 
