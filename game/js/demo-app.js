@@ -210,15 +210,11 @@
       MR.setScreen('loading');
       await MR.loadTeacher('olson');
 
-      // The public demo is intentionally ephemeral: no browser run history and no remote endpoint.
+      // The fictional public demo has no authenticated assignment, so its run history remains browser-local.
       MR.teacherConfig.resultEndpoint = '';
       MR.teacherConfig.displayName = 'Demo Classroom';
       MR.teacherConfig.classroomLabel = 'Demo Classroom';
       window.GAME_CONFIG.resultEndpoint = '';
-      MR.storage.getRuns = () => [];
-      MR.storage.saveRun = run => run;
-      MR.storage.getSettings = () => ({});
-      MR.storage.saveSettings = settings => settings || {};
       applyAssets();
       initAudio();
       wireEvents();

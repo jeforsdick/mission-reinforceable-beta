@@ -146,6 +146,39 @@
     return data;
   }
 
+  async function progressSessions(context) {
+    if (!context || !context.participantId || !context.caseId) {
+      throw new Error('A participant and case assignment are required to load mission progress.');
+    }
+    const { data, error } = await client()
+      .from('game_sessions')
+      .select('id, mode, mission_title, score, max_score, plan_aligned_count, refine_count, missed_count, ended_at, started_at')
+      .eq('participant_id', context.participantId)
+      .eq('case_id', context.caseId)
+      .eq('status', 'completed')
+      .eq('qa_mode', context.qaMode === true)
+      .order('ended_at', { ascending: false, nullsFirst: false })
+      .order('started_at', { ascending: false });
+    if (error) throw new Error(`Unable to load mission progress: ${error.message}`);
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function progressResponses(sessionId, context) {
+    if (!sessionId || !context || !context.participantId || !context.caseId) {
+      throw new Error('A completed mission assignment is required to load mission feedback.');
+    }
+    const { data, error } = await client()
+      .from('game_responses')
+      .select('step_index, scenario_title, scenario_text, selected_answer_text, selected_score, alignment, best_answer_text, feedback_text')
+      .eq('session_id', sessionId)
+      .eq('participant_id', context.participantId)
+      .eq('case_id', context.caseId)
+      .eq('qa_mode', context.qaMode === true)
+      .order('step_index', { ascending: true });
+    if (error) throw new Error(`Unable to load mission feedback: ${error.message}`);
+    return Array.isArray(data) ? data : [];
+  }
+
   MR.auth = {
     async getAssignment() {
       const supabaseClient = client();
@@ -189,6 +222,10 @@
     completeTelemetrySession,
 
     completeParticipantMission,
+
+    getProgressSessions: progressSessions,
+
+    getProgressResponses: progressResponses,
 
     async hasCompletedMissionToday() {
       const { data, error } = await client().rpc('has_completed_mission_today');
