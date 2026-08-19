@@ -10,12 +10,70 @@ export const MEASURES = [['tses_pre','TSES — Pre-Baseline'],['tses_post','TSES
 export const PHASES = ['prebaseline','baseline','intervention','maintenance','complete','withdrawn'];
 export const COACHING_FOCUSES = ['observation','consultation','performance_feedback','modeling','data_review','problem_solving','responsive_support','other'];
 export const TASK_CATEGORIES = ['meeting','follow_up','scheduling','research_admin','observation_planning','measure_follow_up','closeout','other'];
+export const LIFECYCLE_STAGES = ['Enrollment','Prebaseline','Baseline','Game Ready','Intervention','End Measures','Maintenance','Closeout'];
 export const requiredBaselineKeys = CHECKLIST.slice(0,10).map(([key])=>key);
 export function denverToday(now=new Date()){
   return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
 }
 export function checklistStatuses(itemKey){return itemKey==='student_assent'?['pending','complete','not_applicable']:['pending','complete'];}
 export function currentByKey(rows,key='item_key'){ return Object.fromEntries((rows||[]).map(row=>[row[key],row])); }
+const complete=(row,allowNA=false)=>row?.status==='complete'||(allowNA&&row?.status==='not_applicable');
+export function observationSummary(item,now=new Date()){
+  const rows=(item.observation_data?.observations||[]).filter(row=>row.primary_record_id);
+  const phaseRows=phase=>rows.filter(row=>row.phase===phase);
+  const latest=[...rows].sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)))[0];
+  const ioa=item.observation_data?.coverage||{};
+  const monday=new Date(now); monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
+  const weekStart=monday.toISOString().slice(0,10);
+  let consecutive90=0;
+  for(const row of [...phaseRows('intervention')].sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)))){
+    if(Number(row.teacher_fidelity_percent)>=90) consecutive90++; else break;
+  }
+  return {rows,baseline:phaseRows('baseline').length,intervention:phaseRows('intervention').length,maintenance:phaseRows('maintenance').length,
+    thisWeek:phaseRows('intervention').filter(row=>row.observation_date>=weekStart).length,latest,ioa,consecutive90,
+    reviewIssues:(item.observation_data?.observations||[]).filter(row=>!row.primary_record_id||(row.secondary_observer_id&&!row.secondary_record_id)||row.ioa?.overall_ioa_attention).length};
+}
+export function gameReadiness(item){
+  const checklist=currentByKey(item.checklist),p=item.prepared_content||{};
+  const missing=[];
+  if(!p.protected_content_present) missing.push('protected game content');
+  if(!p.resource_map_ready) missing.push('Resource Map');
+  if(!p.comparability_ready) missing.push('mission review');
+  if(!complete(checklist.intervention_orientation)) missing.push('teacher orientation');
+  return {ready:missing.length===0,missing};
+}
+export function lifecycleStage(item){
+  const phase=item.current_phase||'prebaseline',checklist=currentByKey(item.checklist),stats=observationSummary(item);
+  if(phase==='prebaseline') return complete(checklist.teacher_consent)&&complete(checklist.parent_permission)&&complete(checklist.student_assent,true)?'Prebaseline':'Enrollment';
+  if(phase==='baseline'&&item.protocol&&stats.baseline>=item.protocol.planned_baseline_observations&&!gameReadiness(item).ready) return 'Game Ready';
+  if(phase==='baseline') return 'Baseline';
+  if(phase==='intervention') return 'Intervention';
+  if(phase==='maintenance') return measureNeeds(item).some(key=>key!=='tses_pre')?'End Measures':'Maintenance';
+  return 'Closeout';
+}
+export function nextAction(item){
+  const checklist=currentByKey(item.checklist),measures=currentByKey(item.measures,'measure_key'),phase=item.current_phase||'prebaseline',stats=observationSummary(item);
+  if(!complete(checklist.teacher_consent)) return 'Teacher consent is still needed.';
+  if(!complete(checklist.parent_permission)) return 'Parent/guardian permission is still needed.';
+  if(!complete(checklist.student_assent,true)) return 'Student assent is still needed.';
+  if(phase==='prebaseline'){
+    if(measures.tses_pre?.status!=='complete') return 'Complete the pre-baseline TSES.';
+    const baseline=baselineReadiness(item); if(!baseline.ready) return `${baseline.remaining} prebaseline readiness item${baseline.remaining===1?' is':'s are'} still needed.`;
+    return 'Baseline is ready. Record the phase change when you are ready to begin.';
+  }
+  if(phase==='baseline'){
+    if(!item.protocol||stats.baseline<(item.protocol.planned_baseline_observations||0)) return 'Record the next baseline observation.';
+    if(!gameReadiness(item).ready) return 'Finish game readiness before starting intervention.';
+    return 'Baseline minimum is met. Review the data and decide whether to move to intervention.';
+  }
+  if(phase==='intervention') return stats.consecutive90>=3?'Intervention criteria may be met. Researcher phase decision needed.':'Intervention is active. Keep collecting observations and weekly measures.';
+  if(phase==='maintenance'){
+    if(['tses_post','urp_ir','teacher_interview'].some(key=>measures[key]?.status!=='complete')) return 'Post-intervention measures are still needed.';
+    if(stats.maintenance<3) return `Maintenance observation ${stats.maintenance+1} of 3 is next.`;
+    return 'Case is ready to close.';
+  }
+  return 'Case closeout is recorded.';
+}
 export function baselineReadiness(item){
   const checklist=currentByKey(item.checklist), measures=currentByKey(item.measures,'measure_key'), missing=[];
   if(!item.protocol) missing.push('Baseline assignment');

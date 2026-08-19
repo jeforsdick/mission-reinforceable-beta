@@ -24,7 +24,7 @@ test('baseline assignment freezes and TSES readiness links to its existing measu
 
   const complete = {...base,measures:[{measure_key:'tses_pre',status:'complete',completed_on:'2026-08-02'}]};
   const afterSave = renderOperations(complete, prepared, escape);
-  assert.match(afterSave, /READY TO BEGIN BASELINE/);
+  assert.match(afterSave, /Ready to begin baseline\./);
   assert.match(afterSave, /TSES — Pre-Baseline[\s\S]*Complete/);
   assert.doesNotMatch(afterSave, /id="go-to-tses"/);
 
