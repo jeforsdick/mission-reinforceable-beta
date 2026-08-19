@@ -4,7 +4,7 @@ import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
-import { renderObserverTeam, renderStudyIoaSummary, recordPayload, cycleInterval, updatePreviews } from './observations-ui.mjs';
+import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';

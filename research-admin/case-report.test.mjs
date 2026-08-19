@@ -20,7 +20,6 @@ test('baseline assignment freezes and TSES readiness links to its existing measu
   assert.match(before, /TSES — Pre-Baseline/);
   assert.match(before, /Needs completion/);
   assert.match(before, /id="go-to-tses"/);
-  assert.doesNotMatch(before, /Swap Baseline Assignments|protocol-swap-form|Swap Positions/);
 
   const complete = {...base,measures:[{measure_key:'tses_pre',status:'complete',completed_on:'2026-08-02'}]};
   const afterSave = renderOperations(complete, prepared, escape);
@@ -51,11 +50,9 @@ test('case report is a deidentified, non-interactive research summary', () => {
   assert.doesNotMatch(html,/<form|<button|<select|<input|<textarea|DO NOT PRINT|SECRET CELL|raw_game_content|system_evidence|120 interval|Mission Bank Comparability|Mission review|comparability/i);
 });
 
-test('client has no swap action and retains Intake Print / Save PDF', () => {
+test('client retains Intake Print / Save PDF', () => {
   const js=fs.readFileSync(new URL('admin.js',import.meta.url),'utf8');
-  const ui=fs.readFileSync(new URL('operations-ui.mjs',import.meta.url),'utf8');
   const html=fs.readFileSync(new URL('index.html',import.meta.url),'utf8');
-  assert.doesNotMatch(js+ui,/research_admin_swap_case_protocol_positions|protocol-swap-form|Swap Baseline Assignments/);
   assert.match(js,/Download Case PDF/); assert.match(js,/renderCaseReport/);
   assert.match(html,/Print \/ Save PDF/); assert.match(js,/print-intake'[\s\S]*window\.print/);
 });

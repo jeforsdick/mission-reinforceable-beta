@@ -24,6 +24,11 @@ Supabase case_game_content
 
 The tools in this repository stop at local file generation. They do not connect to Supabase, write `case_game_content`, activate cases, create participant records, send email, or enable reminders. Applying a reviewed SQL artifact is a separate, authorized researcher operation.
 
+Research Admin QA Preview can render generated content for review, but preview
+activity is QA-only, does not count as study data, and does not activate
+participant access. Authenticated `/game/` loads approved protected content from
+Supabase; public `/demo/` and `/demo-game/` use fictional sample content.
+
 ## External directory contract
 
 Use the same executable contract as a public fictional teacher folder:
