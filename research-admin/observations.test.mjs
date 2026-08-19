@@ -62,7 +62,7 @@ assert.match(sql,/coalesce\(\(case when sa\+sd=0 then null else 100\.0\*sa\/\(sa
 const summary=renderStudyIoaSummary({coverage:{completed:10,ioa:2,percent:20,required_minimum:2,additional_needed:0,teacher_alerts:1,student_alerts:2,not_calculable:1},by_dyad:[{study_id:'MR-001',ioa:1,completed:5,percent:20}],by_phase:[{phase:'baseline',ioa:2,completed:10,percent:20}]},x=>x);
 assert.match(summary,/Study IOA/);assert.match(summary,/MR-001: 1 \/ 5, 20\.0%/);assert.match(summary,/Baseline: 2 \/ 10/);assert.match(summary,/Teacher: 1 · Student: 2 · Not enough data: 1/);
 const interventionUi=renderObservations({current_phase:'intervention',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:0},observations:[],observers:[],setups:[]}},x=>x);assert.match(interventionUi,/This Week/);assert.match(interventionUi,/about 3 observations\/week/);assert.deepEqual(denverWeek(new Date('2026-08-19T05:30:00Z')),{monday:'2026-08-17',sunday:'2026-08-23'});
-assert.match(renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{},observers:[],setups:[],observations:[{id:'o',observation_date:'2026-01-01',phase:'baseline',session_number:1,primary_observer_code:'JO',secondary_observer_code:'OBS-02',secondary_observer_id:'2',secondary_record_id:'sr',fidelity_items_snapshot:[],ioa:{teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null,overall_ioa_attention:false}}]}},x=>String(x??'')),/Primary observer: JO · IOA observer: OBS-02[\s\S]*Needs review/);
+assert.match(renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{},observers:[],setups:[],observations:[{id:'o',observation_date:'2026-01-01',phase:'baseline',session_number:1,primary_observer_code:'JO',primary_record_id:'pr',secondary_observer_code:'OBS-02',secondary_observer_id:'2',secondary_record_id:'sr',fidelity_items_snapshot:[],ioa:{teacher_fidelity_ioa_percent:100,student_behavior_ioa_percent:null,overall_ioa_attention:false}}]}},x=>String(x??'')),/Primary observer: JO · IOA observer: OBS-02[\s\S]*Needs review/);
 for(const pattern of [/length\(target_routine\)<=1000/,/length\(target_behavior_definition\)<=2000/,/length\(change_note\)<=1000/,/length\(context_note\)<=1000/,/length\(observer_note\)<=1000/,/length\(brief_note\)<=1000/,/length\(correction_reason\)<=1000/])assert.match(sql,pattern);
 
 // Observer status reads only the IOA row tied to both highest-revision records.
@@ -94,5 +94,16 @@ assert.match(observationsUiSource, /id="operations-observations"/);
 assert.match(observationsUiSource, /To collect IOA independently, an observer needs ≥85% on both teacher fidelity and student behavior during Practice, Recalibration, or Retraining\./);
 assert.match(observationsUiSource, /id="observer-message" class="success-message" role="status" aria-live="polite"/);
 assert.match(observationsUiSource, /class="interval-cell"/);
-assert.match(observationsUiSource, /id="new-observation-form"/);
+assert.match(observationsUiSource, /id="record-observation-form"/);
 assert.match(observationsUiSource, /class="observation-record-form"/);
+
+// Initial metadata and primary data are one screen and one transactional user action.
+const workflowSql=fs.readFileSync(new URL('../supabase/migrations/20260819000000_record_observation_workflow.sql',import.meta.url),'utf8');
+assert.match(observationsUiSource,/Observation Details[\s\S]*Teacher Fidelity[\s\S]*Student Target Behavior/);
+assert.match(observationsUiSource,/implemented_as_written/);assert.match(observationsUiSource,/not_implemented_as_written/);assert.match(observationsUiSource,/no_opportunity/);
+assert.match(observationsUiSource,/IOA collected\?/);assert.match(observationsUiSource,/value="no" checked/);
+assert.match(observationsUiSource,/Observation data incomplete/);assert.match(observationsUiSource,/Finish Observation/);
+assert.match(observationsUiSource,/id="edit-observation-setup"/);assert.match(observationsUiSource,/observation-setup-form" class="compact-form"\$\{setup\?' hidden'/);
+assert.match(js,/research_admin_record_classroom_observation/);assert.match(js,/submitted_student_intervals:payload\.intervals/);
+assert.match(workflowSql,/research_admin_create_classroom_observation/);assert.match(workflowSql,/research_admin_submit_classroom_observation_record/);
+assert.match(workflowSql,/jsonb_build_object\('observation', observation, 'primary_record', primary_record\)/);
