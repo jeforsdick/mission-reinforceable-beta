@@ -4,6 +4,7 @@ import { readinessForCase } from './admin-model.mjs';
 
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260818010000_prepared_case_signoffs.sql', import.meta.url), 'utf8');
 const adminJs = fs.readFileSync(new URL('admin.js', import.meta.url), 'utf8');
+const operationsUi = fs.readFileSync(new URL('operations-ui.mjs', import.meta.url), 'utf8');
 
 // Only active research admins can write; direct table mutation is unavailable.
 assert.match(migration, /if not public\.is_research_admin\(\) then[\s\S]*research admin required/);
@@ -35,8 +36,8 @@ assert.doesNotMatch(readiness, /gc\.resources\s*[,)]/);
 
 // The existing activation/reminder states remain untouched, and UI makes version explicit.
 assert.doesNotMatch(migration, /update public\.(?:cases|participants|teacher_reminder_settings)/i);
-assert.match(adminJs, /Resource Map/);
-assert.match(adminJs, /Mission review/);
+assert.match(operationsUi, /Resource Map/);
+assert.match(operationsUi, /Mission review/);
 assert.match(adminJs, /Approving protected content <strong>version/);
 assert.match(adminJs, /research_admin_record_case_signoff/);
 

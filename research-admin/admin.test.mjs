@@ -4,6 +4,7 @@ import { accountState, normalizeTargets, readinessForCase } from './admin-model.
 
 const html = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const js = fs.readFileSync(new URL('admin.js', import.meta.url), 'utf8');
+const ui = fs.readFileSync(new URL('operations-ui.mjs', import.meta.url), 'utf8');
 const css = fs.readFileSync(new URL('admin.css', import.meta.url), 'utf8');
 const baseSql = fs.readFileSync(new URL('../supabase/migrations/20260814020000_research_admin_onboarding.sql', import.meta.url), 'utf8');
 const cleanupSql = fs.readFileSync(new URL('../supabase/migrations/20260814030000_intake_admin_workflow_cleanup.sql', import.meta.url), 'utf8');
@@ -80,7 +81,7 @@ assert.match(sql, /jsonb_build_object\('present', true, 'version', gc\.version, 
 assert.doesNotMatch(sql.slice(sql.indexOf('create function public.research_admin_case_readiness')), /gc\.(config|resources|daily_missions|wildcard_missions|crisis_missions)/);
 const prepared = readinessForCase({ case: { id: 'c', active: false }, participant: { auth_user_id: 't', active: false }, intake_snapshot: true, coach: { coach_user_id: 'x', active: true }, fidelity_target_count: 4, protected_content: null, reminders: null });
 assert.equal(prepared.content, 'Needs action'); assert.equal(prepared.game, 'Off intentionally'); assert.equal(prepared.reminders, 'Off intentionally');
-assert.match(js, /Off/); assert.match(js, /Reminders/); assert.match(css, /\.off\{/);
+assert.match(js, /Off/); assert.match(ui, /Reminders/); assert.match(css, /\.off\{/);
 
 // Defensive deployed-schema assertions and privacy restrictions remain explicit.
 for (const column of ['request_id', 'status', 'converted_case_id', 'converted_at', 'submitted_at']) assert.match(sql, new RegExp(`\\('${column}'\\)`));

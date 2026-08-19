@@ -287,14 +287,16 @@ async function loadReadiness(requestId) {
 }
 function readinessPanel(data) {
   const states = readinessForCase(data);
-  const rows = [['Intake reviewed', 'Ready'], ['Teacher account linked', states.teacher], ['Coach account linked', states.coach], ['Case created', states.case], ['Case intake snapshot', states.snapshot], ['Fidelity targets finalized', states.targets], ['Coach assigned', states.assignment], ['Protected game content', states.content === 'Ready' ? `Ready — version ${escapeHtml(data.protected_content.version)}, updated ${formatDate(data.protected_content.updated_at)}` : 'Needs action — Not loaded'], ['Resource Map', states.resourceMap], ['Mission review', states.comparability], ['Game', states.game === 'Ready' ? 'Ready — intervention active' : 'Off'], ['Reminders', states.reminders === 'Ready' ? 'Ready — enabled' : 'Off']];
   const preview = states.content === 'Ready' ? `<button id="preview-protected-game" class="primary" type="button" data-case-code="${escapeHtml(data.case.case_code)}">Preview Game</button><small>QA only. This does not turn the game on or count as study data.</small>` : '';
   const signoffs = states.content === 'Ready' ? `<div class="signoffs no-print"><h3>Content Checks</h3><p>Approving protected content <strong>version ${escapeHtml(data.protected_content.version)}</strong>. A later version requires new signoffs.</p>${[
     ['resource_behavior_review', 'Behavior Review', data.resource_map?.behavior_reviewed],
     ['resource_privacy_review', 'Privacy Review', data.resource_map?.privacy_reviewed],
     ['resource_qa_preview', 'QA Preview', data.resource_map?.qa_previewed]
   ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
-  return `${renderOperations(state.caseOperations,data,escapeHtml,state.operations.cases||[])}<section class="panel"><p class="eyebrow">Game Setup</p><h2>Game Readiness</h2><div class="checklist">${rows.map(([label, value]) => `<div><span>${label}</span><strong class="${value.startsWith('Ready') ? 'ready' : value.startsWith('Off') ? 'off' : 'needs'}">${value}</strong></div>`).join('')}</div>${preview}${signoffs}<p><strong>The game stays off until intervention starts.</strong></p></section>${states.content === 'Ready' ? comparabilityPanel(data) : ''}${fidelityPanel()}`;
+  const gameExtras = `<div class="game-qa-controls no-print">${preview}${signoffs}</div>${states.content === 'Ready' ? comparabilityPanel(data) : ''}`;
+  return renderOperations(state.caseOperations,data,escapeHtml)
+    .replace('<!-- GAME_READY_EXTRAS -->',gameExtras)
+    .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 
 function fidelityPanel() {
