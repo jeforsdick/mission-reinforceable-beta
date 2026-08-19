@@ -12,19 +12,6 @@ const state = { client: null, intakes: [], operations: { cases: [], study_wide_t
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
-const COMPARABILITY_CONFIRMATION = 'I have reviewed the complete mission bank using the Mission Bank Comparability Review and all criteria meet expectations for this content version.';
-const COMPARABILITY_CRITERIA = [
-  ['consistent_structure', 'Consistent Mission Structure', 'Across Daily, Mystery, and Crisis missions, confirm that missions use the same core structure: 5 decisions, 3 plausible choices per decision, 10/5/0 scoring, branching, hints, and feedback.'],
-  ['same_instructional_purpose', 'Same Instructional Purpose', "Confirm that all mission modes rehearse implementation of the participant's BIP/BSP and that no mode functions as a separate teaching program, assessment, or coaching intervention."],
-  ['comparable_decision_difficulty', 'Comparable Decision Difficulty', 'Confirm that correct responses are not systematically more obvious in one mode, distractors remain plausible, and hints do not reveal the answer.'],
-  ['comparable_feedback_support', 'Comparable Feedback and Support', 'Confirm that no mode systematically provides more explanation, prompting, hints, retries, feedback detail, or other instructional support than another.'],
-  ['bip_alignment', 'BIP/BSP Alignment', "Confirm that choices, consequences, feedback, and plan references are supported by the participant's BIP/BSP."],
-  ['target_representation', 'Reasonable Implementation-Target Representation', "Review the mission bank as a whole and confirm that the participant's implementation targets are reasonably represented across practice opportunities."],
-  ['context_not_dose', 'Context — Not Dose — Distinguishes Modes', 'Confirm that Daily, Mystery, and Crisis differ primarily by scenario context rather than intervention strength. Daily: routine classroom situations. Mystery: unexpected/generalization situations. Crisis: higher-intensity/recovery situations.'],
-  ['crisis_safety_boundaries', 'Crisis Safety Boundaries', "Confirm that Crisis missions do not invent crisis or emergency procedures that are absent from the participant's plan."],
-  ['overall_comparability', 'Overall Comparability', 'Considering the complete mission bank, confirm that no mode is systematically easier, harder, longer, more supportive, or behaviorally complex enough to represent a meaningfully different intervention exposure.']
-];
-
 function show(id) {
   ['loading-view', 'login-view', 'unauthorized-view', 'error-view', 'home-view', 'detail-view'].forEach(name => { $(`#${name}`).hidden = name !== id; });
   const authenticatedAdminView = ['home-view', 'detail-view'].includes(id);
@@ -133,12 +120,9 @@ function bindDetail() {
     window.open(`../game/?qa_case=${encodeURIComponent(caseCode)}`, '_blank', 'noopener');
   });
   document.querySelectorAll('.signoff-action:not(:disabled)').forEach(button => button.addEventListener('click', recordSignoff));
-  $('#comparability-form')?.addEventListener('submit', submitComparabilityReview);
   $('#fidelity-scope')?.addEventListener('change', renderFidelityForm);
   $('#fidelity-date')?.addEventListener('change', loadFidelityEvidence);
   $('#fidelity-form')?.addEventListener('submit', submitFidelityReview);
-  document.querySelectorAll('input[name^="criterion-"]').forEach(input => input.addEventListener('change', updateComparabilityConfirmation));
-  $('#final-confirmation')?.addEventListener('change', updateComparabilityConfirmation);
   $('#approve')?.addEventListener('click', () => setStatus('approved'));
   $('#decline')?.addEventListener('click', () => { if (window.confirm('Decline this intake? This does not delete the submitted context.')) setStatus('declined'); });
   $('#study-id')?.addEventListener('input', event => {
@@ -210,35 +194,6 @@ async function recordSignoff(event) {
   await openDetail(state.selected.request_id, state.selectedTab);
 }
 
-function updateComparabilityConfirmation() {
-  const allAnswered = COMPARABILITY_CRITERIA.every(([key]) => document.querySelector(`input[name="criterion-${key}"]:checked`));
-  const allPass = allAnswered && COMPARABILITY_CRITERIA.every(([key]) => document.querySelector(`input[name="criterion-${key}"]:checked`)?.value === 'pass');
-  const confirmation = $('#comparability-confirmation');
-  if (confirmation) confirmation.hidden = !allPass;
-  const submit = $('#submit-comparability');
-  if (submit) { submit.disabled = !allAnswered || (allPass && (!state.readiness.mission_bank_comparability.complete_bank || !$('#final-confirmation')?.checked)); submit.textContent = allPass && state.readiness.mission_bank_comparability.complete_bank ? 'Approve Mission Bank' : 'Save Review'; }
-}
-
-async function submitComparabilityReview(event) {
-  event.preventDefault();
-  const criteria = Object.fromEntries(COMPARABILITY_CRITERIA.map(([key]) => [key, {
-    status: document.querySelector(`input[name="criterion-${key}"]:checked`)?.value,
-    note: document.querySelector(`[name="note-${key}"]`).value.trim() || null
-  }]));
-  const allPass = Object.values(criteria).every(item => item.status === 'pass');
-  if (!window.confirm(allPass ? `Finalize this all-Pass review for protected content version ${state.readiness.protected_content.version}?` : 'Record this review attempt with revisions identified?')) return;
-  const button = $('#submit-comparability'); button.disabled = true;
-  const { error } = await state.client.rpc('research_admin_submit_mission_bank_comparability_review', {
-    target_case_id: state.readiness.case.id,
-    target_protected_content_version: state.readiness.protected_content.version,
-    submitted_criteria: criteria,
-    submitted_overall_notes: $('#comparability-overall-notes').value.trim() || null,
-    final_confirmation: allPass && $('#final-confirmation').checked
-  });
-  if (error) { $('#comparability-message').textContent = error.message; updateComparabilityConfirmation(); return; }
-  await openDetail(state.selected.request_id, state.selectedTab);
-}
-
 async function adminApi(path, body) {
   const { data: { session } } = await state.client.auth.getSession();
   const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` }, body: JSON.stringify(body) });
@@ -293,10 +248,10 @@ function readinessPanel(data) {
     ['resource_privacy_review', 'Privacy Review', data.resource_map?.privacy_reviewed],
     ['resource_qa_preview', 'QA Preview', data.resource_map?.qa_previewed]
   ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
-  const reviewComplete = states.content === 'Ready' && data.resource_map?.behavior_reviewed && data.resource_map?.privacy_reviewed && data.resource_map?.qa_previewed && data.mission_bank_comparability?.reviewed;
+  const reviewComplete = states.content === 'Ready' && data.resource_map?.behavior_reviewed && data.resource_map?.privacy_reviewed && data.resource_map?.qa_previewed;
   const reviewState = reviewComplete ? 'COMPLETE' : 'NEEDS ACTION';
-  const reviewSummary = states.content === 'Ready' ? `<div class="content-review-summary"><strong>CONTENT REVIEW — ${reviewState}</strong><span>Version ${escapeHtml(data.protected_content.version)}</span><span>Behavior ${data.resource_map?.behavior_reviewed?'✓':'Needs action'} · Privacy ${data.resource_map?.privacy_reviewed?'✓':'Needs action'} · QA ${data.resource_map?.qa_previewed?'✓':'Needs action'} · Comparability ${data.mission_bank_comparability?.reviewed?'✓':'Needs action'}</span></div>` : '<div class="content-review-summary needs"><strong>CONTENT REVIEW — NEEDS ACTION</strong><span>Protected game content needs action.</span></div>';
-  const reviewDetails = `<details class="content-review-details" ${reviewComplete?'':'open'}><summary>View Review Details</summary>${signoffs}${states.content === 'Ready' ? comparabilityPanel(data) : ''}</details>`;
+  const reviewSummary = states.content === 'Ready' ? `<div class="content-review-summary"><strong>CONTENT REVIEW — ${reviewState}</strong><span>Version ${escapeHtml(data.protected_content.version)}</span><span>Behavior ${data.resource_map?.behavior_reviewed?'✓':'Needs action'} · Privacy ${data.resource_map?.privacy_reviewed?'✓':'Needs action'} · QA ${data.resource_map?.qa_previewed?'✓':'Needs action'}</span></div>` : '<div class="content-review-summary needs"><strong>CONTENT REVIEW — NEEDS ACTION</strong><span>Protected game content needs action.</span></div>';
+  const reviewDetails = `<details class="content-review-details" ${reviewComplete?'':'open'}><summary>View Review Details</summary>${signoffs}</details>`;
   const gameExtras = `<div class="game-qa-controls no-print">${preview}</div>${reviewSummary}${reviewDetails}`;
   return renderOperations(state.caseOperations,data,escapeHtml)
     .replace('<!-- GAME_READY_EXTRAS -->',gameExtras)
@@ -331,16 +286,6 @@ async function submitFidelityReview(event){
  if(error){$('#fidelity-message').textContent=error.message;return;} await openDetail(state.selected.request_id, state.selectedTab);
 }
 
-function comparabilityPanel(data) {
-  const review = data.mission_bank_comparability;
-  const status = review.reviewed ? 'Ready' : !review.complete_bank ? 'Mission bank incomplete' : review.status;
-  const criteria = COMPARABILITY_CRITERIA.map(([key, title, guidance], index) => `<fieldset class="comparability-criterion"><legend>${index + 1}. ${escapeHtml(title)}</legend><p>${escapeHtml(guidance)}</p><div class="criterion-options"><label><input type="radio" name="criterion-${key}" value="pass" required> Pass</label><label><input type="radio" name="criterion-${key}" value="revise"> Revise</label></div><label>Note — optional<textarea name="note-${key}" maxlength="1000" rows="2"></textarea></label><small>Optional. Keep notes brief and do not copy protected student/BIP content into this field.</small></fieldset>`).join('');
-  const history = (review.history || []).map(item => {
-    const revised = COMPARABILITY_CRITERIA.flatMap(([key], index) => item.criteria?.[key]?.status === 'revise' ? [index + 1] : []);
-    return `<li><strong>${item.all_pass ? 'All Pass' : 'Needs Revision'}</strong> · ${formatDate(item.reviewed_at)} · ${escapeHtml(item.reviewer)} · version ${escapeHtml(item.protected_content_version)}${revised.length ? ` · Revise: ${revised.join(', ')}` : ''}</li>`;
-  }).join('');
-  return `<section class="panel comparability no-print"><p class="eyebrow">Mission Review</p><h2>Mission Bank Comparability</h2><p><strong>Check that Daily, Mystery, and Crisis differ by scenario—not by how much support they give.</strong></p><p>Game content version ${escapeHtml(data.protected_content.version)}</p><div class="mission-counts"><span>Daily: <strong>${review.daily_count} / 10</strong></span><span>Mystery: <strong>${review.mystery_count} / 5</strong></span><span>Crisis: <strong>${review.crisis_count} / 5</strong></span></div><p class="${status === 'Ready' ? 'ready' : 'needs'}">${escapeHtml(status)}</p>${review.reviewed ? '<p>This version has a final all-Pass comparability signoff. A later protected content version requires a new review.</p>' : `<form id="comparability-form">${criteria}<label>Overall note — optional<textarea id="comparability-overall-notes" maxlength="2000" rows="3"></textarea></label><small>Keep notes brief and do not copy protected student/BIP content into this field.</small><div id="comparability-confirmation" class="final-confirmation" hidden><label><input id="final-confirmation" type="checkbox"> ${COMPARABILITY_CONFIRMATION}</label></div><button id="submit-comparability" class="primary" disabled>Save Review</button><p id="comparability-message" class="message" aria-live="polite"></p></form>`}<details class="review-history"><summary>Review history (${(review.history || []).length})</summary>${history ? `<ol>${history}</ol>` : '<p>No review attempts recorded.</p>'}</details></section>`;
-}
 async function setStatus(status) {
   const { error } = await state.client.rpc('research_admin_set_intake_status', { target_request_id: state.selected.request_id, target_status: status });
   if (error) { $('#action-message').textContent = error.message; return; }

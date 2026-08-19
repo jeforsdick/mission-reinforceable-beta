@@ -119,5 +119,6 @@ assert.match(js, /CONTENT REVIEW — \$\{reviewState\}/);
 assert.match(js, /class="content-review-details" \$\{reviewComplete\?'':'open'\}/,'incomplete content review details are open');
 assert.match(js, /reviewComplete \? 'COMPLETE' : 'NEEDS ACTION'/);
 assert.match(js, /Behavior \$\{data\.resource_map\?\.behavior_reviewed\?'✓':'Needs action'\}/);
-assert.match(js, /Comparability \$\{data\.mission_bank_comparability\?\.reviewed\?'✓':'Needs action'\}/);
+assert.doesNotMatch(js, /Comparability|mission_bank_comparability|comparability_ready/i);
+assert.match(js, /Behavior \${data\.resource_map\?\.behavior_reviewed\?'✓':'Needs action'\} · Privacy[\s\S]* · QA/);
 assert.match(js, /QA only\. This does not turn the game on or count as study data\./);
