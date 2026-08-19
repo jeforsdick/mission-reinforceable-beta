@@ -39,6 +39,8 @@ assert.match(css,/\.baseline-checklist-grid\s*\{[^}]*grid-template-columns:repea
 const checklistRpc="operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null})";
 assert.ok(js.includes(checklistRpc));
 const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
+const subnav=renderedOperations.slice(renderedOperations.indexOf('<nav class="operations-subnav"'),renderedOperations.indexOf('</nav>')+6);
+assert.deepEqual([...subnav.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(([,href,label])=>[label,href]),[['Overview','#operations-overview'],['Phase Decision','#operations-phase-decision'],['Enrollment','#operations-enrollment'],['Prebaseline','#operations-prebaseline'],['Baseline','#operations-baseline'],['Observations','#operations-observations'],['Game Ready','#operations-game-ready'],['Intervention','#operations-intervention'],['End Measures','#operations-end-measures'],['Maintenance','#operations-maintenance'],['Closeout','#operations-closeout'],['Events','#operations-events'],['History','#operations-history']]);
 assert.deepEqual(LIFECYCLE_STAGES,['Enrollment','Prebaseline','Baseline','Game Ready','Intervention','End Measures','Maintenance','Closeout']);
 let previous=-1; for(const stage of LIFECYCLE_STAGES){const at=renderedOperations.indexOf(`>${stage}</li>`);assert.ok(at>previous,stage);previous=at;}
 assert.match(renderedOperations,/lifecycle-current" aria-current="step"[^>]*><span>1<\/span>Enrollment/);
