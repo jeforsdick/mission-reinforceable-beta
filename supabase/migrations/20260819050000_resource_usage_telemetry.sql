@@ -1,6 +1,24 @@
 -- Privacy-minimal, append-only Resource Map engagement telemetry.
-alter table public.participants
-add constraint participants_id_case_id_key unique (id, case_id);
+-- Some existing deployments already have the participant/case composite key.
+-- Create it only when it is not already present so this migration remains safe
+-- across the current live database and a fresh canonical build.
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_catalog.pg_constraint c
+    join pg_catalog.pg_class t on t.oid = c.conrelid
+    join pg_catalog.pg_namespace n on n.oid = t.relnamespace
+    where n.nspname = 'public'
+      and t.relname = 'participants'
+      and c.conname = 'participants_id_case_id_key'
+      and c.contype = 'u'
+  ) then
+    alter table public.participants
+      add constraint participants_id_case_id_key unique (id, case_id);
+  end if;
+end
+$$;
 
 create table public.game_resource_events (
   id uuid primary key default gen_random_uuid(),
