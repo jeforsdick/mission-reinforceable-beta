@@ -3,6 +3,7 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
+import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload, cycleInterval, updatePreviews } from './observations-ui.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
@@ -86,7 +87,7 @@ async function openDetail(id, preferredTab = null) {
       <section class="panel notice"><p class="eyebrow">Fidelity Targets</p><strong>Check these against the BIP/BSP before case setup.</strong><p>Each target should be one observable teacher action.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"><span class="print-target">${escapeHtml(target.description)}</span></label>`).join('')}</div></section>
       <section class="panel no-print"><p class="eyebrow">Accounts</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>Nothing here sends an email.</p></section>
       ${converted ? '' : provisionPanel(row, teacher, coach)}${reviewActions(row)}`;
-    const preparedHeader = converted ? `<div class="case-header"><div><p class="eyebrow">Prepared research case</p><h1>${escapeHtml(converted.participant?.participant_code || 'Study case')}</h1><p><strong>Case code:</strong> ${escapeHtml(converted.case.case_code)} · <strong>Student alias:</strong> ${escapeHtml(converted.case.student_alias)}</p></div><div class="case-status" aria-label="Case status"><span class="pill">${escapeHtml(state.caseOperations?.current_phase || 'prebaseline')}</span><span class="${converted.case.active ? 'ready' : 'off'}">Game ${converted.case.active ? 'On' : 'Off'}</span><span class="${converted.protected_content?.present ? 'ready' : 'needs'}">Content ${converted.protected_content?.present ? 'ready' : 'needs action'}</span></div></div>`
+    const preparedHeader = converted ? `<div class="case-header"><div><p class="eyebrow">Prepared research case</p><h1>${escapeHtml(converted.participant?.participant_code || 'Study case')}</h1><p><strong>Case code:</strong> ${escapeHtml(converted.case.case_code)} · <strong>Student alias:</strong> ${escapeHtml(converted.case.student_alias)}</p></div><div><div class="case-status" aria-label="Case status"><span class="pill">${escapeHtml(state.caseOperations?.current_phase || 'prebaseline')}</span><span class="${converted.case.active ? 'ready' : 'off'}">Game ${converted.case.active ? 'On' : 'Off'}</span><span class="${converted.protected_content?.present ? 'ready' : 'needs'}">Content ${converted.protected_content?.present ? 'ready' : 'needs action'}</span></div><button id="download-case-pdf" class="quiet case-report-button" type="button">Download Case PDF</button><small class="case-report-help">Choose Save as PDF in the print window.</small></div></div>`
       : `<div class="hero"><div><p class="eyebrow">Submitted Intake</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>`;
     const tabs = converted ? `<div class="case-tabs no-print" role="tablist" aria-label="Case detail sections"><button id="intake-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="intake-panel" tabindex="-1" data-tab="intake">Intake Information</button><button id="operations-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="operations-panel" tabindex="-1" data-tab="operations">Research Operations</button></div>` : '';
     $('#detail').innerHTML = `<div class="print-heading"><strong>Mission: Reinforceable</strong><h1>Submitted Intake</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))}</p></div>${preparedHeader}${tabs}
@@ -145,10 +146,23 @@ function bindDetail() {
     if (match && !$('#case-code').value) $('#case-code').value = `CASE-${match[1]}`;
   });
   $('#provision-form')?.addEventListener('submit', provisionCase);
+  $('#download-case-pdf')?.addEventListener('click', openCaseReport);
   if ($('#fidelity-form-wrap')) renderFidelityForm();
 }
 
-async function operationRpc(name,args,reload='case',successMessage=''){const {error}=await state.client.rpc(name,args);if(error){window.alert(error.message);return false;}if(successMessage)state.observerMessage=successMessage;await loadIntakes();if(reload==='home')renderHome();else await openDetail(state.selected.request_id, state.selectedTab);return true;}
+function openCaseReport() {
+  if (!state.caseOperations || !state.readiness) return;
+  const reportWindow = window.open('', '_blank');
+  if (!reportWindow) { window.alert('Allow pop-ups to open the Case PDF print window.'); return; }
+  reportWindow.opener = null;
+  const item = { ...state.caseOperations, case_code: state.readiness.case.case_code, student_alias: state.readiness.case.student_alias };
+  reportWindow.document.open();
+  reportWindow.document.write(renderCaseReport(item, state.readiness, state.fidelity, escapeHtml));
+  reportWindow.document.close();
+  reportWindow.addEventListener('load', () => reportWindow.print(), { once: true });
+}
+
+async function operationRpc(name,args,reload='case',successMessage=''){const {error}=await state.client.rpc(name,args);if(error){window.alert(friendlyBaselineError(error.message));return false;}if(successMessage)state.observerMessage=successMessage;await loadIntakes();if(reload==='home')renderHome();else await openDetail(state.selected.request_id, state.selectedTab);return true;}
 function taskArgs(form,caseId){const f=new FormData(form);return {target_case_id:caseId,target_title:f.get('title'),target_category:f.get('category'),target_due_date:f.get('due_date')||null,target_required:f.has('required'),target_note:f.get('note')||null};}
 function bindTaskControls(caseId,formSelector='#task-form'){
  const reload=caseId===null?'home':'case';
@@ -169,7 +183,7 @@ function bindObservationControls(caseId){
 function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)return;
  bindObservationControls(caseId);
  $('#protocol-form')?.addEventListener('submit',event=>{event.preventDefault();operationRpc('research_admin_set_case_protocol',{target_case_id:caseId,target_stagger_position:Number(new FormData(event.currentTarget).get('position'))});});
- $('#protocol-swap-form')?.addEventListener('submit',event=>{event.preventDefault();const other=new FormData(event.currentTarget).get('other_case_id');if(other)operationRpc('research_admin_swap_case_protocol_positions',{first_case_id:caseId,second_case_id:other});});
+ $('#go-to-tses')?.addEventListener('click',()=>{const row=document.querySelector('.measure-form[data-key="tses_pre"]');row?.classList.add('measure-focus');row?.scrollIntoView({behavior:'smooth',block:'center'});row?.querySelector('select')?.focus({preventScroll:true});});
  document.querySelectorAll('.checklist-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form);operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null});}));
  document.querySelectorAll('.measure-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form),status=f.get('status');if(status==='complete'&&!f.get('completed_on')){window.alert('Completion date is required when status is Complete.');return;}operationRpc('research_admin_record_measure',{target_case_id:caseId,target_measure_key:form.dataset.key,target_status:status,target_completed_on:f.get('completed_on')||null,target_external_reference:f.get('external_reference')||null,target_brief_note:f.get('note')||null});}));
  $('#phase-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_phase',{target_case_id:caseId,target_phase:f.get('phase'),target_effective_date:f.get('effective_date'),target_decision_note:f.get('note')||null});});
