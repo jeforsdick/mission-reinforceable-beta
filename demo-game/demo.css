@@ -1,17 +1,31 @@
-.demo-app + .back-to-site-cottage {
+/* Keep the public-demo exit outside the centered game-stage navigation. */
+body .demo-app + .back-to-site-cottage {
   position: fixed;
-  z-index: 30;
-  top: max(0.75rem, env(safe-area-inset-top));
-  left: max(0.75rem, env(safe-area-inset-left));
-  width: clamp(72px, 8vw, 96px);
+  z-index: 1000;
+  top: auto;
+  left: auto;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: clamp(72px, 7vw, 92px);
   max-height: none;
 }
 
 @media (max-width: 600px) {
-  .demo-app + .back-to-site-cottage {
-    top: max(0.5rem, env(safe-area-inset-top));
-    left: max(0.5rem, env(safe-area-inset-left));
-    width: 68px;
+  body .demo-app + .back-to-site-cottage {
+    right: max(20px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    width: 64px;
+  }
+}
+
+@media (min-width: 701px) {
+  .demo-app .title-logo,
+  .demo-app .title-logo.small {
+    width: min(1250px, 86vw);
+  }
+
+  .demo-app .home-panel {
+    margin-top: -70px;
   }
 }
 
@@ -29,22 +43,4 @@
   box-sizing: border-box;
   text-align: center;
   text-decoration: none;
-}
-
-/* Public demo cottage stays clear of the fixed navigation and device safe areas. */
-.demo-app + .back-to-site-cottage {
-  top: auto;
-  left: auto;
-  right: max(0.75rem, env(safe-area-inset-right));
-  bottom: calc(112px + 2rem + env(safe-area-inset-bottom));
-}
-
-@media (max-width: 600px) {
-  .demo-app + .back-to-site-cottage {
-    top: auto;
-    left: auto;
-    right: max(0.5rem, env(safe-area-inset-right));
-    bottom: calc(76px + 1rem + env(safe-area-inset-bottom));
-    width: 68px;
-  }
 }

@@ -72,7 +72,10 @@ test('scenario fit runs after scene markup and responds to layout changes', () =
 test('shared helper loads in both games and Back to Site override is demo-scoped', () => {
   assert.match(demoHTML, /js\/scenario-fit\.js/);
   assert.match(gameHTML, /js\/scenario-fit\.js/);
-  assert.match(demoCSS, /\.demo-app \+ \.back-to-site-cottage[\s\S]*right:/);
-  assert.match(demoCSS, /bottom: calc\(/);
+  assert.match(demoCSS, /body \.demo-app \+ \.back-to-site-cottage[\s\S]*position: fixed/);
+  assert.match(demoCSS, /right: max\(20px, env\(safe-area-inset-right\)\)/);
+  assert.match(demoCSS, /bottom: max\(20px, env\(safe-area-inset-bottom\)\)/);
+  assert.match(demoCSS, /width: min\(1250px, 86vw\)/);
+  assert.match(demoCSS, /\.demo-app \.home-panel[\s\S]*margin-top: -70px/);
   assert.doesNotMatch(demoCSS, /\.account-stack/);
 });
