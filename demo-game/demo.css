@@ -1,18 +1,18 @@
-.demo-label {
+.demo-app + .back-to-site-cottage {
   position: fixed;
-  z-index: 20;
-  top: 0.75rem;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 0.35rem 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 999px;
-  background: rgba(34, 25, 65, 0.88);
-  color: #fff5c7;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  pointer-events: none;
+  z-index: 30;
+  top: max(0.75rem, env(safe-area-inset-top));
+  left: max(0.75rem, env(safe-area-inset-left));
+  width: clamp(72px, 8vw, 96px);
+  max-height: none;
+}
+
+@media (max-width: 600px) {
+  .demo-app + .back-to-site-cottage {
+    top: max(0.5rem, env(safe-area-inset-top));
+    left: max(0.5rem, env(safe-area-inset-left));
+    width: 68px;
+  }
 }
 
 .demo-results-actions {

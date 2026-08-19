@@ -17,6 +17,11 @@ const fixtureFiles = [
   '../../demo-game/content/crisis-mission.js',
   '../../demo-game/content/resources.js'
 ];
+const legacyFixturePairs = [
+  ['../teachers/olson/content/daily-mission-1.js', '../../demo-game/content/daily-mission.js'],
+  ['../teachers/olson/content/wildcard-mission-1.js', '../../demo-game/content/wildcard-mission.js'],
+  ['../teachers/olson/content/crisis-mission-1.js', '../../demo-game/content/crisis-mission.js']
+];
 
 test('public demo directly loads its dedicated fixture without the legacy teacher loader', () => {
   assert.doesNotMatch(demoApp, /MR\.loadTeacher|teachers\/|['"]olson['"]/);
@@ -25,6 +30,35 @@ test('public demo directly loads its dedicated fixture without the legacy teache
     assert.match(demoApp, new RegExp(`demo-game/content/${path.replace('.', '\\.')}`));
   }
   assert.match(demoHTML, /js\/engine\.js/);
+});
+
+test('public demo satisfies the shared engine runtime DOM and daily-date contracts', () => {
+  const studyDateIndex = demoHTML.indexOf('src="js/study-date.js"');
+  const engineIndex = demoHTML.indexOf('src="js/engine.js');
+  assert.ok(studyDateIndex >= 0, 'the neutral study-date utility must be loaded');
+  assert.ok(engineIndex > studyDateIndex, 'study-date.js must load before engine.js');
+
+  for (const id of [
+    'wizard-modal',
+    'wizard-modal-title',
+    'wizard-modal-text',
+    'wizard-feedback-content',
+    'wizard-consequence-section',
+    'wizard-consequence-heading',
+    'wizard-consequence-text',
+    'wizard-reaction-section',
+    'wizard-reaction-text',
+    'wizard-explanation-section',
+    'wizard-explanation-text',
+    'wizard-modal-continue',
+    'wizard-modal-img'
+  ]) {
+    assert.match(demoHTML, new RegExp(`id=["']${id}["']`), `missing shared-engine element #${id}`);
+  }
+
+  assert.doesNotMatch(demoHTML, /PUBLIC DEMO|class=["'][^"']*demo-label/);
+  assert.doesNotMatch(demoHTML, /teacher-loader\.js/);
+  assert.doesNotMatch(demoApp, /MR\.loadTeacher/);
 });
 
 test('public demo fixture is explicitly fictional and has no remote result endpoint', () => {
@@ -51,6 +85,14 @@ test('public demo fixture provides every current mission mode and Resource Map s
     'bip', 'coaching', 'errorCorrection', 'fidelity', 'functionForest', 'library',
     'prevention', 'reinforcement', 'replacement'
   ]);
+});
+
+test('public demo fixture preserves the pre-cleanup mission semantics and Resource Map data', () => {
+  const withoutLeadingComment = source => source.replace(/^\/\*[\s\S]*?\*\/\s*/, '');
+  for (const [legacyPath, demoPath] of legacyFixturePairs) {
+    assert.equal(withoutLeadingComment(read(demoPath)), withoutLeadingComment(read(legacyPath)));
+  }
+  assert.equal(read('../../demo-game/content/resources.js'), read('../teachers/olson/content/resources.js'));
 });
 
 test('authenticated game, participant telemetry, and QA Preview entry contracts remain present', () => {
