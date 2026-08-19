@@ -43,6 +43,19 @@ assert.match(legacyCorrectionRpc,/research admin required/);assert.match(legacyC
 assert.doesNotMatch(legacyCorrectionRpc,/update public\.research_classroom_observation|delete from public\.research_classroom_observation|update public\.research_classroom_observation_records|delete from public\.research_classroom_observation_records/);
 assert.match(migration,/select max\(revision_number\)\+1[\s\S]*insert into public\.research_classroom_observation_summary_revisions/);
 assert.match(migration,/research_admin_create_classroom_observation/);assert.match(migration,/public\.research_observer_status/);assert.match(js,/research_admin_record_classroom_observation_summary/);assert.match(js,/research_admin_create_legacy_observation_summary/);assert.match(js,/research_admin_revise_classroom_observation_summary/);
+
+// Supabase resolves RPC overloads by exact argument name. All three summary paths
+// must translate the form model's unprefixed keys to the SQL target_* parameters.
+const summaryArgumentMapping=/target_teacher_fidelity_percent:payload\.teacher_fidelity_percent,target_student_target_behavior_percent:payload\.student_target_behavior_percent,target_teacher_fidelity_ioa_percent:payload\.teacher_fidelity_ioa_percent,target_student_behavior_ioa_percent:payload\.student_behavior_ioa_percent/;
+const newSummaryCall=js.slice(js.indexOf("operationRpc('research_admin_record_classroom_observation_summary'"),js.indexOf("document.querySelectorAll('.edit-summary-toggle')"));
+const correctionCalls=js.slice(js.indexOf("document.querySelectorAll('.edit-summary-form')"),js.indexOf('\n}',js.indexOf("document.querySelectorAll('.edit-summary-form')")));
+assert.match(newSummaryCall,summaryArgumentMapping,'new summary observation maps exact SQL RPC argument names');
+assert.doesNotMatch(newSummaryCall,/\.\.\.payload/,'new summary observation does not spread unprefixed form keys');
+for(const rpc of ['research_admin_create_legacy_observation_summary','research_admin_revise_classroom_observation_summary']){
+ assert.match(correctionCalls,new RegExp(rpc),`${rpc} is selected by the correction path`);
+ assert.match(correctionCalls,summaryArgumentMapping,`${rpc} maps exact SQL RPC argument names`);
+ assert.doesNotMatch(correctionCalls,/\.\.\.payload/,`${rpc} does not spread unprefixed form keys`);
+}
 assert.doesNotMatch(fs.readFileSync(new URL('../coach-dashboard/dashboard.js',import.meta.url),'utf8'),/observation_summary_revisions/);
 
 const observerTeam=renderObserverTeam({observers:[{id:'observer',observer_code:'JM',display_name:'Jordan',observer_type:'trained_observer',active:true,status:'recalibration_required',latest_training:{teacher_fidelity_agreement:91,student_behavior_agreement:92},training_history:[{event_date:'2026-08-01',event_type:'practice',teacher_fidelity_agreement:91,student_behavior_agreement:92},{event_date:'2026-08-10',event_type:'recalibration',teacher_fidelity_agreement:95,student_behavior_agreement:96}]}]},e);
