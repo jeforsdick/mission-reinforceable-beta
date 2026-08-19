@@ -2090,7 +2090,7 @@ body {
   }
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-bubble h2,
-  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble h2 h2 {
+  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble h2 {
     color: #ffc54a;
     font-size: 20px;
     line-height: 1.08;
