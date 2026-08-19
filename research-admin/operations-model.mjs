@@ -46,7 +46,6 @@ export function gameReadiness(item){
   const missing=[];
   if(!p.protected_content_present) missing.push('protected game content');
   if(!p.resource_map_ready) missing.push('Resource Map');
-  if(!p.comparability_ready) missing.push('mission review');
   if(!complete(checklist.intervention_orientation)) missing.push('teacher orientation');
   return {ready:missing.length===0,missing};
 }
@@ -111,7 +110,6 @@ export function interventionReadiness(item){
   if(checklist.intervention_orientation?.status!=='complete') missing.push('MR intervention orientation');
   if(!item.prepared_content?.protected_content_present) missing.push('Game content');
   if(!item.prepared_content?.resource_map_ready) missing.push('Resource Map');
-  if(!item.prepared_content?.comparability_ready) missing.push('Mission review');
   if(!(item.case_active&&item.participant_active)) missing.push('Game turned on');
   if(!item.prepared_content?.reminders_enabled) missing.push('Reminders turned on');
   return {ready:missing.length===0,missing};

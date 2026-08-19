@@ -14,7 +14,6 @@ Content is data, never markup. Allowed blocks are `paragraph` with non-empty `te
 
 Automated Resource Map checks detect schema errors and high-confidence privacy-risk patterns such as emails, phone numbers, URLs, obvious full dates, and HTML/script constructs. **This scan is an aid, not privacy certification.** A researcher must still review behavioral accuracy, alias/minimum-necessary use, and privacy before release.
 
-Mission-bank comparability is also a **human researcher review**. It must be based on the quality, difficulty, plan alignment, and fidelity opportunities of the complete bank; it must never be inferred from target-count quotas or validator coverage counts.
 
 **Participant-facing choices are shuffled at display time. Authoring order must never be relied upon.** Choice IDs, scores, branching, and fidelity metadata belong to the choice object and must remain correct independently of its displayed position.
 

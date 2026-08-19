@@ -194,7 +194,7 @@
         }
         MR.engine.showStoredRunDetails(historicalRun(run, responses));
       } catch (error) {
-        console.error('Mission review load failed:', error);
+        console.error('Mission content load failed:', error);
         const list = MR.$('#progress-list');
         let message = MR.$('#mission-review-error', list);
         if (!message) {

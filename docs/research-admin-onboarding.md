@@ -27,7 +27,7 @@ The migration begins with defensive assertions for every `intake_requests` colum
 
 ## Dissertation command center — operations foundation
 
-The home route now separates a deidentified **Study Overview** from the existing **Intake Queue**. Converted cases open a command-center view for protocol setup and checklist history, explicit phase history, measure administration status, operational tasks, coaching-as-usual context, study events, readiness summaries, and an aggregated timeline. Existing protected-content, Resource Map, QA Preview, Mission Bank Comparability, and MR Procedural Fidelity panels remain authoritative and are not duplicated.
+The home route now separates a deidentified **Study Overview** from the existing **Intake Queue**. Converted cases open a command-center view for protocol setup and checklist history, explicit phase history, measure administration status, operational tasks, coaching-as-usual context, study events, readiness summaries, and an aggregated timeline. Existing protected-content, Resource Map, QA Preview, and MR Procedural Fidelity panels remain authoritative and are not duplicated.
 
 Apply `supabase/migrations/20260818060000_research_operations_foundation.sql` through the normal Supabase migration workflow after the June 29 Weekly Teacher Report migration. This additive migration is not applied automatically by the web deployment. No data backfill is required: a case without a phase event is displayed as `prebaseline`, and the researcher deliberately assigns its protocol plan and records all statuses.
 

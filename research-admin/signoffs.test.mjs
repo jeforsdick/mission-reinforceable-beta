@@ -24,11 +24,6 @@ for (const type of ['resource_behavior_review','resource_privacy_review','resour
 assert.ok(migration.indexOf("'Needs behavioral review'") < migration.indexOf("'Needs privacy review'"));
 assert.ok(migration.indexOf("'Needs privacy review'") < migration.indexOf("'Needs QA'"));
 
-// Comparability is solely an explicit human signoff, never structural metrics.
-const comparison = migration.slice(migration.indexOf("'mission_bank_comparability', jsonb_build_object"));
-assert.match(comparison, /review_type = 'mission_bank_comparability'/);
-assert.doesNotMatch(comparison, /(?:count|quota|target|mission|route|fidelity)_count/i);
-
 // RPC emits only status booleans/metadata, never Resource Map prose or reviewer identity.
 const readiness = migration.slice(migration.indexOf('create or replace function public.research_admin_case_readiness'));
 assert.doesNotMatch(readiness, /reviewed_(?:by|at)|blocks|studentAlias|resources->'sections'->/);
@@ -37,13 +32,12 @@ assert.doesNotMatch(readiness, /gc\.resources\s*[,)]/);
 // The existing activation/reminder states remain untouched, and UI makes version explicit.
 assert.doesNotMatch(migration, /update public\.(?:cases|participants|teacher_reminder_settings)/i);
 assert.match(operationsUi, /Resource Map/);
-assert.match(operationsUi, /Mission review/);
+assert.doesNotMatch(operationsUi, /Mission review|comparability/i);
 assert.match(adminJs, /Approving protected content <strong>version/);
 assert.match(adminJs, /research_admin_record_case_signoff/);
 
-const states = readinessForCase({ case: { active: false }, participant: { active: false }, resource_map: { status: 'Needs QA' }, mission_bank_comparability: { status: 'Needs review' } });
+const states = readinessForCase({ case: { active: false }, participant: { active: false }, resource_map: { status: 'Needs QA' } });
 assert.equal(states.resourceMap, 'Needs QA');
-assert.equal(states.comparability, 'Needs review');
 assert.equal(states.game, 'Off intentionally');
 assert.equal(states.reminders, 'Off intentionally');
 

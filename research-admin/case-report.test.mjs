@@ -11,7 +11,7 @@ const checklist = [
   'fidelity_checklist_second_review','baseline_orientation','intervention_orientation'
 ].map(item_key => ({ item_key, status: 'complete', status_date: '2026-08-01' }));
 const base = { id:'case',study_id:'MR-101',case_code:'CASE-101',student_alias:'River',current_phase:'prebaseline',protocol:{stagger_position:1,planned_baseline_observations:6},checklist,checklist_history:[],measures:[],phase_history:[],tasks:[],study_events:[],coaching_contacts:[],observation_data:{coverage:{completed:0,ioa:0,percent:0},observations:[],setups:[],observers:[]},prepared_content:{},case_active:false,participant_active:false };
-const prepared = { protected_content:{present:true,raw_game_content:'SECRET'},resource_map:{status:'Ready'},mission_bank_comparability:{status:'Ready'},reminders:{enabled:false} };
+const prepared = { protected_content:{present:true,raw_game_content:'SECRET'},resource_map:{status:'Ready'},reminders:{enabled:false} };
 
 test('baseline assignment freezes and TSES readiness links to its existing measure', () => {
   const before = renderOperations(base, prepared, escape);
@@ -48,7 +48,7 @@ test('case report is a deidentified, non-interactive research summary', () => {
   for(const heading of ['Research Case Report','Case Overview','Baseline Readiness','Phase History','Study Measures','Classroom Observations','IOA Summary','Coaching-as-Usual','Study Events','Game Readiness','MR Procedural Fidelity','Timeline']) assert.match(html,new RegExp(heading));
   assert.match(html,/MR-101/); assert.match(html,/CASE-101/); assert.match(html,/River/); assert.match(html,/Choose Save as PDF/);
   assert.match(html,/<th>Teacher fidelity %<\/th><th>Student target behavior %<\/th>[\s\S]*<td>90<\/td><td>10<\/td><td>95<\/td>/);
-  assert.doesNotMatch(html,/<form|<button|<select|<input|<textarea|DO NOT PRINT|SECRET CELL|raw_game_content|system_evidence|120 interval/i);
+  assert.doesNotMatch(html,/<form|<button|<select|<input|<textarea|DO NOT PRINT|SECRET CELL|raw_game_content|system_evidence|120 interval|Mission Bank Comparability|Mission review|comparability/i);
 });
 
 test('client has no swap action and retains Intake Print / Save PDF', () => {
