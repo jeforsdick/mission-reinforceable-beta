@@ -174,7 +174,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const context = MR.telemetryContext;
     if (!context || !sessionId) return;
     const sessionCreated = await sessionInsertPromise;
-    if (!sessionCreated) return;
+    if (!sessionCreated) return false;
 
     try {
       const updates = {
@@ -200,7 +200,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         if (result === 'already_completed') {
           MR.dailyMissionCompleted = true;
           if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
-          return false;
+          return 'already_completed';
         }
       } else {
         await MR.auth.completeTelemetrySession(sessionId, context.participantId, context.caseId, updates);
@@ -218,9 +218,14 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       }
       return true;
     } catch (error) {
-      console.warn('Supabase telemetry session completion failed; gameplay and existing logging will continue.', error);
-      return null;
+      console.warn('Supabase telemetry session completion failed; mission completion was not recorded.', error);
+      return false;
     }
+  }
+
+  function showTelemetrySaveFailure() {
+    window.alert("We couldn't save this mission. Please check your connection and try again.");
+    if (typeof MR.onTelemetrySaveFailed === 'function') MR.onTelemetrySaveFailed();
   }
 
   function countSummaryForHistory(history) {
@@ -890,7 +895,11 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     };
 
     const telemetryResult = await finishRelationalTelemetry(run, current.telemetrySessionId, current.telemetrySessionInsert);
-    if (telemetryResult === false) return;
+    if (telemetryResult === false) {
+      showTelemetrySaveFailure();
+      return;
+    }
+    if (telemetryResult === 'already_completed') return;
     // Browser-local run history belongs only to unauthenticated public-demo gameplay.
     if (!MR.telemetryContext) MR.storage.saveRun(run);
     renderResults(run);

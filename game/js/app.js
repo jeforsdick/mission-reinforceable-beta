@@ -257,6 +257,10 @@
         renderHome();
         MR.setScreen('home');
       };
+      MR.onTelemetrySaveFailed = () => {
+        renderHome();
+        MR.setScreen('home');
+      };
       MR.onStudyCalendarBlocked = () => {
         renderHome();
         MR.setScreen('home');
