@@ -33,6 +33,14 @@ export function observationSummary(item,now=new Date()){
     thisWeek:phaseRows('intervention').filter(row=>row.observation_date>=weekStart).length,latest,ioa,consecutive90,
     reviewIssues:(item.observation_data?.observations||[]).filter(row=>!row.primary_record_id||(row.secondary_observer_id&&!row.secondary_record_id)||row.ioa?.overall_ioa_attention).length};
 }
+export function interventionElapsed(item,now=new Date()){
+  const effective=(item.phase_history||[]).filter(row=>row.phase==='intervention'&&/^\d{4}-\d{2}-\d{2}$/.test(row.effective_date||'')).sort((a,b)=>a.effective_date.localeCompare(b.effective_date))[0]?.effective_date;
+  if(!effective)return null;
+  const current=denverToday(now),startMs=Date.parse(`${effective}T00:00:00Z`),currentMs=Date.parse(`${current}T00:00:00Z`);
+  if(!Number.isFinite(startMs)||!Number.isFinite(currentMs)||currentMs<startMs)return null;
+  const days=Math.floor((currentMs-startMs)/86400000);
+  return {effectiveDate:effective,days,weeks:days/7,minimumMet:days>=28};
+}
 export function gameReadiness(item){
   const checklist=currentByKey(item.checklist),p=item.prepared_content||{};
   const missing=[];
@@ -51,7 +59,7 @@ export function lifecycleStage(item){
   if(phase==='maintenance') return measureNeeds(item).some(key=>key!=='tses_pre')?'End Measures':'Maintenance';
   return 'Closeout';
 }
-export function nextAction(item){
+export function nextAction(item,now=new Date()){
   const checklist=currentByKey(item.checklist),measures=currentByKey(item.measures,'measure_key'),phase=item.current_phase||'prebaseline',stats=observationSummary(item);
   if(!complete(checklist.teacher_consent)) return 'Teacher consent is still needed.';
   if(!complete(checklist.parent_permission)) return 'Parent/guardian permission is still needed.';
@@ -66,11 +74,18 @@ export function nextAction(item){
     if(!gameReadiness(item).ready) return 'Finish game readiness before starting intervention.';
     return 'Baseline minimum is met. Review the data and decide whether to move to intervention.';
   }
-  if(phase==='intervention') return stats.consecutive90>=3?'Intervention criteria may be met. Researcher phase decision needed.':'Intervention is active. Keep collecting observations and weekly measures.';
+  if(phase==='intervention'){
+    const elapsed=interventionElapsed(item,now);
+    if(stats.consecutive90<3) return 'Intervention is active. Keep collecting observations and weekly measures.';
+    if(!elapsed?.minimumMet) return elapsed?'Fidelity criterion is met. Continue intervention until the 4-week minimum, then review the data for a phase decision.':'Fidelity criterion is met. Confirm intervention timing before reviewing the data for a phase decision.';
+    return 'Objective intervention criteria are met. Review trend and make the researcher phase decision.';
+  }
   if(phase==='maintenance'){
     if(['tses_post','urp_ir','teacher_interview'].some(key=>measures[key]?.status!=='complete')) return 'Post-intervention measures are still needed.';
-    if(stats.maintenance<3) return `Maintenance observation ${stats.maintenance+1} of 3 is next.`;
-    return 'Case is ready to close.';
+    if(stats.maintenance===0) return 'Record the first maintenance observation.';
+    if(stats.maintenance===1) return 'Maintenance observation 2 is next.';
+    if(stats.maintenance===2) return 'Maintenance target range met. Decide whether one more probe is needed.';
+    return 'Maintenance observations are complete. Review closeout.';
   }
   return 'Case closeout is recorded.';
 }
