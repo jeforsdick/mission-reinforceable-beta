@@ -1,7 +1,16 @@
 # Dissertation schema foundation
 
-This change adds the database foundation for intake, fidelity, coaching, and
-future relational game telemetry. It does not connect any UI or gameplay code.
+This document records the historical schema-foundation change for intake,
+fidelity, coaching, and relational game telemetry. The authenticated participant
+game has since been connected to relational `game_sessions` and
+`game_responses`; statements about "future" telemetry below describe the
+migration when it was introduced.
+
+> **Bootstrap warning:** `supabase/migrations/` is an additive migration chain,
+> not a complete fresh-database bootstrap. Foundational definitions including
+> `cases`, `participants`, `intake_requests`, and `case_game_content` originate
+> in historical/manual setup outside that canonical chain. Do not assume a new
+> Supabase project can be recreated from the migration directory alone.
 
 ## Existing schema assumptions
 
@@ -42,18 +51,20 @@ is under `supabase/migrations/`. The older SQL setup and seed files remain in
   crisis plan is required only when `has_crisis_plan` is true.
 - `fidelity_targets`: multiple atomic targets per case in the five supported
   domains.
-- `game_sessions`: one future mission attempt linked to both participant and
+- `game_sessions`: one mission attempt linked to both participant and
   case. `participant_id` is the relational source of truth; `participant_code`
   is intentionally not duplicated here and can be joined from `participants`
   for authorized research exports or displays.
-- `game_responses`: one future decision linked to session, participant, case,
+- `game_responses`: one decision linked to session, participant, case,
   and optionally a fidelity target. Composite foreign keys ensure all supplied
   relational IDs belong to the same participant/case context. When a
   `fidelity_target_id` is supplied, the referenced target must match both the
   response's case and `fidelity_domain`.
 
 `updated_at` triggers maintain timestamps for the three mutable tables that have
-that column. No gameplay logging is connected to the new telemetry tables yet.
+that column. **Historical note:** gameplay logging was not connected when this
+foundation was introduced; the current authenticated game now writes relational
+session and response telemetry.
 
 ## Access model
 
@@ -201,7 +212,7 @@ end
 $$;
 ```
 
-Future mission responses will use this metadata contract:
+Mission responses use this metadata contract:
 
 ```js
 meta: {
@@ -213,6 +224,7 @@ meta: {
 `bipComponent` remains the broad fidelity-domain metadata, while
 `fidelityTargetKey` identifies exactly one primary fidelity target. In V1, one
 response should have at most one primary fidelity target. Authored game content
-references the stable key rather than a Supabase UUID; a future runtime change
-will resolve `(case_id, target_key)` to `fidelity_targets.id`. This migration and
-documentation change do not implement that runtime resolution.
+references the stable key rather than a Supabase UUID. The current participant
+runtime resolves that case-scoped key to `fidelity_targets.id` when recording
+relational response telemetry. **Historical note:** the foundation migration
+itself did not implement runtime resolution.

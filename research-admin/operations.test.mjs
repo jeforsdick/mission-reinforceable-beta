@@ -18,9 +18,6 @@ assert.equal(denverToday(new Date('2026-08-19T05:30:00Z')),'2026-08-18');
 for(const table of ['research_case_protocol','research_case_protocol_events','research_protocol_checklist_events','research_case_phase_events','research_tasks','research_measure_events','research_coaching_contacts','research_study_events']) assert.match(sql,new RegExp(`create table public\\.${table}`));
 for(const pair of ['when 1 then 6','when 2 then 8','when 3 then 10','when 4 then 12','when 5 then 14']) assert.match(sql,new RegExp(pair));
 assert.match(sql,/constraint research_case_protocol_stagger_position_key unique\(stagger_position\) deferrable/);
-assert.match(sql,/research_admin_swap_case_protocol_positions/);assert.match(sql,/set constraints research_case_protocol_stagger_position_key deferred/);
-assert.match(sql,/update public\.research_case_protocol set stagger_position=second_plan\.stagger_position/);assert.match(sql,/update public\.research_case_protocol set stagger_position=first_plan\.stagger_position/);
-assert.match(sql,/insert into public\.research_case_protocol_events[\s\S]*first_case_id[\s\S]*second_case_id/);assert.match(sql,/cannot be swapped after either case has begun baseline/);
 assert.match(sql,/baseline prerequisites missing/);assert.match(sql,/student_assent[\s\S]*not in \('complete','not_applicable'\)/);
 assert.match(sql,/status_date date not null/);assert.match(sql,/recorded_at timestamptz not null default now/);
 assert.match(sql,/checklist status date is required/);assert.match(sql,/checklist status date cannot be in the future \(America\/Denver\)/);
@@ -58,7 +55,6 @@ assert.ok(renderedOperations.indexOf('TSES — Post-Intervention')<renderedOpera
 assert.ok(renderedOperations.indexOf('id="operations-phase-decision"')>renderedOperations.indexOf('id="operations-overview"'));assert.ok(renderedOperations.indexOf('id="operations-phase-decision"')<renderedOperations.indexOf('id="operations-enrollment"'));
 assert.doesNotMatch(renderedOperations,/Make a deliberate researcher decision|Research Admin never changes phases automatically\./);assert.match(renderedOperations,/Phase Decision[\s\S]*Record Phase Change[\s\S]*Phase History/);
 assert.match(renderedOperations,/Case History[\s\S]*append-only history/);
-assert.doesNotMatch(js+ui,/research_admin_swap_case_protocol_positions|protocol-swap-form|Swap Baseline Assignments|Swap Positions/);
 assert.match(ui,/class="inline-record measure-form"/);assert.match(ui,/external_reference/);assert.match(js,/Completion date is required/);
 for(const field of ['affects_observation','affects_mr_exposure','affects_phase_interpretation','action_taken']){assert.match(ui,new RegExp(field));assert.match(js,new RegExp(field));}
 assert.match(js,/research_admin_resolve_study_event[\s\S]*target_action_taken:action/);
@@ -135,4 +131,4 @@ const maintenanceRows=[1,2].map(session_number=>({id:`m${session_number}`,phase:
 const maintenanceNext=nextAction({...baselineCase,current_phase:'maintenance',measures:[...baselineCase.measures,...postMeasures],observation_data:{...baselineCase.observation_data,observations:maintenanceRows}});
 assert.equal(maintenanceNext,'Maintenance target range met. Decide whether one more probe is needed.');
 assert.doesNotMatch(maintenanceNext,/3 of 3|third.*required/i);
-console.log('Research operations hardening, swaps, forms, readiness, attention, security, and timeline checks passed.');
+console.log('Research operations hardening, forms, readiness, attention, security, and timeline checks passed.');

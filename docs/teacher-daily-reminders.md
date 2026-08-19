@@ -1,6 +1,7 @@
 # Teacher daily reminders (schedule not active)
 
-The two server-only routes are ready for a future Vercel Cron configuration:
+The two server-only routes fit the intended Vercel/custom-domain deployment and
+are ready for a future Vercel Cron configuration:
 
 - `GET /api/teacher-daily-prompt`
 - `GET /api/teacher-followup-reminder`
@@ -75,7 +76,9 @@ administrative process; never put the service-role key in a browser.
 
 ## Future schedule example — **NOT ACTIVE**
 
-No `vercel.json` cron configuration is committed. After sender verification and
+No repository cron schedule is configured, so endpoint presence does not make
+reminders run automatically. No `vercel.json` cron configuration is committed.
+After sender verification and
 research-team approval of both hours, the following shape can be added, with
 the chosen UTC hours replacing the examples:
 

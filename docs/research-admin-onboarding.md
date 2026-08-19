@@ -32,3 +32,10 @@ The home route now separates a deidentified **Study Overview** from the existing
 Apply `supabase/migrations/20260818060000_research_operations_foundation.sql` through the normal Supabase migration workflow after the June 29 Weekly Teacher Report migration. This additive migration is not applied automatically by the web deployment. No data backfill is required: a case without a phase event is displayed as `prebaseline`, and the researcher deliberately assigns its protocol plan and records all statuses.
 
 All new tables have RLS enabled, deny anonymous/direct authenticated writes, permit reads only through the research-admin policy, and expose writes through research-admin-authorized `SECURITY DEFINER` RPCs with an empty search path. Phase RPCs never update case/participant activity or reminders. Baseline is rejected with a list of missing checklist, assent, stagger-plan, and TSES Pre prerequisites; satisfying them never starts baseline automatically.
+
+The current interface supports initial protocol/baseline assignment only; it
+does not offer assignment swapping as an active workflow. Historical database
+support for swapping remains in migration history. Classroom observation entry
+uses compact paper-summary values with optional IOA, not raw digital interval
+entry. Mission Bank Comparability is not a current readiness or Research Admin
+workflow.
