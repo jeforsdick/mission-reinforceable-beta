@@ -13,7 +13,7 @@ assert.match(historicalMigration, /create table public\.mission_bank_comparabili
 assert.match(historicalMigration, /research_admin_submit_mission_bank_comparability_review/);
 assert.doesNotMatch(historicalMigration, /drop table public\.mission_bank_comparability_reviews/i);
 assert.match(cleanupMigration, /drop table if exists public\.mission_bank_comparability_reviews/i);
-assert.doesNotMatch(cleanupMigration.slice(cleanupMigration.indexOf('create or replace function public.research_admin_case_readiness'), cleanupMigration.indexOf('-- Revoke API access')), /comparability_ready|mission_bank_comparability/i);
+assert.doesNotMatch(cleanupMigration.slice(cleanupMigration.indexOf('create or replace function public.research_admin_case_readiness'), cleanupMigration.indexOf('-- Remove retired RPCs')), /comparability_ready|mission_bank_comparability/i);
 
 // The current Research Admin workflow neither consumes nor displays the retired feature.
 assert.doesNotMatch(activeClient, /comparability_ready|mission_bank_comparability|research_admin_submit_mission_bank_comparability_review/i);

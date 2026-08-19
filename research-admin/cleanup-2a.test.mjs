@@ -10,7 +10,7 @@ const activeClient = ['admin.js', 'admin-model.mjs', 'operations-model.mjs', 'op
 
 // Readiness/dashboard replacements precede explicit comparability removal.
 const readiness = cleanup.slice(cleanup.indexOf('create or replace function public.research_admin_case_readiness'), cleanup.indexOf('create or replace function public.research_admin_operations_dashboard'));
-const dashboard = cleanup.slice(cleanup.indexOf('create or replace function public.research_admin_operations_dashboard'), cleanup.indexOf('-- Revoke API access'));
+const dashboard = cleanup.slice(cleanup.indexOf('create or replace function public.research_admin_operations_dashboard'), cleanup.indexOf('-- Remove retired RPCs'));
 for (const payload of [readiness, dashboard]) assert.doesNotMatch(payload, /comparability_ready|mission_bank_comparability|comparability status|comparability history/i);
 assert.ok(cleanup.indexOf('create or replace function public.research_admin_case_readiness') < cleanup.indexOf('drop table if exists public.mission_bank_comparability_reviews'));
 assert.match(cleanup, /drop policy if exists "Research admins read comparability reviews"/);
@@ -18,6 +18,22 @@ assert.match(cleanup, /drop index if exists public\.mission_bank_comparability_r
 assert.match(cleanup, /drop table if exists public\.mission_bank_comparability_reviews/);
 assert.match(cleanup, /drop function if exists public\.research_admin_submit_mission_bank_comparability_review\(uuid, integer, jsonb, text, boolean\)/);
 assert.doesNotMatch(activeClient, /comparability_ready|mission_bank_comparability|research_admin_submit_mission_bank_comparability_review/i);
+
+// Retired RPC cleanup must also work in installations where the wrappers never existed.
+const retiredRpcCleanup = cleanup.slice(cleanup.indexOf('-- Remove retired RPCs'), cleanup.indexOf('-- The comparability table'));
+for (const signature of [
+  'research_admin_submit_mission_bank_comparability_review\\(uuid, integer, jsonb, text, boolean\\)',
+  'research_admin_swap_case_protocol_positions\\(uuid, uuid\\)',
+  'research_admin_record_classroom_observation\\(uuid, date, uuid, jsonb, jsonb, uuid, time, time, text, text\\)',
+]) {
+  assert.match(retiredRpcCleanup, new RegExp(`drop function if exists public\\.${signature}`));
+}
+assert.doesNotMatch(retiredRpcCleanup, /revoke\s+all\s+on\s+function/i);
+
+// Table-local operations that require the table are guarded; final drops remain idempotent.
+const comparabilityTableCleanup = cleanup.slice(cleanup.indexOf('-- The comparability table'));
+assert.match(comparabilityTableCleanup, /if to_regclass\('public\.mission_bank_comparability_reviews'\) is not null then[\s\S]*drop policy if exists[\s\S]*revoke all on table[\s\S]*end if;/i);
+assert.doesNotMatch(cleanup, /\bdrop\b[^;\n]*\bcascade\b/i);
 
 // Only the three live, version-bound protected-content signoffs remain valid.
 const signoff = cleanup.slice(cleanup.indexOf('create or replace function public.research_admin_record_case_signoff'), cleanup.indexOf('-- Replace JSON-producing functions'));
