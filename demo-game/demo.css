@@ -1,5 +1,6 @@
-/* Keep the public-demo exit outside the centered game-stage navigation. */
-body .demo-app + .back-to-site-cottage {
+/* Demo-only viewport exit. The link is not adjacent to .demo-app in the DOM,
+ * so target the actual top-level anchor rather than a sibling relationship. */
+body > a.back-to-site-cottage {
   position: fixed;
   z-index: 1000;
   top: auto;
@@ -8,24 +9,32 @@ body .demo-app + .back-to-site-cottage {
   bottom: max(20px, env(safe-area-inset-bottom));
   width: clamp(72px, 7vw, 92px);
   max-height: none;
+  transform: none;
+}
+
+body > a.back-to-site-cottage img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 @media (max-width: 600px) {
-  body .demo-app + .back-to-site-cottage {
-    right: max(20px, env(safe-area-inset-right));
-    bottom: max(20px, env(safe-area-inset-bottom));
+  body > a.back-to-site-cottage {
+    right: max(14px, env(safe-area-inset-right));
+    bottom: max(14px, env(safe-area-inset-bottom));
     width: 64px;
   }
 }
 
 @media (min-width: 701px) {
+  /* Split the difference between the crowded original and the over-spaced pass. */
   .demo-app .title-logo,
   .demo-app .title-logo.small {
-    width: min(1250px, 86vw);
+    width: min(1300px, 89vw);
   }
 
   .demo-app .home-panel {
-    margin-top: -70px;
+    margin-top: -95px;
   }
 }
 
