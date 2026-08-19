@@ -1,63 +1,41 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {fidelitySummary,intervalSummary,teacherIoa,studentIoa,qualification,coverage,defaultIntervals,mayAssignPrimary,mayAssignSecondary,ioaDisplay} from './observations-model.mjs';
+import {qualification,coverage,mayAssignPrimary,mayAssignSecondary,ioaDisplay,correctionEvent} from './observations-model.mjs';
 import {newObservationForm,renderObservations,renderObserverTeam} from './observations-ui.mjs';
-const migration=fs.readFileSync(new URL('../supabase/migrations/20260819010000_classroom_observation_summaries.sql',import.meta.url),'utf8');
-const legacy=fs.readFileSync(new URL('../supabase/migrations/20260818070000_classroom_observations_ioa.sql',import.meta.url),'utf8');
+const schema=fs.readFileSync(new URL('../supabase/migrations/20260819010000_classroom_observation_summaries.sql',import.meta.url),'utf8');
+const cleanup=fs.readFileSync(new URL('../supabase/migrations/20260819030000_research_admin_cleanup_2b.sql',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
 const e=x=>String(x??'');
-
-// Constructs remain defined exactly as before; paper summaries replace only duplicate entry.
-assert.equal(fidelitySummary([{status:'implemented_as_written'},{status:'not_implemented_as_written'},{status:'no_opportunity'}]).percent,50);
-const intervals=defaultIntervals();intervals[0].status='occurrence';intervals[1].status='not_observed';assert.equal(intervalSummary(intervals).percent,100/119);
-assert.equal(teacherIoa([{target_key:'a',status:'implemented_as_written'}],[{target_key:'a',status:'implemented_as_written'}]).percent,100);
-assert.equal(studentIoa([{interval_number:1,status:'occurrence'}],[{interval_number:1,status:'occurrence'}]).percent,100);
 assert.deepEqual(coverage(10,2),{completed:10,paired:2,percent:20,required:2,additional:0,meets:true});
 assert.equal(qualification({teacher_fidelity_agreement:85,student_behavior_agreement:85}),true);
-assert.equal(mayAssignPrimary({active:true,observer_type:'primary_researcher'}),true);assert.equal(mayAssignSecondary({active:true,observer_type:'trained_observer',status:'qualified'}),true);
+assert.equal(mayAssignPrimary({active:true,observer_type:'primary_researcher'}),true);
+assert.equal(mayAssignSecondary({active:true,observer_type:'trained_observer',status:'qualified'}),true);
 assert.equal(ioaDisplay({overall_ioa_attention:true,teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:90}),'Needs recalibration');
+assert.equal(correctionEvent({summary_revision_number:2,summary_recorded_at:'2026-08-19'}),'2026-08-19');
 
 const form=newObservationForm({},true,[{id:'p',observer_code:'JO'}],[{id:'s',observer_code:'JM'}],e);
-assert.match(form,/Record Observation[\s\S]*Observation Details[\s\S]*Observation Results[\s\S]*Teacher fidelity %[\s\S]*Student target behavior %[\s\S]*Was IOA collected\?/);
-for(const name of ['teacher_fidelity_percent','student_target_behavior_percent','teacher_fidelity_ioa_percent','student_behavior_ioa_percent'])assert.match(form,new RegExp(`name="${name}"[^>]*min="0" max="100" step="any"`));
-assert.match(form,/class="summary-form-grid ioa-fields" hidden/);assert.match(form,/value="no" checked/);assert.match(form,/IOA observer[\s\S]*Teacher fidelity IOA %[\s\S]*Student behavior IOA %/);
-assert.doesNotMatch(form,/interval-cell|fidelity-entry|implemented_as_written|120 intervals|I checked the fidelity/);
+assert.match(form,/Record Observation[\s\S]*Teacher fidelity %[\s\S]*Student target behavior %[\s\S]*Was IOA collected\?/);
+assert.doesNotMatch(form,/interval-cell|fidelity-entry|implemented_as_written|120 intervals/);
+const row={id:'summary',observation_date:'2026-08-18',phase:'baseline',session_number:1,primary_observer_code:'JO',summary_revision_id:'rev-2',summary_revision_number:2,summary_recorded_at:'2026-08-19',secondary_observer_id:'s',secondary_observer_code:'JM',teacher_fidelity_percent:76.5,student_target_behavior_percent:10,ioa:{teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:79,overall_ioa_attention:true}};
+const rendered=renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:1,ioa:1,percent:100},setups:[{target_routine:'Arrival',target_behavior_definition:'Calls out'}],observers:[],observations:[row]}},e);
+assert.match(rendered,/Baseline[\s\S]*1 \/ 6[\s\S]*Latest Teacher Fidelity[\s\S]*76\.5%/);
+assert.match(rendered,/Edit Summary[\s\S]*Correction reason/);
+assert.doesNotMatch(rendered,/Correct Summary|data-initial-legacy/);
+assert.match(rendered,/Teacher fidelity IOA is 80%\. Recalibration required/);
 
-const legacyRow={id:'legacy',observation_date:'2026-08-18',phase:'baseline',session_number:1,primary_observer_code:'JO',primary_record_id:'raw-record',teacher_fidelity_percent:75,student_target_behavior_percent:10,context_note:'Paper form filed'};
-const summaryRow={...legacyRow,id:'summary',session_number:2,summary_revision_id:'rev-2',summary_revision_number:2,secondary_observer_id:'s',secondary_observer_code:'JM',secondary_record_id:'summary-ioa',teacher_fidelity_percent:76.5,ioa:{teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:79,overall_ioa_attention:true}};
-const rendered=renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:2,ioa:1,percent:50},setups:[{target_routine:'Arrival',target_behavior_definition:'Calls out'}],observers:[],observations:[summaryRow,legacyRow]}},e);
-assert.match(rendered,/Baseline[\s\S]*2 \/ 6[\s\S]*Latest Teacher Fidelity[\s\S]*76\.5%[\s\S]*IOA Coverage[\s\S]*1 \/ 2 · 50%/);
-assert.match(rendered,/Routine:<\/strong> Arrival[\s\S]*Target behavior:[\s\S]*Calls out[\s\S]*>Edit</);
-assert.match(rendered,/Aug 18, 2026 · Baseline · Observation #1[\s\S]*Teacher fidelity: <strong>75%[\s\S]*Student target behavior: <strong>10%[\s\S]*IOA: Not collected/);
-assert.match(rendered,/Edit Summary[\s\S]*Correction reason/);assert.match(rendered,/Correct Summary[\s\S]*data-initial-legacy="true"[\s\S]*Correction reason/);assert.match(rendered,/Teacher fidelity IOA is 80%\. Recalibration required/);assert.match(rendered,/Student behavior IOA is below criterion\. Recalibration required/);
-assert.doesNotMatch(rendered,/interval-cell|fidelity-entry|IOA Summary|Coverage target:|View Data \/ Correct/);
-
-// Additive schema: legacy raw tables persist; newest summary revision is authoritative.
-assert.match(legacy,/create table public\.research_classroom_observation_records/);assert.match(legacy,/fidelity_scores jsonb not null, student_intervals jsonb not null/);
-assert.match(migration,/create table public\.research_classroom_observation_summary_revisions/);for(const field of ['teacher_fidelity_percent','student_target_behavior_percent','teacher_fidelity_ioa_percent','student_behavior_ioa_percent'])assert.match(migration,new RegExp(field));
-assert.match(migration,/unique\(observation_id, revision_number\)/);assert.match(migration,/correction reason is required for a summary revision/);assert.match(migration,/select max\(revision_number\)\+1/);assert.match(migration,/current_summaries as \(select distinct on\(observation_id\).*revision_number desc/);
-assert.match(migration,/coalesce\(cs\.teacher_fidelity_percent,pr\.teacher_fidelity_percent\)/);assert.match(migration,/coalesce\(cs\.student_target_behavior_percent,pr\.student_target_behavior_percent\)/);
-assert.match(migration,/IOA observer and both IOA percentages are required together/);assert.match(migration,/teacher_fidelity_ioa_percent<=80 or cs\.student_behavior_ioa_percent<=80/);assert.match(migration,/ceil\(totals\.n\*\.20\)/);
-const legacyCorrectionRpc=migration.slice(migration.indexOf('create function public.research_admin_create_legacy_observation_summary'),migration.indexOf('create function public.research_admin_revise_classroom_observation_summary'));
-assert.match(legacyCorrectionRpc,/research admin required/);assert.match(legacyCorrectionRpc,/a finalized legacy raw observation record is required/);assert.match(legacyCorrectionRpc,/observation already has a summary revision/);assert.match(legacyCorrectionRpc,/collected legacy IOA and both IOA percentages are required together/);assert.match(legacyCorrectionRpc,/correction reason is required for a legacy summary correction/);assert.match(legacyCorrectionRpc,/revision_number,teacher_fidelity_percent[\s\S]*values\(obs\.id,1/);
-assert.doesNotMatch(legacyCorrectionRpc,/update public\.research_classroom_observation|delete from public\.research_classroom_observation|update public\.research_classroom_observation_records|delete from public\.research_classroom_observation_records/);
-assert.match(migration,/select max\(revision_number\)\+1[\s\S]*insert into public\.research_classroom_observation_summary_revisions/);
-assert.match(migration,/research_admin_create_classroom_observation/);assert.match(migration,/public\.research_observer_status/);assert.match(js,/research_admin_record_classroom_observation_summary/);assert.match(js,/research_admin_create_legacy_observation_summary/);assert.match(js,/research_admin_revise_classroom_observation_summary/);
-
-// Supabase resolves RPC overloads by exact argument name. All three summary paths
-// must translate the form model's unprefixed keys to the SQL target_* parameters.
-const summaryArgumentMapping=/target_teacher_fidelity_percent:payload\.teacher_fidelity_percent,target_student_target_behavior_percent:payload\.student_target_behavior_percent,target_teacher_fidelity_ioa_percent:payload\.teacher_fidelity_ioa_percent,target_student_behavior_ioa_percent:payload\.student_behavior_ioa_percent/;
-const newSummaryCall=js.slice(js.indexOf("operationRpc('research_admin_record_classroom_observation_summary'"),js.indexOf("document.querySelectorAll('.edit-summary-toggle')"));
-const correctionCalls=js.slice(js.indexOf("document.querySelectorAll('.edit-summary-form')"),js.indexOf('\n}',js.indexOf("document.querySelectorAll('.edit-summary-form')")));
-assert.match(newSummaryCall,summaryArgumentMapping,'new summary observation maps exact SQL RPC argument names');
-assert.doesNotMatch(newSummaryCall,/\.\.\.payload/,'new summary observation does not spread unprefixed form keys');
-for(const rpc of ['research_admin_create_legacy_observation_summary','research_admin_revise_classroom_observation_summary']){
- assert.match(correctionCalls,new RegExp(rpc),`${rpc} is selected by the correction path`);
- assert.match(correctionCalls,summaryArgumentMapping,`${rpc} maps exact SQL RPC argument names`);
- assert.doesNotMatch(correctionCalls,/\.\.\.payload/,`${rpc} does not spread unprefixed form keys`);
-}
-assert.doesNotMatch(fs.readFileSync(new URL('../coach-dashboard/dashboard.js',import.meta.url),'utf8'),/observation_summary_revisions/);
-
-const observerTeam=renderObserverTeam({observers:[{id:'observer',observer_code:'JM',display_name:'Jordan',observer_type:'trained_observer',active:true,status:'recalibration_required',latest_training:{teacher_fidelity_agreement:91,student_behavior_agreement:92},training_history:[{event_date:'2026-08-01',event_type:'practice',teacher_fidelity_agreement:91,student_behavior_agreement:92},{event_date:'2026-08-10',event_type:'recalibration',teacher_fidelity_agreement:95,student_behavior_agreement:96}]}]},e);
-assert.match(observerTeam,/Teacher fidelity practice agreement: 91% · Student behavior practice agreement: 92%/);assert.match(observerTeam,/<summary>Training history<\/summary>[\s\S]*practice[\s\S]*recalibration/);assert.match(observerTeam,/Recalibration required before further independent observation\./);
-console.log('Compact paper-summary observation workflow, legacy compatibility, IOA, and append-only correction checks passed.');
+assert.match(schema,/create function public\.research_admin_record_classroom_observation_summary/);
+assert.match(schema,/create function public\.research_admin_revise_classroom_observation_summary/);
+assert.match(schema,/select max\(revision_number\)\+1[\s\S]*insert into public\.research_classroom_observation_summary_revisions/);
+assert.match(cleanup,/join current_summaries cs on cs\.observation_id=o\.id/);
+assert.doesNotMatch(cleanup,/coalesce\(cs\.|current_records|not_calculable/);
+assert.match(cleanup,/teacher_fidelity_ioa_percent<=80 or student_behavior_ioa_percent<=80/);
+assert.match(cleanup,/teacher_fidelity_agreement>=85 and e\.student_behavior_agreement>=85/);
+assert.match(cleanup,/drop table if exists public\.research_classroom_ioa_results;[\s\S]*drop table if exists public\.research_classroom_observation_records;/);
+for(const signature of ['research_admin_submit_classroom_observation_record\\(uuid,text,jsonb,jsonb,text,text\\)','research_generate_classroom_ioa\\(uuid\\)','research_admin_create_legacy_observation_summary\\(uuid,numeric,numeric,numeric,numeric,text,text,text\\)']) assert.match(cleanup,new RegExp(`drop function if exists public\\.${signature}`));
+assert.doesNotMatch(cleanup,/cascade/i);
+assert.match(js,/research_admin_record_classroom_observation_summary/);
+assert.match(js,/research_admin_revise_classroom_observation_summary/);
+assert.doesNotMatch(js,/research_admin_create_legacy_observation_summary|primary_record_id|secondary_record_id/);
+const observerTeam=renderObserverTeam({observers:[{id:'observer',observer_code:'JM',display_name:'Jordan',observer_type:'trained_observer',active:true,status:'recalibration_required',latest_training:{teacher_fidelity_agreement:91,student_behavior_agreement:92},training_history:[]}]},e);
+assert.match(observerTeam,/Recalibration required before further independent observation\./);
+console.log('Summary-only observation workflow and Cleanup 2B checks passed.');

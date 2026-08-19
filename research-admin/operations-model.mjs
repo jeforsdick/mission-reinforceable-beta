@@ -19,7 +19,7 @@ export function checklistStatuses(itemKey){return itemKey==='student_assent'?['p
 export function currentByKey(rows,key='item_key'){ return Object.fromEntries((rows||[]).map(row=>[row[key],row])); }
 const complete=(row,allowNA=false)=>row?.status==='complete'||(allowNA&&row?.status==='not_applicable');
 export function observationSummary(item,now=new Date()){
-  const rows=(item.observation_data?.observations||[]).filter(row=>row.primary_record_id);
+  const rows=(item.observation_data?.observations||[]).filter(row=>row.summary_revision_id);
   const phaseRows=phase=>rows.filter(row=>row.phase===phase);
   const latest=[...rows].sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)))[0];
   const ioa=item.observation_data?.coverage||{};
@@ -31,7 +31,7 @@ export function observationSummary(item,now=new Date()){
   }
   return {rows,baseline:phaseRows('baseline').length,intervention:phaseRows('intervention').length,maintenance:phaseRows('maintenance').length,
     thisWeek:phaseRows('intervention').filter(row=>row.observation_date>=weekStart).length,latest,ioa,consecutive90,
-    reviewIssues:(item.observation_data?.observations||[]).filter(row=>!row.primary_record_id||(row.secondary_observer_id&&!row.secondary_record_id)||row.ioa?.overall_ioa_attention).length};
+    reviewIssues:(item.observation_data?.observations||[]).filter(row=>!row.summary_revision_id||row.ioa?.overall_ioa_attention).length};
 }
 export function interventionElapsed(item,now=new Date()){
   const effective=(item.phase_history||[]).filter(row=>row.phase==='intervention'&&/^\d{4}-\d{2}-\d{2}$/.test(row.effective_date||'')).sort((a,b)=>a.effective_date.localeCompare(b.effective_date))[0]?.effective_date;
@@ -134,6 +134,6 @@ export function timelineForCase(item){
   for(const x of item.tasks||[]) if(x.completed_at) rows.push({date:x.completed_at,category:'Task',label:`${x.title} — ${display(x.status)}`});
   for(const x of item.coaching_contacts||[]) rows.push({date:x.contact_date,category:'Coaching',label:`${display(x.format)} · ${x.provider_role}`});
   for(const x of item.study_events||[]){const event=display(x.event_type);rows.push({date:x.event_date,category:'Study event',label:event});if(x.resolved_at)rows.push({date:x.resolved_at,category:'Study event',label:`${event} — Resolved`});}
-  for(const x of item.observation_data?.observations||[]){if(x.primary_record_id)rows.push({date:x.observation_date,category:'Observation',label:`${display(x.phase)} observation #${x.session_number} completed`});const correctedAt=correctionEvent(x);if(correctedAt)rows.push({date:correctedAt,category:'Observation',label:`${display(x.phase)} observation #${x.session_number} corrected`});if(x.ioa)rows.push({date:x.observation_date,category:'IOA',label:`Teacher ${x.ioa.teacher_fidelity_ioa_percent??'NC'}%, Student ${x.ioa.student_behavior_ioa_percent??'NC'}%`});}
+  for(const x of item.observation_data?.observations||[]){if(x.summary_revision_id)rows.push({date:x.observation_date,category:'Observation',label:`${display(x.phase)} observation #${x.session_number} completed`});const correctedAt=correctionEvent(x);if(correctedAt)rows.push({date:correctedAt,category:'Observation',label:`${display(x.phase)} observation #${x.session_number} corrected`});if(x.ioa)rows.push({date:x.observation_date,category:'IOA',label:`Teacher ${x.ioa.teacher_fidelity_ioa_percent??'NC'}%, Student ${x.ioa.student_behavior_ioa_percent??'NC'}%`});}
   return rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 }
