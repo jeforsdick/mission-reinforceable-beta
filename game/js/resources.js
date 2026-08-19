@@ -113,6 +113,13 @@
     root.scrollTop = 0;
   }
 
+  function recordSectionOpen(sectionKey) {
+    if (!MR.telemetryContext || !MR.auth || typeof MR.auth.recordResourceEvent !== 'function') return;
+    MR.auth.recordResourceEvent('resource_section_opened', sectionKey).catch(error => {
+      console.warn('Resource Map usage telemetry could not be saved.', error);
+    });
+  }
+
   function wireMap() {
     MR.$$('.map-hotspot').forEach(button => {
       if (button.dataset.resourceWired === 'true') return;
@@ -120,6 +127,7 @@
       button.setAttribute('aria-pressed', 'false');
       button.addEventListener('click', () => {
         if (MR.audio && typeof MR.audio.playSfx === 'function') MR.audio.playSfx('click', 0.24);
+        recordSectionOpen(button.dataset.resourceSection);
         renderResourceSection(button.dataset.resourceSection);
       });
     });
@@ -129,6 +137,7 @@
       backButton.dataset.resourceWired = 'true';
       backButton.addEventListener('click', () => {
         if (MR.audio && typeof MR.audio.playSfx === 'function') MR.audio.playSfx('click', 0.24);
+        recordSectionOpen('bip');
         renderResourceSection('bip');
       });
     }
