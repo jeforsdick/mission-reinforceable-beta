@@ -2486,3 +2486,22 @@ body.qa-preview { padding-top: 4.25rem; }
 }
 .qa-preview-banner[hidden] { display: none; }
 .qa-preview-banner a { color: #fff; text-decoration: underline; }
+
+/* Resource blocks remain easy to scan inside the existing parchment renderer. */
+#resources-content > p,
+#resources-content > ul,
+#resources-content > dl,
+#resources-content > .resource-callout { margin: 0 0 16px; }
+#resources-content ul { padding-left: 1.35em; }
+#resources-content li + li { margin-top: 8px; }
+#resources-content .behavior-basics > div + div { margin-top: 12px; }
+#resources-content .behavior-basics dt { font-weight: 900; }
+#resources-content .behavior-basics dd { margin: 3px 0 0; }
+#resources-content .resource-callout {
+  padding: 12px 14px;
+  border: 2px solid rgba(91, 53, 20, .55);
+  border-radius: 6px;
+  background: rgba(244, 197, 106, .35);
+}
+#resources-content .resource-callout strong { display: block; margin-bottom: 5px; }
+#resources-content .resource-callout p { margin: 0; }

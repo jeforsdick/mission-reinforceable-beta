@@ -30,3 +30,21 @@
   text-align: center;
   text-decoration: none;
 }
+
+/* Public demo cottage stays clear of the fixed navigation and device safe areas. */
+.demo-app + .back-to-site-cottage {
+  top: auto;
+  left: auto;
+  right: max(0.75rem, env(safe-area-inset-right));
+  bottom: calc(112px + 2rem + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 600px) {
+  .demo-app + .back-to-site-cottage {
+    top: auto;
+    left: auto;
+    right: max(0.5rem, env(safe-area-inset-right));
+    bottom: calc(76px + 1rem + env(safe-area-inset-bottom));
+    width: 68px;
+  }
+}
