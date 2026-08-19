@@ -293,7 +293,11 @@ function readinessPanel(data) {
     ['resource_privacy_review', 'Privacy Review', data.resource_map?.privacy_reviewed],
     ['resource_qa_preview', 'QA Preview', data.resource_map?.qa_previewed]
   ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
-  const gameExtras = `<div class="game-qa-controls no-print">${preview}${signoffs}</div>${states.content === 'Ready' ? comparabilityPanel(data) : ''}`;
+  const reviewComplete = states.content === 'Ready' && data.resource_map?.behavior_reviewed && data.resource_map?.privacy_reviewed && data.resource_map?.qa_previewed && data.mission_bank_comparability?.reviewed;
+  const reviewState = reviewComplete ? 'COMPLETE' : 'NEEDS ACTION';
+  const reviewSummary = states.content === 'Ready' ? `<div class="content-review-summary"><strong>CONTENT REVIEW — ${reviewState}</strong><span>Version ${escapeHtml(data.protected_content.version)}</span><span>Behavior ${data.resource_map?.behavior_reviewed?'✓':'Needs action'} · Privacy ${data.resource_map?.privacy_reviewed?'✓':'Needs action'} · QA ${data.resource_map?.qa_previewed?'✓':'Needs action'} · Comparability ${data.mission_bank_comparability?.reviewed?'✓':'Needs action'}</span></div>` : '<div class="content-review-summary needs"><strong>CONTENT REVIEW — NEEDS ACTION</strong><span>Protected game content needs action.</span></div>';
+  const reviewDetails = `<details class="content-review-details" ${reviewComplete?'':'open'}><summary>View Review Details</summary>${signoffs}${states.content === 'Ready' ? comparabilityPanel(data) : ''}</details>`;
+  const gameExtras = `<div class="game-qa-controls no-print">${preview}</div>${reviewSummary}${reviewDetails}`;
   return renderOperations(state.caseOperations,data,escapeHtml)
     .replace('<!-- GAME_READY_EXTRAS -->',gameExtras)
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
