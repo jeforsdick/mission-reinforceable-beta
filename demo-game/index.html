@@ -11,7 +11,6 @@
 </head>
 <body>
   <main id="app" class="mr-app demo-app" aria-live="polite">
-    <div class="demo-label" aria-label="Public demonstration version">PUBLIC DEMO</div>
     <section id="loading-screen" class="screen screen-loading is-active">
       <div class="loading-card">
         <img src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
@@ -180,6 +179,20 @@
       <div class="wizard-modal-bubble">
         <h2 id="wizard-modal-title">Custom Feedback Text</h2>
         <p id="wizard-modal-text"></p>
+        <div id="wizard-feedback-content" class="wizard-feedback-content" hidden>
+          <section id="wizard-consequence-section" class="wizard-feedback-section consequence" hidden>
+            <h3 id="wizard-consequence-heading">What happens</h3>
+            <p id="wizard-consequence-text"></p>
+          </section>
+          <section id="wizard-reaction-section" class="wizard-feedback-section reaction" hidden>
+            <h3>Wizard reaction</h3>
+            <p id="wizard-reaction-text"></p>
+          </section>
+          <section id="wizard-explanation-section" class="wizard-feedback-section explanation" hidden>
+            <h3>Why it matters</h3>
+            <p id="wizard-explanation-text"></p>
+          </section>
+        </div>
         <button id="wizard-modal-continue" class="pixel-btn green-btn" type="button">Continue</button>
       </div>
       <img id="wizard-modal-img" class="wizard-modal-img" alt="MR Wizard reaction" />
@@ -201,6 +214,7 @@
   <script src="js/session-timer.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/dashboard.js"></script>
+  <script src="js/study-date.js"></script>
   <script src="js/engine.js?v=20260701-data-logging"></script>
   <script src="js/reminders.js"></script>
   <script src="js/resources.js?v=20260630-strategy-map"></script>
