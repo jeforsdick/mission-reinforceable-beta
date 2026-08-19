@@ -220,25 +220,9 @@
     }
   }
 
-  function canUseStaticDemoFallback(gameFolder) {
-    const folder = String(gameFolder || '').trim().toLowerCase();
-    return folder === 'olson' || folder.startsWith('demo-');
-  }
-
   async function loadAssignedGame(assignment) {
     const protectedContent = await MR.auth.getGameContent(assignment.case.id);
-    if (protectedContent) {
-      return MR.loadProtectedGameContent(protectedContent, assignment.case);
-    }
-
-    if (canUseStaticDemoFallback(assignment.case.game_folder)) {
-      console.warn('Protected content row not found; using static fictional demo content.', {
-        caseCode: assignment.case.case_code,
-        gameFolder: assignment.case.game_folder
-      });
-      return MR.loadTeacher(assignment.case.game_folder);
-    }
-
+    if (protectedContent) return MR.loadProtectedGameContent(protectedContent, assignment.case);
     throw new Error('Protected game content is not configured for this participant. Please contact the research team.');
   }
 
@@ -270,6 +254,10 @@
       };
       MR.dailyMissionCompleted = assignment.qaMode ? false : await MR.auth.hasCompletedMissionToday();
       MR.onDailyMissionCompleted = () => {
+        renderHome();
+        MR.setScreen('home');
+      };
+      MR.onTelemetrySaveFailed = () => {
         renderHome();
         MR.setScreen('home');
       };

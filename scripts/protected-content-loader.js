@@ -40,6 +40,7 @@ function loadExecutableContent(sourceDirectory) {
 
   delete config.missionFiles;
   delete config.resourcesFile;
+  delete config.resultEndpoint;
   config.contentSource = 'supabase-protected';
   // Participant-facing protected content must never depend on authoring order.
   config.shuffleChoices = true;

@@ -16,7 +16,7 @@ Mission: Reinforceable is a static, multi-route web application with Supabase-ba
 | `/research-admin/` | Authenticated Research Admin operations. |
 | `/beta/` | Compatibility-only redirect to the public demo; not the current participant entry point. |
 
-Additional repository areas include `scripts/` for protected-content generation and validation, `docs/` for active and historical documentation, `assets/` for shared media, and `google-apps-script/` for a retained legacy integration.
+Additional repository areas include `scripts/` for protected-content generation and validation, `docs/` for active and historical documentation, and `assets/` for shared media.
 
 ## Three game modes
 
@@ -32,11 +32,9 @@ Additional repository areas include `scripts/` for protected-content generation 
 
 Research Admin can generate a QA-only preview using the shared game engine. Preview activity is explicitly QA data: it does not count as participant study data and does not activate participant or case access.
 
-## Legacy/static compatibility
+## Protected content and development fixtures
 
-The static teacher loader, `?teacher=...`, and `/game/teachers/<id>/` folders remain for legacy/static compatibility and authenticated/static fallback support. Their `localStorage` progress and optional Google Apps Script `resultEndpoint` logging are not the normal authenticated participant architecture. This compatibility implementation is retained unchanged and is under review for future retirement.
-
-Demo-2 and other public fixtures are fictional test/reference content. Real teacher, student, or BIP-derived content must never be committed. See [Private Content Build Workflow](docs/PRIVATE_CONTENT_BUILD_WORKFLOW.md) and the [Mission Authoring Standard](docs/MISSION_AUTHORING_STANDARD.md).
+Authenticated and QA gameplay require `case_game_content`; there is no public-folder fallback or URL-based content selection. `game/teachers/demo-2/` remains only as a fictional development/build fixture for validators and is never loaded by participant runtime. Real teacher, student, or BIP-derived content must never be committed. See [Private Content Build Workflow](docs/PRIVATE_CONTENT_BUILD_WORKFLOW.md) and the [Mission Authoring Standard](docs/MISSION_AUTHORING_STANDARD.md).
 
 ## Deployment
 

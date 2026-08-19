@@ -17,11 +17,6 @@ const fixtureFiles = [
   '../../demo-game/content/crisis-mission.js',
   '../../demo-game/content/resources.js'
 ];
-const legacyFixturePairs = [
-  ['../teachers/olson/content/daily-mission-1.js', '../../demo-game/content/daily-mission.js'],
-  ['../teachers/olson/content/wildcard-mission-1.js', '../../demo-game/content/wildcard-mission.js'],
-  ['../teachers/olson/content/crisis-mission-1.js', '../../demo-game/content/crisis-mission.js']
-];
 
 test('public demo directly loads its dedicated fixture without the legacy teacher loader', () => {
   assert.doesNotMatch(demoApp, /MR\.loadTeacher|teachers\/|['"]olson['"]/);
@@ -87,20 +82,16 @@ test('public demo fixture provides every current mission mode and Resource Map s
   ]);
 });
 
-test('public demo fixture preserves mission semantics while intentionally improving fictional Resource Map data', () => {
-  const withoutLeadingComment = source => source.replace(/^\/\*[\s\S]*?\*\/\s*/, '');
-  for (const [legacyPath, demoPath] of legacyFixturePairs) {
-    assert.equal(withoutLeadingComment(read(demoPath)), withoutLeadingComment(read(legacyPath)));
-  }
+test('public demo fixture remains a self-contained fictional Resource Map source', () => {
   const resourcesSource = read('../../demo-game/content/resources.js');
-  assert.notEqual(resourcesSource, read('../teachers/olson/content/resources.js'));
   assert.match(resourcesSource, /Jordan/);
   assert.doesNotMatch(resourcesSource, /resultEndpoint|script\.google\.com|supabase|participant|caseId|coachId/i);
 });
 
 test('authenticated game, participant telemetry, and QA Preview entry contracts remain present', () => {
   assert.match(gameHTML, /js\/auth\.js/);
-  assert.match(gameHTML, /js\/teacher-loader\.js/);
+  assert.match(gameHTML, /js\/protected-content\.js/);
+  assert.doesNotMatch(gameHTML, /js\/teacher-loader\.js/);
   assert.match(gameApp, /loadProtectedGameContent/);
   assert.match(auth, /supabase/i);
   assert.match(qaTest, /qaMode/);

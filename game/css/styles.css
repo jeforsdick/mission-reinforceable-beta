@@ -641,8 +641,7 @@ code { background: rgba(0,0,0,.28); padding: 2px 5px; border-radius: 4px; }
   justify-content: flex-start;
 }
 
-.wizard-modal[data-mode="feedback"] .wizard-modal-bubble,
-.wizard-modal[data-mode="surveySuccess"] .wizard-modal-bubble {
+.wizard-modal[data-mode="feedback"] .wizard-modal-bubble {
   justify-content: center;
 }
 
@@ -2026,8 +2025,7 @@ body {
   }
 
   .wizard-modal[data-mode="briefing"] .wizard-modal-bubble p,
-  .wizard-modal[data-mode="feedback"] .wizard-modal-bubble p,
-  .wizard-modal[data-mode="surveySuccess"] .wizard-modal-bubble p {
+  .wizard-modal[data-mode="feedback"] .wizard-modal-bubble p {
     max-height: calc(100dvh - 226px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -2063,8 +2061,7 @@ body {
   }
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-card,
-  .wizard-modal[data-mode="briefing"] .wizard-modal-card,
-  .wizard-modal[data-mode="surveySuccess"] .wizard-modal-card {
+  .wizard-modal[data-mode="briefing"] .wizard-modal-card {
     top: 50%;
     width: min(430px, calc(100vw - 20px));
     height: auto;
@@ -2072,8 +2069,7 @@ body {
   }
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-bubble,
-  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble,
-  .wizard-modal[data-mode="surveySuccess"] .wizard-modal-bubble {
+  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble {
     position: relative;
     width: 100%;
     height: auto;
@@ -2094,8 +2090,7 @@ body {
   }
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-bubble h2,
-  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble h2,
-  .wizard-modal[data-mode="surveySuccess"] .wizard-modal-bubble h2 {
+  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble h2 {
     color: #ffc54a;
     font-size: 20px;
     line-height: 1.08;
@@ -2104,8 +2099,7 @@ body {
   }
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-bubble p,
-  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble p,
-  .wizard-modal[data-mode="surveySuccess"] .wizard-modal-bubble p {
+  .wizard-modal[data-mode="briefing"] .wizard-modal-bubble p {
     max-height: calc(100dvh - 198px);
     color: #fff8d9;
     font: 700 15.5px/1.42 var(--mono);
@@ -2114,8 +2108,7 @@ body {
   }
 
   .wizard-modal[data-mode="welcome"] .wizard-modal-img,
-  .wizard-modal[data-mode="briefing"] .wizard-modal-img,
-  .wizard-modal[data-mode="surveySuccess"] .wizard-modal-img {
+  .wizard-modal[data-mode="briefing"] .wizard-modal-img {
     display: none;
   }
 

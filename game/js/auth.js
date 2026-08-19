@@ -199,7 +199,7 @@
           user,
           qaMode: true,
           participant: { id: row.participant_id, participant_code: row.participant_code, active: false },
-          case: { id: row.case_id, case_code: row.case_code, student_alias: row.student_alias, game_folder: row.game_folder, active: false }
+          case: { id: row.case_id, case_code: row.case_code, student_alias: row.student_alias, active: false }
         };
       }
       const participant = await activeParticipant(supabaseClient, user);

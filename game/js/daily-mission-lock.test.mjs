@@ -98,8 +98,8 @@ test('rejected concurrent completion creates no responses and enters same-day st
   const completionCall = engine.indexOf('completeParticipantMission(sessionId, updates)');
   const responseInsert = engine.indexOf('insertTelemetryResponses(responseRowsForTelemetry');
   assert.ok(completionCall >= 0 && responseInsert > completionCall);
-  assert.match(engine, /result === 'already_completed'[\s\S]*MR\.dailyMissionCompleted = true[\s\S]*return false/);
-  assert.match(engine, /telemetryResult === false\) return/);
+  assert.match(engine, /result === 'already_completed'[\s\S]*MR\.dailyMissionCompleted = true[\s\S]*return 'already_completed'/);
+  assert.match(engine, /telemetryResult === 'already_completed'\) return/);
 });
 
 test('QA completion remains direct and repeatable outside participant atomic RPC', () => {

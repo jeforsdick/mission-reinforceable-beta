@@ -130,7 +130,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       status: 'started'
     };
     return MR.auth.createTelemetrySession(sessionRow).then(() => true).catch(error => {
-      console.warn('Supabase telemetry session insert failed; gameplay and existing logging will continue.', error);
+      console.warn('Supabase telemetry session insert failed; mission completion will remain blocked.', error);
       return false;
     });
   }
@@ -174,7 +174,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const context = MR.telemetryContext;
     if (!context || !sessionId) return;
     const sessionCreated = await sessionInsertPromise;
-    if (!sessionCreated) return;
+    if (!sessionCreated) return false;
 
     try {
       const updates = {
@@ -200,7 +200,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         if (result === 'already_completed') {
           MR.dailyMissionCompleted = true;
           if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
-          return false;
+          return 'already_completed';
         }
       } else {
         await MR.auth.completeTelemetrySession(sessionId, context.participantId, context.caseId, updates);
@@ -218,9 +218,14 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       }
       return true;
     } catch (error) {
-      console.warn('Supabase telemetry session completion failed; gameplay and existing logging will continue.', error);
-      return null;
+      console.warn('Supabase telemetry session completion failed; mission completion was not recorded.', error);
+      return false;
     }
+  }
+
+  function showTelemetrySaveFailure() {
+    window.alert("We couldn't save this mission. Please check your connection and try again.");
+    if (typeof MR.onTelemetrySaveFailed === 'function') MR.onTelemetrySaveFailed();
   }
 
   function countSummaryForHistory(history) {
@@ -610,38 +615,6 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     modal.hidden = false;
   }
 
-  function showBetaSurveySuccessPopup() {
-    modalMode = 'surveySuccess';
-    const sprite = wizardSpriteForScore(10);
-    const modal = MR.$('#wizard-modal');
-    const img = MR.$('#wizard-modal-img');
-    modal.dataset.mode = 'surveySuccess';
-    MR.$('#wizard-modal-title').textContent = 'Quest Complete!';
-    hideRichFeedbackContent();
-    MR.$('#wizard-modal-text').textContent = 'Thank you for helping improve Mission: Reinforceable. Your beta survey was submitted successfully.';
-    img.src = sprite.src;
-    img.className = `wizard-modal-img ${sprite.cls}`;
-    MR.$('#wizard-modal-continue').textContent = 'Back to Results';
-    modal.hidden = false;
-  }
-
-  function showWelcomePopup() {
-    modalMode = 'welcome';
-    const sprite = wizardSpriteForScore(10);
-    const modal = MR.$('#wizard-modal');
-    const img = MR.$('#wizard-modal-img');
-    modal.dataset.mode = 'welcome';
-    MR.$('#wizard-modal-title').textContent = 'Welcome to Mission: Reinforceable Beta Testing!';
-    hideRichFeedbackContent();
-    MR.$('#wizard-modal-text').textContent = `Thank you for playtesting Mission: Reinforceable. Try a mission and notice what feels clear, confusing, fun, useful, or challenging.
-
-After the mission, tap the wizard on the Results screen to complete the beta survey.`;
-    img.src = sprite.src;
-    img.className = `wizard-modal-img ${sprite.cls}`;
-    MR.$('#wizard-modal-continue').textContent = 'Start Testing';
-    modal.hidden = false;
-  }
-
   function hideWizardFeedback() {
     const modal = MR.$('#wizard-modal');
     modal.hidden = true;
@@ -654,15 +627,6 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
       pendingEnding = null;
       modalMode = 'feedback';
       finishMission();
-      return;
-    }
-    if (modalMode === 'surveySuccess') {
-      modalMode = 'feedback';
-      MR.setScreen('results');
-      return;
-    }
-    if (modalMode === 'welcome') {
-      modalMode = 'feedback';
       return;
     }
     if (modalMode === 'briefing') {
@@ -878,99 +842,6 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     };
   }
 
-  function choiceLogForAppsScript(item, run) {
-    const selectedScore = scoreValue(item.selectedScore != null ? item.selectedScore : item.score);
-    const selectedType = item.selectedType || choiceTypeForScore(selectedScore);
-    const selectedAnswerText = item.selectedAnswerText || item.choiceText || '';
-    const bestAnswerText = item.bestAnswerText || item.bestChoiceText || '';
-    const feedbackText = item.feedbackText || item.feedback || item.wizard || '';
-
-    return {
-      sessionId: run.id,
-      teacherId: run.teacherId,
-      missionId: run.missionId,
-      stepIndex: item.stepIndex,
-      stepId: item.stepId,
-      scenarioTitle: item.scenarioTitle || run.missionTitle || '',
-      selectedAnswerText,
-      selectedScore,
-      selectedType,
-      isBestChoice: selectedScore === 10,
-      isReviewItem: selectedScore < 10,
-      hintOpened: Boolean(item.hintOpened),
-      hintOpenCount: Number(item.hintOpenCount || 0),
-      timeFromQuestionStartToHintMs: item.timeFromQuestionStartToHintMs != null ? item.timeFromQuestionStartToHintMs : null,
-      timeFromHintToAnswerMs: item.timeFromHintToAnswerMs != null ? item.timeFromHintToAnswerMs : null,
-      responseTimeMs: item.responseTimeMs != null ? item.responseTimeMs : null,
-      feedbackText,
-      bestAnswerText,
-
-      t: run.timestamp,
-      delta: selectedScore,
-      result_label: choiceLabelForType(selectedType),
-      nodeId: item.stepId || '',
-      choice: item.choiceKey || selectedAnswerText,
-      selected_answer: selectedAnswerText,
-      correct_answer: bestAnswerText,
-      wizard_feedback: feedbackText,
-      wizard_narration: item.wizard || '',
-      scenario_title: item.scenarioTitle || run.missionTitle || '',
-      scenario_text: item.context || item.prompt || '',
-      scene_text: item.context || item.prompt || '',
-      question_prompt: item.context || item.prompt || '',
-      mission_title: run.missionTitle || '',
-      mission_focus: run.missionFocus || '',
-      routine: run.routine || '',
-      function_pressure: Array.isArray(run.functionPressure) ? run.functionPressure.join(', ') : (run.functionPressure || ''),
-      bip_targets: Array.isArray(run.bipTargets) ? run.bipTargets.join(', ') : (run.bipTargets || '')
-    };
-  }
-
-  function missionRunPayload(run) {
-    const choices = (Array.isArray(run.history) ? run.history : []).map(item => choiceLogForAppsScript(item, run));
-    const session = {
-      sessionId: run.id,
-      timestamp: run.timestamp,
-      teacherId: run.teacherId,
-      teacherName: run.teacherName,
-      mode: run.mode,
-      modeLabel: run.modeLabel,
-      missionId: run.missionId,
-      missionTitle: run.missionTitle,
-      score: run.score,
-      maxScore: run.maxScore,
-      accuracy: run.accuracy,
-      durationSeconds: run.durationSeconds,
-      activeDurationSeconds: run.activeDurationSeconds,
-      totalQuestions: run.totalQuestions,
-      bestChoiceCount: run.bestChoiceCount,
-      refineChoiceCount: run.refineChoiceCount,
-      missedOpportunityCount: run.missedOpportunityCount,
-      missedReviewCount: run.missedReviewCount,
-      hintsUsed: run.hintsUsed,
-      totalHintsOpened: run.totalHintsOpened,
-      questionsWithHints: run.questionsWithHints,
-      hintUseRate: run.hintUseRate,
-      screenWidth: window.innerWidth,
-      screenHeight: window.innerHeight,
-      userAgent: navigator.userAgent
-    };
-
-    return Object.assign({}, run, {
-      action: 'missionRun',
-      session,
-      choices,
-      rawRun: run,
-      teacher_code: run.teacherId || '',
-      student: MR.teacherConfig.studentAlias || '',
-      session_id: run.id || '',
-      points: run.score,
-      max_possible: run.maxScore,
-      percent: run.accuracy,
-      log: choices
-    });
-  }
-
   async function finishMission() {
     const accuracy = current.maxScore ? Math.round((current.score / current.maxScore) * 100) : 0;
     const xp = behaviorXPFor(current.score, current.expectedSteps || 3, current.xpMax);
@@ -1024,302 +895,14 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     };
 
     const telemetryResult = await finishRelationalTelemetry(run, current.telemetrySessionId, current.telemetrySessionInsert);
-    if (telemetryResult === false) return;
-    MR.storage.saveRun(run);
-    sendRun(run);
+    if (telemetryResult === false) {
+      showTelemetrySaveFailure();
+      return;
+    }
+    if (telemetryResult === 'already_completed') return;
+    // Browser-local run history belongs only to unauthenticated public-demo gameplay.
+    if (!MR.telemetryContext) MR.storage.saveRun(run);
     renderResults(run);
-  }
-
-  function sendRun(run) {
-    const endpoint = MR.teacherConfig.resultEndpoint || '';
-    if (!endpoint || endpoint.includes('PASTE_')) {
-      console.info('Remote logging skipped because endpoint is blank');
-      return;
-    }
-    const payload = missionRunPayload(run);
-    console.info('Remote logging endpoint present');
-    console.info('Mission run payload', payload);
-    try {
-      console.info('Remote logging attempted');
-      // Apps Script receives this in no-cors mode, so the browser can only confirm
-      // that the request was sent, not that the spreadsheet write succeeded.
-      fetch(endpoint, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      }).catch(error => console.warn('Remote logging failed:', error));
-    } catch (error) {
-      console.warn('Remote logging failed:', error);
-    }
-  }
-
-  function ratingOptions() {
-    return '<option value="">Select</option>' + [1, 2, 3, 4, 5].map(value => `<option value="${value}">${value}</option>`).join('');
-  }
-
-  function surveyRating(name, label) {
-    const escapedName = MR.escapeHTML(name);
-    const options = [1, 2, 3, 4, 5].map(value => {
-      const id = `${escapedName}-${value}`;
-      return `
-        <label class="survey-rating-option" for="${id}">
-          <input id="${id}" type="radio" name="${escapedName}" value="${value}" />
-          <span>${value}</span>
-        </label>
-      `;
-    }).join('');
-
-    return `
-      <fieldset class="survey-rating">
-        <legend>${MR.escapeHTML(label)}</legend>
-        <div class="survey-rating-options">
-          ${options}
-        </div>
-      </fieldset>
-    `;
-  }
-
-  function selectOptions(options) {
-    return '<option value="">Select</option>' + options.map(option => `<option value="${MR.escapeHTML(option)}">${MR.escapeHTML(option)}</option>`).join('');
-  }
-
-  function surveySelect(name, label, optionsHTML, required = false) {
-    const requiredAttr = required ? ' required' : '';
-    return `
-      <p>
-        <label for="${name}"><strong>${MR.escapeHTML(label)}</strong></label><br />
-        <select id="${name}" name="${name}"${requiredAttr}>${optionsHTML}</select>
-      </p>
-    `;
-  }
-
-  function surveyTextarea(name, label) {
-    return `
-      <p>
-        <label for="${name}"><strong>${MR.escapeHTML(label)}</strong></label><br />
-        <textarea id="${name}" name="${name}" rows="3"></textarea>
-      </p>
-    `;
-  }
-
-  function surveyEmail(name, label, placeholder, helperText) {
-    return `
-      <p>
-        <label for="${name}"><strong>${MR.escapeHTML(label)}</strong></label><br />
-        <input id="${name}" name="${name}" type="email" placeholder="${MR.escapeHTML(placeholder)}" />
-        <small class="survey-helper">${MR.escapeHTML(helperText)}</small>
-      </p>
-    `;
-  }
-
-  function betaSurveyHTML() {
-    const roleOptions = selectOptions([
-      'General education teacher',
-      'Special education teacher',
-      'Behavior specialist / BCBA / school or district support personnel',
-      'Researcher/graduate student',
-      'Software/technology tester',
-      'Friend/family/community tester',
-      'Other'
-    ]);
-    const deviceOptions = selectOptions([
-      'Desktop/laptop',
-      'Phone',
-      'Tablet',
-      'I tried more than one device',
-      'Other'
-    ]);
-    const difficultyOptions = selectOptions(['Too easy', 'About right', 'Too hard', "I'm not sure"]);
-    const permissionOptions = selectOptions(['Yes', 'No']);
-
-    return `
-      <section id="beta-survey-section">
-        <h2>Beta Survey</h2>
-        <p>Thank you for playtesting Mission: Reinforceable. Your feedback will help improve the game before it is used in research. Please do not include real student names, school names, or identifying information.</p>
-        <p>For rating questions, use 1 = strongly disagree and 5 = strongly agree.</p>
-        <form id="beta-survey-form">
-          <h3>About You</h3>
-          ${surveySelect('testerRole', 'Which best describes you?', roleOptions)}
-          ${surveySelect('device_type', 'What device did you primarily use to test the beta?', deviceOptions, true)}
-          <h3>Playtest Ratings</h3>
-          ${surveyRating('understoodTask', 'I understood what to do without needing extra help. (1 = strongly disagree, 5 = strongly agree)')}
-          ${surveyRating('bipClear', "Jordan's plan was clear enough to use during the mission. (1 = strongly disagree, 5 = strongly agree)")}
-          ${surveyRating('choicesMadeMeThink', 'The choices made me think carefully, not just guess. (1 = strongly disagree, 5 = strongly agree)')}
-          ${surveyRating('feedbackHelpful', 'The wizard feedback helped me understand what to do differently. (1 = strongly disagree, 5 = strongly agree)')}
-          ${surveyRating('easyToNavigate', 'The game was easy to navigate. (1 = strongly disagree, 5 = strongly agree)')}
-          ${surveyRating('lookedPolished', 'The game was fun enough that I would want to play another mission. (1 = strongly disagree, 5 = strongly agree)')}
-          ${surveyRating('resourcesHelpful', "The Resources page or BIP Briefing helped me understand Jordan's plan. (1 = strongly disagree, 5 = strongly agree)")}
-          ${surveyRating('missedReviewHelpful', 'The Results or missed-answer review helped me understand what to improve. (1 = strongly disagree, 5 = strongly agree)')}
-          ${surveySelect('difficulty', 'How did the challenge level feel?', difficultyOptions)}
-          <h3>Open Feedback</h3>
-          ${surveyTextarea('confusingPart', 'Where, if anywhere, did you feel stuck, confused, or unsure what to do?')}
-          ${surveyTextarea('favoritePart', 'What did you like most about the game?')}
-          ${surveyTextarea('changeSuggestion', 'What would make the game more fun, useful, or challenging?')}
-          ${surveyTextarea('openComments', 'Anything else you want to share?')}
-          ${surveySelect('permissionToUseFeedback', 'May I use your anonymous feedback when describing beta testing or future revisions?', permissionOptions)}
-          ${surveyEmail('follow_up_email', 'If you are willing to answer follow-up questions if needed, you may leave your email here.', 'name@example.com', 'Optional. Leave blank if you prefer not to be contacted.')}
-          <p>
-            <button id="beta-survey-submit" class="pixel-btn green-btn" type="submit">Submit Beta Feedback</button>
-          </p>
-          <p id="beta-survey-status" aria-live="polite"></p>
-        </form>
-      </section>
-    `;
-  }
-
-  function betaSurveyPayload(run, form) {
-    const data = new FormData(form);
-    const history = Array.isArray(run.history) ? run.history : [];
-    const scores = history.map(item => scoreValue(item.score));
-    const hintSummary = hintSummaryForHistory(history);
-    const countSummary = countSummaryForHistory(history);
-
-    return {
-      action: 'betaSurvey',
-      timestamp: new Date().toISOString(),
-      sessionId: run.id,
-      teacherId: run.teacherId,
-      teacherName: run.teacherName,
-      mode: run.mode,
-      modeLabel: run.modeLabel,
-      missionId: run.missionId,
-      missionTitle: run.missionTitle,
-      score: run.score,
-      maxScore: run.maxScore,
-      accuracy: run.accuracy,
-      durationSeconds: run.durationSeconds,
-      activeDurationSeconds: run.activeDurationSeconds,
-      testerRole: data.get('testerRole') || '',
-      device_type: data.get('device_type') || '',
-      understoodTask: data.get('understoodTask') || '',
-      bipClear: data.get('bipClear') || '',
-      choicesMadeMeThink: data.get('choicesMadeMeThink') || '',
-      feedbackHelpful: data.get('feedbackHelpful') || '',
-      easyToNavigate: data.get('easyToNavigate') || '',
-      lookedPolished: data.get('lookedPolished') || '',
-      difficulty: data.get('difficulty') || '',
-      branchingClear: data.get('branchingClear') || '',
-      resourcesEasyToFind: data.get('resourcesEasyToFind') || '',
-      resourcesShortEnough: data.get('resourcesShortEnough') || '',
-      resourcesHelpful: data.get('resourcesHelpful') || '',
-      progressHelpful: data.get('progressHelpful') || '',
-      missedReviewHelpful: data.get('missedReviewHelpful') || '',
-      confusingPart: data.get('confusingPart') || '',
-      favoritePart: data.get('favoritePart') || '',
-      changeSuggestion: data.get('changeSuggestion') || '',
-      openComments: data.get('openComments') || '',
-      permissionToUseFeedback: data.get('permissionToUseFeedback') || '',
-      follow_up_email: data.get('follow_up_email') || '',
-      screenWidth: window.innerWidth,
-      screenHeight: window.innerHeight,
-      userAgent: navigator.userAgent,
-      choiceHistory: history,
-      scoreHistory: scores,
-      branchPath: history.map(item => item.stepId),
-      hintsUsed: run.hintsUsed != null ? run.hintsUsed : hintSummary.hintsUsed,
-      totalHintsOpened: run.totalHintsOpened != null ? run.totalHintsOpened : hintSummary.totalHintsOpened,
-      questionsWithHints: run.questionsWithHints != null ? run.questionsWithHints : hintSummary.questionsWithHints,
-      hintUseRate: run.hintUseRate != null ? run.hintUseRate : hintSummary.hintUseRate,
-      perQuestionHintData: JSON.stringify(run.perQuestionHintData || hintSummary.perQuestionHintData),
-      totalQuestions: run.totalQuestions != null ? run.totalQuestions : countSummary.totalQuestions,
-      bestChoiceCount: run.bestChoiceCount != null ? run.bestChoiceCount : countSummary.bestChoiceCount,
-      refineChoiceCount: run.refineChoiceCount != null ? run.refineChoiceCount : countSummary.refineChoiceCount,
-      missedOpportunityCount: run.missedOpportunityCount != null ? run.missedOpportunityCount : countSummary.missedOpportunityCount,
-      missedReviewCount: run.missedReviewCount != null ? run.missedReviewCount : countSummary.missedReviewCount,
-      neutralChoiceCount: run.refineChoiceCount != null ? run.refineChoiceCount : countSummary.refineChoiceCount,
-      incorrectChoiceCount: run.missedOpportunityCount != null ? run.missedOpportunityCount : countSummary.missedOpportunityCount,
-      correctChoiceCount: run.bestChoiceCount != null ? run.bestChoiceCount : countSummary.bestChoiceCount
-    };
-  }
-
-  function submitBetaSurvey(run, form, status, button) {
-    const endpoint = MR.teacherConfig.resultEndpoint || '';
-    if (!endpoint || endpoint.includes('PASTE_')) {
-      console.info('Remote logging skipped because endpoint is blank');
-      status.textContent = 'Something went wrong and your survey was not submitted. Please check your connection and try again.';
-      return;
-    }
-
-    button.disabled = true;
-    status.textContent = 'Submitting beta feedback...';
-
-    const payload = betaSurveyPayload(run, form);
-    console.info('Remote logging endpoint present');
-    console.info('Beta survey payload', payload);
-
-    console.info('Remote logging attempted');
-    // Apps Script receives this in no-cors mode, so the browser can only confirm
-    // that the request was sent, not that the spreadsheet write succeeded.
-    fetch(endpoint, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    }).then(() => {
-      button.disabled = false;
-      status.textContent = '';
-      showBetaSurveySuccessPopup();
-    }).catch(error => {
-      console.warn('Beta survey submission failed:', error);
-      button.disabled = false;
-      status.textContent = 'Something went wrong and your survey was not submitted. Please check your connection and try again.';
-    });
-  }
-
-  function wireBetaSurvey(run) {
-    const form = MR.$('#beta-survey-form');
-    if (!form) return;
-    const status = MR.$('#beta-survey-status');
-    const button = MR.$('#beta-survey-submit');
-    form.addEventListener('submit', event => {
-      event.preventDefault();
-      if (!form.checkValidity()) {
-        form.reportValidity();
-        return;
-      }
-      submitBetaSurvey(run, form, status, button);
-    });
-  }
-
-  function renderBetaSurveyScreen(run) {
-    const root = MR.$('#survey-content');
-    if (!root || !run) return;
-
-    root.innerHTML = `
-      <p><button id="survey-back-results" class="pixel-btn brown-btn" type="button">Back to Results</button></p>
-      ${betaSurveyHTML()}
-    `;
-    console.info('Rendering beta survey device/email v4');
-    const backButton = MR.$('#survey-back-results');
-    if (backButton) backButton.addEventListener('click', () => MR.setScreen('results'));
-    wireBetaSurvey(run);
-    MR.setScreen('survey');
-  }
-
-  function wireResultsSurveyInvite(run) {
-    const targets = [
-      MR.$('.results-wizard-note'),
-      MR.$('.results-wizard-note img'),
-      MR.$('.results-wizard-note .small-result-bubble')
-    ].filter(Boolean);
-    if (!targets.length) return;
-
-    targets.forEach(target => {
-      target.addEventListener('click', () => {
-        playAudioCue('click', 0.24);
-        renderBetaSurveyScreen(run);
-      });
-    });
-
-    const note = MR.$('.results-wizard-note');
-    if (!note) return;
-    note.addEventListener('keydown', event => {
-      if (event.key !== 'Enter' && event.key !== ' ') return;
-      event.preventDefault();
-      playAudioCue('click', 0.24);
-      renderBetaSurveyScreen(run);
-    });
   }
 
   function renderResults(run, options = {}) {
@@ -1337,7 +920,6 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
 
     MR.$('#results-content').innerHTML = mobileResultsHTML(run, summary);
     updateResultsWizard(run);
-    wireResultsSurveyInvite(run);
     if (shouldPlayCompletion) {
       playAudioCue(summary.level === 'perfect' ? 'correct' : 'missionStart', summary.level === 'perfect' ? 0.26 : 0.18);
     }
@@ -1399,8 +981,6 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     },
 
     continueAfterFeedback,
-
-    showWelcomePopup,
 
     showStoredRunDetails(run) {
       renderResults(run, { playCompletion: false });

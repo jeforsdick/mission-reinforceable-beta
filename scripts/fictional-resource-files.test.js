@@ -14,8 +14,8 @@ function loadResource(relativePath) {
 }
 
 for (const [name, relativePath] of [
-  ['Demo-2', 'game/teachers/demo-2/content/resources.js'],
-  ['Olson', 'game/teachers/olson/content/resources.js']
+  ['Demo-2 development fixture', 'game/teachers/demo-2/content/resources.js'],
+  ['Public demo fixture', 'demo-game/content/resources.js']
 ]) {
   test(`${name} fictional resources pass canonical resource-content validation`, () => {
     const resources = loadResource(relativePath);

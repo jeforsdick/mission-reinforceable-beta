@@ -1,3 +1,4 @@
+// DEVELOPMENT / FICTIONAL BUILD FIXTURE. Never use as participant runtime fallback.
 window.MR_TEACHER_CONFIG = {
   teacherId: 'demo-2',
   displayName: 'Demo Classroom 2',
@@ -8,7 +9,6 @@ window.MR_TEACHER_CONFIG = {
   missionSteps: 5,
   shuffleChoices: true,
 
-  resultEndpoint: 'https://script.google.com/macros/s/AKfycbwF2bFu7_NKzgQGEpIhfcJ9MsXa3UiE_y3BtYakx_vAHPHR-17iyg9-w0fKbvc17zCH/exec',
 
   growthFocus: 'Offer two safe choices, prompt the replacement response early, and reinforce the first appropriate step.',
   xpMax: 1000,

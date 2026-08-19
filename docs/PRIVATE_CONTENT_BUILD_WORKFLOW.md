@@ -31,7 +31,7 @@ Supabase; public `/demo/` and `/demo-game/` use fictional sample content.
 
 ## External directory contract
 
-Use the same executable contract as a public fictional teacher folder:
+Use this private executable authoring contract; it is build input only and is never served by participant runtime:
 
 ```text
 /srv/approved-private-content/CASE-EXAMPLE-001/
@@ -42,7 +42,7 @@ Use the same executable contract as a public fictional teacher folder:
     daily-mission-1.js
 ```
 
-`config.js` sets `window.MR_TEACHER_CONFIG.missionFiles` and `resourcesFile`. Files execute in the existing Node VM sandbox. The generated config removes those executable-file fields, sets `contentSource` to `supabase-protected`, and does not require `game_folder`.
+`config.js` sets `window.MR_TEACHER_CONFIG.missionFiles` and `resourcesFile`. Files execute in the existing Node VM sandbox. The generated config removes those executable-file fields and `resultEndpoint`, sets `contentSource` to `supabase-protected`, and does not require a public folder identifier.
 
 For dissertation participant builds, `config.js` must also contain a protected, case-specific `weeklyTeacherReport` object with substantive `targetBehavior`, `replacementBehavior`, and `targetRoutine` strings. Use only approved aliases and minimum-necessary descriptions, never a student full name. These labels remain inside the existing protected `case_game_content.config` payload. Fictional demos and legacy QA content may omit them and receive generic runtime wording.
 
