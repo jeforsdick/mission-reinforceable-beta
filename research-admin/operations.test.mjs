@@ -51,7 +51,8 @@ assert.match(enrollment,/Research data collection still waits for required permi
 assert.match(renderedOperations,/id="record-observation-form"[\s\S]*Record Observation/);
 assert.match(renderedOperations,/Baseline assignment is locked once baseline begins|Baseline assignment/);
 assert.ok(renderedOperations.indexOf('TSES — Post-Intervention')<renderedOperations.indexOf('id="operations-maintenance"'));
-assert.match(renderedOperations,/Phase Decision[\s\S]*Research Admin never changes phases automatically[\s\S]*Record Phase Change/);
+assert.ok(renderedOperations.indexOf('id="operations-phase-decision"')>renderedOperations.indexOf('id="operations-overview"'));assert.ok(renderedOperations.indexOf('id="operations-phase-decision"')<renderedOperations.indexOf('id="operations-enrollment"'));
+assert.doesNotMatch(renderedOperations,/Make a deliberate researcher decision|Research Admin never changes phases automatically\./);assert.match(renderedOperations,/Phase Decision[\s\S]*Record Phase Change[\s\S]*Phase History/);
 assert.match(renderedOperations,/Case History[\s\S]*append-only history/);
 assert.doesNotMatch(js+ui,/research_admin_swap_case_protocol_positions|protocol-swap-form|Swap Baseline Assignments|Swap Positions/);
 assert.match(ui,/class="inline-record measure-form"/);assert.match(ui,/external_reference/);assert.match(js,/Completion date is required/);
