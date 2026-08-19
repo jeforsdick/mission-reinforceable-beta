@@ -177,6 +177,9 @@
     });
     MR.$('#nav-resources').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
+      MR.auth.recordResourceEvent('resources_opened').catch(error => {
+        console.warn('Resource Map usage telemetry could not be saved.', error);
+      });
       MR.resources.render();
       MR.setScreen('resources');
     });

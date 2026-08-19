@@ -120,6 +120,21 @@
     if (error) throw new Error(`Unable to save gameplay telemetry responses: ${error.message}`);
   }
 
+  async function recordResourceEvent(eventName, sectionKey = null) {
+    const context = MR.telemetryContext;
+    if (!context || !context.participantId || !context.caseId) return false;
+    const { error } = await client().from('game_resource_events').insert({
+      participant_id: context.participantId,
+      case_id: context.caseId,
+      event_name: eventName,
+      section_key: sectionKey,
+      game_content_version: context.gameContentVersion,
+      qa_mode: context.qaMode === true
+    });
+    if (error) throw new Error(`Unable to save Resource Map usage telemetry: ${error.message}`);
+    return true;
+  }
+
   async function completeTelemetrySession(sessionId, participantId, caseId, updates) {
     const { data, error } = await client()
       .from('game_sessions')
@@ -218,6 +233,8 @@
     createTelemetrySession,
 
     insertTelemetryResponses,
+
+    recordResourceEvent,
 
     completeTelemetrySession,
 

@@ -29,7 +29,7 @@ function resources(blocks = [{ type: 'paragraph', text: 'Plan text.' }]) {
   return { schemaVersion: 1, sections: Object.fromEntries(Object.entries(TITLES).map(([key, title]) => [key, { title, blocks }])) };
 }
 
-function setup(data = resources()) {
+function setup(data = resources(), telemetryContext = null, recordResourceEvent = null) {
   const title = new Element('h1');
   const content = new Element();
   const back = new Element('button');
@@ -37,8 +37,12 @@ function setup(data = resources()) {
     const button = new Element('button'); button.dataset.resourceSection = key; return button;
   });
   const bySelector = { '#resources-title': title, '#resources-content': content, '#back-to-bip': back };
-  const MR = { resourcesData: data, $: selector => bySelector[selector], $$: selector => selector === '.map-hotspot' ? hotspots : [] };
-  const context = { window: { MR }, document: { createElement: tag => new Element(tag) } };
+  const MR = {
+    resourcesData: data, telemetryContext,
+    auth: recordResourceEvent ? { recordResourceEvent } : undefined,
+    $: selector => bySelector[selector], $$: selector => selector === '.map-hotspot' ? hotspots : []
+  };
+  const context = { window: { MR }, document: { createElement: tag => new Element(tag) }, console };
   vm.runInNewContext(source, context);
   return { MR, title, content, back, hotspots };
 }
@@ -110,4 +114,38 @@ test('hotspot active state and Back to BIP behavior remain wired', () => {
   assert.equal(view.title.textContent, 'BIP at a Glance');
   assert.equal(prevention.attributes['aria-pressed'], 'false');
   assert.equal(view.back.hidden, true);
+});
+
+test('intentional hotspot and Back to BIP clicks record every navigation', () => {
+  const events = [];
+  const view = setup(resources(), { participantId: 'participant', caseId: 'case' }, async (...event) => { events.push(event); });
+  view.MR.resources.render();
+  const replacement = view.hotspots.find(button => button.dataset.resourceSection === 'replacement');
+  replacement.click();
+  view.back.click();
+  replacement.click();
+  assert.deepEqual(events, [
+    ['resource_section_opened', 'replacement'],
+    ['resource_section_opened', 'bip'],
+    ['resource_section_opened', 'replacement']
+  ]);
+});
+
+test('rendering alone and public demo navigation do not record remote events', () => {
+  let calls = 0;
+  const view = setup(resources(), null, async () => { calls += 1; });
+  view.MR.resources.render();
+  view.MR.resources.renderResourceSection('prevention');
+  view.hotspots[0].click();
+  assert.equal(calls, 0);
+  assert.equal(view.title.textContent, TITLES[view.hotspots[0].dataset.resourceSection]);
+});
+
+test('failed section telemetry never prevents the selected resource from rendering', async () => {
+  const view = setup(resources(), { participantId: 'participant', caseId: 'case' }, async () => { throw new Error('offline'); });
+  view.MR.resources.render();
+  const prevention = view.hotspots.find(button => button.dataset.resourceSection === 'prevention');
+  prevention.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(view.title.textContent, 'Prevention Palace');
 });
