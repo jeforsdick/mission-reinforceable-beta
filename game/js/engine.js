@@ -459,7 +459,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       timeFromQuestionStartToHintMs: null
     };
     wireWizardHintTrigger();
-    MR.$('#scenario-text').innerHTML = scenarioHTML(step.text || '');
+    const scenarioText = MR.$('#scenario-text');
+    scenarioText.innerHTML = scenarioHTML(step.text || '');
+    if (MR.scenarioFit) MR.scenarioFit.fitScenarioText(scenarioText);
     renderWizardHint();
     const choices = getChoiceArray(step);
     MR.$('#choice-list').innerHTML = choices.map(choice => `
@@ -1341,6 +1343,8 @@ After the mission, tap the wizard on the Results screen to complete the beta sur
     }
     MR.setScreen('results');
   }
+
+  if (MR.scenarioFit) MR.scenarioFit.watchScenarioTextFit(MR.$('#scenario-text'));
 
   MR.engine = {
     async start(mode) {

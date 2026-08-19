@@ -87,12 +87,15 @@ test('public demo fixture provides every current mission mode and Resource Map s
   ]);
 });
 
-test('public demo fixture preserves the pre-cleanup mission semantics and Resource Map data', () => {
+test('public demo fixture preserves mission semantics while intentionally improving fictional Resource Map data', () => {
   const withoutLeadingComment = source => source.replace(/^\/\*[\s\S]*?\*\/\s*/, '');
   for (const [legacyPath, demoPath] of legacyFixturePairs) {
     assert.equal(withoutLeadingComment(read(demoPath)), withoutLeadingComment(read(legacyPath)));
   }
-  assert.equal(read('../../demo-game/content/resources.js'), read('../teachers/olson/content/resources.js'));
+  const resourcesSource = read('../../demo-game/content/resources.js');
+  assert.notEqual(resourcesSource, read('../teachers/olson/content/resources.js'));
+  assert.match(resourcesSource, /Jordan/);
+  assert.doesNotMatch(resourcesSource, /resultEndpoint|script\.google\.com|supabase|participant|caseId|coachId/i);
 });
 
 test('authenticated game, participant telemetry, and QA Preview entry contracts remain present', () => {
