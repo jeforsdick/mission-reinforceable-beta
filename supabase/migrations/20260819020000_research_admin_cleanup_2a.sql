@@ -106,19 +106,24 @@ returns jsonb language plpgsql stable security definer set search_path='' as $$ 
  return result;
 end $$;
 
--- Revoke API access before removing retired RPCs. Exact signatures avoid overload ambiguity.
-revoke all on function public.research_admin_submit_mission_bank_comparability_review(uuid, integer, jsonb, text, boolean) from public, anon, authenticated;
+-- Remove retired RPCs. DROP FUNCTION removes their grants and tolerates installations
+-- where a retired wrapper was never created.
 drop function if exists public.research_admin_submit_mission_bank_comparability_review(uuid, integer, jsonb, text, boolean);
 
-revoke all on function public.research_admin_swap_case_protocol_positions(uuid, uuid) from public, anon, authenticated;
 drop function if exists public.research_admin_swap_case_protocol_positions(uuid, uuid);
 
-revoke all on function public.research_admin_record_classroom_observation(uuid, date, uuid, jsonb, jsonb, uuid, time, time, text, text) from public, anon, authenticated;
 drop function if exists public.research_admin_record_classroom_observation(uuid, date, uuid, jsonb, jsonb, uuid, time, time, text, text);
 
 -- The comparability table has no remaining function/view dependencies. Remove its
 -- table-local policy and index explicitly rather than using CASCADE.
-drop policy if exists "Research admins read comparability reviews" on public.mission_bank_comparability_reviews;
+do $$
+begin
+  if to_regclass('public.mission_bank_comparability_reviews') is not null then
+    drop policy if exists "Research admins read comparability reviews" on public.mission_bank_comparability_reviews;
+    revoke all on table public.mission_bank_comparability_reviews from public, anon, authenticated;
+  end if;
+end;
+$$;
+
 drop index if exists public.mission_bank_comparability_reviews_lookup;
-revoke all on table public.mission_bank_comparability_reviews from public, anon, authenticated;
 drop table if exists public.mission_bank_comparability_reviews;
