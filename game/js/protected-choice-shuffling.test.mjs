@@ -67,13 +67,17 @@ assert.deepEqual(
   'non-protected configs can retain existing unshuffled demo behavior'
 );
 
-const loaderSource = fs.readFileSync(new URL('./teacher-loader.js', import.meta.url), 'utf8');
+const loaderSource = fs.readFileSync(new URL('./protected-content.js', import.meta.url), 'utf8');
 const loaderContext = browserContext({});
 vm.runInContext(loaderSource, loaderContext);
 const protectedResult = await loaderContext.MR.loadProtectedGameContent({
-  config: { shuffleChoices: false },
+  config: { shuffleChoices: false, missionFiles: ['bad.js'], resourcesFile: 'bad.js', resultEndpoint: 'https://example.test' },
   daily_missions: [{ id: 'protected-mission' }]
-}, { game_folder: 'case-folder' });
+}, { case_code: 'CASE-001' });
 assert.equal(protectedResult.config.shuffleChoices, true, 'protected runtime overrides legacy unsafe payloads');
+assert.equal(protectedResult.config.teacherId, 'CASE-001');
+assert.equal(protectedResult.config.resultEndpoint, undefined);
+assert.equal(protectedResult.config.missionFiles, undefined);
+assert.equal(protectedResult.config.resourcesFile, undefined);
 
 console.log('protected choice shuffling tests passed');

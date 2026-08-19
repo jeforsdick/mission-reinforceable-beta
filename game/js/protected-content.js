@@ -2,17 +2,13 @@
   'use strict';
 
   const MR = window.MR = window.MR || {};
-  const TEACHER_CONTENT_VERSION = '20260701-data-logging';
-
   const DEFAULT_CONFIG = {
-    teacherId: 'olson',
-    displayName: 'Beta Classroom',
-    classroomLabel: 'Beta Classroom',
+    displayName: 'Mission: Reinforceable',
+    classroomLabel: 'Participant Mission',
     studentAlias: 'Student',
     defaultHearts: 5,
     missionSteps: 5,
-    shuffleChoices: false,
-    resultEndpoint: '',
+    shuffleChoices: true,
     growthFocus: 'Keep prompts brief, private, and tied to the next safe classroom step.',
     xpMax: 1000,
     xpMultiplier: 5,
@@ -41,124 +37,55 @@
       actionHigh: '<ul><li>Keep using private pre-correction before predictable triggers.</li><li>Prompt the replacement behavior before refusal becomes public.</li><li>Reinforce the first small step back into instruction, peers, or routines.</li></ul>',
       actionMid: '<ul><li>Shift from general encouragement to one observable first action.</li><li>Make sure breaks, help, or choices include a clear return-to-routine step.</li><li>Move reinforcement closer to the exact behavior the BIP is trying to build.</li></ul>',
       actionLow: '<ul><li>Reduce public correction, threats, and extended explanations during activation.</li><li>Do not remove the student from the task or peer routine unless safety requires it.</li><li>Return to the sequence: prevent, prompt replacement, reinforce re-entry, then problem solve later.</li></ul>'
-    },
-    resourcesFile: '',
-    missionFiles: []
+    }
   };
+  const LEGACY_CONFIG_FIELDS = ['missionFiles', 'resourcesFile', 'resultEndpoint'];
 
   function deepMerge(base, override) {
     const result = Array.isArray(base) ? base.slice() : Object.assign({}, base);
     Object.entries(override || {}).forEach(([key, value]) => {
       if (value && typeof value === 'object' && !Array.isArray(value) && base && typeof base[key] === 'object' && !Array.isArray(base[key])) {
         result[key] = deepMerge(base[key], value);
-      } else {
-        result[key] = value;
-      }
+      } else result[key] = value;
     });
     return result;
   }
 
-  function resetRuntime() {
-    window.POOL = { daily: [], wild: [], crisis: [] };
-    window.GAME_CONFIG = {};
-    window.MR_TEACHER_CONFIG = null;
-    window.MR_RESOURCES = null;
-  }
-
-  function applyTeacherConfig(rawConfig, teacherId, folder) {
-    const teacherConfig = deepMerge(DEFAULT_CONFIG, rawConfig || {});
-    teacherConfig.teacherId = teacherConfig.teacherId || teacherId || 'protected';
-    teacherConfig.folder = folder || null;
-    MR.teacherConfig = teacherConfig;
-
-    window.GAME_CONFIG = Object.assign(window.GAME_CONFIG || {}, {
-      resultEndpoint: teacherConfig.resultEndpoint || '',
-      defaultStudent: teacherConfig.studentAlias || 'Student',
-      fidelityHigh: teacherConfig.feedback.high,
-      fidelityMid: teacherConfig.feedback.mid,
-      fidelityLow: teacherConfig.feedback.low,
-      actionHigh: teacherConfig.feedback.actionHigh,
-      actionMid: teacherConfig.feedback.actionMid,
-      actionLow: teacherConfig.feedback.actionLow
-    });
-
-    return teacherConfig;
-  }
-
-  MR.getTeacherIdFromURL = function getTeacherIdFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    const fromQuery = params.get('teacher');
-    if (fromQuery) return MR.slug(fromQuery);
-    const pathParts = window.location.pathname.split('/').filter(Boolean);
-    const teacherIndex = pathParts.indexOf('teachers');
-    if (teacherIndex >= 0 && pathParts[teacherIndex + 1]) return MR.slug(pathParts[teacherIndex + 1]);
-    return 'olson';
-  };
-
-  MR.loadTeacher = async function loadTeacher(teacherId) {
-    resetRuntime();
-    if (MR.telemetryContext) MR.telemetryContext.gameContentVersion = null;
-
-    const folder = `teachers/${teacherId}`;
-    await MR.loadScript(`${folder}/config.js?v=${TEACHER_CONTENT_VERSION}`);
-
-    const teacherConfig = applyTeacherConfig(window.MR_TEACHER_CONFIG || {}, teacherId, folder);
-
-    for (const file of teacherConfig.missionFiles || []) {
-      const src = file.startsWith('http') || file.startsWith('/') ? file : `${folder}/${file}`;
-      await MR.loadScript(src);
-    }
-
-    if (teacherConfig.resourcesFile) {
-      const src = teacherConfig.resourcesFile.startsWith('http') || teacherConfig.resourcesFile.startsWith('/')
-        ? teacherConfig.resourcesFile
-        : `${folder}/${teacherConfig.resourcesFile}`;
-      await MR.loadScript(src);
-    }
-
-    MR.pool = window.POOL || { daily: [], wild: [], crisis: [] };
-    MR.resourcesData = window.MR_RESOURCES || null;
-    return { config: teacherConfig, pool: MR.pool };
-  };
-
   MR.loadProtectedGameContent = async function loadProtectedGameContent(content, caseAssignment) {
-    resetRuntime();
+    if (!content || typeof content !== 'object') throw new Error('Protected game content is missing or invalid. Please contact the research team.');
+    const caseCode = String(caseAssignment && caseAssignment.case_code || '').trim();
+    if (!caseCode) throw new Error('Protected game content requires a case identifier. Please contact the research team.');
 
-    if (!content || typeof content !== 'object') {
-      throw new Error('Protected game content is missing or invalid. Please contact the research team.');
-    }
+    const rawConfig = Object.assign({}, content.config || {});
+    LEGACY_CONFIG_FIELDS.forEach(field => delete rawConfig[field]);
+    rawConfig.shuffleChoices = true;
+    const config = deepMerge(DEFAULT_CONFIG, rawConfig);
+    config.teacherId = caseCode;
+
+    const daily = Array.isArray(content.daily_missions) ? content.daily_missions : [];
+    const wild = Array.isArray(content.wildcard_missions) ? content.wildcard_missions : [];
+    const crisis = Array.isArray(content.crisis_missions) ? content.crisis_missions : [];
+    if (!daily.length && !wild.length && !crisis.length) throw new Error('No protected missions are configured for this case. Please contact the research team.');
 
     if (MR.telemetryContext) {
       const version = content.version == null || content.version === '' ? null : Number(content.version);
       MR.telemetryContext.gameContentVersion = Number.isInteger(version) ? version : null;
     }
-
-    const rawConfig = Object.assign({}, content.config || {});
-    // Protected content is data, not a list of public scripts. Ignore any static-file fields.
-    rawConfig.missionFiles = [];
-    rawConfig.resourcesFile = '';
-    // Enforce the protected participant invariant even for payloads built before
-    // the protected-content pipeline normalized this setting.
-    rawConfig.shuffleChoices = true;
-
-    const teacherId = rawConfig.teacherId || (caseAssignment && caseAssignment.game_folder) || 'protected';
-    const teacherConfig = applyTeacherConfig(rawConfig, teacherId, null);
-
-    const daily = Array.isArray(content.daily_missions) ? content.daily_missions : [];
-    const wild = Array.isArray(content.wildcard_missions) ? content.wildcard_missions : [];
-    const crisis = Array.isArray(content.crisis_missions) ? content.crisis_missions : [];
-
     window.POOL = { daily, wild, crisis };
     window.MR_RESOURCES = content.resources || null;
+    MR.teacherConfig = config;
     MR.pool = window.POOL;
     MR.resourcesData = window.MR_RESOURCES;
-
-    const missionCount = daily.length + wild.length + crisis.length;
-    if (!missionCount) {
-      throw new Error('No protected missions are configured for this case. Please contact the research team.');
-    }
-
-    return { config: teacherConfig, pool: MR.pool };
+    window.GAME_CONFIG = {
+      defaultStudent: config.studentAlias || 'Student',
+      fidelityHigh: config.feedback.high,
+      fidelityMid: config.feedback.mid,
+      fidelityLow: config.feedback.low,
+      actionHigh: config.feedback.actionHigh,
+      actionMid: config.feedback.actionMid,
+      actionLow: config.feedback.actionLow
+    };
+    return { config, pool: MR.pool };
   };
 
   MR.asset = function asset(name) {
