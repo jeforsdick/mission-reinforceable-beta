@@ -22,7 +22,7 @@ Additional repository areas include `scripts/` for protected-content generation 
 
 ### Public demo
 
-`/demo/` and `/demo-game/` use fictional sample content and the shared game engine. They require no participant study account. Demo progress may use browser `localStorage`; it is not participant study data.
+`/demo/` and `/demo-game/` use fictional sample content and the shared game engine. The playable demo loads its dedicated fixture from `demo-game/content/` directly and does not use the legacy teacher-folder loader. They require no participant study account. Demo progress may use browser `localStorage`; it is not participant study data.
 
 ### Authenticated participant game
 
@@ -34,7 +34,7 @@ Research Admin can generate a QA-only preview using the shared game engine. Prev
 
 ## Legacy/static compatibility
 
-The static teacher loader, `?teacher=...`, and `/game/teachers/<id>/` folders remain for legacy/static compatibility and public/demo/fallback support. Their `localStorage` progress and optional Google Apps Script `resultEndpoint` logging are not the normal authenticated participant architecture. This compatibility implementation is retained unchanged and is under review for future retirement.
+The static teacher loader, `?teacher=...`, and `/game/teachers/<id>/` folders remain for legacy/static compatibility and authenticated/static fallback support. Their `localStorage` progress and optional Google Apps Script `resultEndpoint` logging are not the normal authenticated participant architecture. This compatibility implementation is retained unchanged and is under review for future retirement.
 
 Demo-2 and other public fixtures are fictional test/reference content. Real teacher, student, or BIP-derived content must never be committed. See [Private Content Build Workflow](docs/PRIVATE_CONTENT_BUILD_WORKFLOW.md) and the [Mission Authoring Standard](docs/MISSION_AUTHORING_STANDARD.md).
 
