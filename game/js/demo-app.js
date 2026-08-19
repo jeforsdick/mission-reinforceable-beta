@@ -18,6 +18,47 @@
   let audioReady = false;
   const sfx = {};
   const activeSfx = new Set();
+  const DEMO_FIXTURE_SCRIPTS = [
+    '../demo-game/content/config.js',
+    '../demo-game/content/daily-mission.js',
+    '../demo-game/content/wildcard-mission.js',
+    '../demo-game/content/crisis-mission.js',
+    '../demo-game/content/resources.js'
+  ];
+
+  async function loadPublicDemoFixture() {
+    window.POOL = { daily: [], wild: [], crisis: [] };
+    window.MR_PUBLIC_DEMO_CONFIG = null;
+    window.MR_RESOURCES = null;
+
+    for (const script of DEMO_FIXTURE_SCRIPTS) await MR.loadScript(script);
+
+    const config = window.MR_PUBLIC_DEMO_CONFIG;
+    const pool = window.POOL;
+    if (!config || config.fictional !== true || config.fixtureId !== 'fictional-public-demo') {
+      throw new Error('The fictional public demo configuration is missing or invalid.');
+    }
+    if (config.resultEndpoint) throw new Error('The public demo cannot use a remote result endpoint.');
+    if (!pool.daily.length || !pool.wild.length || !pool.crisis.length || !window.MR_RESOURCES) {
+      throw new Error('The fictional public demo content is incomplete.');
+    }
+
+    // teacherId remains an engine storage/run field; this neutral value only namespaces browser-local demo progress.
+    MR.teacherConfig = Object.assign({}, config, { teacherId: config.fixtureId });
+    MR.pool = pool;
+    MR.resourcesData = window.MR_RESOURCES;
+    window.GAME_CONFIG = {
+      resultEndpoint: '',
+      defaultStudent: config.studentAlias,
+      fidelityHigh: config.feedback.high,
+      fidelityMid: config.feedback.mid,
+      fidelityLow: config.feedback.low,
+      actionHigh: config.feedback.actionHigh,
+      actionMid: config.feedback.actionMid,
+      actionLow: config.feedback.actionLow
+    };
+    MR.asset = name => config.assets[name];
+  }
 
   function savedSoundPreference() {
     try {
@@ -208,13 +249,8 @@
   async function init() {
     try {
       MR.setScreen('loading');
-      await MR.loadTeacher('olson');
-
-      // The fictional public demo has no authenticated assignment, so its run history remains browser-local.
-      MR.teacherConfig.resultEndpoint = '';
-      MR.teacherConfig.displayName = 'Demo Classroom';
-      MR.teacherConfig.classroomLabel = 'Demo Classroom';
-      window.GAME_CONFIG.resultEndpoint = '';
+      // This dedicated fixture is public, fictional, unauthenticated, and browser-local.
+      await loadPublicDemoFixture();
       applyAssets();
       initAudio();
       wireEvents();
@@ -222,7 +258,7 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
-      console.info('Mission: Reinforceable public demo loaded', { teacher: MR.teacherConfig, pool: MR.pool });
+      console.info('Mission: Reinforceable public demo loaded', { fixture: MR.teacherConfig.fixtureId, pool: MR.pool });
     } catch (error) {
       console.error(error);
       const loading = MR.$('#loading-screen .loading-card');
