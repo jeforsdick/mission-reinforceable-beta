@@ -77,12 +77,12 @@ const timeline=timelineForCase({checklist_history:[{item_key:'teacher_consent',s
 assert.equal(lifecycleStage(readyFixture()),'Enrollment');
 assert.equal(lifecycleStage(ready),'Prebaseline');
 assert.equal(nextAction({...ready,measures:[]}), 'Complete the pre-baseline TSES.');
-const baselineRows=[1,2,3,4,5,6].map(session_number=>({id:`o${session_number}`,phase:'baseline',session_number,primary_record_id:`r${session_number}`,observation_date:`2026-08-${String(session_number).padStart(2,'0')}`,teacher_fidelity_percent:80+session_number,student_target_behavior_percent:20,fidelity_items_snapshot:[]}));
-const baselineCase={...ready,current_phase:'baseline',protocol:{stagger_position:1,planned_baseline_observations:6},prepared_content:{protected_content_present:false,resource_map_ready:false},observation_data:{observations:[...baselineRows,{id:'o7',phase:'baseline',session_number:7,observation_date:'2026-08-07',fidelity_items_snapshot:[]}],coverage:{percent:20}}};
+const baselineRows=[1,2,3,4,5,6].map(session_number=>({id:`o${session_number}`,phase:'baseline',session_number,summary_revision_id:`r${session_number}`,observation_date:`2026-08-${String(session_number).padStart(2,'0')}`,teacher_fidelity_percent:80+session_number,student_target_behavior_percent:20,}));
+const baselineCase={...ready,current_phase:'baseline',protocol:{stagger_position:1,planned_baseline_observations:6},prepared_content:{protected_content_present:false,resource_map_ready:false},observation_data:{observations:[...baselineRows,{id:'o7',phase:'baseline',session_number:7,observation_date:'2026-08-07',}],coverage:{percent:20}}};
 assert.equal(observationSummary(baselineCase).baseline,6,'baseline count uses finalized direct-observation records');
 assert.equal(lifecycleStage(baselineCase),'Game Ready');
 assert.equal(nextAction(baselineCase),'Finish game readiness before starting intervention.');
-const highFidelityRows=[1,2,3].map(session_number=>({id:`i${session_number}`,phase:'intervention',session_number,primary_record_id:`ir${session_number}`,observation_date:`2026-08-${10+session_number}`,teacher_fidelity_percent:92,student_target_behavior_percent:20,fidelity_items_snapshot:[]}));
+const highFidelityRows=[1,2,3].map(session_number=>({id:`i${session_number}`,phase:'intervention',session_number,summary_revision_id:`ir${session_number}`,observation_date:`2026-08-${10+session_number}`,teacher_fidelity_percent:92,student_target_behavior_percent:20,}));
 const interventionCase={...baselineCase,current_phase:'intervention',phase_history:[{phase:'intervention',effective_date:'2026-08-01'}],observation_data:{...baselineCase.observation_data,observations:highFidelityRows}};
 assert.deepEqual(interventionElapsed(interventionCase,new Date('2026-08-20T05:00:00Z')),{effectiveDate:'2026-08-01',days:18,weeks:18/7,minimumMet:false},'elapsed dates use the America/Denver calendar day');
 const beforeMinimum=nextAction(interventionCase,new Date('2026-08-20T05:00:00Z'));
@@ -127,7 +127,7 @@ const maintenanceEnd=maintenanceMarkup.slice(maintenanceMarkup.indexOf('id="oper
 assert.match(maintenanceEnd,/class="inline-record measure-form"/,'full end-measure controls render after intervention');
 assert.match(maintenanceMarkup,/id="operations-observations"[\s\S]*id="record-observation-form"/,'observations remain operational in maintenance');
 const postMeasures=['tses_post','urp_ir','teacher_interview'].map(measure_key=>({measure_key,status:'complete'}));
-const maintenanceRows=[1,2].map(session_number=>({id:`m${session_number}`,phase:'maintenance',session_number,primary_record_id:`mr${session_number}`,observation_date:`2026-09-0${session_number}`,fidelity_items_snapshot:[]}));
+const maintenanceRows=[1,2].map(session_number=>({id:`m${session_number}`,phase:'maintenance',session_number,summary_revision_id:`mr${session_number}`,observation_date:`2026-09-0${session_number}`,}));
 const maintenanceNext=nextAction({...baselineCase,current_phase:'maintenance',measures:[...baselineCase.measures,...postMeasures],observation_data:{...baselineCase.observation_data,observations:maintenanceRows}});
 assert.equal(maintenanceNext,'Maintenance target range met. Decide whether one more probe is needed.');
 assert.doesNotMatch(maintenanceNext,/3 of 3|third.*required/i);
