@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { CHECKLIST, MEASURES, PHASES, COACHING_FOCUSES, baselineReadiness, measureNeeds, interventionReadiness, attentionForCase, studyWideAttention, timelineForCase, checklistStatuses, denverToday } from './operations-model.mjs';
+import { renderOperations } from './operations-ui.mjs';
 const sql=fs.readFileSync(new URL('../supabase/migrations/20260818060000_research_operations_foundation.sql',import.meta.url),'utf8');
 const html=fs.readFileSync(new URL('index.html',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('admin.js',import.meta.url),'utf8');
 const ui=fs.readFileSync(new URL('operations-ui.mjs',import.meta.url),'utf8');
+const css=fs.readFileSync(new URL('admin.css',import.meta.url),'utf8');
+const readyFixture=()=>({current_phase:'prebaseline',study_id:'CASE-TEST',student_alias:'Student',case_active:false,participant_active:false,protocol:{stagger_position:1,planned_baseline_observations:6},checklist:[],measures:[],tasks:[],study_events:[],coaching_contacts:[],phase_history:[]});
 assert.deepEqual(PHASES,['prebaseline','baseline','intervention','maintenance','complete','withdrawn']);
 assert.deepEqual(MEASURES.map(x=>x[0]),['tses_pre','tses_post','urp_ir','teacher_interview']);
 assert.deepEqual(CHECKLIST.map(x=>x[0]),['teacher_consent','parent_permission','student_assent','bsp_technical_review','safety_screen','target_routine_finalized','target_behavior_definition','fidelity_checklist_finalized','fidelity_checklist_second_review','baseline_orientation','intervention_orientation']);
@@ -31,7 +34,17 @@ assert.match(sql,/enable row level security/);assert.match(sql,/public\.is_resea
 assert.match(html,/Study Overview/);assert.match(html,/Intake Queue/);assert.match(html,/id="study-wide-tasks"/);
 assert.match(ui,/Study Tasks/);assert.match(js,/target_case_id:caseId/);assert.match(js,/target_required:f\.has\('required'\)/);assert.match(js,/target_note:f\.get\('note'\)/);
 assert.match(ui,/data-status="not_applicable"/);assert.match(ui,/Required\?/);assert.match(ui,/Note — optional/);
-assert.match(ui,/class="inline-record checklist-form"/);assert.match(ui,/maxlength="1000"[\s\S]*Note/);assert.match(ui,/name="status_date" type="date" required/);assert.match(js,/target_status_date:f\.get\('status_date'\)/);
+assert.match(ui,/class="checklist-card checklist-form"/);assert.match(ui,/maxlength="1000"[\s\S]*Note/);assert.match(ui,/name="status_date" type="date" required/);
+assert.match(css,/\.baseline-checklist-grid\s*\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);assert.match(css,/@media\(max-width:800px\)\{\.baseline-checklist-grid\{grid-template-columns:1fr\}\}/);
+const checklistRpc="operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null})";
+assert.ok(js.includes(checklistRpc));
+const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
+const gridStart=renderedOperations.indexOf('<div class="baseline-checklist-grid">'),gridEnd=renderedOperations.indexOf('</div><p>Ready does not start baseline',gridStart);
+assert.ok(gridStart>renderedOperations.indexOf('id="baseline-tses-status"'));assert.ok(gridEnd>gridStart);
+const renderedGrid=renderedOperations.slice(gridStart,gridEnd);
+for(const [key] of CHECKLIST) assert.match(renderedGrid,new RegExp(`data-key="${key}"`));
+assert.match(renderedGrid,/data-key="student_assent"[\s\S]*option value="not_applicable"/);
+assert.doesNotMatch(js+ui,/research_admin_swap_case_protocol_positions|protocol-swap-form|Swap Baseline Assignments|Swap Positions/);
 assert.match(ui,/class="inline-record measure-form"/);assert.match(ui,/external_reference/);assert.match(js,/Completion date is required/);
 for(const field of ['affects_observation','affects_mr_exposure','affects_phase_interpretation','action_taken']){assert.match(ui,new RegExp(field));assert.match(js,new RegExp(field));}
 assert.match(js,/research_admin_resolve_study_event[\s\S]*target_action_taken:action/);

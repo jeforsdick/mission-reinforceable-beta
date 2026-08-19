@@ -320,6 +320,12 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 @media(max-width:650px){.timeline li{grid-template-columns:1fr;gap:3px}.operations-checklist .quiet{margin-left:0}}
 .inline-record-list { display: grid; gap: 10px; margin: 18px 0; }
 .inline-record { display: grid; grid-template-columns: minmax(210px,1.5fr) minmax(130px,.6fr) minmax(180px,1fr) auto; gap: 9px; align-items: center; padding: 12px; border: 1px solid var(--line); border-radius: 12px; }
+.baseline-checklist-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:18px 0; }
+.checklist-card { display:grid; grid-template-rows:auto auto auto 1fr; gap:9px; min-width:0; padding:14px; border:1px solid var(--line); border-radius:12px; background:#fcfbf8; }
+.checklist-card-label { color:var(--navy); }
+.checklist-card-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:9px; }
+.checklist-card input,.checklist-card select { width:100%; min-width:0; min-height:44px; padding:9px; border:1px solid #b8bdc6; border-radius:8px; font:inherit; }
+.checklist-card-save { align-self:end; justify-self:end; min-height:40px; padding-inline:18px; }
 .measure-form { grid-template-columns: minmax(190px,1.3fr) 130px 145px minmax(170px,1fr) minmax(170px,1fr) auto; }
 .inline-record input,.inline-record select { width:100%; min-height:40px; padding:8px; border:1px solid #b8bdc6; border-radius:8px; font:inherit; }
 .compact-form { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background:#fcfbf8; }
@@ -329,7 +335,8 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .row-actions { display:inline-flex; flex-wrap:wrap; gap:6px; margin-left:8px; }
 .study-wide-tasks { margin-top:24px; border-top:6px solid var(--gold); }
 @media(max-width:1000px){.inline-record,.measure-form{grid-template-columns:1fr 1fr}.inline-record strong{grid-column:1/-1}}
-@media(max-width:650px){.inline-record,.measure-form,.choice-grid{grid-template-columns:1fr}}
+@media(max-width:800px){.baseline-checklist-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.inline-record,.measure-form,.choice-grid,.checklist-card-controls{grid-template-columns:1fr}}
 .observation-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.75rem;margin:1rem 0}.observation-stats>div{border:1px solid #d8dbe6;border-radius:10px;padding:.8rem;display:flex;flex-direction:column}.interval-grid{display:grid;grid-template-columns:4rem repeat(4,minmax(42px,1fr));gap:3px;max-width:720px}.grid-head{text-align:center;font-weight:700}.interval-grid strong{display:grid;place-items:center}.interval-cell{min-height:34px;border:1px solid #9ba4b7;background:#fff;border-radius:4px;font-weight:800}.interval-cell[data-status="occurrence"]{background:#fff2b8}.interval-cell[data-status="not_observed"]{background:#e4e7ee}.interval-legend{display:flex;flex-wrap:wrap;gap:1rem;margin:.75rem 0}.fidelity-entry fieldset{margin:.6rem 0}.fidelity-entry label{display:inline-block;margin-right:1rem}.observation-history>li{margin-bottom:1rem}.observer-team{margin-top:1rem}@media(max-width:600px){.interval-grid{font-size:.8rem;grid-template-columns:3rem repeat(4,1fr)}.interval-cell{padding:.25rem}.fidelity-entry label{display:block}}
 
 /* Prepared case tab workspace */
