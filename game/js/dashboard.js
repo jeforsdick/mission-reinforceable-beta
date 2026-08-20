@@ -162,7 +162,7 @@
     renderSummary(runs) {
       ensureProgressPolish();
       const metrics = this.metrics(runs);
-      MR.$('#progress-title').textContent = 'Mission Progress';
+      MR.$('#progress-title').textContent = 'My Progress';
       MR.$('#growth-focus').textContent = 'Practice focus: Review your recent feedback and choose one plan-aligned move to carry into your next mission.';
       MR.$('#stat-average').textContent = `${metrics.average}%`;
       MR.$('#stat-completed').textContent = `${metrics.completed}`;

@@ -40,6 +40,16 @@ test('mission metrics use weighted completed-session scores and newest completed
   assert.deepEqual({ ...metrics }, { average: 68, completed: 3, recent: 50, best: 90 });
 });
 
+test('practice score metrics keep their frozen calculation definitions', () => {
+  const { dashboard } = loadDashboard();
+  const metrics = dashboard.metrics([
+    { score: 1, max_score: 2, ended_at: '2026-08-18T20:00:00Z' },
+    { score: 9, max_score: 10, ended_at: '2026-08-19T20:00:00Z' }
+  ]);
+  // Weighted: 10 / 12 = 83%, rather than the unweighted (50% + 90%) / 2 = 70%.
+  assert.deepEqual({ ...metrics }, { average: 83, completed: 2, recent: 90, best: 90 });
+});
+
 test('protected progress loads only from Supabase and never falls back to stale local history', async () => {
   const { dashboard, MR, elements } = loadDashboard();
   let storageReads = 0;
@@ -137,13 +147,16 @@ test('Mission History renders the classroom-fidelity disclaimer directly under i
 
 test('participant page contains the approved four badges, disclaimer, and no removed teacher metrics', () => {
   for (const html of [protectedHTML, demoHTML]) {
-    assert.match(html, /Average Mission Score/);
+    assert.match(html, /<h1 id="progress-title" class="progress-title">My Progress<\/h1>/);
+    assert.match(html, /Average Practice Score/);
     assert.match(html, /Missions Completed/);
-    assert.match(html, /Most Recent Score/);
-    assert.match(html, /Best Mission Score/);
-    assert.match(html, /They are not classroom fidelity scores/);
+    assert.match(html, /Most Recent Practice Score/);
+    assert.match(html, /Best Practice Score/);
+    assert.match(html, /These scores summarize your choices in Mission: Reinforceable\. They are not classroom fidelity scores\./);
+    assert.doesNotMatch(html, /Average Mission Score|Most Recent Score|Best Mission Score/);
     assert.doesNotMatch(html, /Overall Accuracy|Day Streak|Time Played/);
   }
+  assert.match(dashboardSource, /textContent = 'My Progress'/);
   assert.doesNotMatch(dashboardSource, /fidelity_target_id|fidelity_domain|domain score|Plan Practice/);
 });
 
@@ -181,11 +194,21 @@ test('progress queries scope participant, case, completion, and QA mode without 
   await auth.getProgressResponses('session', { participantId: 'participant', caseId: 'case', qaMode: false });
 
   assert.ok(calls.some(call => call[0] === 'game_sessions' && call[1] === 'eq' && call[2] === 'status' && call[3] === 'completed'));
+  assert.ok(calls.some(call => call[0] === 'game_sessions' && call[1] === 'eq' && call[2] === 'participant_id' && call[3] === 'participant'));
+  assert.ok(calls.some(call => call[0] === 'game_sessions' && call[1] === 'eq' && call[2] === 'case_id' && call[3] === 'case'));
   assert.ok(calls.some(call => call[0] === 'game_sessions' && call[1] === 'eq' && call[2] === 'qa_mode' && call[3] === false));
   assert.ok(calls.some(call => call[0] === 'game_sessions' && call[1] === 'eq' && call[2] === 'qa_mode' && call[3] === true));
   assert.ok(calls.some(call => call[0] === 'game_responses' && call[1] === 'eq' && call[2] === 'session_id' && call[3] === 'session'));
   const responseSelect = calls.find(call => call[0] === 'game_responses' && call[1] === 'select')[2];
   assert.doesNotMatch(responseSelect, /fidelity|mechanism|error_type|\bid\b/);
+});
+
+test('teacher My Progress score boundary excludes observation, weekly-report, and Resource Map data', () => {
+  const progressQuery = authSource.match(/async function progressSessions\(context\) \{[\s\S]*?\n  \}/)?.[0] || '';
+  assert.doesNotMatch(`${dashboardSource}\n${progressQuery}`, /classroom_observations|observation_fidelity|weekly_teacher_checkins/);
+  assert.doesNotMatch(dashboardSource, /game_resource_events/);
+  assert.match(progressQuery, /\.from\('game_sessions'\)[\s\S]*\.eq\('status', 'completed'\)/);
+  assert.doesNotMatch(progressQuery, /student.*name|teacher.*email|coach.*email|bip.*text|observation|phase/i);
 });
 
 test('timing and hint telemetry collection remains intact', () => {
