@@ -1,98 +1,102 @@
-# Teacher daily reminders (schedule not active)
+# Teacher daily reminders (production schedule)
 
-The two server-only routes fit the intended Vercel/custom-domain deployment and
-are ready for a future Vercel Cron configuration:
+The dissertation intervention schedules one logical `daily_prompt` on each
+eligible intervention study day. `followup_reminder` is not part of the current
+dissertation intervention package and is not scheduled. Its dormant route and
+schema flag remain for compatibility, and `followup_enabled` remains disabled by
+default.
 
-- `GET /api/teacher-daily-prompt`
-- `GET /api/teacher-followup-reminder`
+## Production schedule and security
 
-Both require `Authorization: Bearer $CRON_SECRET`. They ignore browser-supplied
-recipient or message data: candidate teacher name/email comes from the active
-Supabase participant-to-Auth-profile relationship, and all message fields are
-defined server-side.
+`vercel.json` invokes the same authenticated route twice on weekdays:
+
+- `GET /api/teacher-daily-prompt` at `0 14 * * 1-5` (14:00 UTC).
+- `GET /api/teacher-daily-prompt` at `0 15 * * 1-5` (15:00 UTC).
+
+Both require `Authorization: Bearer $CRON_SECRET`. The second invocation is
+reliability/retry infrastructure, not a second intervention prompt. The database
+identity `(participant_id, study_date, reminder_type)` and matching Resend
+idempotency key permit at most one provider delivery for that logical prompt.
+These UTC invocations occur in the early weekday morning in America/Denver;
+exact Vercel invocation time is operational infrastructure, not a participant
+outcome.
+
+The route derives the America/Denver study date and, before candidate lookup or
+event claim, applies the Granite base calendar: dates must be weekdays from
+2026-08-12 through 2027-05-26 inclusive and must not be one of the holidays or
+recess dates mirrored from `game/js/study-calendar.js`. An ineligible invocation
+returns HTTP 200 with `eligible_study_day: false` and zero sent, skipped, and
+failed counts, without database work.
 
 ## Required server environment
 
-- `CRON_SECRET`: shared secret used by Vercel Cron authorization.
+- `CRON_SECRET`: shared authorization secret.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`: server-only Supabase access.
 - `RESEND_API_KEY`: server-only Resend credential.
 - `TEACHER_REMINDER_FROM_EMAIL`: verified sender address.
-- `TEACHER_GAME_URL`: authenticated game URL with no participant, case, alias,
-  or email query data.
-- `TEACHER_REMINDER_TIMEZONE`: required IANA timezone (for example,
-  `America/Denver`). There is intentionally no UTC fallback.
+- `TEACHER_GAME_URL`: HTTPS authenticated `/game/` URL, with no query string,
+  participant, case, alias, teacher email, or QA value.
+- `TEACHER_REMINDER_TIMEZONE`: exactly `America/Denver`; there is no fallback.
+- `TEACHER_REMINDER_TEST_EMAIL`: server-only smoke-test recipient.
 
-## Eligibility and processing
+Candidate recipient identity is always database-derived. Cron input cannot
+supply a recipient, participant/case identity, or message copy. Service-role and
+Resend credentials never enter browser code.
 
-The candidate RPC requires an enabled setting whose activation time has passed
-and whose deactivation time has not passed. The participant, assigned case, and
-teacher profile must all be active; the profile must have role `teacher` and a
-nonblank email. Follow-ups additionally require `followup_enabled`.
+## Eligibility, delivery, and recovery
 
-For each study-local date, the daily route claims a unique operational event and
-sends the approved daily prompt. The follow-up route first asks the relational
-`game_sessions` table whether that participant has a `completed` session whose
-completion timestamp falls on the same study-local date. It sends only when no
-such completion exists. Google Sheets is not consulted.
+The candidate RPC requires a deliberately enabled, currently activated reminder
+setting. The participant, assigned case, and teacher profile must all be active;
+the profile must have role `teacher` and a nonblank email. Intake approval, case
+preparation, protected-content loading, phase changes, baseline, and QA Preview
+do not create or enable reminder settings. Consequently prepared inactive QA
+cases, including CASE-999, are excluded.
 
-The event uniqueness key is `(participant_id, study_date, reminder_type)`. An
-atomic database claim skips existing `sent` and `pending` events, while a
-`failed` event can be reclaimed with an incremented attempt count. The matching
-Resend idempotency key is
-`teacher-reminder/{participant_id}/{YYYY-MM-DD}/{reminder_type}`. A provider
-failure changes only that event from `pending` to `failed`; a retry reuses the
-same provider idempotency key and does not alter participants, cases, content,
-or game sessions.
+The daily copy and subject (`Mission: Reinforceable — Today’s Mission Is Ready`)
+are server-defined. Events contain only participant/case relational identifiers,
+type/date, provider message ID, operational status, and attempt metadata—not the
+recipient address, subject/body, student information, BIP content, game
+responses, or scores.
 
-## Explicit intervention activation
+A claim creates one pending event. Sent events are never reclaimed; failed
+events may be reclaimed; recent pending events remain exclusive; pending events
+older than 30 minutes may be reclaimed. Reclamation keeps the same row and
+logical identity, increments `attempt_count`, updates `last_attempt_at`, and
+reuses `teacher-reminder/{participant_id}/{YYYY-MM-DD}/daily_prompt` as Resend's
+`Idempotency-Key`. This covers a crash before or after Resend receives a send.
+If Resend succeeds but the sent-status PATCH fails, the job reports failure,
+logs the recovery need, and leaves the pending event available for stale retry.
 
-No participant, intake, case, protected content, or Auth-account workflow
-creates an enabled setting. A research admin deliberately activates one teacher
-at intervention onset (replace the UUID):
+A Resend failure changes only the operational reminder event to `failed`.
+Delivery never marks a mission incomplete, writes a `game_session`, counts a
+gameplay dose, or changes participant/case activity, phase, or gameplay.
+Mission completion remains independently determined from `game_sessions`.
 
-```sql
-insert into public.teacher_reminder_settings
-  (participant_id, enabled, followup_enabled, activated_at, deactivated_at)
-values
-  ('00000000-0000-0000-0000-000000000000', true, false, now(), null)
-on conflict (participant_id) do update set
-  enabled = true,
-  followup_enabled = excluded.followup_enabled,
-  activated_at = now(),
-  deactivated_at = null;
-```
+## Production smoke test
 
-To deactivate that teacher immediately:
+`GET /api/teacher-reminder-smoke-test` requires the cron bearer secret and sends
+the exact production daily subject, HTML/text template, sender, and game URL
+only to `TEACHER_REMINDER_TEST_EMAIL`. Its fixed smoke-test Resend idempotency key
+prevents refresh spam. It does not query participants or Supabase and does not
+create reminder events, settings, gameplay data, or activation changes. It
+returns only send success/failure and, on success, the provider message ID.
 
-```sql
-update public.teacher_reminder_settings
-set enabled = false, deactivated_at = now()
-where participant_id = '00000000-0000-0000-0000-000000000000';
-```
+## Explicit research-admin activation
 
-Ordinary teachers and coaches have no table privileges or RLS policy that can
-perform activation. Use a research-admin session or a controlled service-role
-administrative process; never put the service-role key in a browser.
+Research Admin retains separate Game On/Off and Reminders On/Off concepts. No
+automatic workflow enables reminders. A researcher deliberately activates an
+individual intervention reminder setting and can disable it again. Existing RLS
+allows research admins to manage settings; teachers and coaches cannot. The
+repository currently has no dedicated Research Admin UI action that safely
+toggles this setting, so this PR does not invent a larger UI workflow.
 
-## Future schedule example — **NOT ACTIVE**
+For controlled SQL operations, enable with `followup_enabled = false` and a
+non-null `activated_at`, or disable with `enabled = false` and
+`deactivated_at = now()`. Never place the service-role key in browser code.
 
-No repository cron schedule is configured, so endpoint presence does not make
-reminders run automatically. No `vercel.json` cron configuration is committed.
-After sender verification and
-research-team approval of both hours, the following shape can be added, with
-the chosen UTC hours replacing the examples:
+## Remaining boundaries
 
-```json
-{
-  "crons": [
-    { "path": "/api/teacher-daily-prompt", "schedule": "0 14 * * *" },
-    { "path": "/api/teacher-followup-reminder", "schedule": "0 21 * * *" }
-  ]
-}
-```
-
-Those hours are illustrations only, not study decisions. The current project is
-on Vercel Hobby, so the eventual design must retain at most one invocation per
-day per cron job and Hobby's hourly timing precision. Daylight-saving changes
-must be considered when converting the selected study-local hours to Vercel's
-UTC cron expressions.
+This base-calendar gate does not implement participant-specific teacher absence,
+approved contextual exclusion, or other not-available overrides; those remain a
+separate task. Weekly email/report automation is also a separate task and is not
+scheduled here.

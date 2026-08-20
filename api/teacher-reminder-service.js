@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const { isEligibleStudyDay } = require('./granite-study-calendar');
 
 const TYPES = Object.freeze({ DAILY: 'daily_prompt', FOLLOWUP: 'followup_reminder' });
 const SUBJECTS = Object.freeze({
@@ -56,6 +57,16 @@ function authorized(header, secret) {
   return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
 }
 
+function validateConfiguration(names) {
+  if (names.some(name => !process.env[name])) throw new Error('Teacher reminder configuration is incomplete');
+  if (process.env.TEACHER_REMINDER_TIMEZONE !== 'America/Denver') throw new Error('TEACHER_REMINDER_TIMEZONE must be America/Denver');
+  let gameUrl;
+  try { gameUrl = new URL(process.env.TEACHER_GAME_URL); } catch { throw new Error('TEACHER_GAME_URL is invalid'); }
+  if (gameUrl.protocol !== 'https:' || gameUrl.pathname !== '/game/' || gameUrl.search || gameUrl.hash || gameUrl.username || gameUrl.password) {
+    throw new Error('TEACHER_GAME_URL must be an authenticated /game/ URL without query data');
+  }
+}
+
 function createHandler(type, dependencies = {}) {
   const fetchImpl = dependencies.fetch || global.fetch;
   return async function handler(request, response) {
@@ -67,8 +78,8 @@ function createHandler(type, dependencies = {}) {
       return response.status(401).json({ error: 'Unauthorized' });
     }
     const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY', 'TEACHER_REMINDER_FROM_EMAIL', 'TEACHER_GAME_URL', 'TEACHER_REMINDER_TIMEZONE'];
-    if (required.some(name => !process.env[name])) {
-      console.error('Teacher reminder configuration is incomplete.');
+    try { validateConfiguration(required); } catch (error) {
+      console.error('Teacher reminder configuration is invalid.', { error: error.message });
       return response.status(500).json({ error: 'Reminder job unavailable' });
     }
     let date;
@@ -79,7 +90,8 @@ function createHandler(type, dependencies = {}) {
 
     const headers = { apikey: process.env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' };
     const base = `${process.env.SUPABASE_URL}/rest/v1`;
-    const summary = { study_date: date, sent: 0, skipped: 0, failed: 0 };
+    const summary = { study_date: date, eligible_study_day: isEligibleStudyDay(date), sent: 0, skipped: 0, failed: 0 };
+    if (!summary.eligible_study_day) return response.status(200).json(summary);
     try {
       const candidatesResponse = await fetchImpl(`${base}/rpc/eligible_teacher_reminders`, { method: 'POST', headers, body: JSON.stringify({ require_followup: type === TYPES.FOLLOWUP }) });
       if (!candidatesResponse.ok) throw new Error(`Candidate lookup returned ${candidatesResponse.status}`);
@@ -95,16 +107,29 @@ function createHandler(type, dependencies = {}) {
         const [claim] = await claimResponse.json();
         if (!claim || !claim.claimed) { summary.skipped++; continue; }
         const email = emailFor(type, candidate.teacher_name, process.env.TEACHER_GAME_URL);
+        let provider;
         try {
           const sendResponse = await fetchImpl('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey(candidate.participant_id, date, type) }, body: JSON.stringify({ from: process.env.TEACHER_REMINDER_FROM_EMAIL, to: [candidate.teacher_email], subject: email.subject, html: email.html, text: email.text }) });
           if (!sendResponse.ok) throw new Error(`Resend returned ${sendResponse.status}`);
-          const provider = await sendResponse.json();
-          await fetchImpl(`${base}/teacher_reminder_events?id=eq.${encodeURIComponent(claim.event_id)}`, { method: 'PATCH', headers, body: JSON.stringify({ status: 'sent', provider_message_id: provider.id || null }) });
+          provider = await sendResponse.json();
+        } catch (error) {
+          summary.failed++;
+          try {
+            const failedPatch = await fetchImpl(`${base}/teacher_reminder_events?id=eq.${encodeURIComponent(claim.event_id)}`, { method: 'PATCH', headers, body: JSON.stringify({ status: 'failed' }) });
+            if (!failedPatch.ok) console.error('Teacher reminder failure status could not be recorded.', { eventId: claim.event_id, status: failedPatch.status });
+          } catch (patchError) {
+            console.error('Teacher reminder failure status update threw an error.', { eventId: claim.event_id, error: patchError.message });
+          }
+          console.error('Teacher reminder delivery failed.', { participantId: candidate.participant_id, type, date, error: error.message });
+          continue;
+        }
+        try {
+          const sentPatch = await fetchImpl(`${base}/teacher_reminder_events?id=eq.${encodeURIComponent(claim.event_id)}`, { method: 'PATCH', headers, body: JSON.stringify({ status: 'sent', provider_message_id: provider.id || null }) });
+          if (!sentPatch.ok) throw new Error(`Event update returned ${sentPatch.status}`);
           summary.sent++;
         } catch (error) {
           summary.failed++;
-          await fetchImpl(`${base}/teacher_reminder_events?id=eq.${encodeURIComponent(claim.event_id)}`, { method: 'PATCH', headers, body: JSON.stringify({ status: 'failed' }) });
-          console.error('Teacher reminder delivery failed.', { participantId: candidate.participant_id, type, date, error: error.message });
+          console.error('Teacher reminder provider succeeded but event update failed; stale-pending recovery is required.', { participantId: candidate.participant_id, type, date, eventId: claim.event_id, error: error.message });
         }
       }
       return response.status(summary.failed ? 502 : 200).json(summary);
@@ -115,4 +140,30 @@ function createHandler(type, dependencies = {}) {
   };
 }
 
-module.exports = { TYPES, SUBJECTS, emailFor, studyDate, idempotencyKey, authorized, createHandler };
+function createSmokeTestHandler(dependencies = {}) {
+  const fetchImpl = dependencies.fetch || global.fetch;
+  return async function handler(request, response) {
+    if (request.method !== 'GET') {
+      response.setHeader('Allow', 'GET');
+      return response.status(405).json({ error: 'Method not allowed' });
+    }
+    if (!authorized(request.headers && request.headers.authorization, process.env.CRON_SECRET)) return response.status(401).json({ error: 'Unauthorized' });
+    try {
+      validateConfiguration(['RESEND_API_KEY', 'TEACHER_REMINDER_FROM_EMAIL', 'TEACHER_GAME_URL', 'TEACHER_REMINDER_TIMEZONE', 'TEACHER_REMINDER_TEST_EMAIL']);
+      const email = emailFor(TYPES.DAILY, null, process.env.TEACHER_GAME_URL);
+      const send = await fetchImpl('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': 'teacher-reminder-smoke-test/daily-prompt-production-v1' },
+        body: JSON.stringify({ from: process.env.TEACHER_REMINDER_FROM_EMAIL, to: [process.env.TEACHER_REMINDER_TEST_EMAIL], subject: email.subject, html: email.html, text: email.text })
+      });
+      if (!send.ok) throw new Error(`Resend returned ${send.status}`);
+      const provider = await send.json();
+      return response.status(200).json({ sent: true, provider_message_id: provider.id || null });
+    } catch (error) {
+      console.error('Teacher reminder smoke test failed.', { error: error.message });
+      return response.status(502).json({ sent: false });
+    }
+  };
+}
+
+module.exports = { TYPES, SUBJECTS, emailFor, studyDate, idempotencyKey, authorized, validateConfiguration, createHandler, createSmokeTestHandler };
