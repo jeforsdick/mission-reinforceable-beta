@@ -16,7 +16,7 @@ Object.assign(process.env, {
   SUPABASE_SERVICE_ROLE_KEY: 'service-secret', RESEND_API_KEY: 'resend-secret',
   TEACHER_REMINDER_FROM_EMAIL: 'Mission <mission@example.org>',
   TEACHER_GAME_URL: 'https://mission.example.org/game/', TEACHER_REMINDER_TIMEZONE: 'America/Denver',
-  TEACHER_REMINDER_TEST_EMAIL: 'smoke@example.org'
+  TEACHER_REMINDER_TEST_EMAIL: 'smoke@example.org', TEACHER_REMINDER_SYSTEM_ENABLED: 'true'
 });
 
 const participant = { participant_id: '11111111-1111-4111-8111-111111111111', case_id: '22222222-2222-4222-8222-222222222222', teacher_name: 'Ms. <Rivera>', teacher_email: 'teacher@example.org' };
@@ -116,6 +116,22 @@ let handler = service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, no
 let response = await invoke(handler, 'Bearer wrong');
 assert.equal(response.statusCode, 401);
 assert.equal(mock.calls.length, 0);
+
+// The production kill switch returns quietly before configuration validation or external work.
+delete process.env.TEACHER_REMINDER_SYSTEM_ENABLED;
+const supabaseUrl = process.env.SUPABASE_URL;
+delete process.env.SUPABASE_URL;
+response = await invoke(handler);
+assert.equal(response.statusCode, 200);
+assert.deepEqual(response.body, { enabled: false, sent: 0, skipped: 0, failed: 0 });
+assert.equal(mock.calls.length, 0);
+process.env.SUPABASE_URL = supabaseUrl;
+process.env.TEACHER_REMINDER_SYSTEM_ENABLED = 'false';
+response = await invoke(handler);
+assert.equal(response.statusCode, 200);
+assert.deepEqual(response.body, { enabled: false, sent: 0, skipped: 0, failed: 0 });
+assert.equal(mock.calls.length, 0);
+process.env.TEACHER_REMINDER_SYSTEM_ENABLED = 'true';
 
 // Eligible daily prompt sends only server-selected fields and stable idempotency metadata.
 response = await invoke(handler);
@@ -221,6 +237,7 @@ for (const instant of ['2026-08-16T16:00:00Z', '2026-09-07T16:00:00Z', '2026-08-
 
 // Smoke test uses only the server test recipient and does not call Supabase.
 mock = mockFetch();
+process.env.TEACHER_REMINDER_SYSTEM_ENABLED = 'false';
 response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }));
 assert.equal(response.statusCode, 200);
 const smokeSend = mock.calls.at(0);
@@ -229,5 +246,6 @@ assert.equal(smokeSend.options.headers['Idempotency-Key'], 'teacher-reminder-smo
 assert.deepEqual(JSON.parse(smokeSend.options.body).to, ['smoke@example.org']);
 assert.equal(JSON.parse(smokeSend.options.body).subject, daily.subject);
 assert.equal(mock.calls.some(call => call.url.includes('supabase') || call.url.includes('teacher_reminder_events')), false);
+process.env.TEACHER_REMINDER_SYSTEM_ENABLED = 'true';
 
 console.log('Teacher reminder eligibility, privacy, authorization, completion, failure, timezone, and idempotency checks passed.');
