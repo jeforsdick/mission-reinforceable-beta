@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { accountState, normalizeTargets, readinessForCase } from './admin-model.mjs';
+import { accountState, antecedentContext, normalizeTargets, readinessForCase } from './admin-model.mjs';
 
 const html = fs.readFileSync(new URL('index.html', import.meta.url), 'utf8');
 const js = fs.readFileSync(new URL('admin.js', import.meta.url), 'utf8');
@@ -99,6 +99,16 @@ assert.doesNotMatch(sql, /i\.created_at|order by i\.created_at/);
 assert.doesNotMatch(html + js + sql, /student_full_name|student_id|diagnosis|disability|parent_information|medication/i);
 assert.match(html, /Print \/ Save PDF/); assert.match(css, /@media print/); assert.match(css, /\.no-print/);
 assert.doesNotMatch(js, /Practitioner/);
+assert.deepEqual(antecedentContext({ common_triggers: 'A demand', typical_antecedents: 'A demand' }), [
+  { label: 'What commonly happens before the behavior', value: 'A demand' }
+]);
+assert.deepEqual(antecedentContext({ common_triggers: '', typical_antecedents: 'An older answer' }), [
+  { label: 'What commonly happens before the behavior', value: 'An older answer' }
+]);
+assert.deepEqual(antecedentContext({ common_triggers: 'A transition', typical_antecedents: 'A hard task' }), [
+  { label: 'Common triggers', value: 'A transition' },
+  { label: 'Typical antecedents (older intake)', value: 'A hard task' }
+]);
 console.log('Research-admin transactional provisioning, rollback structure, readiness, inactive safeguards, and privacy checks passed.');
 
 // Prepared cases use accessible, source-aware primary tabs without changing routes.
