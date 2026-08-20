@@ -5,6 +5,8 @@
   const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
   let supabaseClient = null;
+  let dailySessionWatcherStarted = false;
+  let dailySessionExpirationStarted = false;
 
   function client() {
     if (!window.supabase || typeof window.supabase.createClient !== 'function') {
@@ -50,6 +52,40 @@
 
       showLogin();
       MR.$('#login-email').focus();
+    });
+  }
+
+  function hasCurrentStudyDaySignIn(user, now = new Date()) {
+    if (!user || !user.last_sign_in_at) return false;
+    const signedInAt = new Date(user.last_sign_in_at);
+    if (Number.isNaN(signedInAt.getTime())) return false;
+    return MR.studyDate.dateKey(signedInAt) === MR.studyDate.dateKey(now);
+  }
+
+  async function localSignOut(supabaseClient = client()) {
+    const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+    if (error) throw new Error(`Unable to log out: ${error.message}`);
+  }
+
+  function watchDailySession(user) {
+    if (dailySessionWatcherStarted) return;
+    dailySessionWatcherStarted = true;
+
+    const check = async () => {
+      if (dailySessionExpirationStarted || hasCurrentStudyDaySignIn(user)) return;
+      dailySessionExpirationStarted = true;
+      try {
+        await localSignOut();
+      } catch (error) {
+        console.error('Daily participant sign-out failed.', error);
+      }
+      window.location.reload();
+    };
+
+    window.setInterval(check, 60 * 1000);
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') check();
     });
   }
 
@@ -217,6 +253,15 @@
           case: { id: row.case_id, case_code: row.case_code, student_alias: row.student_alias, active: false }
         };
       }
+      if (!hasCurrentStudyDaySignIn(user)) {
+        await localSignOut(supabaseClient);
+        const currentUser = await waitForLogin(supabaseClient);
+        if (!hasCurrentStudyDaySignIn(currentUser)) {
+          await localSignOut(supabaseClient);
+          throw new Error('A current-day sign-in is required. Please sign in again.');
+        }
+        return MR.auth.getAssignment();
+      }
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
       return { user, participant, case: caseAssignment, qaMode: false };
@@ -271,9 +316,12 @@
       if (error) throw new Error(`Unable to submit the weekly teacher report: ${error.message}`);
     },
 
+    hasCurrentStudyDaySignIn,
+
+    watchDailySession,
+
     async signOut() {
-      const { error } = await client().auth.signOut();
-      if (error) throw new Error(`Unable to log out: ${error.message}`);
+      await localSignOut();
     }
   };
 })();
