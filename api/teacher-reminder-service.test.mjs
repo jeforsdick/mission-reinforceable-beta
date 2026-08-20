@@ -7,6 +7,8 @@ const service = require('./teacher-reminder-service.js');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260814010000_teacher_reminders.sql', import.meta.url), 'utf8');
 const recoveryMigration = fs.readFileSync(new URL('../supabase/migrations/20260820000000_teacher_reminder_stale_pending_recovery.sql', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+const dailyRoute = fs.readFileSync(new URL('./teacher-daily-prompt.js', import.meta.url), 'utf8');
+const retryRoute = fs.readFileSync(new URL('./teacher-daily-prompt-retry.js', import.meta.url), 'utf8');
 
 Object.assign(process.env, {
   CRON_SECRET: 'cron-secret', SUPABASE_URL: 'https://database.example',
@@ -69,9 +71,16 @@ assert.match(recoveryMigration, /attempt_count = existing\.attempt_count \+ 1/);
 assert.doesNotMatch(recoveryMigration, /cascade/i);
 assert.deepEqual(vercel.crons, [
   { path: '/api/teacher-daily-prompt', schedule: '0 14 * * 1-5' },
-  { path: '/api/teacher-daily-prompt', schedule: '0 15 * * 1-5' }
+  { path: '/api/teacher-daily-prompt-retry', schedule: '0 15 * * 1-5' }
 ]);
+assert.equal(new Set(vercel.crons.map(cron => cron.path)).size, vercel.crons.length);
 assert.equal(JSON.stringify(vercel).includes('followup'), false);
+for (const route of [dailyRoute, retryRoute]) {
+  assert.match(route, /module\.exports = createHandler\(TYPES\.DAILY\);/);
+  assert.doesNotMatch(route, /TYPES\.FOLLOWUP|followup_reminder/);
+}
+assert.equal(retryRoute, dailyRoute);
+assert.equal(service.TYPES.DAILY, 'daily_prompt');
 
 // Approved text, greeting personalization, and privacy boundaries.
 const daily = service.emailFor(service.TYPES.DAILY, participant.teacher_name, process.env.TEACHER_GAME_URL);

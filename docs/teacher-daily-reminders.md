@@ -11,12 +11,14 @@ default.
 `vercel.json` invokes the same authenticated route twice on weekdays:
 
 - `GET /api/teacher-daily-prompt` at `0 14 * * 1-5` (14:00 UTC).
-- `GET /api/teacher-daily-prompt` at `0 15 * * 1-5` (15:00 UTC).
+- `GET /api/teacher-daily-prompt-retry` at `0 15 * * 1-5` (15:00 UTC).
 
-Both require `Authorization: Bearer $CRON_SECRET`. The second invocation is
-reliability/retry infrastructure, not a second intervention prompt. The database
-identity `(participant_id, study_date, reminder_type)` and matching Resend
-idempotency key permit at most one provider delivery for that logical prompt.
+Both thin routes require `Authorization: Bearer $CRON_SECRET` and call the same
+daily handler with `reminder_type = daily_prompt`. The retry route is
+reliability/retry infrastructure, not a second intervention prompt. Both routes
+therefore use the same database identity
+`(participant_id, study_date, reminder_type)` and matching Resend idempotency
+key, permitting at most one provider delivery for that logical prompt.
 These UTC invocations occur in the early weekday morning in America/Denver;
 exact Vercel invocation time is operational infrastructure, not a participant
 outcome.
