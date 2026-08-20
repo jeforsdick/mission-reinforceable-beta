@@ -3,14 +3,20 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const service = require('./teacher-reminder-service.js');
+const service = require('../server/teacher-reminder-service.js');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260814010000_teacher_reminders.sql', import.meta.url), 'utf8');
+const recoveryMigration = fs.readFileSync(new URL('../supabase/migrations/20260820000000_teacher_reminder_stale_pending_recovery.sql', import.meta.url), 'utf8');
+const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+const dailyRoute = fs.readFileSync(new URL('./teacher-daily-prompt.js', import.meta.url), 'utf8');
+const retryRoute = fs.readFileSync(new URL('./teacher-daily-prompt-retry.js', import.meta.url), 'utf8');
+const apiDirectory = new URL('./', import.meta.url);
 
 Object.assign(process.env, {
   CRON_SECRET: 'cron-secret', SUPABASE_URL: 'https://database.example',
   SUPABASE_SERVICE_ROLE_KEY: 'service-secret', RESEND_API_KEY: 'resend-secret',
   TEACHER_REMINDER_FROM_EMAIL: 'Mission <mission@example.org>',
-  TEACHER_GAME_URL: 'https://mission.example.org/game', TEACHER_REMINDER_TIMEZONE: 'America/Denver'
+  TEACHER_GAME_URL: 'https://mission.example.org/game/', TEACHER_REMINDER_TIMEZONE: 'America/Denver',
+  TEACHER_REMINDER_TEST_EMAIL: 'smoke@example.org'
 });
 
 const participant = { participant_id: '11111111-1111-4111-8111-111111111111', case_id: '22222222-2222-4222-8222-222222222222', teacher_name: 'Ms. <Rivera>', teacher_email: 'teacher@example.org' };
@@ -18,7 +24,7 @@ const now = () => new Date('2026-08-15T01:30:00.000Z'); // August 14 in study ti
 const makeResponse = () => ({ statusCode: 0, body: null, headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
 const invoke = async (handler, authorization = 'Bearer cron-secret') => { const response = makeResponse(); await handler({ method: 'GET', headers: { authorization } }, response); return response; };
 
-function mockFetch({ candidates = [participant], completed = false, eventStatus = null, resendOutcomes = [true] } = {}) {
+function mockFetch({ candidates = [participant], completed = false, eventStatus = null, resendOutcomes = [true], sentPatchOk = true } = {}) {
   const calls = [];
   let status = eventStatus;
   let resendAttempt = 0;
@@ -27,7 +33,7 @@ function mockFetch({ candidates = [participant], completed = false, eventStatus 
     if (String(url).includes('/rpc/eligible_teacher_reminders')) return { ok: true, status: 200, json: async () => candidates };
     if (String(url).includes('/rpc/has_completed_mission_on_study_date')) return { ok: true, status: 200, json: async () => completed };
     if (String(url).includes('/rpc/claim_teacher_reminder_event')) {
-      const claimed = status === null || status === 'failed';
+      const claimed = status === null || status === 'failed' || status === 'stale_pending';
       if (claimed) status = 'pending';
       return { ok: true, status: 200, json: async () => [{ event_id: 'event-1', claimed }] };
     }
@@ -36,7 +42,9 @@ function mockFetch({ candidates = [participant], completed = false, eventStatus 
       return { ok, status: ok ? 200 : 503, json: async () => ({ id: 'resend-1' }) };
     }
     if (String(url).includes('/teacher_reminder_events?id=eq.')) {
-      status = JSON.parse(options.body).status;
+      const nextStatus = JSON.parse(options.body).status;
+      if (nextStatus === 'sent' && !sentPatchOk) return { ok: false, status: 503 };
+      status = nextStatus;
       return { ok: true, status: 204 };
     }
     throw new Error(`Unexpected request: ${url}`);
@@ -58,6 +66,30 @@ for (const signature of ['eligible_teacher_reminders\\(boolean\\)', 'has_complet
   assert.match(migration, new RegExp(`grant execute on function public\\.${signature} to service_role`));
 }
 assert.doesNotMatch(migration, /create trigger[^;]*(participants|cases|case_intake)/is);
+assert.match(recoveryMigration, /existing\.status = 'failed'/);
+assert.match(recoveryMigration, /existing\.status = 'pending'[\s\S]*interval '30 minutes'/);
+assert.match(recoveryMigration, /attempt_count = existing\.attempt_count \+ 1/);
+assert.doesNotMatch(recoveryMigration, /cascade/i);
+assert.deepEqual(vercel.crons, [
+  { path: '/api/teacher-daily-prompt', schedule: '0 14 * * 1-5' },
+  { path: '/api/teacher-daily-prompt-retry', schedule: '0 15 * * 1-5' }
+]);
+assert.equal(new Set(vercel.crons.map(cron => cron.path)).size, vercel.crons.length);
+assert.equal(JSON.stringify(vercel).includes('followup'), false);
+for (const route of [dailyRoute, retryRoute]) {
+  assert.match(route, /module\.exports = createHandler\(TYPES\.DAILY\);/);
+  assert.doesNotMatch(route, /TYPES\.FOLLOWUP|followup_reminder/);
+}
+assert.equal(retryRoute, dailyRoute);
+assert.equal(service.TYPES.DAILY, 'daily_prompt');
+for (const helper of ['teacher-reminder-service.js', 'granite-study-calendar.js', 'teacher-followup-reminder.js']) {
+  assert.equal(fs.existsSync(new URL(helper, apiDirectory)), false, `${helper} must not consume an API function slot`);
+}
+for (const route of ['teacher-daily-prompt.js', 'teacher-daily-prompt-retry.js', 'teacher-reminder-smoke-test.js']) {
+  assert.equal(fs.existsSync(new URL(route, apiDirectory)), true, `${route} must remain deployed`);
+}
+const deployedApiRoutes = fs.readdirSync(apiDirectory).filter(file => file.endsWith('.js'));
+assert.ok(deployedApiRoutes.length <= 12, `expected at most 12 API routes, found ${deployedApiRoutes.length}`);
 
 // Approved text, greeting personalization, and privacy boundaries.
 const daily = service.emailFor(service.TYPES.DAILY, participant.teacher_name, process.env.TEACHER_GAME_URL);
@@ -105,6 +137,10 @@ mock = mockFetch({ eventStatus: 'pending' });
 response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
 assert.deepEqual({ sent: response.body.sent, skipped: response.body.skipped }, { sent: 0, skipped: 1 });
 assert.equal(mock.calls.some(call => call.url.includes('resend.com')), false);
+mock = mockFetch({ eventStatus: 'stale_pending' });
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
+assert.equal(response.body.sent, 1);
+assert.equal(mock.calls.filter(call => call.url.includes('resend.com')).length, 1);
 
 // Follow-up completion is checked in relational game_sessions through the RPC.
 mock = mockFetch({ completed: true });
@@ -133,6 +169,20 @@ assert.equal(response.statusCode, 500);
 assert.equal(mock.calls.length, 0);
 process.env.TEACHER_REMINDER_TIMEZONE = timezone;
 
+// Dissertation production fails closed unless timezone and clean authenticated game URL are exact.
+process.env.TEACHER_REMINDER_TIMEZONE = 'UTC';
+mock = mockFetch();
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
+assert.equal(response.statusCode, 500);
+assert.equal(mock.calls.length, 0);
+process.env.TEACHER_REMINDER_TIMEZONE = timezone;
+const gameUrl = process.env.TEACHER_GAME_URL;
+process.env.TEACHER_GAME_URL = 'https://mission.example.org/game/?teacher=someone@example.org';
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
+assert.equal(response.statusCode, 500);
+assert.equal(mock.calls.length, 0);
+process.env.TEACHER_GAME_URL = gameUrl;
+
 // Resend failure marks only the operational event failed and never touches game/study rows.
 mock = mockFetch({ resendOutcomes: [false, true] });
 handler = service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now });
@@ -151,5 +201,33 @@ const resendCalls = mock.calls.filter(call => call.url.includes('resend.com'));
 assert.equal(resendCalls.length, 2);
 assert.equal(resendCalls[0].options.headers['Idempotency-Key'], resendCalls[1].options.headers['Idempotency-Key']);
 assert.equal(resendCalls[1].options.headers['Idempotency-Key'], `teacher-reminder/${participant.participant_id}/2026-08-14/daily_prompt`);
+
+// A provider success followed by an event PATCH failure stays pending for stale recovery.
+mock = mockFetch({ sentPatchOk: false });
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
+assert.equal(response.statusCode, 502);
+assert.deepEqual({ sent: response.body.sent, failed: response.body.failed }, { sent: 0, failed: 1 });
+assert.equal(mock.calls.filter(call => call.options.method === 'PATCH').length, 1);
+
+// Ineligible dates return before candidate lookup or event claim.
+for (const instant of ['2026-08-16T16:00:00Z', '2026-09-07T16:00:00Z', '2026-08-11T16:00:00Z', '2027-05-27T16:00:00Z']) {
+  mock = mockFetch();
+  response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now: () => new Date(instant) }));
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.eligible_study_day, false);
+  assert.deepEqual({ sent: response.body.sent, skipped: response.body.skipped, failed: response.body.failed }, { sent: 0, skipped: 0, failed: 0 });
+  assert.equal(mock.calls.length, 0);
+}
+
+// Smoke test uses only the server test recipient and does not call Supabase.
+mock = mockFetch();
+response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }));
+assert.equal(response.statusCode, 200);
+const smokeSend = mock.calls.at(0);
+assert.equal(smokeSend.url, 'https://api.resend.com/emails');
+assert.equal(smokeSend.options.headers['Idempotency-Key'], 'teacher-reminder-smoke-test/daily-prompt-production-v1');
+assert.deepEqual(JSON.parse(smokeSend.options.body).to, ['smoke@example.org']);
+assert.equal(JSON.parse(smokeSend.options.body).subject, daily.subject);
+assert.equal(mock.calls.some(call => call.url.includes('supabase') || call.url.includes('teacher_reminder_events')), false);
 
 console.log('Teacher reminder eligibility, privacy, authorization, completion, failure, timezone, and idempotency checks passed.');

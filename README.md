@@ -40,7 +40,10 @@ Authenticated and QA gameplay require `case_game_content`; there is no public-fo
 
 Vercel on the project's custom domain is the intended current deployment model. Relative browser assets and navigation should remain portable for local static testing, but GitHub Pages is not the production deployment model. Vercel environment variables provide server-only configuration for API routes.
 
-Reminder endpoints exist at `/api/teacher-daily-prompt` and `/api/teacher-followup-reminder`, but this repository does **not** configure cron scheduling. See [Teacher Daily Reminders](docs/teacher-daily-reminders.md).
+Production reminder cron routes exist at `/api/teacher-daily-prompt` and
+`/api/teacher-daily-prompt-retry`; the protected smoke-test route is
+`/api/teacher-reminder-smoke-test`. The dissertation does not deploy or schedule
+a follow-up reminder route. See [Teacher Daily Reminders](docs/teacher-daily-reminders.md).
 
 ## Database bootstrap limitation
 
