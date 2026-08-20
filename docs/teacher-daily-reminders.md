@@ -37,6 +37,12 @@ failed counts, without database work.
 
 ## Required server environment
 
+- `TEACHER_REMINDER_SYSTEM_ENABLED`: operational kill switch for scheduled
+  reminders. Only the exact value `true` enables normal daily processing. When
+  missing or set to any other value, an authorized daily or retry invocation
+  returns HTTP 200 with zero counts before configuration validation, Supabase
+  queries, event creation, or Resend calls. This flag does not gate the smoke
+  test endpoint.
 - `CRON_SECRET`: shared authorization secret.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`: server-only Supabase access.
 - `RESEND_API_KEY`: server-only Resend credential.
@@ -87,6 +93,20 @@ only to `TEACHER_REMINDER_TEST_EMAIL`. Its fixed smoke-test Resend idempotency k
 prevents refresh spam. It does not query participants or Supabase and does not
 create reminder events, settings, gameplay data, or activation changes. It
 returns only send success/failure and, on success, the provider message ID.
+The smoke test remains available while `TEACHER_REMINDER_SYSTEM_ENABLED` is
+missing or `false`, so infrastructure can be verified without enabling
+automated participant email.
+
+## Launch order
+
+1. Set `TEACHER_REMINDER_SYSTEM_ENABLED=false`.
+2. Configure the final custom domain and authenticated teacher game URL.
+3. Configure and verify the Resend domain and sender.
+4. Configure the remaining production environment variables.
+5. Run the smoke-test email endpoint.
+6. Verify the received email and its authenticated game link.
+7. Set `TEACHER_REMINDER_SYSTEM_ENABLED=true`.
+8. Deliberately enable reminder settings only for intervention participants.
 
 ## Explicit research-admin activation
 

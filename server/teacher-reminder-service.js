@@ -77,6 +77,9 @@ function createHandler(type, dependencies = {}) {
     if (!authorized(request.headers && request.headers.authorization, process.env.CRON_SECRET)) {
       return response.status(401).json({ error: 'Unauthorized' });
     }
+    if (process.env.TEACHER_REMINDER_SYSTEM_ENABLED !== 'true') {
+      return response.status(200).json({ enabled: false, sent: 0, skipped: 0, failed: 0 });
+    }
     const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'RESEND_API_KEY', 'TEACHER_REMINDER_FROM_EMAIL', 'TEACHER_GAME_URL', 'TEACHER_REMINDER_TIMEZONE'];
     try { validateConfiguration(required); } catch (error) {
       console.error('Teacher reminder configuration is invalid.', { error: error.message });
