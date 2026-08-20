@@ -3,12 +3,13 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const service = require('./teacher-reminder-service.js');
+const service = require('../server/teacher-reminder-service.js');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260814010000_teacher_reminders.sql', import.meta.url), 'utf8');
 const recoveryMigration = fs.readFileSync(new URL('../supabase/migrations/20260820000000_teacher_reminder_stale_pending_recovery.sql', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 const dailyRoute = fs.readFileSync(new URL('./teacher-daily-prompt.js', import.meta.url), 'utf8');
 const retryRoute = fs.readFileSync(new URL('./teacher-daily-prompt-retry.js', import.meta.url), 'utf8');
+const apiDirectory = new URL('./', import.meta.url);
 
 Object.assign(process.env, {
   CRON_SECRET: 'cron-secret', SUPABASE_URL: 'https://database.example',
@@ -81,6 +82,14 @@ for (const route of [dailyRoute, retryRoute]) {
 }
 assert.equal(retryRoute, dailyRoute);
 assert.equal(service.TYPES.DAILY, 'daily_prompt');
+for (const helper of ['teacher-reminder-service.js', 'granite-study-calendar.js', 'teacher-followup-reminder.js']) {
+  assert.equal(fs.existsSync(new URL(helper, apiDirectory)), false, `${helper} must not consume an API function slot`);
+}
+for (const route of ['teacher-daily-prompt.js', 'teacher-daily-prompt-retry.js', 'teacher-reminder-smoke-test.js']) {
+  assert.equal(fs.existsSync(new URL(route, apiDirectory)), true, `${route} must remain deployed`);
+}
+const deployedApiRoutes = fs.readdirSync(apiDirectory).filter(file => file.endsWith('.js'));
+assert.ok(deployedApiRoutes.length <= 12, `expected at most 12 API routes, found ${deployedApiRoutes.length}`);
 
 // Approved text, greeting personalization, and privacy boundaries.
 const daily = service.emailFor(service.TYPES.DAILY, participant.teacher_name, process.env.TEACHER_GAME_URL);

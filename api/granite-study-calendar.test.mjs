@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const server = require('./granite-study-calendar.js');
+const server = require('../server/granite-study-calendar.js');
 const context = { window: { MR: {} }, Date, Set };
 vm.runInNewContext(fs.readFileSync(new URL('../game/js/study-calendar.js', import.meta.url), 'utf8'), context);
 const browser = context.window.MR.studyCalendar;

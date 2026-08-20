@@ -1,5 +1,5 @@
 'use strict';
 
-const { createHandler, TYPES } = require('./teacher-reminder-service');
+const { createHandler, TYPES } = require('../server/teacher-reminder-service');
 
 module.exports = createHandler(TYPES.DAILY);

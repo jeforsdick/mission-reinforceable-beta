@@ -2,13 +2,14 @@
 
 The dissertation intervention schedules one logical `daily_prompt` on each
 eligible intervention study day. `followup_reminder` is not part of the current
-dissertation intervention package and is not scheduled. Its dormant route and
-schema flag remain for compatibility, and `followup_enabled` remains disabled by
-default.
+dissertation intervention package and is not scheduled. Its
+HTTP route is not deployed. Legacy schema support remains dormant for
+compatibility, and `followup_enabled` remains disabled by default. The
+dissertation uses only `daily_prompt`.
 
 ## Production schedule and security
 
-`vercel.json` invokes the same authenticated route twice on weekdays:
+`vercel.json` invokes two thin authenticated routes on weekdays:
 
 - `GET /api/teacher-daily-prompt` at `0 14 * * 1-5` (14:00 UTC).
 - `GET /api/teacher-daily-prompt-retry` at `0 15 * * 1-5` (15:00 UTC).
@@ -22,6 +23,10 @@ key, permitting at most one provider delivery for that logical prompt.
 These UTC invocations occur in the early weekday morning in America/Denver;
 exact Vercel invocation time is operational infrastructure, not a participant
 outcome.
+
+Shared reminder and Granite calendar helper modules live under `server/`, not
+`api/`. Only intentional HTTP handlers therefore consume Vercel Serverless
+Function slots.
 
 The route derives the America/Denver study date and, before candidate lookup or
 event claim, applies the Granite base calendar: dates must be weekdays from
