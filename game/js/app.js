@@ -18,6 +18,7 @@
   let audioReady = false;
   const sfx = {};
   const activeSfx = new Set();
+  let sessionEventsWired = false;
 
   function savedSoundPreference() {
     try {
@@ -198,21 +199,6 @@
     if (soundToggle) {
       soundToggle.addEventListener('click', () => setSoundEnabled(!soundEnabled, { playClick: true }));
     }
-    const logoutButton = MR.$('#logout-btn');
-    if (logoutButton) {
-      logoutButton.addEventListener('click', async () => {
-        logoutButton.disabled = true;
-        logoutButton.textContent = 'Logging Out...';
-        try {
-          await MR.auth.signOut();
-          window.location.reload();
-        } catch (error) {
-          console.error(error);
-          logoutButton.disabled = false;
-          logoutButton.textContent = 'Log Out';
-        }
-      });
-    }
     const saveReminder = MR.$('#save-reminder-btn');
     if (saveReminder) {
       saveReminder.addEventListener('click', async () => {
@@ -221,6 +207,26 @@
         MR.$('#reminder-status').textContent = status;
       });
     }
+  }
+
+  function wireSessionEvents() {
+    if (sessionEventsWired) return;
+    const logoutButton = MR.$('#logout-btn');
+    if (!logoutButton) return;
+    sessionEventsWired = true;
+    logoutButton.addEventListener('click', async () => {
+      logoutButton.disabled = true;
+      const originalText = logoutButton.textContent;
+      logoutButton.textContent = 'Logging Out...';
+      try {
+        await MR.auth.signOut();
+        window.location.reload();
+      } catch (error) {
+        console.error(error);
+        logoutButton.disabled = false;
+        logoutButton.textContent = originalText;
+      }
+    });
   }
 
   async function loadAssignedGame(assignment) {
@@ -245,8 +251,10 @@
   }
 
   async function init() {
+    wireSessionEvents();
     try {
       const assignment = await MR.auth.getAssignment();
+      if (!assignment.qaMode) MR.auth.watchDailySession(assignment.user);
       MR.participantCode = assignment.participant.participant_code;
       MR.telemetryContext = {
         participantId: assignment.participant.id,
