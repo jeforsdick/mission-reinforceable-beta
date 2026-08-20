@@ -24,6 +24,17 @@ export function accountState(rows, expectedRole) {
     : { ready: false, label: 'Account not ready' };
 }
 
+export function antecedentContext(row = {}) {
+  const common = String(row.common_triggers || '').trim();
+  const older = String(row.typical_antecedents || '').trim();
+  if (!common) return older ? [{ label: 'What commonly happens before the behavior', value: older }] : [];
+  if (!older || common === older) return [{ label: 'What commonly happens before the behavior', value: common }];
+  return [
+    { label: 'Common triggers', value: common },
+    { label: 'Typical antecedents (older intake)', value: older }
+  ];
+}
+
 export function readinessForCase(item) {
   const reminderOn = item.reminders?.enabled === true;
   const participant = item.participant;

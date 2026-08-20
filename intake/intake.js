@@ -5,15 +5,15 @@
   const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
   const DRAFT_KEY = 'mr-intake-draft-v1';
   const DOMAINS = {
-    proactive: ['Proactive / Prevention', 'What should the teacher consistently do before or early in situations where the behavior is likely?'],
-    teaching: ['Teaching', 'What should the teacher consistently do to teach or prompt the replacement behavior?'],
-    reinforcement: ['Reinforcement', 'What should the teacher consistently notice and reinforce?'],
-    response: ['Response', 'What should the teacher consistently do when the target behavior occurs?'],
-    crisis: ['Crisis / Safety', 'What should the teacher consistently do to follow the crisis or safety plan?']
+    proactive: ['Proactive / Prevention Plan Steps', 'What does the behavior plan say staff should do to prevent or reduce the likelihood of the behavior?'],
+    teaching: ['Teaching Plan Steps', 'What does the behavior plan say staff should teach or prompt the student to do instead?'],
+    reinforcement: ['Reinforcement Plan Steps', 'What does the behavior plan say staff should notice, reinforce, or provide when the student uses the replacement or desired behavior?'],
+    response: ['Response Plan Steps', 'What does the behavior plan say staff should do when the target behavior occurs?'],
+    crisis: ['Crisis / Safety Plan Steps', 'What does the existing crisis or safety plan say staff should do?']
   };
-  const REQUIRED_FIELDS = ['teacher_name', 'teacher_email', 'coach_name', 'coach_email', 'grade_level', 'student_initials', 'target_behavior', 'behavior_topography', 'primary_function', 'replacement_behavior', 'desired_behavior', 'typical_settings', 'common_triggers', 'typical_antecedents', 'typical_consequences', 'current_staff_responses'];
+  const REQUIRED_FIELDS = ['teacher_name', 'teacher_email', 'coach_name', 'coach_email', 'grade_level', 'student_initials', 'target_behavior', 'behavior_topography', 'primary_function', 'replacement_behavior', 'desired_behavior', 'typical_settings', 'common_triggers', 'typical_consequences', 'current_staff_responses'];
   const OPTIONAL_FIELDS = ['student_strengths', 'preferred_items_activities', 'preference_assessment_notes', 'prevention_strategies', 'teaching_strategies', 'reinforcement_system', 'response_strategy', 'crisis_plan', 'requested_scenarios', 'additional_context'];
-  const INTAKE_FIELDS = REQUIRED_FIELDS.concat(OPTIONAL_FIELDS);
+  const INTAKE_FIELDS = REQUIRED_FIELDS.concat(OPTIONAL_FIELDS, ['typical_antecedents']);
   const state = { client: null, busy: false };
   const $ = selector => document.querySelector(selector);
 
@@ -34,8 +34,8 @@
     card.dataset.domain = domain;
     card.hidden = domain === 'crisis' && !hasCrisis();
     const contextFields = { proactive: 'prevention_strategies', teaching: 'teaching_strategies', reinforcement: 'reinforcement_system', response: 'response_strategy' };
-    const context = contextFields[domain] ? `<div class="field context-detail"><label for="${contextFields[domain]}">Additional plan details <span>Optional</span></label><textarea id="${contextFields[domain]}" name="${contextFields[domain]}"></textarea><p class="helper">Add useful context such as exact wording, timing, materials, schedules, prompting or reinforcement details, and things staff should avoid.</p></div>` : '';
-    card.innerHTML = `<h3>${DOMAINS[domain][0]} <i>*</i></h3><h4>Key staff actions</h4><p class="helper">Add the specific actions staff should do consistently. Each action will become an individual practice and coaching target.</p><p class="helper">${DOMAINS[domain][1]}</p><div class="step-list"></div><button class="add-step" type="button">+ Add another action</button><p class="domain-error" aria-live="polite"></p>${context}`;
+    const context = contextFields[domain] ? `<div class="field context-detail"><label for="${contextFields[domain]}">More details <span>Optional</span></label><textarea id="${contextFields[domain]}" name="${contextFields[domain]}"></textarea><p class="helper">Add any timing, wording, materials, prompting, schedule, or other details needed to understand how these steps should be used.</p></div>` : '';
+    card.innerHTML = `<h3>${DOMAINS[domain][0]} <i>*</i></h3><p class="helper">${DOMAINS[domain][1]}</p><div class="step-list"></div><button class="add-step" type="button">+ Add another step</button><p class="domain-error" aria-live="polite"></p>${context}`;
     const list = card.querySelector('.step-list');
     (rows.length ? rows : [{ description: '' }]).forEach(row => addStep(list, row));
     card.querySelector('.add-step').addEventListener('click', () => addStep(list, { description: '' }));
@@ -93,6 +93,7 @@
   function collectDraft() {
     const fields = {};
     INTAKE_FIELDS.forEach(name => { fields[name] = fieldValue(name); });
+    fields.typical_antecedents = fields.common_triggers;
     return { fields, has_crisis_plan: hasCrisis(), fidelity_targets: collectTargets() };
   }
   function saveDraft() {
@@ -111,10 +112,13 @@
     let draft;
     try { draft = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch (_) { return; }
     if (!draft || !draft.fields) return;
+    const antecedent = draft.fields.common_triggers || draft.fields.typical_antecedents || '';
     INTAKE_FIELDS.forEach(name => {
       const field = $(`[name="${name}"]`);
       if (field && typeof draft.fields[name] === 'string') field.value = draft.fields[name];
     });
+    const commonTriggers = $('[name="common_triggers"]');
+    if (commonTriggers) commonTriggers.value = antecedent;
     const crisis = $(`input[name="has_crisis_plan"][value="${draft.has_crisis_plan === true}"]`);
     if (crisis) crisis.checked = true;
     renderTargets(Array.isArray(draft.fidelity_targets) ? draft.fidelity_targets : []);
@@ -169,6 +173,7 @@
   function submissionPayload(requestId) {
     const payload = {};
     INTAKE_FIELDS.forEach(name => { payload[name] = fieldValue(name) || null; });
+    payload.typical_antecedents = payload.common_triggers;
     payload.request_id = requestId;
     payload.has_crisis_plan = hasCrisis();
     if (!payload.has_crisis_plan) payload.crisis_plan = null;
