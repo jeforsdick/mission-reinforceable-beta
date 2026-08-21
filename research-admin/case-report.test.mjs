@@ -13,18 +13,18 @@ const checklist = [
 const base = { id:'case',study_id:'MR-101',case_code:'CASE-101',student_alias:'River',current_phase:'prebaseline',protocol:{stagger_position:1,planned_baseline_observations:6},checklist,checklist_history:[],measures:[],phase_history:[],tasks:[],study_events:[],coaching_contacts:[],observation_data:{coverage:{completed:0,ioa:0,percent:0},observations:[],setups:[],observers:[]},prepared_content:{},case_active:false,participant_active:false };
 const prepared = { protected_content:{present:true,raw_game_content:'SECRET'},resource_map:{status:'Ready'},reminders:{enabled:false} };
 
-test('baseline assignment freezes and TSES readiness links to its existing measure', () => {
+test('baseline assignment freezes while TSES stays in Enrollment', () => {
   const before = renderOperations(base, prepared, escape);
   assert.match(before, /id="protocol-form"/);
   assert.match(before, /Save Baseline Assignment/);
   assert.match(before, /TSES — Pre-Baseline/);
-  assert.match(before, /Needs completion/);
-  assert.match(before, /id="go-to-tses"/);
+  assert.match(before, /id="operations-enrollment"[\s\S]*data-key="tses_pre"[\s\S]*id="operations-prebaseline"/);
+  assert.doesNotMatch(before, /Needs completion|id="go-to-tses"/);
 
   const complete = {...base,measures:[{measure_key:'tses_pre',status:'complete',completed_on:'2026-08-02'}]};
   const afterSave = renderOperations(complete, prepared, escape);
   assert.match(afterSave, /Ready to begin baseline\./);
-  assert.match(afterSave, /TSES — Pre-Baseline[\s\S]*Complete/);
+  assert.match(afterSave, /data-key="tses_pre"[\s\S]*option value="complete" selected/);
   assert.doesNotMatch(afterSave, /id="go-to-tses"/);
 
   const baseline = renderOperations({...complete,current_phase:'baseline'}, prepared, escape);

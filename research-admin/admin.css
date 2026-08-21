@@ -343,11 +343,6 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .case-report-help { display:block; color:var(--muted); text-align:right; }
 .baseline-assignment { margin-bottom:10px; padding:16px; border:1px solid var(--line); border-radius:12px; background:#fcfbf8; }
 .baseline-assignment p { margin:5px 0 0; font-size:1.08rem; }
-.readiness-measure { display:flex; align-items:center; gap:16px; margin:18px 0; padding:14px; border:2px solid var(--line); border-radius:12px; }
-.readiness-measure > span { flex:1; }
-.readiness-measure small { display:block; color:var(--muted); }
-.readiness-measure.is-missing { border-color:#c6763f; background:#fff8f1; }
-.measure-focus { outline:4px solid rgba(198,118,63,.35); background:#fff8f1; scroll-margin-top:170px; }
 @media(max-width:650px){.case-header{align-items:flex-start;flex-direction:column;padding:22px}.case-status{justify-content:flex-start}.case-tabs{overflow-x:auto}.case-tab{flex:0 0 auto;min-width:170px}.operations-subnav{top:124px}.interval-grid{min-width:360px}.observation-record-form{overflow-x:auto}}
 @media print { .tab-panel[hidden] { display:none!important; } .intake-workspace { display:block!important; } .operations-workspace { display:none!important; } .case-header { display:none; } }
 /* Unified classroom observation workflow */
