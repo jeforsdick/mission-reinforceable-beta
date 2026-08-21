@@ -36,8 +36,13 @@ assert.match(css,/\.baseline-checklist-grid\s*\{[^}]*grid-template-columns:repea
 const checklistRpc="operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null})";
 assert.ok(js.includes(checklistRpc));
 const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
-assert.match(renderedOperations,/Build and prepare the individualized game/);
-for(const heading of ['1. Confirm the plan information','2. Prepare the private game files','3. Validate and build','4. Load the protected game','5. Preview and review the game','6. Prepare the teacher','7. Start teacher access when intervention begins']) assert.match(renderedOperations,new RegExp(heading.replace(/[.]/g,'\\.')));
+assert.match(renderedOperations,/Build, check, and prepare the individualized game/);
+for(const heading of ['1. Create the private case workspace','2. Add the case setup and fidelity targets','3. Build the Resource Map','4. Write the individualized missions','5. Check the game files','6. Create the protected game file','7. Load the protected game into Supabase','8. Preview and review the game','9. Prepare the teacher','10. Start the game when intervention begins']) assert.match(renderedOperations,new RegExp(heading.replace(/[.]/g,'\\.')));
+for(const label of ['Study ID','Case','Student alias']) assert.match(renderedOperations,new RegExp(`<dt>${label}</dt>`));
+for(const section of ['BIP at a Glance','Function Forest','Prevention Palace','Replacement Reservoir','Reinforcement Ridge','Error Correction Canyon','BSP Library','Coaching Cottage','Fidelity Fortress']) assert.match(renderedOperations,new RegExp(section));
+assert.match(renderedOperations,/FICTIONAL TRAINING EXAMPLES — NOT PARTICIPANT DATA/);
+assert.match(renderedOperations,/Before clicking Run,[\s\S]*case code in the SQL matches/);
+assert.match(renderedOperations,/Run these commands locally/);
 assert.match(renderedOperations,/--case-code CASE-TEST/);
 assert.match(renderedOperations,/Suggested next content version: 1/);
 assert.match(renderedOperations,/data-key="intervention_orientation"/);
