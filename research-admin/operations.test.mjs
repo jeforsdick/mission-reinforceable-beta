@@ -43,6 +43,13 @@ for(const section of ['BIP at a Glance','Function Forest','Prevention Palace','R
 assert.match(renderedOperations,/FICTIONAL TRAINING EXAMPLES — NOT PARTICIPANT DATA/);
 assert.match(renderedOperations,/Before clicking Run,[\s\S]*case code in the SQL matches/);
 assert.match(renderedOperations,/Run these commands locally/);
+assert.match(renderedOperations,/Do NOT create the case folder yourself\. The starter command will create it\./);
+assert.match(renderedOperations,/secure parent folder is[\s\S]*MissionReinforceablePrivate[\s\S]*command will create[\s\S]*CASE-998/);
+assert.doesNotMatch(renderedOperations,/<li>Create a folder for the current case\.<\/li>/);
+assert.match(renderedOperations,/Record the intervention phase change using Phase Decision\./);
+assert.match(renderedOperations,/Game-access, production login, and reminder launch controls will be added here before production study launch\./);
+assert.match(renderedOperations,/Do not use ad hoc activation steps from this guide\./);
+assert.doesNotMatch(renderedOperations,/Use the existing, separate phase, account, access, and reminder controls/);
 assert.match(renderedOperations,/--case-code CASE-TEST/);
 assert.match(renderedOperations,/Suggested next content version: 1/);
 assert.match(renderedOperations,/--source-dir "\[PRIVATE CASE FOLDER\]"[\s\S]*--output "\[PRIVATE CASE FOLDER\]\/protected-seed\.sql"/);
