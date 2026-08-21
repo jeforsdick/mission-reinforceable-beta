@@ -56,6 +56,18 @@ assert.ok(renderedOperations.indexOf('id="operations-phase-decision"')>renderedO
 assert.doesNotMatch(renderedOperations,/Make a deliberate researcher decision|Research Admin never changes phases automatically\./);assert.match(renderedOperations,/Phase Decision[\s\S]*Record Phase Change[\s\S]*Phase History/);
 assert.match(renderedOperations,/Case History[\s\S]*append-only history/);
 assert.match(ui,/class="inline-record measure-form"/);assert.match(ui,/external_reference/);assert.match(js,/Completion date is required/);
+const prebaseline=renderedOperations.slice(renderedOperations.indexOf('id="operations-prebaseline"'),renderedOperations.indexOf('id="operations-baseline"'));
+assert.match(prebaseline,/id="baseline-tses-status"[\s\S]*id="go-to-tses"[\s\S]*id="tses-pre-recording"[^>]* hidden[\s\S]*class="inline-record measure-form" data-key="tses_pre"/,'incomplete TSES has a hidden recording target directly after its readiness card');
+assert.ok(prebaseline.indexOf('data-key="tses_pre"')<prebaseline.indexOf('<h3>Baseline orientation</h3>'),'TSES recording form precedes baseline orientation');
+assert.match(js,/go-to-tses[\s\S]*measure-form\[data-key="tses_pre"\][\s\S]*closest\('#tses-pre-recording'\)\.hidden=false[\s\S]*scrollIntoView[\s\S]*select\[name="status"\][\s\S]*\.focus/,'Go to TSES reveals, scrolls to, and focuses the real form');
+assert.match(js,/research_admin_record_measure[\s\S]*target_measure_key:form\.dataset\.key/,'existing measure submit handler records tses_pre by its form data key');
+const completedTsesMarkup=renderOperations({...readyFixture(),measures:[{measure_key:'tses_pre',status:'complete',completed_on:'2026-08-20'}]}, {}, x=>String(x));
+const completedTsesPrebaseline=completedTsesMarkup.slice(completedTsesMarkup.indexOf('id="operations-prebaseline"'),completedTsesMarkup.indexOf('id="operations-baseline"'));
+assert.match(completedTsesPrebaseline,/TSES — Pre-Baseline[\s\S]*Completed 2026-08-20[\s\S]*Complete/);
+assert.doesNotMatch(completedTsesPrebaseline,/id="go-to-tses"/,'completed TSES removes its action');
+assert.match(completedTsesPrebaseline,/data-key="tses_pre"/,'completed TSES retains the existing recording form for edits');
+const measureSubmit=js.slice(js.indexOf("document.querySelectorAll('.measure-form')"),js.indexOf("$('#phase-form')"));
+assert.doesNotMatch(measureSubmit,/research_admin_record_phase|target_phase/,'saving a measure does not change phase automatically');
 for(const field of ['affects_observation','affects_mr_exposure','affects_phase_interpretation','action_taken']){assert.match(ui,new RegExp(field));assert.match(js,new RegExp(field));}
 assert.match(js,/research_admin_resolve_study_event[\s\S]*target_action_taken:action/);
 assert.match(ui,/Duration — optional/);assert.match(js,/target_approximate_duration_minutes/);assert.match(ui,/name="focus"/);assert.match(js,/COACHING_FOCUSES\.includes/);
