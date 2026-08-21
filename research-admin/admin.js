@@ -3,14 +3,14 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
-import { renderGameCreation } from './game-creation-ui.mjs';
+import { captureMission, latestDraft, missionFromDraft, normalizeMission, renderGameCreation } from './game-creation-ui.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
-const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '' };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '' };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -191,6 +191,7 @@ function bindDetail() {
   });
   $('#provision-form')?.addEventListener('submit', provisionCase);
   $('#download-case-pdf')?.addEventListener('click', openCaseReport);
+  bindMissionBuilder();
   if ($('#fidelity-form-wrap')) renderFidelityForm();
 }
 
@@ -316,14 +317,55 @@ async function loadReadiness(requestId) {
   if (error) throw error;
   const { data: fidelity, error: fidelityError } = await state.client.rpc('research_admin_procedural_fidelity_dashboard', { target_case_id: data.case.id });
   if (fidelityError) throw fidelityError; state.fidelity = fidelity; state.readiness = data;
-  const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{target_case_id:data.case.id}); if(operationsError) throw operationsError; const {data:observationData,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{target_case_id:data.case.id});if(observationError)throw observationError;const {data:targets,error:targetsError}=await state.client.from('fidelity_targets').select('target_key,domain,description,sort_order').eq('case_id',data.case.id).eq('active',true).order('sort_order');if(targetsError)throw targetsError;state.caseOperations=operations.cases?.[0];state.caseOperations.fidelity_targets=targets||[];state.caseOperations.observation_data=observationData; return data;
+  const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{target_case_id:data.case.id}); if(operationsError) throw operationsError; const {data:observationData,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{target_case_id:data.case.id});if(observationError)throw observationError;
+  const { data: authoring, error: authoringError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: data.case.id });
+  state.authoringWorkspace = authoringError ? null : { ...authoring, ...authoring.case, case_id: authoring.case?.id, active_fidelity_targets: authoring.fidelity_targets || [], mission_drafts: authoring.missions || [] };
+  state.authoringLoadError = authoringError?.message || '';
+  state.caseOperations=operations.cases?.[0];state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData; return data;
 }
 function readinessPanel(data) {
   return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml)
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 function gameCreationPanel(data) {
-  return renderGameCreation({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml);
+  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage);
+}
+
+function redrawGameCreation() {
+  const panel = $('#game-creation-panel');
+  if (!panel) return;
+  panel.innerHTML = gameCreationPanel(state.readiness);
+  bindMissionBuilder();
+}
+function preserveMissionForm() {
+  const root = $('#game-creation-panel');
+  if (root && state.missionDraft) captureMission(root, state.missionDraft, state.missionNav);
+}
+function bindMissionBuilder() {
+  $('#back-to-game-ready')?.addEventListener('click', () => { selectCaseTab('operations'); $('#operations-game-ready')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  document.querySelectorAll('.mission-slot').forEach(button => button.addEventListener('click', () => {
+    preserveMissionForm();
+    const mission_type = button.dataset.missionType, slot_number = Number(button.dataset.slotNumber);
+    state.missionSelection = { mission_type, slot_number };
+    const row = latestDraft(state.authoringWorkspace, mission_type, slot_number);
+    state.missionDraft = normalizeMission(missionFromDraft(row), state.authoringWorkspace.case_code, mission_type, slot_number);
+    state.missionNav = { decision: 1, branch: 'supported' }; state.missionMessage = ''; redrawGameCreation();
+  }));
+  document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
+  document.querySelectorAll('[data-branch]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.branch = button.dataset.branch; redrawGameCreation(); }));
+  $('#save-mission-draft')?.addEventListener('click', saveMissionDraft);
+}
+async function saveMissionDraft() {
+  preserveMissionForm(); const button = $('#save-mission-draft'), message = $('#mission-save-message');
+  if (!state.missionSelection || !state.missionDraft || !/^[A-Za-z0-9_-]+$/.test(state.missionDraft.id)) { message.textContent = 'Use a mission ID containing only letters, numbers, underscores, or hyphens.'; return; }
+  button.disabled = true; message.textContent = 'Saving…';
+  const selection = { ...state.missionSelection };
+  const { error } = await state.client.rpc('research_admin_save_mission_draft', { target_case_id: state.authoringWorkspace.case_id, target_mission_type: selection.mission_type, target_slot_number: selection.slot_number, target_mission: state.missionDraft });
+  if (error) { button.disabled = false; message.textContent = `Draft was not saved: ${error.message}`; return; }
+  const { data, error: reloadError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
+  if (reloadError) { button.disabled = false; message.textContent = `Draft saved, but the workspace could not reload: ${reloadError.message}`; return; }
+  state.authoringWorkspace = { ...data, ...data.case, case_id: data.case.id, active_fidelity_targets: data.fidelity_targets || [], mission_drafts: data.missions || [] };
+  state.missionSelection = selection; state.missionDraft = normalizeMission(missionFromDraft(latestDraft(state.authoringWorkspace, selection.mission_type, selection.slot_number)), state.authoringWorkspace.case_code, selection.mission_type, selection.slot_number); state.missionMessage = 'Draft saved.'; state.selectedTab = 'game-creation'; redrawGameCreation();
 }
 
 function fidelityPanel() {

@@ -29,11 +29,12 @@ const readiness = migration.slice(migration.indexOf('create or replace function 
 assert.doesNotMatch(readiness, /reviewed_(?:by|at)|blocks|studentAlias|resources->'sections'->/);
 assert.doesNotMatch(readiness, /gc\.resources\s*[,)]/);
 
-// The existing activation/reminder states remain untouched, and UI makes version explicit.
+// The existing activation/reminder states remain untouched; authoring does not publish.
 assert.doesNotMatch(migration, /update public\.(?:cases|participants|teacher_reminder_settings)/i);
 assert.match(operationsUi, /Resource Map/);
 assert.doesNotMatch(operationsUi, /Mission review|comparability/i);
-assert.match(operationsUi, /Complete all three checks for the current protected-content version/);
+assert.match(operationsUi, /AUTHOR → SAVE DRAFT/);
+assert.doesNotMatch(operationsUi, /Publish Game|case_game_content/);
 assert.match(adminJs, /research_admin_record_case_signoff/);
 
 const states = readinessForCase({ case: { active: false }, participant: { active: false }, resource_map: { status: 'Needs QA' } });

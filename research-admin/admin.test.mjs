@@ -130,11 +130,10 @@ assert.match(js, /Student &amp; Behavior/);
 assert.match(js, /BIP\/BSP Strategies/);
 assert.match(js, /id="operations-panel"[\s\S]*readinessPanel\(converted\)/);
 assert.match(css, /\.operations-subnav \{ position:sticky/);
-assert.match(gameUi, /Complete all three checks for the current protected-content version/);
-assert.match(gameUi, /resource_behavior_review[\s\S]*resource_privacy_review[\s\S]*resource_qa_preview/);
-assert.match(gameUi, /done\?'Complete ✓':'Needs review'/);
+assert.match(gameUi, /MISSION BANK/);
+assert.match(gameUi, /AUTHOR → SAVE DRAFT/);
 assert.doesNotMatch(js, /Comparability|mission_bank_comparability|comparability_ready/i);
-assert.match(gameUi, /QA only\. This does not turn the game on or count as study data\./);
+assert.doesNotMatch(gameUi, /Publish Game|case_game_content/);
 
 // Prepared-case Game Creation is a real third tab and preserves the selected tab on re-render.
 assert.equal((js.match(/class="case-tab"/g) || []).length, 3);
@@ -145,6 +144,6 @@ assert.match(js, /#open-game-creation[\s\S]*selectCaseTab\('game-creation'\)[\s\
 assert.match(js, /#back-to-game-ready[\s\S]*selectCaseTab\('operations'\)[\s\S]*#operations-game-ready[\s\S]*scrollIntoView/);
 assert.match(js, /caseTabs\.forEach\(tab => \{ const panel = \$\(`#\$\{tab\}-panel`\)/);
 assert.match(js, /\$\('#print-intake'\)\.hidden = selected !== 'intake'/);
-assert.equal((gameUi.match(/id="preview-protected-game"/g) || []).length, 1);
-assert.equal((gameUi.match(/id="signoff-message"/g) || []).length, 1);
+assert.equal((gameUi.match(/id="save-mission-draft"/g) || []).length, 1);
+assert.equal((gameUi.match(/id="mission-save-message"/g) || []).length, 1);
 assert.doesNotMatch(ui, /id="preview-protected-game"|id="signoff-message"/);
