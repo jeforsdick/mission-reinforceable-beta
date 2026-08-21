@@ -290,19 +290,7 @@ async function loadReadiness(requestId) {
 }
 function readinessPanel(data) {
   const states = readinessForCase(data);
-  const preview = states.content === 'Ready' ? `<button id="preview-protected-game" class="primary" type="button" data-case-code="${escapeHtml(data.case.case_code)}">Preview Game</button><small>QA only. This does not turn the game on or count as study data.</small>` : '';
-  const signoffs = states.content === 'Ready' ? `<div class="signoffs no-print"><h3>Content Checks</h3><p>Approving protected content <strong>version ${escapeHtml(data.protected_content.version)}</strong>. A later version requires new signoffs.</p>${[
-    ['resource_behavior_review', 'Behavior Review', data.resource_map?.behavior_reviewed],
-    ['resource_privacy_review', 'Privacy Review', data.resource_map?.privacy_reviewed],
-    ['resource_qa_preview', 'QA Preview', data.resource_map?.qa_previewed]
-  ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
-  const reviewComplete = states.content === 'Ready' && data.resource_map?.behavior_reviewed && data.resource_map?.privacy_reviewed && data.resource_map?.qa_previewed;
-  const reviewState = reviewComplete ? 'COMPLETE' : 'NEEDS ACTION';
-  const reviewSummary = states.content === 'Ready' ? `<div class="content-review-summary"><strong>CONTENT REVIEW — ${reviewState}</strong><span>Version ${escapeHtml(data.protected_content.version)}</span><span>Behavior ${data.resource_map?.behavior_reviewed?'✓':'Needs action'} · Privacy ${data.resource_map?.privacy_reviewed?'✓':'Needs action'} · QA ${data.resource_map?.qa_previewed?'✓':'Needs action'}</span></div>` : '<div class="content-review-summary needs"><strong>CONTENT REVIEW — NEEDS ACTION</strong><span>Protected game content needs action.</span></div>';
-  const reviewDetails = `<details class="content-review-details" ${reviewComplete?'':'open'}><summary>View Review Details</summary>${signoffs}</details>`;
-  const gameExtras = `<div class="game-qa-controls no-print">${preview}</div>${reviewSummary}${reviewDetails}`;
-  return renderOperations(state.caseOperations,data,escapeHtml)
-    .replace('<!-- GAME_READY_EXTRAS -->',gameExtras)
+  return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml)
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 

@@ -49,6 +49,21 @@ export function gameReadiness(item){
   if(!complete(checklist.intervention_orientation)) missing.push('teacher orientation');
   return {ready:missing.length===0,missing};
 }
+export function gamePreparationReadiness(item, prepared=item.prepared_content||{}){
+  const checklist=currentByKey(item.checklist),protectedContent=prepared.protected_content?.present??prepared.protected_content_present;
+  const resourceMap=prepared.resource_map?.status==='Ready'||prepared.resource_map_ready===true;
+  const reviews=prepared.resource_map||{};
+  const teacherReady=prepared.teacher_account_ready===true;
+  const missing=[];
+  if(!protectedContent) missing.push('protected game content');
+  if(!resourceMap) missing.push('Resource Map');
+  if(!reviews.behavior_reviewed) missing.push('Behavior Review');
+  if(!reviews.privacy_reviewed) missing.push('Privacy Review');
+  if(!reviews.qa_previewed) missing.push('QA Preview');
+  if(!complete(checklist.intervention_orientation)) missing.push('MR intervention orientation');
+  if(!teacherReady) missing.push('teacher account');
+  return {ready:missing.length===0,missing};
+}
 export function lifecycleStage(item){
   const phase=item.current_phase||'prebaseline',checklist=currentByKey(item.checklist),stats=observationSummary(item);
   if(phase==='prebaseline') return complete(checklist.teacher_consent)&&complete(checklist.parent_permission)&&complete(checklist.student_assent,true)?'Prebaseline':'Enrollment';

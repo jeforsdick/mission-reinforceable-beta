@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { CHECKLIST, MEASURES, PHASES, COACHING_FOCUSES, LIFECYCLE_STAGES, baselineReadiness, gameReadiness, measureNeeds, interventionReadiness, attentionForCase, studyWideAttention, timelineForCase, checklistStatuses, denverToday, lifecycleStage, nextAction, observationSummary, interventionElapsed } from './operations-model.mjs';
+import { CHECKLIST, MEASURES, PHASES, COACHING_FOCUSES, LIFECYCLE_STAGES, baselineReadiness, gameReadiness, gamePreparationReadiness, measureNeeds, interventionReadiness, attentionForCase, studyWideAttention, timelineForCase, checklistStatuses, denverToday, lifecycleStage, nextAction, observationSummary, interventionElapsed } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs';
 const sql=fs.readFileSync(new URL('../supabase/migrations/20260818060000_research_operations_foundation.sql',import.meta.url),'utf8');
 const html=fs.readFileSync(new URL('index.html',import.meta.url),'utf8');
@@ -36,7 +36,12 @@ assert.match(css,/\.baseline-checklist-grid\s*\{[^}]*grid-template-columns:repea
 const checklistRpc="operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null})";
 assert.ok(js.includes(checklistRpc));
 const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
-assert.match(renderedOperations,/Turn on teacher access when intervention begins\./);
+assert.match(renderedOperations,/Build and prepare the individualized game/);
+for(const heading of ['1. Confirm the plan information','2. Prepare the private game files','3. Validate and build','4. Load the protected game','5. Preview and review the game','6. Prepare the teacher','7. Start teacher access when intervention begins']) assert.match(renderedOperations,new RegExp(heading.replace(/[.]/g,'\\.')));
+assert.match(renderedOperations,/--case-code CASE-TEST/);
+assert.match(renderedOperations,/Suggested next content version: 1/);
+assert.match(renderedOperations,/data-key="intervention_orientation"/);
+assert.doesNotMatch(renderedOperations,/Create Test Login Link|Send Game Login/);
 assert.doesNotMatch(renderedOperations,/Build it early\. Turn it on only when intervention starts\./);
 const subnav=renderedOperations.slice(renderedOperations.indexOf('<nav class="operations-subnav"'),renderedOperations.indexOf('</nav>')+6);
 assert.deepEqual([...subnav.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(([,href,label])=>[label,href]),[['Overview','#operations-overview'],['Phase Decision','#operations-phase-decision'],['Enrollment','#operations-enrollment'],['Prebaseline','#operations-prebaseline'],['Baseline','#operations-baseline'],['Observations','#operations-observations'],['Game Ready','#operations-game-ready'],['Intervention','#operations-intervention'],['End Measures','#operations-end-measures'],['Maintenance','#operations-maintenance'],['Closeout','#operations-closeout'],['Events','#operations-events'],['History','#operations-history']]);
@@ -87,6 +92,14 @@ assert.deepEqual(interventionReadiness(intervention).missing,['MR intervention o
 assert.equal(attentionForCase(intervention).filter(x=>x.endsWith('needed for intervention')).length,5);
 const withoutComparability={...ready,prepared_content:{protected_content_present:true,resource_map_ready:true},checklist:completeChecklist};
 assert.equal(gameReadiness(withoutComparability).ready,true,'game readiness does not require comparability');
+const preparedForLaunch={protected_content:{present:true,version:4},resource_map:{status:'Ready',behavior_reviewed:true,privacy_reviewed:true,qa_previewed:true},teacher_account_ready:true,reminders:{enabled:false}};
+const launchReady={...withoutComparability,case_active:false,participant_active:false};
+assert.equal(gamePreparationReadiness(launchReady,preparedForLaunch).ready,true,'pre-launch readiness does not require access or reminders');
+const versionedMarkup=renderOperations({...launchReady,case_code:'CASE-099'},preparedForLaunch,x=>String(x));
+assert.match(versionedMarkup,/Suggested next content version: 5/);assert.match(versionedMarkup,/--case-code CASE-099/);
+assert.deepEqual([...versionedMarkup.matchAll(/data-review-type="([^"]+)"/g)].map(x=>x[1]),['resource_behavior_review','resource_privacy_review','resource_qa_preview']);
+assert.doesNotMatch(versionedMarkup,/Mission Review|Comparability/);
+
 assert.equal(interventionReadiness({...withoutComparability,current_phase:'intervention',case_active:true,participant_active:true,prepared_content:{...withoutComparability.prepared_content,reminders_enabled:true}}).ready,true,'intervention readiness does not require comparability');
 const timeline=timelineForCase({checklist_history:[{item_key:'teacher_consent',status:'complete',status_date:'2026-01-03',recorded_at:'2026-01-01'}],phase_history:[{phase:'baseline',effective_date:'2026-01-02'}]});assert.equal(timeline[0].category,'Protocol');assert.equal(timeline[0].date,'2026-01-03');assert.equal(timeline[0].label,'Teacher consent — Complete');
 assert.equal(lifecycleStage(readyFixture()),'Enrollment');

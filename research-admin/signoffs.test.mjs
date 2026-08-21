@@ -33,7 +33,7 @@ assert.doesNotMatch(readiness, /gc\.resources\s*[,)]/);
 assert.doesNotMatch(migration, /update public\.(?:cases|participants|teacher_reminder_settings)/i);
 assert.match(operationsUi, /Resource Map/);
 assert.doesNotMatch(operationsUi, /Mission review|comparability/i);
-assert.match(adminJs, /Approving protected content <strong>version/);
+assert.match(operationsUi, /Complete all three checks for the current protected-content version/);
 assert.match(adminJs, /research_admin_record_case_signoff/);
 
 const states = readinessForCase({ case: { active: false }, participant: { active: false }, resource_map: { status: 'Needs QA' } });
