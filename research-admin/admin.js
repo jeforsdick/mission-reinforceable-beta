@@ -328,7 +328,8 @@ function readinessPanel(data) {
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 function gameCreationPanel(data) {
-  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage);
+  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: data.case.case_code };
+  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError);
 }
 
 function redrawGameCreation() {
@@ -336,6 +337,7 @@ function redrawGameCreation() {
   if (!panel) return;
   panel.innerHTML = gameCreationPanel(state.readiness);
   bindMissionBuilder();
+  bindPublishedReview();
 }
 function preserveMissionForm() {
   const root = $('#game-creation-panel');
@@ -354,6 +356,11 @@ function bindMissionBuilder() {
   document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
   document.querySelectorAll('[data-branch]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.branch = button.dataset.branch; redrawGameCreation(); }));
   $('#save-mission-draft')?.addEventListener('click', saveMissionDraft);
+}
+function bindPublishedReview() {
+  $('#preview-protected-game')?.addEventListener('click', event => window.open(`../game/?qa_case=${encodeURIComponent(event.currentTarget.dataset.caseCode)}`, '_blank', 'noopener'));
+  document.querySelectorAll('.signoff-action:not(:disabled)').forEach(button => button.addEventListener('click', recordSignoff));
+  $('.orientation-form')?.addEventListener('submit', event => { event.preventDefault(); const form = new FormData(event.currentTarget); operationRpc('research_admin_record_checklist_status', { target_case_id: state.readiness.case.id, target_item_key: 'intervention_orientation', target_status: form.get('status'), target_status_date: form.get('status_date'), target_brief_note: form.get('note') || null }); });
 }
 async function saveMissionDraft() {
   preserveMissionForm(); const button = $('#save-mission-draft'), message = $('#mission-save-message');

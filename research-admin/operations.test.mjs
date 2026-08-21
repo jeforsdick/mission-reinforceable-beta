@@ -46,7 +46,8 @@ assert.match(renderedGameCreation,/Legacy local build instructions remain availa
 assert.doesNotMatch(renderedGameCreation,/Terminal|create-private-case-starter|protected-seed|Publish Game/);
 assert.match(js,/research_admin_game_authoring_workspace/);
 assert.match(js,/research_admin_save_mission_draft/);
-assert.doesNotMatch(renderedGameCreation,/Create Test Login Link|Send Game Login|intervention_orientation/);
+assert.doesNotMatch(renderedGameCreation,/Create Test Login Link|Send Game Login/);
+assert.match(renderedGameCreation,/data-key="intervention_orientation"/);
 const gameReady=renderedOperations.slice(renderedOperations.indexOf('id="operations-game-ready"'),renderedOperations.indexOf('id="operations-intervention"'));
 for (const label of ['Protected game content','Resource Map','Behavior Review','Privacy Review','QA Preview','Teacher account','MR intervention orientation']) assert.match(gameReady,new RegExp(label));
 for (const forbidden of ['create-private-case-starter','Mission Authoring Standard','Supabase SQL Editor','preview-protected-game','signoff-action']) assert.doesNotMatch(gameReady,new RegExp(forbidden));
@@ -63,7 +64,7 @@ assert.ok(tsesAt>permissionOrder,'TSES follows formal permissions');
 assert.ok(enrollment.indexOf('<h3>Pre-Baseline TSES</h3>')>permissionOrder);
 assert.ok(enrollment.indexOf('<h3>Early Prep</h3>')>tsesAt,'TSES precedes Early Prep');
 assert.ok(enrollment.indexOf('data-key="bsp_technical_review"')>tsesAt);
-for(const [key] of CHECKLIST.filter(([key]) => key !== 'intervention_orientation')) assert.match(renderedOperations,new RegExp(`data-key="${key}"`));
+for(const [key] of CHECKLIST) assert.match(renderedOperations+renderedGameCreation,new RegExp(`data-key="${key}"`));
 assert.match(renderedOperations,/data-key="student_assent"[\s\S]*option value="not_applicable"/);
 assert.match(enrollment,/Research data collection still waits for required permissions/);
 assert.doesNotMatch(renderedOperations,/operations-observations|>Observations<|record-observation-form/);
