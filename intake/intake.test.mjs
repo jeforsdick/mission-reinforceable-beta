@@ -7,7 +7,9 @@ const css = fs.readFileSync(new URL('intake.css', import.meta.url), 'utf8');
 
 assert.doesNotMatch(html + js, /research_admin|Admin sign in|case-select|case_intake|profiles|participants|signOut|sign-in/i);
 assert.doesNotMatch(js, /\.select\s*\(/);
-for (const name of ['student_strengths', 'preferred_items_activities', 'preference_assessment_notes']) { assert.match(html, new RegExp(`name=\"${name}\"`)); assert.match(js, new RegExp(name)); }
+for (const name of ['student_strengths', 'preferred_items_activities']) { assert.match(html, new RegExp(`name=\"${name}\"`)); assert.match(js, new RegExp(name)); }
+assert.doesNotMatch(html, /preference_assessment_notes|Preference Information|preference assessment/i);
+assert.doesNotMatch(js, /preference_assessment_notes/);
 for (const name of ['prevention_strategies', 'teaching_strategies', 'reinforcement_system', 'response_strategy']) assert.doesNotMatch(js.match(/const REQUIRED_FIELDS = \[[^;]+/s)[0], new RegExp(name));
 assert.doesNotMatch(html, /You do not need an existing Mission: Reinforceable account/);
 for (const heading of ['Teacher, Coach &amp; Student', 'Behavior &amp; Student Context', 'Behavior Plan Steps', 'Contextual Information']) assert.match(html, new RegExp(heading));
@@ -28,6 +30,7 @@ assert.match(js, /const DRAFT_KEY = 'mr-intake-draft-v1'/);
 assert.match(js, /localStorage\.setItem\(DRAFT_KEY, JSON\.stringify\(collectDraft\(\)\)\)/);
 assert.match(js, /localStorage\.getItem\(DRAFT_KEY\)/);
 assert.match(js, /draft\.fields\.common_triggers \|\| draft\.fields\.typical_antecedents \|\| ''/);
+assert.match(js, /INTAKE_FIELDS\.forEach\(name => \{\s*const field = \$\(`\[name="\$\{name\}"\]`\);/);
 assert.match(js, /localStorage\.removeItem\(DRAFT_KEY\)/);
 assert.match(js, /state\.client\.from\('intake_requests'\)\.insert\(submissionPayload\(requestId\)\)/);
 assert.equal((js.match(/\.from\('/g) || []).length, 1);

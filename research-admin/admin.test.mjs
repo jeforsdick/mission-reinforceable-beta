@@ -99,6 +99,9 @@ assert.doesNotMatch(sql, /i\.created_at|order by i\.created_at/);
 assert.doesNotMatch(html + js + sql, /student_full_name|student_id|diagnosis|disability|parent_information|medication/i);
 assert.match(html, /Print \/ Save PDF/); assert.match(css, /@media print/); assert.match(css, /\.no-print/);
 assert.doesNotMatch(js, /Practitioner/);
+// Older intakes retain their optional preference information; blank newer values stay hidden.
+assert.match(js, /field\('Preference information', row\.preference_assessment_notes, true\)/);
+assert.match(js, /const field = \(label, value, wide = false\) => value \?/);
 assert.deepEqual(antecedentContext({ common_triggers: 'A demand', typical_antecedents: 'A demand' }), [
   { label: 'What commonly happens before the behavior', value: 'A demand' }
 ]);
