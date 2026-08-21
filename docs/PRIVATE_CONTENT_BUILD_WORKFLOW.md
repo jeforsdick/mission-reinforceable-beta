@@ -29,6 +29,19 @@ activity is QA-only, does not count as study data, and does not activate
 participant access. Authenticated `/game/` loads approved protected content from
 Supabase; public `/demo/` and `/demo-game/` use fictional sample content.
 
+## Browser-Based Authoring Foundation
+
+Research Admin browser-authoring drafts are stored in protected, append-only
+Supabase draft revision tables. Drafts are research-admin-only working content:
+they are not published game content and are never automatically made available
+to participants, teachers, or coaches. `case_game_content` remains the protected
+runtime source of truth.
+
+The local builder remains available temporarily during this transition. Later
+PRs will add the browser Mission Builder and Resource Map Builder, final
+validation, and an explicit protected publishing workflow; the draft foundation
+does not perform any of those publishing steps.
+
 ## External directory contract
 
 Use this private executable authoring contract; it is build input only and is never served by participant runtime:
