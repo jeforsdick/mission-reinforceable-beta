@@ -29,5 +29,14 @@ test('private case starter creates only generic files outside the repository', t
   assert.match(contents, /APPROVED STUDENT ALIAS/);
   assert.match(contents, /Edit in this order/);
   assert.doesNotMatch(contents, /Jane Doe|student@example|password|SUPABASE|service_role|api[_ -]?key/i);
+  const mission = fs.readFileSync(path.join(output, 'content/daily-mission-1.js'), 'utf8');
+  assert.match(mission, /POOL\.daily\s*=\s*POOL\.daily\s*\|\|\s*\[\]/);
+  assert.match(mission, /POOL\.daily\.push\([\s\S]*expectedSteps:\s*5[\s\S]*start:[\s\S]*steps:\s*\{\}/);
+  assert.doesNotMatch(mission, /MR_DAILY_MISSIONS/);
+  if (process.platform !== 'win32') {
+    assert.equal(fs.statSync(output).mode & 0o777, 0o700);
+    assert.equal(fs.statSync(path.join(output, 'content')).mode & 0o777, 0o700);
+    for (const relative of expected) assert.equal(fs.statSync(path.join(output, relative)).mode & 0o777, 0o600);
+  }
   assert.doesNotMatch(fs.readFileSync(script, 'utf8'), /createClient|from\(['"]case_game_content|fetch\(/);
 });

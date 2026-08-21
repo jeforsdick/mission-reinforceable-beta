@@ -45,6 +45,8 @@ assert.match(renderedOperations,/Before clicking Run,[\s\S]*case code in the SQL
 assert.match(renderedOperations,/Run these commands locally/);
 assert.match(renderedOperations,/--case-code CASE-TEST/);
 assert.match(renderedOperations,/Suggested next content version: 1/);
+assert.match(renderedOperations,/--source-dir "\[PRIVATE CASE FOLDER\]"[\s\S]*--output "\[PRIVATE CASE FOLDER\]\/protected-seed\.sql"/);
+assert.match(renderedOperations,/Expected first version:<\/strong> 1/);
 assert.match(renderedOperations,/data-key="intervention_orientation"/);
 assert.doesNotMatch(renderedOperations,/Create Test Login Link|Send Game Login/);
 assert.match(renderedOperations,/class="quiet inline-action go-teacher-account"[^>]*>Go to Teacher Account<\/button>/);
@@ -105,6 +107,8 @@ const launchReady={...withoutComparability,case_active:false,participant_active:
 assert.equal(gamePreparationReadiness(launchReady,preparedForLaunch).ready,true,'pre-launch readiness does not require access or reminders');
 const versionedMarkup=renderOperations({...launchReady,case_code:'CASE-099'},preparedForLaunch,x=>String(x));
 assert.match(versionedMarkup,/Suggested next content version: 5/);assert.match(versionedMarkup,/--case-code CASE-099/);
+assert.match(versionedMarkup,/Detected protected-content version:<\/strong> 4[\s\S]*Next build version will be:<\/strong> 5/);
+assert.doesNotMatch(versionedMarkup,/Expected version:/);
 assert.deepEqual([...versionedMarkup.matchAll(/data-review-type="([^"]+)"/g)].map(x=>x[1]),['resource_behavior_review','resource_privacy_review','resource_qa_preview']);
 assert.doesNotMatch(versionedMarkup,/Mission Review|Comparability/);
 

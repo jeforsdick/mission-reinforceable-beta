@@ -46,7 +46,7 @@ function starterFiles(caseCode) {
     'config.js': `// PRIVATE STARTER: replace bracketed placeholders with approved, minimum-necessary values.\nwindow.MR_TEACHER_CONFIG = {\n  teacherId: '[APPROVED GAME IDENTIFIER]',\n  displayName: '[GENERIC CLASSROOM LABEL]',\n  classroomLabel: '[GENERIC CLASSROOM LABEL]',\n  studentAlias: '[APPROVED STUDENT ALIAS]',\n  weeklyTeacherReport: {\n    targetBehavior: '[APPROVED TARGET BEHAVIOR LABEL]',\n    replacementBehavior: '[APPROVED REPLACEMENT BEHAVIOR LABEL]',\n    targetRoutine: '[APPROVED TARGET ROUTINE LABEL]'\n  },\n  resourcesFile: 'content/resources.js',\n  missionFiles: ['content/daily-mission-1.js']\n};\n`,
     'fidelity-targets.expected.json': `{\n  "targets": [{\n    "target_key": "[FINALIZED_TARGET_KEY]",\n    "domain": "[FINALIZED_TARGET_DOMAIN]",\n    "description": "[FINALIZED OBSERVABLE TEACHER STEP]"\n  }]\n}\n`,
     'content/resources.js': `// Complete all nine required sections using the supported Resource Map block types.\n// Use only the approved alias and minimum-necessary plan information.\nwindow.MR_RESOURCES = {\n  schemaVersion: 1,\n  studentAlias: '[APPROVED STUDENT ALIAS]',\n  sections: {}\n};\n`,
-    'content/daily-mission-1.js': `// Replace this generic placeholder by following docs/MISSION_AUTHORING_STANDARD.md.\n// Link a decision to a finalized fidelity target only when that target is tested.\nwindow.MR_DAILY_MISSIONS = window.MR_DAILY_MISSIONS || [];\nwindow.MR_DAILY_MISSIONS.push({\n  id: '[UNIQUE MISSION ID]',\n  title: '[MISSION TITLE]',\n  scenes: []\n});\n`
+    'content/daily-mission-1.js': `// Replace this generic placeholder by following docs/MISSION_AUTHORING_STANDARD.md.\n// Link a decision to a finalized fidelity target only when that target is tested.\n(function registerDailyMission() {\n  if (typeof POOL === 'undefined') {\n    throw new Error('POOL must be defined before loading daily-mission-1.js');\n  }\n\n  POOL.daily = POOL.daily || [];\n\n  POOL.daily.push({\n    id: '[UNIQUE MISSION ID]',\n    title: '[MISSION TITLE]',\n    expectedSteps: 5,\n    start: '[START STEP ID]',\n    steps: {}\n  });\n})();\n`
   };
 }
 
@@ -56,9 +56,12 @@ function createStarter(options, cwd = process.cwd()) {
   const output = prospectiveRealPath(options.output);
   if (isInside(fs.realpathSync(root), output)) throw new Error('SAFETY STOP: The private case folder cannot be created inside mission-reinforceable-beta. Choose an approved secure location outside the public repository. Nothing was created.');
   if (fs.existsSync(output)) throw new Error(`Output already exists: ${output}. Choose a new empty location; existing private files will not be overwritten.`);
+  const directories = [output, path.join(output, 'content')];
+  for (const directory of directories) fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  // Windows does not implement POSIX mode bits; creation still succeeds there.
+  if (process.platform !== 'win32') directories.forEach(directory => fs.chmodSync(directory, 0o700));
   for (const [relative, contents] of Object.entries(starterFiles(options.caseCode))) {
     const filename = path.join(output, relative);
-    fs.mkdirSync(path.dirname(filename), { recursive: true });
     fs.writeFileSync(filename, contents, { flag: 'wx', mode: 0o600 });
   }
   console.log(`Created private case starter for ${options.caseCode} at ${output}`);
