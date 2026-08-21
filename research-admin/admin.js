@@ -5,6 +5,7 @@ import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, 
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
+import { intakeChanges, missingRequired } from './edit-intake.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
@@ -53,6 +54,27 @@ async function exactAccount(email, role) {
 }
 const field = (label, value, wide = false) => value ? `<div class="${wide ? 'wide' : ''}"><dt>${label}</dt><dd><p>${escapeHtml(value)}</p></dd></div>` : '';
 const section = (title, fields) => `<section class="panel"><h2>${title}</h2><dl class="fields">${fields.join('')}</dl></section>`;
+const input = (name, label, row, { required = false, type = 'textarea', disabled = false } = {}) => {
+  const value = escapeHtml(row[name] ?? '');
+  const control = type === 'select'
+    ? `<select name="${name}" ${required ? 'required' : ''}><option value="">Select…</option>${['Kindergarten','1st','2nd','3rd','Other'].map(option => `<option ${row[name] === option ? 'selected' : ''}>${option}</option>`).join('')}</select>`
+    : type === 'function' ? `<select name="${name}" required>${[['','Select function…'],['escape_avoidance','Escape / Avoidance'],['attention','Attention'],['tangible_access','Tangible / Access'],['automatic_sensory','Automatic / Sensory'],['multiple','Multiple'],['unclear','Unclear / Still Being Assessed']].map(([key,text]) => `<option value="${key}" ${row[name] === key ? 'selected' : ''}>${text}</option>`).join('')}</select>`
+    : type === 'text' || type === 'email' ? `<input name="${name}" type="${type}" value="${value}" ${required ? 'required' : ''} ${disabled ? 'disabled' : ''}>`
+    : `<textarea name="${name}" ${required ? 'required' : ''}>${value}</textarea>`;
+  return `<label>${label}${required ? ' *' : ''}${control}${disabled ? '<small>An account already exists for this email.</small>' : ''}</label>`;
+};
+function editIntakeForm(row, teacher, coach) {
+  const differentAntecedents = String(row.common_triggers || '').trim() !== String(row.typical_antecedents || '').trim();
+  const antecedent = differentAntecedents
+    ? `<div class="historical-answers"><strong>This older intake has two different answers.</strong><p><b>Common triggers:</b> ${escapeHtml(row.common_triggers || '—')}</p><p><b>Typical antecedents:</b> ${escapeHtml(row.typical_antecedents || '—')}</p><label class="check-option"><input name="consolidate_antecedents" type="checkbox"> Replace both historical answers with one answer</label></div>${input('antecedent_answer','What commonly happens before the behavior?', { antecedent_answer: row.common_triggers || row.typical_antecedents }, { required: false })}`
+    : input('antecedent_answer','What commonly happens before the behavior?', { antecedent_answer: row.common_triggers || row.typical_antecedents }, { required: true });
+  return `<form id="edit-intake-form" class="edit-intake-form panel" novalidate><div class="edit-heading"><div><p class="eyebrow">Intake Information</p><h2>Edit Intake</h2><p>Correct the submitted information below. Fields marked * are required.</p></div></div>
+    <fieldset><legend>Teacher, Coach &amp; Student</legend><div class="edit-grid">${input('teacher_name','Teacher Name',row,{required:true,type:'text'})}${input('teacher_email','Teacher Email',row,{required:true,type:'email',disabled:teacher.ready})}${input('coach_name','Coach Name',row,{required:true,type:'text'})}${input('coach_email','Coach Email',row,{required:true,type:'email',disabled:coach.ready})}${input('grade_level','Grade',row,{required:true,type:'select'})}${input('student_initials','Student Initials',row,{required:true,type:'text'})}</div>${input('student_strengths','Student Strengths & Interests',row)}${input('preferred_items_activities','Preferences & Known Reinforcers',row)}</fieldset>
+    <fieldset><legend>Behavior &amp; Student Context</legend>${input('target_behavior','Behavior(s) of Interest',row,{required:true})}${input('behavior_topography','What does the behavior typically look and sound like?',row,{required:true})}${input('primary_function','Primary Function',row,{required:true,type:'function'})}${input('replacement_behavior','Replacement Behavior(s)',row,{required:true})}${input('desired_behavior','Desired Behavior(s)',row,{required:true})}</fieldset>
+    <fieldset><legend>Behavior Plan Details</legend>${input('prevention_strategies','Prevention Details',row)}${input('teaching_strategies','Teaching Details',row)}${input('reinforcement_system','Reinforcement Details',row)}${input('response_strategy','Response Details',row)}<label>Does the plan include specific crisis or safety procedures?<select name="has_crisis_plan"><option value="false" ${!row.has_crisis_plan?'selected':''}>No</option><option value="true" ${row.has_crisis_plan?'selected':''}>Yes</option></select></label>${input('crisis_plan','Crisis / Safety Details',row)}</fieldset>
+    <fieldset><legend>Contextual Information</legend>${input('typical_settings','Where does the behavior typically occur?',row,{required:true})}${antecedent}${input('typical_consequences','What typically happens after the behavior?',row,{required:true})}${input('current_staff_responses','How do staff usually respond right now?',row,{required:true})}${input('requested_scenarios','Situations you would like included in the game',row)}${input('additional_context','Anything else we should know?',row)}</fieldset>
+    <p id="edit-intake-message" class="message" role="alert"></p><div class="actions"><button class="primary" type="submit">Save Changes</button><button id="cancel-edit-intake" class="quiet" type="button">Cancel</button></div></form>`;
+}
 
 async function openDetail(id, preferredTab = null) {
   const row = state.intakes.find(item => item.request_id === id); if (!row) return;
@@ -66,7 +88,8 @@ async function openDetail(id, preferredTab = null) {
     ]);
     state.accounts = { teacher, coach };
     const targets = normalizeTargets(row.fidelity_targets, row.has_crisis_plan === true);
-    const intakeContent = `${section('Contact Information', [field('Teacher', row.teacher_name), field('Teacher email', row.teacher_email), field('Coach', row.coach_name), field('Coach email', row.coach_email)])}
+    const canEditIntake = !converted && ['submitted', 'approved'].includes(row.status);
+    const normalIntakeContent = `<section class="intake-edit-actions panel no-print"><div><p id="intake-update-message" class="success-message" role="status">${escapeHtml(state.intakeMessage || '')}</p>${converted ? '<p>Intake is locked after study case setup.</p>' : '<p>Correct submitted intake information before study case setup.</p>'}</div>${canEditIntake ? '<button id="edit-intake" class="primary" type="button">Edit Intake</button>' : ''}</section>${section('Contact Information', [field('Teacher', row.teacher_name), field('Teacher email', row.teacher_email), field('Coach', row.coach_name), field('Coach email', row.coach_email)])}
       ${section('Student &amp; Behavior', [field('Student initials', row.student_initials), field('Grade', row.grade_level), field('Behavior description', row.target_behavior, true), field('Topography', row.behavior_topography, true), field('Student strengths & interests', row.student_strengths, true), field('Preferences & known reinforcers', row.preferred_items_activities, true), field('Preference information', row.preference_assessment_notes, true), field('Function', row.primary_function), field('Replacement behavior', row.replacement_behavior, true), field('Desired behavior', row.desired_behavior, true)])}
       ${section('BIP/BSP Strategies', [field('Prevention details', row.prevention_strategies, true), field('Teaching details', row.teaching_strategies, true), field('Reinforcement details', row.reinforcement_system, true), field('Response details', row.response_strategy, true)])}
       ${row.has_crisis_plan ? section('Crisis / Safety Plan', [field('Crisis / Safety Plan', row.crisis_plan, true)]) : ''}
@@ -74,6 +97,8 @@ async function openDetail(id, preferredTab = null) {
       <section class="panel notice"><p class="eyebrow">Fidelity Targets</p><strong>Check these against the BIP/BSP before case setup.</strong><p>Each target should be one observable teacher action.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"><span class="print-target">${escapeHtml(target.description)}</span></label>`).join('')}</div></section>
       <section class="panel no-print"><p class="eyebrow">Accounts</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>Nothing here sends an email.</p></section>
       ${converted ? '' : provisionPanel(row, teacher, coach)}${reviewActions(row)}`;
+    const intakeContent = state.editingIntake && canEditIntake ? editIntakeForm(row, teacher, coach) : normalIntakeContent;
+    state.intakeMessage = '';
     const preparedHeader = converted ? `<div class="case-header"><div><p class="eyebrow">Prepared research case</p><h1>${escapeHtml(converted.participant?.participant_code || 'Study case')}</h1><p><strong>Case code:</strong> ${escapeHtml(converted.case.case_code)} · <strong>Student alias:</strong> ${escapeHtml(converted.case.student_alias)}</p></div><div><div class="case-status" aria-label="Case status"><span class="pill">${escapeHtml(state.caseOperations?.current_phase || 'prebaseline')}</span><span class="${converted.case.active ? 'ready' : 'off'}">Game ${converted.case.active ? 'On' : 'Off'}</span><span class="${converted.protected_content?.present ? 'ready' : 'needs'}">Content ${converted.protected_content?.present ? 'ready' : 'needs action'}</span></div><button id="download-case-pdf" class="quiet case-report-button" type="button">Download Case PDF</button><small class="case-report-help">Choose Save as PDF in the print window.</small></div></div>`
       : `<div class="hero"><div><p class="eyebrow">Submitted Intake</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>`;
     const tabs = converted ? `<div class="case-tabs no-print" role="tablist" aria-label="Case detail sections"><button id="intake-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="intake-panel" tabindex="-1" data-tab="intake">Intake Information</button><button id="operations-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="operations-panel" tabindex="-1" data-tab="operations">Research Operations</button></div>` : '';
@@ -124,6 +149,9 @@ function bindDetail() {
   $('#fidelity-date')?.addEventListener('change', loadFidelityEvidence);
   $('#fidelity-form')?.addEventListener('submit', submitFidelityReview);
   $('#approve')?.addEventListener('click', () => setStatus('approved'));
+  $('#edit-intake')?.addEventListener('click', () => { state.editingIntake = true; openDetail(state.selected.request_id, 'intake'); });
+  $('#cancel-edit-intake')?.addEventListener('click', () => { state.editingIntake = false; openDetail(state.selected.request_id, 'intake'); });
+  $('#edit-intake-form')?.addEventListener('submit', saveIntakeChanges);
   $('#decline')?.addEventListener('click', () => { if (window.confirm('Decline this intake? This does not delete the submitted context.')) setStatus('declined'); });
   $('#study-id')?.addEventListener('input', event => {
     const match = event.target.value.trim().match(/^MR-(\d{3})$/);
@@ -132,6 +160,26 @@ function bindDetail() {
   $('#provision-form')?.addEventListener('submit', provisionCase);
   $('#download-case-pdf')?.addEventListener('click', openCaseReport);
   if ($('#fidelity-form-wrap')) renderFidelityForm();
+}
+
+async function saveIntakeChanges(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  // Disabled account emails are intentionally retained rather than reassigned.
+  if (!form.has('teacher_email')) form.set('teacher_email', state.selected.teacher_email);
+  if (!form.has('coach_email')) form.set('coach_email', state.selected.coach_email);
+  const changes = intakeChanges(form, state.selected);
+  const missing = missingRequired(changes);
+  const message = $('#edit-intake-message');
+  if (missing.length) { message.textContent = 'Please complete all required fields.'; return; }
+  const wasApproved = state.selected.status === 'approved';
+  const { error } = await state.client.rpc('research_admin_update_intake', { target_request_id: state.selected.request_id, intake_changes: changes });
+  if (error) { message.textContent = error.message; return; }
+  const requestId = state.selected.request_id;
+  state.editingIntake = false;
+  state.intakeMessage = wasApproved ? 'Intake updated. Review and approve it again.' : 'Intake updated.';
+  await loadIntakes();
+  await openDetail(requestId, 'intake');
 }
 
 function openCaseReport() {
