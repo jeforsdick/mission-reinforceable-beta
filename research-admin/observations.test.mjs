@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {qualification,coverage,mayAssignPrimary,mayAssignSecondary,ioaDisplay,correctionEvent} from './observations-model.mjs';
-import {newObservationForm,renderObservations,renderObserverTeam} from './observations-ui.mjs';
+import {newObservationForm,renderPhaseObservationWorkspace,renderObservationSetup,renderObserverTeam} from './observations-ui.mjs';
 const schema=fs.readFileSync(new URL('../supabase/migrations/20260819010000_classroom_observation_summaries.sql',import.meta.url),'utf8');
 const cleanup=fs.readFileSync(new URL('../supabase/migrations/20260819030000_research_admin_cleanup_2b.sql',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
@@ -13,15 +13,17 @@ assert.equal(mayAssignSecondary({active:true,observer_type:'trained_observer',st
 assert.equal(ioaDisplay({overall_ioa_attention:true,teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:90}),'Needs recalibration');
 assert.equal(correctionEvent({summary_revision_number:2,summary_recorded_at:'2026-08-19'}),'2026-08-19');
 
-const form=newObservationForm({},true,[{id:'p',observer_code:'JO'}],[{id:'s',observer_code:'JM'}],e);
-assert.match(form,/Record Observation[\s\S]*Teacher fidelity %[\s\S]*Student target behavior %[\s\S]*Was IOA collected\?/);
+const form=newObservationForm({},true,[{id:'p',observer_code:'JO'}],[{id:'s',observer_code:'JM'}],e,{id:'record-baseline-observation-form',heading:'Record Baseline Observation'});
+assert.match(form,/Record Baseline Observation[\s\S]*Teacher fidelity %[\s\S]*Student target behavior %[\s\S]*Was IOA collected\?/);
 assert.doesNotMatch(form,/interval-cell|fidelity-entry|implemented_as_written|120 intervals/);
 const row={id:'summary',observation_date:'2026-08-18',phase:'baseline',session_number:1,primary_observer_code:'JO',summary_revision_id:'rev-2',summary_revision_number:2,summary_recorded_at:'2026-08-19',secondary_observer_id:'s',secondary_observer_code:'JM',teacher_fidelity_percent:76.5,student_target_behavior_percent:10,ioa:{teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:79,overall_ioa_attention:true}};
-const rendered=renderObservations({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:1,ioa:1,percent:100},setups:[{target_routine:'Arrival',target_behavior_definition:'Calls out'}],observers:[],observations:[row]}},e);
-assert.match(rendered,/Baseline[\s\S]*1 \/ 6[\s\S]*Latest Teacher Fidelity[\s\S]*76\.5%/);
+const rendered=renderPhaseObservationWorkspace({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:1,ioa:1,percent:100},setups:[{target_routine:'Arrival',target_behavior_definition:'Calls out'}],observers:[],observations:[row]}},'baseline',e);
+assert.match(rendered,/Completed observations in this phase[\s\S]*1[\s\S]*Latest teacher fidelity in this phase[\s\S]*76\.5%[\s\S]*Planned minimum[\s\S]*6/);
 assert.match(rendered,/Edit Summary[\s\S]*Correction reason/);
 assert.doesNotMatch(rendered,/Correct Summary|data-initial-legacy/);
 assert.match(rendered,/Teacher fidelity IOA is 80%\. Recalibration required/);
+assert.doesNotMatch(form,/name="phase"|Phase<select/);
+assert.match(renderObservationSetup({observation_data:{setups:[]}},e),/Observation Setup[\s\S]*Save Observation Setup/);
 
 assert.match(schema,/create function public\.research_admin_record_classroom_observation_summary/);
 assert.match(schema,/create function public\.research_admin_revise_classroom_observation_summary/);
