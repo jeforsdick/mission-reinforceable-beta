@@ -3,6 +3,7 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
+import { renderGameCreation } from './game-creation-ui.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
@@ -102,24 +103,26 @@ async function openDetail(id, preferredTab = null) {
     state.intakeDecisionMessage = '';
     const preparedHeader = converted ? `<div class="case-header"><div><p class="eyebrow">Prepared research case</p><h1>${escapeHtml(converted.participant?.participant_code || 'Study case')}</h1><p><strong>Case code:</strong> ${escapeHtml(converted.case.case_code)} · <strong>Student alias:</strong> ${escapeHtml(converted.case.student_alias)}</p></div><div><div class="case-status" aria-label="Case status"><span class="pill">${escapeHtml(state.caseOperations?.current_phase || 'prebaseline')}</span><span class="${converted.case.active ? 'ready' : 'off'}">Game ${converted.case.active ? 'On' : 'Off'}</span><span class="${converted.protected_content?.present ? 'ready' : 'needs'}">Content ${converted.protected_content?.present ? 'ready' : 'needs action'}</span></div><button id="download-case-pdf" class="quiet case-report-button" type="button">Download Case PDF</button><small class="case-report-help">Choose Save as PDF in the print window.</small></div></div>`
       : `<div class="hero"><div><p class="eyebrow">Submitted Intake</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>`;
-    const tabs = converted ? `<div class="case-tabs no-print" role="tablist" aria-label="Case detail sections"><button id="intake-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="intake-panel" tabindex="-1" data-tab="intake">Intake Information</button><button id="operations-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="operations-panel" tabindex="-1" data-tab="operations">Research Operations</button></div>` : '';
+    const tabs = converted ? `<div class="case-tabs no-print" role="tablist" aria-label="Case detail sections"><button id="intake-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="intake-panel" tabindex="-1" data-tab="intake">Intake Information</button><button id="operations-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="operations-panel" tabindex="-1" data-tab="operations">Research Operations</button><button id="game-creation-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="game-creation-panel" tabindex="-1" data-tab="game-creation">Game Creation</button></div>` : '';
     $('#detail').innerHTML = `<div class="print-heading"><strong>Mission: Reinforceable</strong><h1>Submitted Intake</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))}</p></div>${preparedHeader}${tabs}
       <div id="intake-panel" class="tab-panel intake-workspace" role="tabpanel" aria-labelledby="intake-tab">${intakeContent}</div>
-      ${converted ? `<div id="operations-panel" class="tab-panel operations-workspace" role="tabpanel" aria-labelledby="operations-tab">${readinessPanel(converted)}</div>` : ''}`;
+      ${converted ? `<div id="operations-panel" class="tab-panel operations-workspace" role="tabpanel" aria-labelledby="operations-tab">${readinessPanel(converted)}</div><div id="game-creation-panel" class="tab-panel game-creation-workspace" role="tabpanel" aria-labelledby="game-creation-tab">${gameCreationPanel(converted)}</div>` : ''}`;
     bindDetail();
     if (converted) selectCaseTab(preferredTab || state.selectedTab || 'intake');
     show('detail-view'); window.scrollTo(0, 0);
   } catch (error) { $('#error-message').textContent = error.message || 'Readiness checks failed.'; show('error-view'); }
 }
 function selectCaseTab(name, focus = false) {
-  const selected = name === 'operations' ? 'operations' : 'intake';
+  const caseTabs = ['intake', 'operations', 'game-creation'];
+  if (!caseTabs.includes(name)) return;
+  const selected = name;
   state.selectedTab = selected;
   document.querySelectorAll('.case-tab').forEach(tab => {
     const active = tab.dataset.tab === selected;
     tab.setAttribute('aria-selected', String(active)); tab.tabIndex = active ? 0 : -1;
     if (active && focus) tab.focus();
   });
-  ['intake', 'operations'].forEach(tab => { const panel = $(`#${tab}-panel`); if (panel) panel.hidden = tab !== selected; });
+  caseTabs.forEach(tab => { const panel = $(`#${tab}-panel`); if (panel) panel.hidden = tab !== selected; });
   $('#print-intake').hidden = selected !== 'intake';
 }
 function bindCaseTabs() {
@@ -139,6 +142,14 @@ function reviewActions(row) { return row.status === 'submitted' ? `<section clas
 function bindDetail() {
   bindCaseTabs();
   bindOperations();
+  $('#open-game-creation')?.addEventListener('click', () => {
+    selectCaseTab('game-creation');
+    $('#game-creation-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  $('#back-to-game-ready')?.addEventListener('click', () => {
+    selectCaseTab('operations');
+    $('#operations-game-ready')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   $('.go-teacher-account')?.addEventListener('click', () => {
     selectCaseTab('intake');
     $('#intake-accounts')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -308,9 +319,11 @@ async function loadReadiness(requestId) {
   const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{target_case_id:data.case.id}); if(operationsError) throw operationsError; const {data:observationData,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{target_case_id:data.case.id});if(observationError)throw observationError;const {data:targets,error:targetsError}=await state.client.from('fidelity_targets').select('target_key,domain,description,sort_order').eq('case_id',data.case.id).eq('active',true).order('sort_order');if(targetsError)throw targetsError;state.caseOperations=operations.cases?.[0];state.caseOperations.fidelity_targets=targets||[];state.caseOperations.observation_data=observationData; return data;
 }
 function readinessPanel(data) {
-  const states = readinessForCase(data);
   return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml)
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
+}
+function gameCreationPanel(data) {
+  return renderGameCreation({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml);
 }
 
 function fidelityPanel() {

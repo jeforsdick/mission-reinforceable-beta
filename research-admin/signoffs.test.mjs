@@ -4,7 +4,7 @@ import { readinessForCase } from './admin-model.mjs';
 
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260818010000_prepared_case_signoffs.sql', import.meta.url), 'utf8');
 const adminJs = fs.readFileSync(new URL('admin.js', import.meta.url), 'utf8');
-const operationsUi = fs.readFileSync(new URL('operations-ui.mjs', import.meta.url), 'utf8');
+const operationsUi = fs.readFileSync(new URL('game-creation-ui.mjs', import.meta.url), 'utf8');
 
 // Only active research admins can write; direct table mutation is unavailable.
 assert.match(migration, /if not public\.is_research_admin\(\) then[\s\S]*research admin required/);
