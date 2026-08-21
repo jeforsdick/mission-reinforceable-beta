@@ -20,6 +20,15 @@ const RATINGS = [{ key: 'A', score: 10, label: 'PLAN ALIGNED' }, { key: 'B', sco
 const ENDINGS = ['STRONG', 'MIXED', 'FRAGILE'];
 const canonicalFunction = value => FUNCTIONS.find(option => option.value === value || option.label === value)?.value || value || '';
 
+export function resetMissionAuthoringState(authoringState) {
+  authoringState.authoringWorkspace = null;
+  authoringState.authoringLoadError = '';
+  authoringState.missionSelection = null;
+  authoringState.missionDraft = null;
+  authoringState.missionNav = { decision: 1, branch: 'supported' };
+  authoringState.missionMessage = '';
+}
+
 export function stepId(decision, trajectory = 'supported') {
   if (decision === 1) return 'd1_start';
   return `d${decision}_${trajectory}`;

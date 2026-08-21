@@ -3,7 +3,7 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
-import { captureMission, latestDraft, missionFromDraft, normalizeMission, renderGameCreation } from './game-creation-ui.mjs';
+import { captureMission, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState } from './game-creation-ui.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
@@ -79,6 +79,7 @@ function editIntakeForm(row, teacher, coach) {
 
 async function openDetail(id, preferredTab = null) {
   const row = state.intakes.find(item => item.request_id === id); if (!row) return;
+  if (state.selected?.request_id !== id) resetMissionAuthoringState(state);
   show('loading-view'); state.selected = row;
   if (preferredTab) state.selectedTab = preferredTab;
   $('#print-intake').hidden = false;

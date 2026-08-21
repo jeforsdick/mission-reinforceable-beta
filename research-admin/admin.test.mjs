@@ -140,6 +140,7 @@ assert.equal((js.match(/class="case-tab"/g) || []).length, 3);
 assert.match(js, /const caseTabs = \['intake', 'operations', 'game-creation'\]/);
 assert.match(js, /if \(!caseTabs\.includes\(name\)\) return/);
 assert.match(js, /selectCaseTab\(preferredTab \|\| state\.selectedTab \|\| 'intake'\)/);
+assert.match(js, /if \(state\.selected\?\.request_id !== id\) resetMissionAuthoringState\(state\)/);
 assert.match(js, /#open-game-creation[\s\S]*selectCaseTab\('game-creation'\)[\s\S]*#game-creation-panel[\s\S]*scrollIntoView/);
 assert.match(js, /#back-to-game-ready[\s\S]*selectCaseTab\('operations'\)[\s\S]*#operations-game-ready[\s\S]*scrollIntoView/);
 assert.match(js, /caseTabs\.forEach\(tab => \{ const panel = \$\(`#\$\{tab\}-panel`\)/);
