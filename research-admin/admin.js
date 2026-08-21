@@ -333,12 +333,16 @@ function gameCreationPanel(data) {
   return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError);
 }
 
-function redrawGameCreation() {
+function redrawGameCreation(scrollToMissionBuilder = false) {
   const panel = $('#game-creation-panel');
   if (!panel) return;
   panel.innerHTML = gameCreationPanel(state.readiness);
   bindMissionBuilder();
   bindPublishedReview();
+  if (scrollToMissionBuilder) document.querySelector('.mission-builder')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
 }
 function preserveMissionForm() {
   const root = $('#game-creation-panel');
@@ -352,7 +356,7 @@ function bindMissionBuilder() {
     state.missionSelection = { mission_type, slot_number };
     const row = latestDraft(state.authoringWorkspace, mission_type, slot_number);
     state.missionDraft = normalizeMission(missionFromDraft(row), state.authoringWorkspace.case_code, mission_type, slot_number);
-    state.missionNav = { decision: 1, branch: 'supported' }; state.missionMessage = ''; redrawGameCreation();
+    state.missionNav = { decision: 1, branch: 'supported' }; state.missionMessage = ''; redrawGameCreation(true);
   }));
   document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
   document.querySelectorAll('[data-branch]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.branch = button.dataset.branch; redrawGameCreation(); }));

@@ -148,3 +148,10 @@ assert.match(js, /\$\('#print-intake'\)\.hidden = selected !== 'intake'/);
 assert.equal((gameUi.match(/id="save-mission-draft"/g) || []).length, 1);
 assert.equal((gameUi.match(/id="mission-save-message"/g) || []).length, 1);
 assert.doesNotMatch(ui, /id="preview-protected-game"|id="signoff-message"/);
+
+// Only an explicit mission-slot selection requests Mission Builder scrolling.
+assert.match(js, /\.mission-slot'[\s\S]*redrawGameCreation\(true\)/);
+assert.match(js, /if \(scrollToMissionBuilder\) document\.querySelector\('\.mission-builder'\)\?\.scrollIntoView\(\{[\s\S]*behavior: 'smooth',[\s\S]*block: 'start'/);
+const saveDraftSource = js.slice(js.indexOf('async function saveMissionDraft()'), js.indexOf('function fidelityPanel()'));
+assert.match(saveDraftSource, /redrawGameCreation\(\)/);
+assert.doesNotMatch(saveDraftSource, /redrawGameCreation\(true\)|scrollIntoView/);
