@@ -143,9 +143,25 @@ function bindDetail() {
     selectCaseTab('intake');
     $('#intake-accounts')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+  document.querySelectorAll('.go-case-information').forEach(button => button.addEventListener('click', () => {
+    selectCaseTab('intake');
+    $('#intake-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }));
+  document.querySelectorAll('.copy-command').forEach(button => button.addEventListener('click', async () => {
+    const feedback = button.parentElement.querySelector('.copy-feedback');
+    const command = button.parentElement.querySelector('code')?.textContent || '';
+    if (!navigator.clipboard?.writeText) {
+      feedback.textContent = 'Copy is not available in this browser.';
+      return;
+    }
+    await navigator.clipboard.writeText(command);
+    feedback.textContent = 'Copied ✓';
+    window.setTimeout(() => { feedback.textContent = ''; }, 2000);
+  }));
   document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
   $('.qa-link')?.addEventListener('click', generateQaLink);
   $('#preview-protected-game')?.addEventListener('click', event => {
+    // Preview Game is QA only. This does not turn the game on or count as study data.
     const caseCode = event.currentTarget.dataset.caseCode;
     window.open(`../game/?qa_case=${encodeURIComponent(caseCode)}`, '_blank', 'noopener');
   });
