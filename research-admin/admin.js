@@ -99,6 +99,7 @@ async function openDetail(id, preferredTab = null) {
       ${converted ? '' : provisionPanel(row, teacher, coach)}${reviewActions(row)}`;
     const intakeContent = state.editingIntake && canEditIntake ? editIntakeForm(row, teacher, coach) : normalIntakeContent;
     state.intakeMessage = '';
+    state.intakeDecisionMessage = '';
     const preparedHeader = converted ? `<div class="case-header"><div><p class="eyebrow">Prepared research case</p><h1>${escapeHtml(converted.participant?.participant_code || 'Study case')}</h1><p><strong>Case code:</strong> ${escapeHtml(converted.case.case_code)} · <strong>Student alias:</strong> ${escapeHtml(converted.case.student_alias)}</p></div><div><div class="case-status" aria-label="Case status"><span class="pill">${escapeHtml(state.caseOperations?.current_phase || 'prebaseline')}</span><span class="${converted.case.active ? 'ready' : 'off'}">Game ${converted.case.active ? 'On' : 'Off'}</span><span class="${converted.protected_content?.present ? 'ready' : 'needs'}">Content ${converted.protected_content?.present ? 'ready' : 'needs action'}</span></div><button id="download-case-pdf" class="quiet case-report-button" type="button">Download Case PDF</button><small class="case-report-help">Choose Save as PDF in the print window.</small></div></div>`
       : `<div class="hero"><div><p class="eyebrow">Submitted Intake</p><h1>${escapeHtml(row.teacher_name)} · ${escapeHtml(row.student_initials)}</h1><p>Request ${escapeHtml(row.request_id)} · Submitted ${formatDate(intakeDate(row))} · <span class="pill">${escapeHtml(row.status)}</span></p></div><div class="safeguard"><strong>Review, not approved BIP content</strong><span>The BIP/BSP remains the source of truth for individualized game content and final fidelity targets.</span></div></div>`;
     const tabs = converted ? `<div class="case-tabs no-print" role="tablist" aria-label="Case detail sections"><button id="intake-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="intake-panel" tabindex="-1" data-tab="intake">Intake Information</button><button id="operations-tab" class="case-tab" type="button" role="tab" aria-selected="false" aria-controls="operations-panel" tabindex="-1" data-tab="operations">Research Operations</button></div>` : '';
@@ -134,7 +135,7 @@ function bindCaseTabs() {
   });
 }
 function accountBox(label, email, result, type) { return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Create Test Login Link</button><small>QA only. No email is sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? '<div id="qa-result"></div>' : ''}</div>`; }
-function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel no-print"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel no-print"><h2>Intake decision</h2><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
+function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel no-print"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel no-print"><h2>Intake decision</h2><p id="action-message" class="success-message" role="status">${escapeHtml(state.intakeDecisionMessage || '')}</p><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
 function bindDetail() {
   bindCaseTabs();
   bindOperations();
@@ -335,9 +336,17 @@ async function submitFidelityReview(event){
 }
 
 async function setStatus(status) {
-  const { error } = await state.client.rpc('research_admin_set_intake_status', { target_request_id: state.selected.request_id, target_status: status });
+  const requestId = state.selected.request_id;
+  const { error } = await state.client.rpc('research_admin_set_intake_status', { target_request_id: requestId, target_status: status });
   if (error) { $('#action-message').textContent = error.message; return; }
-  state.selected.status = status; renderHome();
+  if (status === 'approved') {
+    await loadIntakes();
+    state.intakeDecisionMessage = 'Intake approved.';
+    await openDetail(requestId, 'intake');
+    return;
+  }
+  state.selected.status = status;
+  renderHome();
 }
 async function loadIntakes() { const { data, error } = await state.client.rpc('research_admin_intakes'); if (error) throw error; state.intakes = data || []; const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{}); if(operationsError) throw operationsError; const {data:observations,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{});if(observationError)throw observationError;state.observationData=observations;for(const item of operations.cases||[]){const rows=(observations.observations||[]).filter(x=>x.case_id===item.id),completed=rows.filter(x=>x.summary_revision_id).length,paired=rows.filter(x=>x.summary_revision_id&&x.ioa).length,required=Math.ceil(completed*.20);item.observation_data={...observations,observations:rows,setups:(observations.setups||[]).filter(x=>x.case_id===item.id),coverage:{completed,ioa:paired,percent:completed?Math.round(1000*paired/completed)/10:0,required_minimum:required,additional_needed:Math.max(required-paired,0)}};} state.operations=operations; }
 async function start() {
