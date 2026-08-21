@@ -12,7 +12,7 @@
     crisis: ['Crisis / Safety Plan Steps', 'What does the existing crisis or safety plan say staff should do?']
   };
   const REQUIRED_FIELDS = ['teacher_name', 'teacher_email', 'coach_name', 'coach_email', 'grade_level', 'student_initials', 'target_behavior', 'behavior_topography', 'primary_function', 'replacement_behavior', 'desired_behavior', 'typical_settings', 'common_triggers', 'typical_consequences', 'current_staff_responses'];
-  const OPTIONAL_FIELDS = ['student_strengths', 'preferred_items_activities', 'preference_assessment_notes', 'prevention_strategies', 'teaching_strategies', 'reinforcement_system', 'response_strategy', 'crisis_plan', 'requested_scenarios', 'additional_context'];
+  const OPTIONAL_FIELDS = ['student_strengths', 'preferred_items_activities', 'prevention_strategies', 'teaching_strategies', 'reinforcement_system', 'response_strategy', 'crisis_plan', 'requested_scenarios', 'additional_context'];
   const INTAKE_FIELDS = REQUIRED_FIELDS.concat(OPTIONAL_FIELDS, ['typical_antecedents']);
   const state = { client: null, busy: false };
   const $ = selector => document.querySelector(selector);
