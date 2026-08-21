@@ -95,7 +95,7 @@ async function openDetail(id, preferredTab = null) {
       ${row.has_crisis_plan ? section('Crisis / Safety Plan', [field('Crisis / Safety Plan', row.crisis_plan, true)]) : ''}
       ${section('Contextual Information', [field('Where the behavior typically occurs', row.typical_settings, true), ...antecedentContext(row).map(item => field(item.label, item.value, true)), field('What typically happens after the behavior', row.typical_consequences, true), field('How staff usually respond right now', row.current_staff_responses, true), field('Situations requested for the game', row.requested_scenarios, true), field('Anything else we should know', row.additional_context, true)])}
       <section class="panel notice"><p class="eyebrow">Fidelity Targets</p><strong>Check these against the BIP/BSP before case setup.</strong><p>Each target should be one observable teacher action.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"><span class="print-target">${escapeHtml(target.description)}</span></label>`).join('')}</div></section>
-      <section class="panel no-print"><p class="eyebrow">Accounts</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>Nothing here sends an email.</p></section>
+      <section id="intake-accounts" class="panel no-print"><p class="eyebrow">Accounts</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>Nothing here sends an email.</p></section>
       ${converted ? '' : provisionPanel(row, teacher, coach)}${reviewActions(row)}`;
     const intakeContent = state.editingIntake && canEditIntake ? editIntakeForm(row, teacher, coach) : normalIntakeContent;
     state.intakeMessage = '';
@@ -139,6 +139,10 @@ function reviewActions(row) { return row.status === 'submitted' ? `<section clas
 function bindDetail() {
   bindCaseTabs();
   bindOperations();
+  $('.go-teacher-account')?.addEventListener('click', () => {
+    selectCaseTab('intake');
+    $('#intake-accounts')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
   document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
   $('.qa-link')?.addEventListener('click', generateQaLink);
   $('#preview-protected-game')?.addEventListener('click', event => {
@@ -290,19 +294,7 @@ async function loadReadiness(requestId) {
 }
 function readinessPanel(data) {
   const states = readinessForCase(data);
-  const preview = states.content === 'Ready' ? `<button id="preview-protected-game" class="primary" type="button" data-case-code="${escapeHtml(data.case.case_code)}">Preview Game</button><small>QA only. This does not turn the game on or count as study data.</small>` : '';
-  const signoffs = states.content === 'Ready' ? `<div class="signoffs no-print"><h3>Content Checks</h3><p>Approving protected content <strong>version ${escapeHtml(data.protected_content.version)}</strong>. A later version requires new signoffs.</p>${[
-    ['resource_behavior_review', 'Behavior Review', data.resource_map?.behavior_reviewed],
-    ['resource_privacy_review', 'Privacy Review', data.resource_map?.privacy_reviewed],
-    ['resource_qa_preview', 'QA Preview', data.resource_map?.qa_previewed]
-  ].map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}>${done ? '✓ ' : ''}${label}</button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '';
-  const reviewComplete = states.content === 'Ready' && data.resource_map?.behavior_reviewed && data.resource_map?.privacy_reviewed && data.resource_map?.qa_previewed;
-  const reviewState = reviewComplete ? 'COMPLETE' : 'NEEDS ACTION';
-  const reviewSummary = states.content === 'Ready' ? `<div class="content-review-summary"><strong>CONTENT REVIEW — ${reviewState}</strong><span>Version ${escapeHtml(data.protected_content.version)}</span><span>Behavior ${data.resource_map?.behavior_reviewed?'✓':'Needs action'} · Privacy ${data.resource_map?.privacy_reviewed?'✓':'Needs action'} · QA ${data.resource_map?.qa_previewed?'✓':'Needs action'}</span></div>` : '<div class="content-review-summary needs"><strong>CONTENT REVIEW — NEEDS ACTION</strong><span>Protected game content needs action.</span></div>';
-  const reviewDetails = `<details class="content-review-details" ${reviewComplete?'':'open'}><summary>View Review Details</summary>${signoffs}</details>`;
-  const gameExtras = `<div class="game-qa-controls no-print">${preview}</div>${reviewSummary}${reviewDetails}`;
-  return renderOperations(state.caseOperations,data,escapeHtml)
-    .replace('<!-- GAME_READY_EXTRAS -->',gameExtras)
+  return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml)
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 
