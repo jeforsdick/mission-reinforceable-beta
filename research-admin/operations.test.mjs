@@ -45,7 +45,11 @@ let previous=-1; for(const stage of LIFECYCLE_STAGES){const at=renderedOperation
 assert.match(renderedOperations,/lifecycle-current" aria-current="step"[^>]*><span>1<\/span>Enrollment/);
 const enrollment=renderedOperations.slice(renderedOperations.indexOf('id="operations-enrollment"'),renderedOperations.indexOf('id="operations-prebaseline"'));
 let permissionOrder=-1; for(const key of ['teacher_consent','parent_permission','student_assent']){const at=enrollment.indexOf(`data-key="${key}"`);assert.ok(at>permissionOrder,key);permissionOrder=at;}
-assert.ok(enrollment.indexOf('data-key="bsp_technical_review"')>permissionOrder);
+const tsesAt=enrollment.indexOf('data-key="tses_pre"');
+assert.ok(tsesAt>permissionOrder,'TSES follows formal permissions');
+assert.ok(enrollment.indexOf('<h3>Pre-Baseline TSES</h3>')>permissionOrder);
+assert.ok(enrollment.indexOf('<h3>Early Prep</h3>')>tsesAt,'TSES precedes Early Prep');
+assert.ok(enrollment.indexOf('data-key="bsp_technical_review"')>tsesAt);
 for(const [key] of CHECKLIST) assert.match(renderedOperations,new RegExp(`data-key="${key}"`));
 assert.match(renderedOperations,/data-key="student_assent"[\s\S]*option value="not_applicable"/);
 assert.match(enrollment,/Research data collection still waits for required permissions/);
@@ -57,15 +61,14 @@ assert.doesNotMatch(renderedOperations,/Make a deliberate researcher decision|Re
 assert.match(renderedOperations,/Case History[\s\S]*append-only history/);
 assert.match(ui,/class="inline-record measure-form"/);assert.match(ui,/external_reference/);assert.match(js,/Completion date is required/);
 const prebaseline=renderedOperations.slice(renderedOperations.indexOf('id="operations-prebaseline"'),renderedOperations.indexOf('id="operations-baseline"'));
-assert.match(prebaseline,/id="baseline-tses-status"[\s\S]*id="go-to-tses"[\s\S]*id="tses-pre-recording"[^>]* hidden[\s\S]*class="inline-record measure-form" data-key="tses_pre"/,'incomplete TSES has a hidden recording target directly after its readiness card');
-assert.ok(prebaseline.indexOf('data-key="tses_pre"')<prebaseline.indexOf('<h3>Baseline orientation</h3>'),'TSES recording form precedes baseline orientation');
-assert.match(js,/go-to-tses[\s\S]*measure-form\[data-key="tses_pre"\][\s\S]*closest\('#tses-pre-recording'\)\.hidden=false[\s\S]*scrollIntoView[\s\S]*select\[name="status"\][\s\S]*\.focus/,'Go to TSES reveals, scrolls to, and focuses the real form');
+assert.doesNotMatch(prebaseline,/TSES — Pre-Baseline|data-key="tses_pre"/,'Prebaseline does not duplicate the TSES record');
+assert.equal((renderedOperations.match(/class="inline-record measure-form" data-key="tses_pre"/g)||[]).length,1,'Research Operations renders one tses_pre form');
+assert.doesNotMatch(renderedOperations,/Go to TSES|id="go-to-tses"|id="baseline-tses-status"/);
+assert.doesNotMatch(js,/go-to-tses/);
 assert.match(js,/research_admin_record_measure[\s\S]*target_measure_key:form\.dataset\.key/,'existing measure submit handler records tses_pre by its form data key');
-const completedTsesMarkup=renderOperations({...readyFixture(),measures:[{measure_key:'tses_pre',status:'complete',completed_on:'2026-08-20'}]}, {}, x=>String(x));
-const completedTsesPrebaseline=completedTsesMarkup.slice(completedTsesMarkup.indexOf('id="operations-prebaseline"'),completedTsesMarkup.indexOf('id="operations-baseline"'));
-assert.match(completedTsesPrebaseline,/TSES — Pre-Baseline[\s\S]*Completed 2026-08-20[\s\S]*Complete/);
-assert.doesNotMatch(completedTsesPrebaseline,/id="go-to-tses"/,'completed TSES removes its action');
-assert.match(completedTsesPrebaseline,/data-key="tses_pre"/,'completed TSES retains the existing recording form for edits');
+const completedTsesMarkup=renderOperations({...readyFixture(),measures:[{measure_key:'tses_pre',status:'complete',completed_on:'2026-08-20',external_reference:'TSES-20',brief_note:'Recorded'}]}, {}, x=>String(x));
+const completedEnrollment=completedTsesMarkup.slice(completedTsesMarkup.indexOf('id="operations-enrollment"'),completedTsesMarkup.indexOf('id="operations-prebaseline"'));
+assert.match(completedEnrollment,/data-key="tses_pre"[\s\S]*option value="complete" selected[\s\S]*value="2026-08-20"[\s\S]*value="TSES-20"[\s\S]*value="Recorded"/,'saved TSES values remain visible in Enrollment');
 const measureSubmit=js.slice(js.indexOf("document.querySelectorAll('.measure-form')"),js.indexOf("$('#phase-form')"));
 assert.doesNotMatch(measureSubmit,/research_admin_record_phase|target_phase/,'saving a measure does not change phase automatically');
 for(const field of ['affects_observation','affects_mr_exposure','affects_phase_interpretation','action_taken']){assert.match(ui,new RegExp(field));assert.match(js,new RegExp(field));}
