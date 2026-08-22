@@ -36,7 +36,7 @@
   function getSections() {
     const resources = MR.resourcesData;
     if (!resources || typeof resources !== 'object' || resources.schemaVersion !== 1 || !resources.sections || typeof resources.sections !== 'object') return null;
-    if (MR.telemetryContext?.draftQa === true) {
+    if (MR.telemetryContext?.draftQa === true && MR.telemetryContext?.fullDraftQa !== true) {
       return Object.fromEntries(Object.entries(SECTION_TITLES).map(([key, canonicalTitle]) => {
         const section = resources.sections[key];
         if (!section || !Array.isArray(section.blocks) || section.blocks.length === 0) {

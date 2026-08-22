@@ -19,7 +19,7 @@ test('published and saved-draft QA use separate assignment resolvers with draft 
   assert.match(auth, /: await supabaseClient\.rpc\('research_admin_game_preview'/);
   assert.match(auth, /target_mission_type: qaDraft\.type/);
   assert.match(auth, /target_slot_number: qaDraft\.slot/);
-  assert.match(auth, /qaDraft\s*\n\s*\};/);
+  assert.match(auth, /qaDraft,\s*\n\s*fullDraftQa/);
 });
 
 test('temporary content prefers saved Resource Map draft, falls back to published, then null', async () => {
@@ -42,7 +42,7 @@ test('ordinary content remains published-only and only saved-draft QA auto-start
   assert.match(app, /assignment\.qaMode === true && assignment\.qaDraft\) MR\.engine\.start\(assignment\.qaDraft\.type\)/);
   assert.doesNotMatch(app, /if \(assignment\.qaMode === true\) MR\.engine\.start/);
   assert.match(app, /gameContentVersion: null/);
-  assert.match(app, /draftQa: Boolean\(assignment\.qaDraft\)/);
+  assert.match(app, /draftQa: Boolean\(assignment\.qaDraft \|\| assignment\.fullDraftQa\)/);
 });
 
 test('draft banner identifies unpublished mode without narrative content', async () => {

@@ -230,7 +230,9 @@
   }
 
   async function loadAssignedGame(assignment) {
-    const protectedContent = assignment.qaDraft
+    const protectedContent = assignment.fullDraftQa
+      ? await MR.auth.getFullDraftGameContent(assignment)
+      : assignment.qaDraft
       ? await MR.auth.getDraftGameContent(assignment)
       : await MR.auth.getGameContent(assignment.case.id);
     if (protectedContent) return MR.loadProtectedGameContent(protectedContent, assignment.case);
@@ -262,7 +264,8 @@
         participantId: assignment.participant.id,
         caseId: assignment.case.id,
         qaMode: assignment.qaMode === true,
-        draftQa: Boolean(assignment.qaDraft),
+        draftQa: Boolean(assignment.qaDraft || assignment.fullDraftQa),
+        fullDraftQa: assignment.fullDraftQa === true,
         gameContentVersion: null,
         fidelityTargets: {}
       };
@@ -283,11 +286,12 @@
       document.body.classList.toggle('qa-preview', assignment.qaMode === true);
       MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true;
       const draftBanner = MR.$('#draft-qa-preview-banner');
-      draftBanner.hidden = !assignment.qaDraft;
+      draftBanner.hidden = !(assignment.qaDraft || assignment.fullDraftQa);
       if (assignment.qaDraft) {
         const label = assignment.qaDraft.type === 'wild' ? 'Mystery' : `${assignment.qaDraft.type[0].toUpperCase()}${assignment.qaDraft.type.slice(1)}`;
         draftBanner.textContent = `DRAFT QA PREVIEW — ${label} ${assignment.qaDraft.slot} · Not published`;
       }
+      if (assignment.fullDraftQa) draftBanner.textContent = 'FULL DRAFT QA PREVIEW · Not published';
       MR.$('#back-to-research-admin').hidden = assignment.qaMode !== true;
       MR.setScreen('loading');
       MR.telemetryContext.fidelityTargets = await loadFidelityTargetLookup(assignment.case.id);

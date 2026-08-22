@@ -3,14 +3,15 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, setupFromWorkspace } from './game-creation-ui.mjs';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, setupFromWorkspace } from './game-creation-ui.mjs';
+import { validateFullDraft } from './game-draft-validator.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
-const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [] };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -333,7 +334,7 @@ function readinessPanel(data) {
 }
 function gameCreationPanel(data) {
   const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: data.case.case_code };
-  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage);
+  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck);
 }
 
 function redrawGameCreation(scrollToMissionBuilder = false) {
@@ -353,7 +354,10 @@ function redrawGameCreation(scrollToMissionBuilder = false) {
 function captureSetupAndResourceForms() {
   const root = $('#game-creation-panel');
   if (!root) return;
-  if (state.setupDraft && $('#bip-briefing')) state.setupDraft.bipBriefing = $('#bip-briefing').value;
+  if (state.setupDraft && $('#bip-briefing')) {
+    state.setupDraft.bipBriefing = $('#bip-briefing').value;
+    state.setupDraft.weeklyTeacherReport = { ...(state.setupDraft.weeklyTeacherReport || {}), targetBehavior: $('[name="weeklyTargetBehavior"]')?.value || '', replacementBehavior: $('[name="weeklyReplacementBehavior"]')?.value || '', targetRoutine: $('[name="weeklyTargetRoutine"]')?.value || '' };
+  }
   if (state.resourceDraft) captureResourceMap(root, state.resourceDraft);
 }
 function preserveAllAuthoringForms() {
@@ -364,6 +368,11 @@ function preserveAllAuthoringForms() {
 function bindSetupAndResources() {
   $('#save-game-setup')?.addEventListener('click', saveGameSetup);
   $('#save-resource-map')?.addEventListener('click', saveResourceMap);
+  $('#check-full-draft')?.addEventListener('click', checkFullDraft);
+  $('#preview-full-draft')?.addEventListener('click', event => window.open(fullDraftPreviewUrl(event.currentTarget.dataset.caseCode), '_blank', 'noopener'));
+  document.querySelectorAll('[data-check-nav="setup"]').forEach(button => button.addEventListener('click', () => $('.game-setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })));
+  document.querySelectorAll('[data-check-mission-type]').forEach(button => button.addEventListener('click', () => document.querySelector(`.mission-slot[data-mission-type="${button.dataset.checkMissionType}"][data-slot-number="${button.dataset.checkSlot}"]`)?.click()));
+  document.querySelectorAll('[data-check-resource]').forEach(button => button.addEventListener('click', () => { const section = document.querySelector(`.resource-section[data-section-key="${button.dataset.checkResource}"]`); if (section) { section.open = true; section.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }));
   document.querySelectorAll('[data-add-block]').forEach(select => select.addEventListener('change', () => {
     if (!select.value) return; preserveAllAuthoringForms();
     const blocks = state.resourceDraft.sections[select.closest('.resource-section').dataset.sectionKey].blocks;
@@ -409,7 +418,7 @@ async function saveMissionDraft() {
   if (error) { button.disabled = false; message.textContent = `Draft was not saved: ${error.message}`; return; }
   const { data, error: reloadError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
   if (reloadError) { button.disabled = false; message.textContent = `Draft saved, but the workspace could not reload: ${reloadError.message}`; return; }
-  state.authoringWorkspace = { ...data, ...data.case, case_id: data.case.id, active_fidelity_targets: data.fidelity_targets || [], mission_drafts: data.missions || [] };
+  state.authoringWorkspace = { ...data, ...data.case, case_id: data.case.id, active_fidelity_targets: data.fidelity_targets || [], mission_drafts: data.missions || [] }; state.fullDraftCheck = null;
   state.missionSelection = selection; state.missionDraft = normalizeMission(missionFromDraft(latestDraft(state.authoringWorkspace, selection.mission_type, selection.slot_number)), state.authoringWorkspace.case_code, selection.mission_type, selection.slot_number); state.missionMessage = 'Draft saved.'; state.selectedTab = 'game-creation'; redrawGameCreation();
 }
 async function reloadAuthoringWorkspace() {
@@ -423,14 +432,23 @@ async function saveGameSetup() {
   const { error } = await state.client.rpc('research_admin_save_game_setup_draft', { target_case_id: state.authoringWorkspace.case_id, target_setup: state.setupDraft });
   if (error) { button.disabled = false; message.textContent = `Game setup was not saved: ${error.message}`; return; }
   const reloadError = await reloadAuthoringWorkspace(); if (reloadError) { message.textContent = `Game setup saved, but the workspace could not reload: ${reloadError.message}`; return; }
-  state.setupDraft = setupFromWorkspace(state.authoringWorkspace); state.setupMessage = 'Game setup saved.'; redrawGameCreation();
+  state.setupDraft = setupFromWorkspace(state.authoringWorkspace); state.setupMessage = 'Game setup saved.'; state.fullDraftCheck = null; redrawGameCreation();
 }
 async function saveResourceMap() {
   preserveAllAuthoringForms(); const button = $('#save-resource-map'), message = $('#resource-save-message'); button.disabled = true; message.textContent = 'Saving…';
   const { error } = await state.client.rpc('research_admin_save_resource_map_draft', { target_case_id: state.authoringWorkspace.case_id, target_resources: state.resourceDraft });
   if (error) { button.disabled = false; message.textContent = `Resource Map draft was not saved: ${error.message}`; return; }
   const reloadError = await reloadAuthoringWorkspace(); if (reloadError) { message.textContent = `Resource Map draft saved, but the workspace could not reload: ${reloadError.message}`; return; }
-  state.resourceDraft = resourcesFromWorkspace(state.authoringWorkspace); state.resourceMessage = 'Resource Map draft saved.'; redrawGameCreation();
+  state.resourceDraft = resourcesFromWorkspace(state.authoringWorkspace); state.resourceMessage = 'Resource Map draft saved.'; state.fullDraftCheck = null; redrawGameCreation();
+}
+
+async function checkFullDraft() {
+  preserveAllAuthoringForms();
+  const button = $('#check-full-draft'), message = $('#full-draft-message'); button.disabled = true; message.textContent = 'Checking latest saved revisions…';
+  const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
+  if (error) { button.disabled = false; message.textContent = `Full Draft could not be checked: ${error.message}`; return; }
+  // Deliberately validate the temporary reload without replacing any unsaved editor state.
+  state.fullDraftCheck = validateFullDraft(data); redrawGameCreation();
 }
 
 function fidelityPanel() {

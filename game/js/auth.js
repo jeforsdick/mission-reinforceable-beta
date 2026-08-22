@@ -145,6 +145,13 @@
     return { type, slot };
   }
 
+  function fullDraftRequest(search) {
+    const value = new URLSearchParams(search).get('qa_full_draft');
+    if (value === null) return false;
+    if (value !== '1') throw new Error('Full Draft QA preview has an invalid flag.');
+    return true;
+  }
+
   function missionFromWorkspaceRow(row) {
     return row && (row.mission || row.mission_json || row.draft || row.content) || null;
   }
@@ -181,6 +188,28 @@
     };
     content[assignment.qaDraft.type === 'daily' ? 'daily_missions' : assignment.qaDraft.type === 'wild' ? 'wildcard_missions' : 'crisis_missions'] = [mission];
     return content;
+  }
+
+  async function fullDraftGameContent(assignment) {
+    if (!assignment || assignment.qaMode !== true || assignment.fullDraftQa !== true) throw new Error('Full Draft QA preview requires an authorized Research Admin QA assignment.');
+    const supabaseClient = client();
+    const { data, error } = await supabaseClient.rpc('research_admin_game_authoring_workspace', { target_case_id: assignment.case.id });
+    if (error) throw new Error(`Unable to load the saved Full Draft: ${error.message}`);
+    const workspace = Array.isArray(data) ? data[0] : data;
+    if (!workspace) throw new Error('Unable to load the game authoring workspace.');
+    const setup = workspace.setup_draft?.setup || workspace.latest_setup_draft?.setup;
+    const resources = workspace.resource_draft?.resources || workspace.latest_resource_draft?.resources;
+    if (!setup) throw new Error('No saved Game Setup exists for Full Draft QA.');
+    if (!resources) throw new Error('No saved Resource Map draft exists for Full Draft QA.');
+    const published = await protectedGameContent(supabaseClient, assignment.case.id);
+    const alias = workspace.case?.student_alias || assignment.case.student_alias;
+    const rows = workspace.missions || workspace.mission_drafts || workspace.latest_mission_drafts || [];
+    const group = type => rows.filter(row => row.mission_type === type).sort((a, b) => Number(a.slot_number) - Number(b.slot_number)).map(missionFromWorkspaceRow).filter(Boolean);
+    return {
+      config: Object.assign({}, published?.config || {}, { studentAlias: alias, bipBriefing: setup.bipBriefing || '', weeklyTeacherReport: { targetBehavior: setup.weeklyTeacherReport?.targetBehavior || '', replacementBehavior: setup.weeklyTeacherReport?.replacementBehavior || '', targetRoutine: setup.weeklyTeacherReport?.targetRoutine || '' } }),
+      resources: Object.assign({}, resources, { studentAlias: alias }),
+      daily_missions: group('daily'), wildcard_missions: group('wild'), crisis_missions: group('crisis'), version: null
+    };
   }
 
   async function activeFidelityTargets(supabaseClient, caseId) {
@@ -293,7 +322,11 @@
       const qaCase = new URLSearchParams(window.location.search).get('qa_case');
       if (qaCase) {
         const qaDraft = draftRequest(window.location.search);
-        const previewResult = qaDraft
+        const fullDraftQa = fullDraftRequest(window.location.search);
+        if (qaDraft && fullDraftQa) throw new Error('Choose either individual Draft QA or Full Draft QA.');
+        const previewResult = fullDraftQa
+          ? await supabaseClient.rpc('research_admin_full_draft_game_preview', { target_case_code: qaCase.trim() })
+          : qaDraft
           ? await supabaseClient.rpc('research_admin_draft_game_preview', {
             target_case_code: qaCase.trim(),
             target_mission_type: qaDraft.type,
@@ -309,7 +342,8 @@
           qaMode: true,
           participant: { id: row.participant_id, participant_code: row.participant_code, active: false },
           case: { id: row.case_id, case_code: row.case_code, student_alias: row.student_alias, active: false },
-          qaDraft
+          qaDraft,
+          fullDraftQa
         };
       }
       if (!hasCurrentStudyDaySignIn(user)) {
@@ -331,6 +365,8 @@
     },
 
     getDraftGameContent: draftGameContent,
+
+    getFullDraftGameContent: fullDraftGameContent,
 
     async getFidelityTargets(caseId) {
       return activeFidelityTargets(client(), caseId);
