@@ -101,6 +101,35 @@ test('malformed resources show unavailable rather than falling back to demo text
   assert.equal(view.title.textContent, 'Resources unavailable');
 });
 
+test('draft QA renders a started section with the normal block renderer', () => {
+  const data=resources();
+  Object.values(data.sections).forEach(section=>{section.blocks=[];});
+  data.sections.prevention.blocks=[{type:'callout',label:'Try this',text:'Offer a choice.'}];
+  const view=setup(data,{draftQa:true});
+  view.MR.resources.renderResourceSection('prevention');
+  assert.deepEqual(view.content.children.map(child=>child.tagName),['ASIDE']);
+  assert(descendantText(view.content).includes('Offer a choice.'));
+});
+
+test('draft QA labels empty sections and safely rejects invalid blocks', () => {
+  const data=resources();
+  data.sections.bip.blocks=[];
+  data.sections.prevention.blocks=[{type:'html',text:'<img src=x onerror=alert(1)>'}];
+  const view=setup(data,{draftQa:true});
+  view.MR.resources.renderResourceSection('bip');
+  assert(descendantText(view.content).includes('This section has not been started in the saved Resource Map draft.'));
+  view.MR.resources.renderResourceSection('prevention');
+  assert(descendantText(view.content).includes('This draft section contains content that must be corrected before publishing.'));
+  assert.equal(view.content.children.some(child=>child.tagName==='IMG'),false);
+});
+
+test('published mode still rejects an incomplete Resource Map', () => {
+  const data=resources(); data.sections.fidelity.blocks=[];
+  const view=setup(data,{qaMode:true,draftQa:false});
+  view.MR.resources.renderResourceSection('bip');
+  assert.equal(view.title.textContent,'Resources unavailable');
+});
+
 test('hotspot active state and Back to BIP behavior remain wired', () => {
   const view = setup();
   view.MR.resources.render();

@@ -72,6 +72,21 @@ export function resetMissionAuthoringState(authoringState) {
   authoringState.resourceDraft = null;
   authoringState.setupMessage = '';
   authoringState.resourceMessage = '';
+  authoringState.resourceOpenSections = [];
+}
+
+export function captureResourceOpenSections(root) {
+  if (!root) return [];
+  return Array.from(root.querySelectorAll('.resource-section[open]'), section => section.dataset.sectionKey)
+    .filter(key => Object.hasOwn(RESOURCE_SECTIONS, key));
+}
+
+export function restoreResourceOpenSections(root, keys = []) {
+  if (!root) return;
+  const openKeys = new Set(keys);
+  root.querySelectorAll('.resource-section').forEach(section => {
+    section.open = openKeys.has(section.dataset.sectionKey);
+  });
 }
 
 export function setupFromWorkspace(workspace) {

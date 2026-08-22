@@ -262,6 +262,7 @@
         participantId: assignment.participant.id,
         caseId: assignment.case.id,
         qaMode: assignment.qaMode === true,
+        draftQa: Boolean(assignment.qaDraft),
         gameContentVersion: null,
         fidelityTargets: {}
       };

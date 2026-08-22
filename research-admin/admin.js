@@ -3,14 +3,14 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
-import { captureMission, captureResourceMap, draftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, setupFromWorkspace } from './game-creation-ui.mjs';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, setupFromWorkspace } from './game-creation-ui.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
-const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '' };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [] };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -339,10 +339,12 @@ function gameCreationPanel(data) {
 function redrawGameCreation(scrollToMissionBuilder = false) {
   const panel = $('#game-creation-panel');
   if (!panel) return;
+  state.resourceOpenSections = captureResourceOpenSections(panel);
   panel.innerHTML = gameCreationPanel(state.readiness);
   bindMissionBuilder();
   bindSetupAndResources();
   bindPublishedReview();
+  restoreResourceOpenSections(panel, state.resourceOpenSections);
   if (scrollToMissionBuilder) document.querySelector('.mission-builder')?.scrollIntoView({
     behavior: 'smooth',
     block: 'start'
