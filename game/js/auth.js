@@ -132,6 +132,51 @@
     return data || null;
   }
 
+  function draftRequest(search) {
+    const params = new URLSearchParams(search);
+    const type = params.get('qa_draft_type');
+    const slotText = params.get('qa_draft_slot');
+    if (!type && !slotText) return null;
+    if (!type || !slotText) throw new Error('Draft QA preview requires both a mission type and slot.');
+    if (!['daily', 'wild', 'crisis'].includes(type)) throw new Error('Draft QA preview has an invalid mission type.');
+    const slot = Number(slotText);
+    const maximum = type === 'daily' ? 10 : 5;
+    if (!Number.isInteger(slot) || slot < 1 || slot > maximum) throw new Error('Draft QA preview has an invalid mission slot.');
+    return { type, slot };
+  }
+
+  function missionFromWorkspaceRow(row) {
+    return row && (row.mission || row.mission_json || row.draft || row.content) || null;
+  }
+
+  async function draftGameContent(assignment) {
+    if (!assignment || assignment.qaMode !== true || !assignment.qaDraft) {
+      throw new Error('Draft QA preview requires an authorized Research Admin QA assignment.');
+    }
+    const supabaseClient = client();
+    const { data, error } = await supabaseClient.rpc('research_admin_game_authoring_workspace', {
+      target_case_id: assignment.case.id
+    });
+    if (error) throw new Error(`Unable to load saved mission draft: ${error.message}`);
+    const workspace = Array.isArray(data) ? data[0] : data;
+    if (!workspace) throw new Error('Unable to load the mission authoring workspace.');
+    const rows = workspace.missions || workspace.mission_drafts || workspace.latest_mission_drafts || [];
+    const selected = rows.find(row => row.mission_type === assignment.qaDraft.type && Number(row.slot_number) === assignment.qaDraft.slot);
+    const mission = missionFromWorkspaceRow(selected);
+    if (!mission) throw new Error(`No saved ${assignment.qaDraft.type} mission draft exists in slot ${assignment.qaDraft.slot}.`);
+    const published = await protectedGameContent(supabaseClient, assignment.case.id);
+    const content = {
+      config: published?.config || { studentAlias: workspace.case?.student_alias || assignment.case.student_alias },
+      resources: published?.resources || null,
+      daily_missions: [],
+      wildcard_missions: [],
+      crisis_missions: [],
+      version: null
+    };
+    content[assignment.qaDraft.type === 'daily' ? 'daily_missions' : assignment.qaDraft.type === 'wild' ? 'wildcard_missions' : 'crisis_missions'] = [mission];
+    return content;
+  }
+
   async function activeFidelityTargets(supabaseClient, caseId) {
     if (!caseId) throw new Error('No case is available for fidelity targets.');
 
@@ -241,6 +286,7 @@
       const user = data && data.user ? data.user : await waitForLogin(supabaseClient);
       const qaCase = new URLSearchParams(window.location.search).get('qa_case');
       if (qaCase) {
+        const qaDraft = draftRequest(window.location.search);
         const { data: preview, error: previewError } = await supabaseClient
           .rpc('research_admin_game_preview', { target_case_code: qaCase.trim() });
         if (previewError) throw new Error(`QA preview denied: ${previewError.message}`);
@@ -250,7 +296,8 @@
           user,
           qaMode: true,
           participant: { id: row.participant_id, participant_code: row.participant_code, active: false },
-          case: { id: row.case_id, case_code: row.case_code, student_alias: row.student_alias, active: false }
+          case: { id: row.case_id, case_code: row.case_code, student_alias: row.student_alias, active: false },
+          qaDraft
         };
       }
       if (!hasCurrentStudyDaySignIn(user)) {
@@ -270,6 +317,8 @@
     async getGameContent(caseId) {
       return protectedGameContent(client(), caseId);
     },
+
+    getDraftGameContent: draftGameContent,
 
     async getFidelityTargets(caseId) {
       return activeFidelityTargets(client(), caseId);
