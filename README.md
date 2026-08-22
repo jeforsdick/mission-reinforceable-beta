@@ -49,7 +49,7 @@ a follow-up reminder route. See [Teacher Daily Reminders](docs/teacher-daily-rem
 
 > **Fresh database replay begins with the canonical legacy bootstrap.**
 
-The canonical migration chain now includes a fresh-project bootstrap for the historical `cases`, `participants`, `intake_requests`, and `case_game_content` foundations. See the [Supabase reproducibility audit](docs/SUPABASE_REPRODUCIBILITY_AUDIT.md) for provenance, security boundaries, live-verification requirements, and the clean-replay command. Files under `research/supabase/` preserve historical setup and seed material but are not part of the canonical replay.
+The canonical migration chain now includes a fresh-project bootstrap for the historical `cases`, `participants`, `intake_requests`, and `case_game_content` foundations. It is a **fresh-database starting point**, not a migration to run blindly on the existing dissertation database. Existing production requires isolated replay, catalog comparison, and deliberate migration-history reconciliation before appropriate additive repairs are applied. See the [Supabase reproducibility audit](docs/SUPABASE_REPRODUCIBILITY_AUDIT.md) for provenance, security boundaries, and verification status. Files under `research/supabase/` preserve historical setup and seed material but are not part of the canonical replay.
 
 ## Security configuration
 

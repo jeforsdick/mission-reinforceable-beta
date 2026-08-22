@@ -5,7 +5,7 @@ create table if not exists public.cases (
   id uuid primary key default gen_random_uuid(),
   case_code text not null unique,
   student_alias text not null,
-  active boolean not null default false,
+  active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -15,7 +15,7 @@ create table if not exists public.participants (
   auth_user_id uuid not null unique references auth.users(id) on delete restrict,
   participant_code text not null unique,
   case_id uuid not null references public.cases(id) on delete restrict,
-  active boolean not null default false,
+  active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -10,7 +10,9 @@ migration when it was introduced.
 > including `cases`, `participants`, `intake_requests`, and `case_game_content`
 > originated in historical/manual setup. They are now represented by the earlier
 > canonical bootstrap migration. See `SUPABASE_REPRODUCIBILITY_AUDIT.md` for its
-> provenance and clean-replay limitations.
+> provenance and clean-replay limitations. That bootstrap is a fresh-database
+> starting point and must not be run blindly against the existing dissertation
+> database.
 
 ## Existing schema assumptions
 

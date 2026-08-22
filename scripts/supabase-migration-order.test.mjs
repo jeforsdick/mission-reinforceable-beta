@@ -5,6 +5,9 @@ import test from 'node:test';
 const directory = new URL('../supabase/migrations/', import.meta.url);
 const files = (await readdir(directory)).filter(name => name.endsWith('.sql')).sort();
 const migrations = await Promise.all(files.map(async name => ({ name, sql: (await readFile(new URL(name, directory), 'utf8')).toLowerCase() })));
+const onboardingName = '20260814020000_research_admin_onboarding.sql';
+const onboardingIndex = files.indexOf(onboardingName);
+const beforeOnboarding = migrations.slice(0, onboardingIndex).map(({ sql }) => sql).join('\n');
 
 function first(pattern) {
   const migration = migrations.find(({ sql }) => pattern.test(sql));
@@ -33,6 +36,49 @@ test('profiles and is_research_admin are defined before later callers', () => {
   }
 });
 
+test('every onboarding defensive-assertion column exists before onboarding', () => {
+  const onboarding = migrations[onboardingIndex].sql;
+  const assertionBlock = onboarding.slice(0, onboarding.indexOf('create table public.research_onboarding_actions'));
+  const required = [...assertionBlock.matchAll(/\('([a-z_]+)'(?:,\s*'([a-z_]+)')?\)/g)].map(([, firstName, secondName]) =>
+    secondName ? [firstName, secondName] : ['intake_requests', firstName]);
+
+  const declarations = {
+    intake_requests: /create table if not exists public\.intake_requests\s*\([\s\S]*?\n\);/,
+    cases: /create table if not exists public\.cases\s*\([\s\S]*?\n\);/,
+    participants: /create table if not exists public\.participants\s*\([\s\S]*?\n\);/,
+    case_intake: /create table public\.case_intake\s*\([\s\S]*?\n\);/
+  };
+  for (const [table, column] of required) {
+    const createBody = beforeOnboarding.match(declarations[table])?.[0] || '';
+    const added = new RegExp(`alter table public\\.${table}\\b[^;]*\\badd column if not exists ${column}\\b`).test(beforeOnboarding);
+    assert.ok(new RegExp(`\\b${column}\\s+`).test(createBody) || added, `${table}.${column} must exist before ${onboardingName}`);
+  }
+});
+
+test('legacy keys and foreign keys satisfy onboarding before it runs', () => {
+  const bootstrap = migrations[0].sql;
+  assert.match(bootstrap, /case_code text not null unique/);
+  assert.match(bootstrap, /auth_user_id uuid not null unique references auth\.users\(id\)/);
+  assert.match(bootstrap, /participant_code text not null unique/);
+  assert.match(bootstrap, /case_id uuid not null references public\.cases\(id\)/);
+});
+
+test('legacy active defaults remain true while dissertation provisioning is explicitly inactive', () => {
+  const bootstrap = migrations[0].sql;
+  const cases = bootstrap.match(/create table if not exists public\.cases\s*\([\s\S]*?\n\);/)[0];
+  const participants = bootstrap.match(/create table if not exists public\.participants\s*\([\s\S]*?\n\);/)[0];
+  assert.match(cases, /active boolean not null default true/);
+  assert.match(participants, /active boolean not null default true/);
+  const onboarding = migrations[onboardingIndex].sql;
+  assert.match(onboarding, /insert into public\.cases\(case_code, student_alias, active\)\s*values \(new_case_code, btrim\(student_game_alias\), false\)/);
+  assert.match(onboarding, /insert into public\.participants\(auth_user_id, participant_code, case_id, active\)\s*values \(teacher\.id, study_id, created_case_id, false\)/);
+});
+
+test('case_intake lifecycle contract is canonical before onboarding', () => {
+  assert.match(beforeOnboarding, /alter table public\.case_intake\s+add column if not exists status text not null default 'draft'/);
+  assert.match(beforeOnboarding, /check \(status in \('draft', 'submitted'\)\)/);
+});
+
 test('bootstrap preserves least-privilege browser access', () => {
   const sql = migrations[0].sql;
   assert.match(sql, /enable row level security/g);
@@ -49,4 +95,7 @@ test('canonical intake repair removes drift without widening RPC execution', () 
   assert.match(repair, /if not public\.is_research_admin\(\)/);
   assert.match(repair, /revoke all on function public\.research_admin_update_intake\(uuid,jsonb\) from public/);
   assert.match(repair, /grant execute on function public\.research_admin_update_intake\(uuid,jsonb\) to authenticated/);
+  const repairIndex = files.indexOf('20260822030000_intake_schema_drift_repairs.sql');
+  const beforeRepair = migrations.slice(0, repairIndex).map(({ sql }) => sql).join('\n');
+  assert.match(beforeRepair, /research_onboarding_actions_action_type_check[\s\S]*?'intake_edited'/);
 });
