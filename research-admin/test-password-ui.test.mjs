@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+const js=fs.readFileSync(new URL('admin.js',import.meta.url),'utf8');
+assert.match(js,/\^CASE-DEMO-/); assert.match(js,/\^MR-DEMO-/); assert.ok(js.includes('/@testemail\\.com$/i'));
+assert.match(js,/testPasswordEligible\(converted, email\)/);
+assert.match(js,/SET TEST PASSWORD/); assert.match(js,/Demo account only\. No email is sent\./);
+assert.equal((js.match(/autocomplete="new-password"/g)||[]).length,2);
+assert.match(js,/password !== form\.elements\.confirmation\.value/);
+assert.match(js,/form\.reset\(\)/); assert.match(js,/Test password set\. You can now use the normal Teacher Login\./);
+assert.match(js,/Create Test Login Link/); assert.match(js,/research-admin-qa-link/);
+assert.doesNotMatch(js,/SERVICE_ROLE|service-role/i);
+console.log('Research Admin demo-only test password UI checks passed.');

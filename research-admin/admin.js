@@ -98,7 +98,7 @@ async function openDetail(id, preferredTab = null) {
       ${row.has_crisis_plan ? section('Crisis / Safety Plan', [field('Crisis / Safety Plan', row.crisis_plan, true)]) : ''}
       ${section('Contextual Information', [field('Where the behavior typically occurs', row.typical_settings, true), ...antecedentContext(row).map(item => field(item.label, item.value, true)), field('What typically happens after the behavior', row.typical_consequences, true), field('How staff usually respond right now', row.current_staff_responses, true), field('Situations requested for the game', row.requested_scenarios, true), field('Anything else we should know', row.additional_context, true)])}
       <section class="panel notice"><p class="eyebrow">Fidelity Targets</p><strong>Check these against the BIP/BSP before case setup.</strong><p>Each target should be one observable teacher action.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"><span class="print-target">${escapeHtml(target.description)}</span></label>`).join('')}</div></section>
-      <section id="intake-accounts" class="panel no-print"><p class="eyebrow">Accounts</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher')}${accountBox('Coach Account', row.coach_email, coach, 'coach')}<p>Nothing here sends an email.</p></section>
+      <section id="intake-accounts" class="panel no-print"><p class="eyebrow">Accounts</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher', converted)}${accountBox('Coach Account', row.coach_email, coach, 'coach', converted)}<p>Nothing here sends an email.</p></section>
       ${converted ? '' : provisionPanel(row, teacher, coach)}${reviewActions(row)}`;
     const intakeContent = state.editingIntake && canEditIntake ? editIntakeForm(row, teacher, coach) : normalIntakeContent;
     state.intakeMessage = '';
@@ -139,7 +139,11 @@ function bindCaseTabs() {
     });
   });
 }
-function accountBox(label, email, result, type) { return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Create Test Login Link</button><small>QA only. No email is sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? '<div id="qa-result"></div>' : ''}</div>`; }
+function testPasswordEligible(converted, email) { return /^CASE-DEMO-/.test(converted?.case?.case_code || '') && /^MR-DEMO-/.test(converted?.participant?.participant_code || '') && /@testemail\.com$/i.test(email || ''); }
+function accountBox(label, email, result, type, converted) {
+  const passwordControl = result.ready && type === 'teacher' && testPasswordEligible(converted, email) ? `<details class="test-password-control"><summary>SET TEST PASSWORD</summary><form id="test-password-form"><label>New test password<input name="password" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><label>Confirm test password<input name="confirmation" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><button class="primary" type="submit">Set Test Password</button><small>Demo account only. No email is sent.</small><p id="test-password-result" role="status"></p></form></details>` : '';
+  return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Create Test Login Link</button><small>QA only. No email is sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? `<div id="qa-result"></div>${passwordControl}` : ''}</div>`;
+}
 function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel no-print"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel no-print"><h2>Intake decision</h2><p id="action-message" class="success-message" role="status">${escapeHtml(state.intakeDecisionMessage || '')}</p><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
 function bindDetail() {
   bindCaseTabs();
@@ -173,6 +177,7 @@ function bindDetail() {
   }));
   document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
   $('.qa-link')?.addEventListener('click', generateQaLink);
+  $('#test-password-form')?.addEventListener('submit', setTestPassword);
   $('#preview-protected-game')?.addEventListener('click', event => {
     // Preview Game is QA only. This does not turn the game on or count as study data.
     const caseCode = event.currentTarget.dataset.caseCode;
@@ -296,6 +301,19 @@ async function generateQaLink(event) {
     $('#qa-result').innerHTML = `<label>Temporary test link<input value="${escapeHtml(state.qaLink)}" readonly></label><button id="copy-qa-link" class="quiet" type="button">Copy Link</button>`;
     $('#copy-qa-link').addEventListener('click', () => navigator.clipboard.writeText(state.qaLink));
   } catch (error) { $('#qa-result').textContent = error.message; event.currentTarget.disabled = false; }
+}
+async function setTestPassword(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const password = form.elements.password.value;
+  const message = $('#test-password-result');
+  if (password !== form.elements.confirmation.value) { message.textContent = 'Passwords do not match.'; return; }
+  const button = form.querySelector('button'); button.disabled = true;
+  try {
+    await adminApi('/api/research-admin-set-test-password', { request_id: state.selected.request_id, password });
+    form.reset();
+    message.textContent = 'Test password set. You can now use the normal Teacher Login.';
+  } catch (error) { message.textContent = error.message; button.disabled = false; }
 }
 
 function reviewedTargets() {
