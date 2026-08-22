@@ -193,6 +193,7 @@ function bindDetail() {
   $('#provision-form')?.addEventListener('submit', provisionCase);
   $('#download-case-pdf')?.addEventListener('click', openCaseReport);
   bindMissionBuilder();
+  bindSetupAndResources();
   if ($('#fidelity-form-wrap')) renderFidelityForm();
 }
 
@@ -347,45 +348,45 @@ function redrawGameCreation(scrollToMissionBuilder = false) {
     block: 'start'
   });
 }
-function preserveSetupAndResources() {
+function captureSetupAndResourceForms() {
   const root = $('#game-creation-panel');
   if (!root) return;
   if (state.setupDraft && $('#bip-briefing')) state.setupDraft.bipBriefing = $('#bip-briefing').value;
   if (state.resourceDraft) captureResourceMap(root, state.resourceDraft);
 }
+function preserveAllAuthoringForms() {
+  const root = $('#game-creation-panel');
+  if (root && state.missionDraft) captureMission(root, state.missionDraft, state.missionNav);
+  captureSetupAndResourceForms();
+}
 function bindSetupAndResources() {
   $('#save-game-setup')?.addEventListener('click', saveGameSetup);
   $('#save-resource-map')?.addEventListener('click', saveResourceMap);
   document.querySelectorAll('[data-add-block]').forEach(select => select.addEventListener('change', () => {
-    if (!select.value) return; preserveSetupAndResources();
+    if (!select.value) return; preserveAllAuthoringForms();
     const blocks = state.resourceDraft.sections[select.closest('.resource-section').dataset.sectionKey].blocks;
     blocks.push(select.value === 'paragraph' ? { type: 'paragraph', text: '' } : select.value === 'callout' ? { type: 'callout', label: '', text: '' } : select.value === 'list' ? { type: 'list', items: [''] } : { type: 'definitionList', items: [{ term: '', definition: '' }] });
     redrawGameCreation();
   }));
   document.querySelectorAll('[data-block-action]').forEach(button => button.addEventListener('click', () => {
-    preserveSetupAndResources(); const card = button.closest('.resource-block'), blocks = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks, index = Number(card.dataset.blockIndex), action = button.dataset.blockAction;
+    preserveAllAuthoringForms(); const card = button.closest('.resource-block'), blocks = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks, index = Number(card.dataset.blockIndex), action = button.dataset.blockAction;
     if (action === 'remove') blocks.splice(index, 1); else if (action === 'up' && index > 0) [blocks[index - 1], blocks[index]] = [blocks[index], blocks[index - 1]]; else if (action === 'down' && index < blocks.length - 1) [blocks[index + 1], blocks[index]] = [blocks[index], blocks[index + 1]]; redrawGameCreation();
   }));
-  document.querySelectorAll('[data-item-add]').forEach(button => button.addEventListener('click', () => { preserveSetupAndResources(); const card = button.closest('.resource-block'), block = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks[Number(card.dataset.blockIndex)]; block.items.push(block.type === 'list' ? '' : { term: '', definition: '' }); redrawGameCreation(); }));
-  document.querySelectorAll('[data-item-remove]').forEach(button => button.addEventListener('click', () => { preserveSetupAndResources(); const card = button.closest('.resource-block'), block = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks[Number(card.dataset.blockIndex)]; block.items.splice(Number(button.closest('.resource-item').dataset.itemIndex), 1); redrawGameCreation(); }));
-}
-function preserveMissionForm() {
-  const root = $('#game-creation-panel');
-  if (root && state.missionDraft) captureMission(root, state.missionDraft, state.missionNav);
-  preserveSetupAndResources();
+  document.querySelectorAll('[data-item-add]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); const card = button.closest('.resource-block'), block = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks[Number(card.dataset.blockIndex)]; block.items.push(block.type === 'list' ? '' : { term: '', definition: '' }); redrawGameCreation(); }));
+  document.querySelectorAll('[data-item-remove]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); const card = button.closest('.resource-block'), block = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks[Number(card.dataset.blockIndex)]; block.items.splice(Number(button.closest('.resource-item').dataset.itemIndex), 1); redrawGameCreation(); }));
 }
 function bindMissionBuilder() {
   $('#back-to-game-ready')?.addEventListener('click', () => { selectCaseTab('operations'); $('#operations-game-ready')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   document.querySelectorAll('.mission-slot').forEach(button => button.addEventListener('click', () => {
-    preserveMissionForm();
+    preserveAllAuthoringForms();
     const mission_type = button.dataset.missionType, slot_number = Number(button.dataset.slotNumber);
     state.missionSelection = { mission_type, slot_number };
     const row = latestDraft(state.authoringWorkspace, mission_type, slot_number);
     state.missionDraft = normalizeMission(missionFromDraft(row), state.authoringWorkspace.case_code, mission_type, slot_number);
     state.missionNav = { decision: 1, branch: 'supported' }; state.missionMessage = ''; redrawGameCreation(true);
   }));
-  document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
-  document.querySelectorAll('[data-branch]').forEach(button => button.addEventListener('click', () => { preserveMissionForm(); state.missionNav.branch = button.dataset.branch; redrawGameCreation(); }));
+  document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
+  document.querySelectorAll('[data-branch]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); state.missionNav.branch = button.dataset.branch; redrawGameCreation(); }));
   $('#save-mission-draft')?.addEventListener('click', saveMissionDraft);
 }
 function bindPublishedReview() {
@@ -398,7 +399,7 @@ function bindPublishedReview() {
   $('.orientation-form')?.addEventListener('submit', event => { event.preventDefault(); const form = new FormData(event.currentTarget); operationRpc('research_admin_record_checklist_status', { target_case_id: state.readiness.case.id, target_item_key: 'intervention_orientation', target_status: form.get('status'), target_status_date: form.get('status_date'), target_brief_note: form.get('note') || null }); });
 }
 async function saveMissionDraft() {
-  preserveMissionForm(); const button = $('#save-mission-draft'), message = $('#mission-save-message');
+  preserveAllAuthoringForms(); const button = $('#save-mission-draft'), message = $('#mission-save-message');
   if (!state.missionSelection || !state.missionDraft || !/^[A-Za-z0-9_-]+$/.test(state.missionDraft.id)) { message.textContent = 'Use a mission ID containing only letters, numbers, underscores, or hyphens.'; return; }
   button.disabled = true; message.textContent = 'Saving…';
   const selection = { ...state.missionSelection };
@@ -416,14 +417,14 @@ async function reloadAuthoringWorkspace() {
   return null;
 }
 async function saveGameSetup() {
-  preserveSetupAndResources(); const button = $('#save-game-setup'), message = $('#setup-save-message'); button.disabled = true; message.textContent = 'Saving…';
+  preserveAllAuthoringForms(); const button = $('#save-game-setup'), message = $('#setup-save-message'); button.disabled = true; message.textContent = 'Saving…';
   const { error } = await state.client.rpc('research_admin_save_game_setup_draft', { target_case_id: state.authoringWorkspace.case_id, target_setup: state.setupDraft });
   if (error) { button.disabled = false; message.textContent = `Game setup was not saved: ${error.message}`; return; }
   const reloadError = await reloadAuthoringWorkspace(); if (reloadError) { message.textContent = `Game setup saved, but the workspace could not reload: ${reloadError.message}`; return; }
   state.setupDraft = setupFromWorkspace(state.authoringWorkspace); state.setupMessage = 'Game setup saved.'; redrawGameCreation();
 }
 async function saveResourceMap() {
-  preserveSetupAndResources(); const button = $('#save-resource-map'), message = $('#resource-save-message'); button.disabled = true; message.textContent = 'Saving…';
+  preserveAllAuthoringForms(); const button = $('#save-resource-map'), message = $('#resource-save-message'); button.disabled = true; message.textContent = 'Saving…';
   const { error } = await state.client.rpc('research_admin_save_resource_map_draft', { target_case_id: state.authoringWorkspace.case_id, target_resources: state.resourceDraft });
   if (error) { button.disabled = false; message.textContent = `Resource Map draft was not saved: ${error.message}`; return; }
   const reloadError = await reloadAuthoringWorkspace(); if (reloadError) { message.textContent = `Resource Map draft saved, but the workspace could not reload: ${reloadError.message}`; return; }

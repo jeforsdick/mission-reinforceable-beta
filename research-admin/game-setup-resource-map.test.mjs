@@ -11,3 +11,16 @@ test('all supported blocks and accessible editing controls render while incomple
 test('case reset clears setup and resource state',async()=>{const {resetMissionAuthoringState}=await import('./game-creation-ui.mjs');const state={setupDraft:{bipBriefing:'A'},resourceDraft:{private:'A'}};resetMissionAuthoringState(state);assert.equal(state.setupDraft,null);assert.equal(state.resourceDraft,null);});
 
 test('protected game chrome and briefing never expose case code or Jordan fallback',async()=>{const [app,engine]=await Promise.all([readFile(new URL('../game/js/app.js',import.meta.url),'utf8'),readFile(new URL('../game/js/engine.js',import.meta.url),'utf8')]);assert.match(app,/textContent = `Study ID: \$\{MR\.participantCode\}`/);assert.doesNotMatch(app,/Study ID:[^\n]*Case:/);assert.match(engine,/configuredBriefing \|\| publicDemoBriefing \|\| UNCONFIGURED_BIP_BRIEFING/);assert.match(engine,/fixtureId === 'fictional-public-demo'/);});
+
+const functionBody = name => {
+  const start = admin.indexOf(`function ${name}(`);
+  assert.ok(start >= 0, `${name} must exist`);
+  const tail = admin.slice(start + 10);
+  const boundary = tail.search(/\n(?:async )?function /);
+  const next = boundary < 0 ? -1 : start + 10 + boundary;
+  return admin.slice(start, next < 0 ? admin.length : next);
+};
+test('initial bindDetail and every redraw bind setup and Resource Map controls',()=>{assert.match(functionBody('bindDetail'),/bindMissionBuilder\(\);[\s\S]*bindSetupAndResources\(\);/);assert.match(functionBody('redrawGameCreation'),/bindMissionBuilder\(\);[\s\S]*bindSetupAndResources\(\);/);});
+test('one non-recursive preservation path captures mission, setup, and Resource Map forms',()=>{const preserve=functionBody('preserveAllAuthoringForms');assert.match(preserve,/captureMission\(root, state\.missionDraft, state\.missionNav\)/);assert.match(preserve,/captureSetupAndResourceForms\(\)/);assert.doesNotMatch(functionBody('captureSetupAndResourceForms'),/preserveAllAuthoringForms/);});
+test('Resource Map redraw actions and mission navigation preserve all authoring forms first',()=>{const resources=functionBody('bindSetupAndResources'),missions=functionBody('bindMissionBuilder');assert.equal((resources.match(/preserveAllAuthoringForms\(\)/g)||[]).length,4);assert.doesNotMatch(resources,/preserveSetupAndResources|preserveMissionForm/);assert.equal((missions.match(/preserveAllAuthoringForms\(\)/g)||[]).length,3);assert.match(missions,/preserveAllAuthoringForms\(\); state\.missionNav\.decision/);assert.match(missions,/preserveAllAuthoringForms\(\); state\.missionNav\.branch/);});
+test('each save preserves all forms and replaces only its own reloaded draft state',()=>{const mission=functionBody('saveMissionDraft'),setup=functionBody('saveGameSetup'),resources=functionBody('saveResourceMap');for(const body of [mission,setup,resources])assert.match(body,/preserveAllAuthoringForms\(\)/);assert.match(mission,/state\.missionDraft = normalizeMission/);assert.doesNotMatch(mission,/state\.(?:setupDraft|resourceDraft)\s*=/);assert.match(setup,/state\.setupDraft = setupFromWorkspace/);assert.doesNotMatch(setup,/state\.(?:missionDraft|resourceDraft)\s*=/);assert.match(resources,/state\.resourceDraft = resourcesFromWorkspace/);assert.doesNotMatch(resources,/state\.(?:missionDraft|setupDraft)\s*=/);});
