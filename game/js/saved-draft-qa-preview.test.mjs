@@ -22,11 +22,12 @@ test('published and saved-draft QA use separate assignment resolvers with draft 
   assert.match(auth, /qaDraft\s*\n\s*\};/);
 });
 
-test('temporary content has one selected pool, published presentation data, and null version', async () => {
+test('temporary content prefers saved Resource Map draft, falls back to published, then null', async () => {
   const auth = await read('./auth.js');
   assert.match(auth, /Object\.assign\(\{\}, published\?\.config \|\| \{\}/);
   assert.match(auth, /setup\.bipBriefing[\s\S]*config\.bipBriefing = setup\.bipBriefing/);
-  assert.match(auth, /resources: published\?\.resources \|\| null/);
+  assert.match(auth, /const draftResources = workspace\.resource_draft\?\.resources \|\| workspace\.latest_resource_draft\?\.resources \|\| null/);
+  assert.match(auth, /resources: draftResources \|\| published\?\.resources \|\| null/);
   for (const pool of ['daily_missions', 'wildcard_missions', 'crisis_missions']) assert.match(auth, new RegExp(`${pool}: \\[\\]`));
   assert.match(auth, /\] = \[mission\]/);
   assert.match(auth, /version: null/);
@@ -41,6 +42,7 @@ test('ordinary content remains published-only and only saved-draft QA auto-start
   assert.match(app, /assignment\.qaMode === true && assignment\.qaDraft\) MR\.engine\.start\(assignment\.qaDraft\.type\)/);
   assert.doesNotMatch(app, /if \(assignment\.qaMode === true\) MR\.engine\.start/);
   assert.match(app, /gameContentVersion: null/);
+  assert.match(app, /draftQa: Boolean\(assignment\.qaDraft\)/);
 });
 
 test('draft banner identifies unpublished mode without narrative content', async () => {

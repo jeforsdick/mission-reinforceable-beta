@@ -3,6 +3,8 @@
 
   const MR = window.MR = window.MR || {};
   const UNAVAILABLE_MESSAGE = 'BIP resources are not available. Please contact the research team.';
+  const DRAFT_EMPTY_MESSAGE = 'This section has not been started in the saved Resource Map draft.';
+  const DRAFT_INVALID_MESSAGE = 'This draft section contains content that must be corrected before publishing.';
   const SECTION_TITLES = {
     bip: 'BIP at a Glance',
     functionForest: 'Function Forest',
@@ -34,6 +36,18 @@
   function getSections() {
     const resources = MR.resourcesData;
     if (!resources || typeof resources !== 'object' || resources.schemaVersion !== 1 || !resources.sections || typeof resources.sections !== 'object') return null;
+    if (MR.telemetryContext?.draftQa === true) {
+      return Object.fromEntries(Object.entries(SECTION_TITLES).map(([key, canonicalTitle]) => {
+        const section = resources.sections[key];
+        if (!section || !Array.isArray(section.blocks) || section.blocks.length === 0) {
+          return [key, { title: canonicalTitle, blocks: [], draftStatus: 'empty' }];
+        }
+        if (section.title !== canonicalTitle || !section.blocks.every(isValidBlock)) {
+          return [key, { title: canonicalTitle, blocks: [], draftStatus: 'invalid' }];
+        }
+        return [key, { title: canonicalTitle, blocks: section.blocks, draftStatus: 'ready' }];
+      }));
+    }
     const valid = Object.entries(SECTION_TITLES).every(([key, canonicalTitle]) => {
       const section = resources.sections[key];
       return section && section.title === canonicalTitle && Array.isArray(section.blocks) && section.blocks.length > 0 && section.blocks.every(isValidBlock);
@@ -107,7 +121,9 @@
 
     title.textContent = item.title;
     root.replaceChildren();
-    item.blocks.forEach(block => renderBlock(root, block));
+    if (item.draftStatus === 'empty') appendTextElement(root, 'p', DRAFT_EMPTY_MESSAGE, 'resources-draft-status');
+    else if (item.draftStatus === 'invalid') appendTextElement(root, 'p', DRAFT_INVALID_MESSAGE, 'resources-draft-status');
+    else item.blocks.forEach(block => renderBlock(root, block));
     setActiveHotspot(sectionKey === 'bip' ? '' : sectionKey);
     if (backButton) backButton.hidden = sectionKey === 'bip';
     root.scrollTop = 0;
