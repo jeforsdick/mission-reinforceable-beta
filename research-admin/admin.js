@@ -139,7 +139,11 @@ function bindCaseTabs() {
     });
   });
 }
-function testPasswordEligible(converted, email) { return /^CASE-DEMO-/.test(converted?.case?.case_code || '') && /^MR-DEMO-/.test(converted?.participant?.participant_code || '') && /@testemail\.com$/i.test(email || ''); }
+function testPasswordEligible(converted, email) {
+  const caseCode = converted?.case?.case_code || '', participantCode = converted?.participant?.participant_code || '';
+  const eligiblePair = (/^CASE-DEMO-/.test(caseCode) && /^MR-DEMO-/.test(participantCode)) || (caseCode === 'CASE-998' && participantCode === 'MR-998');
+  return eligiblePair && /@testemail\.com$/i.test(email || '');
+}
 function accountBox(label, email, result, type, converted) {
   const passwordControl = result.ready && type === 'teacher' && testPasswordEligible(converted, email) ? `<details class="test-password-control"><summary>SET TEST PASSWORD</summary><form id="test-password-form"><label>New test password<input name="password" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><label>Confirm test password<input name="confirmation" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><button class="primary" type="submit">Set Test Password</button><small>Demo account only. No email is sent.</small><p id="test-password-result" role="status"></p></form></details>` : '';
   return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Create Test Login Link</button><small>QA only. No email is sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? `<div id="qa-result"></div>${passwordControl}` : ''}</div>`;
@@ -310,9 +314,9 @@ async function setTestPassword(event) {
   if (password !== form.elements.confirmation.value) { message.textContent = 'Passwords do not match.'; return; }
   const button = form.querySelector('button'); button.disabled = true;
   try {
-    await adminApi('/api/research-admin-set-test-password', { request_id: state.selected.request_id, password });
+    const result = await adminApi('/api/research-admin-set-test-password', { request_id: state.selected.request_id, password });
     form.reset();
-    message.textContent = 'Test password set. You can now use the normal Teacher Login.';
+    message.textContent = result.warning || 'Test password set. You can now use the normal Teacher Login.';
   } catch (error) { message.textContent = error.message; button.disabled = false; }
 }
 
