@@ -287,8 +287,14 @@
       const qaCase = new URLSearchParams(window.location.search).get('qa_case');
       if (qaCase) {
         const qaDraft = draftRequest(window.location.search);
-        const { data: preview, error: previewError } = await supabaseClient
-          .rpc('research_admin_game_preview', { target_case_code: qaCase.trim() });
+        const previewResult = qaDraft
+          ? await supabaseClient.rpc('research_admin_draft_game_preview', {
+            target_case_code: qaCase.trim(),
+            target_mission_type: qaDraft.type,
+            target_slot_number: qaDraft.slot
+          })
+          : await supabaseClient.rpc('research_admin_game_preview', { target_case_code: qaCase.trim() });
+        const { data: preview, error: previewError } = previewResult;
         if (previewError) throw new Error(`QA preview denied: ${previewError.message}`);
         if (!Array.isArray(preview) || preview.length !== 1) throw new Error('QA preview denied: assignment was not uniquely resolved.');
         const row = preview[0];

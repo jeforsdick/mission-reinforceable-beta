@@ -13,6 +13,15 @@ test('draft loading is gated by QA assignment and uses the Research Admin worksp
   assert.match(auth, /No saved \$\{assignment\.qaDraft\.type\} mission draft exists/);
 });
 
+test('published and saved-draft QA use separate assignment resolvers with draft metadata', async () => {
+  const auth = await read('./auth.js');
+  assert.match(auth, /qaDraft[\s\S]*rpc\('research_admin_draft_game_preview'/);
+  assert.match(auth, /: await supabaseClient\.rpc\('research_admin_game_preview'/);
+  assert.match(auth, /target_mission_type: qaDraft\.type/);
+  assert.match(auth, /target_slot_number: qaDraft\.slot/);
+  assert.match(auth, /qaDraft\s*\n\s*\};/);
+});
+
 test('temporary content has one selected pool, published presentation data, and null version', async () => {
   const auth = await read('./auth.js');
   assert.match(auth, /published\?\.config \|\| \{ studentAlias:/);

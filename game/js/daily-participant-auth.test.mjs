@@ -21,7 +21,7 @@ async function authHarness({ search = '', user = null, rpcResult = null } = {}) 
   const supabase = {
     auth,
     from(table) { calls.from.push(table); return query; },
-    async rpc(name) { calls.rpc.push(name); return { data: rpcResult, error: null }; }
+    async rpc(name, args) { calls.rpc.push(name); calls.rpcArgs = calls.rpcArgs || []; calls.rpcArgs.push(args); return { data: rpcResult, error: null }; }
   };
   const context = {
     console, Date, Intl, URLSearchParams, FormData: class {},
@@ -109,6 +109,16 @@ test('QA Preview bypasses participant daily expiration and preserves authorizati
   assert.equal(assignment.qaMode, true);
   assert.deepEqual(calls.signOut, []);
   assert.deepEqual(calls.rpc, ['research_admin_game_preview']);
+});
+
+test('saved-draft QA uses its dedicated resolver and passes validated type and slot', async () => {
+  const preview = [{ participant_id: 'p', participant_code: 'QA', case_id: 'c', case_code: 'CASE-998', student_alias: 'S' }];
+  const { MR, calls } = await authHarness({ search: '?qa_case=CASE-998&qa_draft_type=wild&qa_draft_slot=2', user: { id: 'admin' }, rpcResult: preview });
+  const assignment = await MR.auth.getAssignment();
+  assert.equal(assignment.qaMode, true);
+  assert.equal(JSON.stringify(assignment.qaDraft), JSON.stringify({ type: 'wild', slot: 2 }));
+  assert.deepEqual(calls.rpc, ['research_admin_draft_game_preview']);
+  assert.equal(JSON.stringify(calls.rpcArgs[0]), JSON.stringify({ target_case_code: 'CASE-998', target_mission_type: 'wild', target_slot_number: 2 }));
 });
 
 test('manual logout uses local browser scope and auth checks do not write gameplay or telemetry', async () => {
