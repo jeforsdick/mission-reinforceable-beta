@@ -230,7 +230,9 @@
   }
 
   async function loadAssignedGame(assignment) {
-    const protectedContent = await MR.auth.getGameContent(assignment.case.id);
+    const protectedContent = assignment.qaDraft
+      ? await MR.auth.getDraftGameContent(assignment)
+      : await MR.auth.getGameContent(assignment.case.id);
     if (protectedContent) return MR.loadProtectedGameContent(protectedContent, assignment.case);
     throw new Error('Protected game content is not configured for this participant. Please contact the research team.');
   }
@@ -281,6 +283,12 @@
         : `Study ID: ${MR.participantCode}`;
       document.body.classList.toggle('qa-preview', assignment.qaMode === true);
       MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true;
+      const draftBanner = MR.$('#draft-qa-preview-banner');
+      draftBanner.hidden = !assignment.qaDraft;
+      if (assignment.qaDraft) {
+        const label = assignment.qaDraft.type === 'wild' ? 'Mystery' : `${assignment.qaDraft.type[0].toUpperCase()}${assignment.qaDraft.type.slice(1)}`;
+        draftBanner.textContent = `DRAFT QA PREVIEW — ${label} ${assignment.qaDraft.slot} · Not published`;
+      }
       MR.$('#back-to-research-admin').hidden = assignment.qaMode !== true;
       MR.setScreen('loading');
       MR.telemetryContext.fidelityTargets = await loadFidelityTargetLookup(assignment.case.id);
@@ -293,6 +301,7 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
+      if (assignment.qaMode === true && assignment.qaDraft) MR.engine.start(assignment.qaDraft.type);
       console.info('Mission: Reinforceable loaded', {
         teacher: MR.teacherConfig,
         pool: MR.pool,

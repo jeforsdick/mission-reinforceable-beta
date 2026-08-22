@@ -3,7 +3,7 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
-import { captureMission, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState } from './game-creation-ui.mjs';
+import { captureMission, draftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState } from './game-creation-ui.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
@@ -364,6 +364,10 @@ function bindMissionBuilder() {
 }
 function bindPublishedReview() {
   $('#preview-protected-game')?.addEventListener('click', event => window.open(`../game/?qa_case=${encodeURIComponent(event.currentTarget.dataset.caseCode)}`, '_blank', 'noopener'));
+  $('#preview-saved-draft')?.addEventListener('click', event => {
+    const button = event.currentTarget;
+    window.open(draftPreviewUrl(button.dataset.caseCode, button.dataset.missionType, button.dataset.slotNumber), '_blank', 'noopener');
+  });
   document.querySelectorAll('.signoff-action:not(:disabled)').forEach(button => button.addEventListener('click', recordSignoff));
   $('.orientation-form')?.addEventListener('submit', event => { event.preventDefault(); const form = new FormData(event.currentTarget); operationRpc('research_admin_record_checklist_status', { target_case_id: state.readiness.case.id, target_item_key: 'intervention_orientation', target_status: form.get('status'), target_status_date: form.get('status_date'), target_brief_note: form.get('note') || null }); });
 }

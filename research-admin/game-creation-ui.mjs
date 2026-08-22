@@ -15,10 +15,39 @@ export const FUNCTIONS = [
   { value: 'multiple', label: 'Multiple' },
   { value: 'unclear', label: 'Unclear / Still Being Assessed' },
 ];
+export const ERROR_TYPES = [
+  { value: 'none', label: 'None' },
+  { value: 'missed_prevention_opportunity', label: 'Missed prevention opportunity' },
+  { value: 'missed_teaching_opportunity', label: 'Missed teaching opportunity' },
+  { value: 'missed_reinforcement_opportunity', label: 'Missed reinforcement opportunity' },
+  { value: 'missed_active_ingredient', label: 'Missed active ingredient' },
+  { value: 'timing_or_delay', label: 'Timing / delay' },
+  { value: 'contingency_mismatch', label: 'Contingency mismatch' },
+  { value: 'function_mismatch', label: 'Function mismatch' },
+  { value: 'reinforces_target_pattern', label: 'Reinforces target pattern' },
+  { value: 'vague_or_nonspecific_response', label: 'Vague / non-specific response' },
+  { value: 'public_or_attention_heavy_correction', label: 'Public / attention-heavy correction' },
+  { value: 'other_needs_review', label: 'Other / needs review' },
+];
 export const DECISIONS = ['The Setup', 'The Pressure', 'The Pivot', 'The Consequence', 'The Finish'];
 const RATINGS = [{ key: 'A', score: 10, label: 'PLAN ALIGNED' }, { key: 'B', score: 5, label: 'WORKABLE / REFINE' }, { key: 'C', score: 0, label: 'PLAN DRIFT' }];
 const ENDINGS = ['STRONG', 'MIXED', 'FRAGILE'];
 const canonicalFunction = value => FUNCTIONS.find(option => option.value === value || option.label === value)?.value || value || '';
+const LEGACY_ERROR_TYPES = {
+  'missed active ingredient': 'missed_active_ingredient',
+  'missed prevention opportunity': 'missed_prevention_opportunity',
+  'missed teaching opportunity': 'missed_teaching_opportunity',
+  'missed reinforcement opportunity': 'missed_reinforcement_opportunity',
+  'delayed reinforcement': 'timing_or_delay',
+  'reinforcement delayed': 'timing_or_delay',
+  'reinforces target pattern': 'reinforces_target_pattern',
+};
+export function canonicalErrorType(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (ERROR_TYPES.some(option => option.value === raw)) return raw;
+  return LEGACY_ERROR_TYPES[raw.toLowerCase()] || raw;
+}
 
 export function resetMissionAuthoringState(authoringState) {
   authoringState.authoringWorkspace = null;
@@ -64,7 +93,7 @@ export function normalizeMission(value, caseCode, type, slot) {
     const incoming = value.steps?.[id] || {}, incomingChoices = incoming.choices || {};
     const normalizedChoices = Object.fromEntries(RATINGS.map(({ key, score }, index) => {
       const old = Array.isArray(incomingChoices) ? incomingChoices[index] || {} : incomingChoices[key] || {};
-      const meta = { ...template.choices[key].meta, ...(old.meta || {}), bipComponent: old.meta?.bipComponent ?? old.bipComponent ?? '', mechanism: old.meta?.mechanism ?? old.mechanism ?? '', errorType: old.meta?.errorType ?? old.errorType ?? '', function: canonicalFunction(old.meta?.function ?? old.function) };
+      const meta = { ...template.choices[key].meta, ...(old.meta || {}), bipComponent: old.meta?.bipComponent ?? old.bipComponent ?? '', mechanism: old.meta?.mechanism ?? old.mechanism ?? '', errorType: canonicalErrorType(old.meta?.errorType ?? old.errorType), function: canonicalFunction(old.meta?.function ?? old.function) };
       const normalized = { ...template.choices[key], ...old, feedback: old.feedback ?? old.explanation ?? '', score, meta };
       delete normalized.explanation; delete normalized.bipComponent; delete normalized.mechanism; delete normalized.errorType; delete normalized.function;
       return [key, normalized];
@@ -94,17 +123,23 @@ const textField = (label, name, value, extra = '') => `<label>${label}<input ${e
 const selectOptions = (values, value, empty = 'Select…') => `<option value="">${empty}</option>${values.map(item => { const option = typeof item === 'string' ? { value: item, label: item } : item; return `<option value="${esc(option.value)}"${selected(option.value, value)}>${esc(option.label)}</option>`; }).join('')}`;
 function choiceCard(item, index, decision) {
   const rating = RATINGS[index];
-  return `<fieldset class="choice-card" data-choice="${rating.key}"><legend><strong>${rating.score}</strong> — ${rating.label}</legend><input type="hidden" name="score" value="${rating.score}">${textField('TEACHER ACTION', 'text', item.text)}${textField('IMMEDIATE MODELED CONSEQUENCE', 'consequence', item.consequence)}${textField('WIZARD', 'wizard', item.wizard)}<label>BEHAVIORAL EXPLANATION<textarea name="feedback">${esc(item.feedback)}</textarea></label><label>BIP COMPONENT<select name="bipComponent">${selectOptions(COMPONENTS, item.meta.bipComponent)}</select></label>${textField('MECHANISM', 'mechanism', item.meta.mechanism)}${textField('ERROR TYPE', 'errorType', item.meta.errorType)}<label>FUNCTION<select name="function">${selectOptions(FUNCTIONS, item.meta.function)}</select></label>${decision < 5 ? `<label>NEXT STATE<select name="trajectory">${TRAJECTORIES.map(branch => `<option value="${branch}"${selected(nextStepId(decision, branch), item.next)}>${branch[0].toUpperCase() + branch.slice(1)}</option>`).join('')}</select></label>` : `<label>ENDING<select name="ending">${ENDINGS.map(key => `<option value="${key}"${selected(key, item.ending)}>${key[0] + key.slice(1).toLowerCase()}</option>`).join('')}</select></label>`}</fieldset>`;
+  const knownError = !item.meta.errorType || ERROR_TYPES.some(option => option.value === item.meta.errorType);
+  const errors = knownError ? ERROR_TYPES : [{ value: item.meta.errorType, label: `Existing specific value: ${item.meta.errorType}` }, ...ERROR_TYPES];
+  return `<fieldset class="choice-card" data-choice="${rating.key}"><legend><strong>${rating.score}</strong> — ${rating.label}</legend><input type="hidden" name="score" value="${rating.score}">${textField('TEACHER ACTION', 'text', item.text)}${textField('WHAT HAPPENS NEXT?', 'consequence', item.consequence)}${textField('WIZARD', 'wizard', item.wizard)}<label>BEHAVIORAL EXPLANATION<textarea name="feedback">${esc(item.feedback)}</textarea></label><label>BIP COMPONENT<select name="bipComponent">${selectOptions(COMPONENTS, item.meta.bipComponent)}</select></label>${textField('MECHANISM', 'mechanism', item.meta.mechanism)}<label>ERROR TYPE<select name="errorType">${selectOptions(errors, item.meta.errorType, 'No Error Type selected')}</select></label><label>FUNCTION<select name="function">${selectOptions(FUNCTIONS, item.meta.function)}</select></label>${decision < 5 ? `<label>NEXT STATE<select name="trajectory">${TRAJECTORIES.map(branch => `<option value="${branch}"${selected(nextStepId(decision, branch), item.next)}>${branch[0].toUpperCase() + branch.slice(1)}</option>`).join('')}</select></label>` : `<label>ENDING<select name="ending">${ENDINGS.map(key => `<option value="${key}"${selected(key, item.ending)}>${key[0] + key.slice(1).toLowerCase()}</option>`).join('')}</select></label>`}</fieldset>`;
+}
+export function draftPreviewUrl(caseCode, type, slot) {
+  const params = new URLSearchParams({ qa_case: caseCode, qa_draft_type: type, qa_draft_slot: String(slot) });
+  return `../game/?${params}`;
 }
 export function renderMissionBuilder(workspace, selection, mission, nav = { decision: 1, branch: 'supported' }, message = '') {
   if (!selection || !mission) return '<section class="mission-builder-empty"><h2>Mission Builder</h2><p>Select a mission slot to begin.</p></section>';
-  const group = TYPES.find(item => item.type === selection.mission_type), decision = nav.decision, id = stepId(decision, nav.branch), step = mission.steps[id], fidelity = targets(workspace);
+  const group = TYPES.find(item => item.type === selection.mission_type), decision = nav.decision, id = stepId(decision, nav.branch), step = mission.steps[id], fidelity = targets(workspace), saved = Boolean(latestDraft(workspace, selection.mission_type, selection.slot_number));
   return `<section class="mission-builder" data-case-id="${esc(workspace.case_id || workspace.id)}"><header><div><p class="eyebrow">EDITING MISSION</p><h2>${group.label} ${selection.slot_number}</h2></div><div class="authoring-links"><a href="../docs/MISSION_AUTHORING_STANDARD.md" target="_blank" rel="noopener">Mission Authoring Standard</a><a href="../docs/examples/FICTIONAL_CASE_AUTHORING_EXAMPLE.md" target="_blank" rel="noopener">Fictional Training Examples</a></div></header><p class="privacy-warning">Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.</p>
   <aside class="case-context"><h3>Case context</h3><dl>${workspace.study_id ? `<div><dt>Study ID</dt><dd>${esc(workspace.study_id)}</dd></div>` : ''}<div><dt>Case code</dt><dd>${esc(workspace.case_code)}</dd></div><div><dt>Student alias</dt><dd>${esc(workspace.student_alias)}</dd></div>${workspace.primary_function ? `<div><dt>Primary function</dt><dd>${esc(workspace.primary_function)}</dd></div>` : ''}</dl><strong>Active fidelity targets</strong><ul>${fidelity.map(target => `<li><code>${esc(targetKey(target))}</code> ${esc(target.description)}</li>`).join('') || '<li>None returned for this case.</li>'}</ul></aside>
   <section class="builder-section mission-setup"><h3>Mission Setup</h3><div class="builder-grid">${textField('MISSION ID', 'id', mission.id, 'pattern="[A-Za-z0-9_-]+" required')}${textField('MISSION TITLE', 'title', mission.title)}<label>MISSION TYPE<input value="${group.label}" readonly></label>${textField('ROUTINE / LOCATION', 'routine', mission.routine)}${textField('CENTRAL TENSION', 'centralTension', mission.authoringMeta.centralTension)}<label>FUNCTION PRESSURE<select name="functionPressure" multiple>${FUNCTIONS.map(option => `<option value="${option.value}"${mission.functionPressure.includes(option.value) ? ' selected' : ''}>${esc(option.label)}</option>`).join('')}</select></label><fieldset><legend>ACTIVE BIP COMPONENTS</legend>${COMPONENTS.map(value => `<label><input type="checkbox" name="activeBipComponents" value="${value}"${checked(mission.authoringMeta.activeBipComponents.includes(value))}> ${value}</label>`).join('')}</fieldset><label class="wide">MISSION AUTHORING FOCUS / DESIGN GOAL<textarea name="focus">${esc(mission.focus)}</textarea></label></div><p><small>Central tension and active BIP components are retained under <code>authoringMeta</code>; runtime mission fields remain canonical.</small></p></section>
   <section class="builder-section bip-targets"><h3>Fidelity Target Opportunities</h3><p>Select only active, approved targets expected somewhere in this mission.</p>${fidelity.map(target => `<label class="target-option"><input type="checkbox" name="bipTargets" value="${esc(targetKey(target))}"${checked(mission.bipTargets.includes(targetKey(target)))}><span><code>${esc(targetKey(target))}</code><strong>${esc(target.description)}</strong><small>${esc(target.domain)}</small></span></label>`).join('') || '<p>No active targets are available.</p>'}</section>
   <section class="builder-section decision-editor"><h3>Decisions</h3><nav class="decision-tabs">${DECISIONS.map((label, index) => { const number = index + 1, ids = number === 1 ? ['d1_start'] : TRAJECTORIES.map(branch => stepId(number, branch)), started = ids.some(key => isStarted(mission.steps[key])); return `<button type="button" data-decision="${number}" class="${decision === number ? 'selected' : ''}">Decision ${number}<small>${started ? 'Started' : 'Missing'}</small></button>`; }).join('')}</nav><h4>Decision ${decision} — ${DECISIONS[decision - 1]}</h4>${decision > 1 ? `<div class="branch-tabs">${TRAJECTORIES.map(branch => `<button type="button" data-branch="${branch}" class="${nav.branch === branch ? 'selected' : ''}">${branch[0].toUpperCase() + branch.slice(1)}</button>`).join('')}</div>` : ''}<div class="scene-editor" data-step-id="${id}"><label>SCENE<textarea name="text" rows="6">${esc(step.text)}</textarea></label><label>HINT<textarea name="hint">${esc(step.hint)}</textarea></label><label>EXACT FIDELITY TARGET<select name="fidelityTargetKey"><option value="">No exact fidelity target</option>${fidelity.map(target => `<option value="${esc(targetKey(target))}"${selected(targetKey(target), step.meta.fidelityTargetKey)}>${esc(targetKey(target))} — ${esc(target.description)}</option>`).join('')}</select></label><div class="choice-cards">${RATINGS.map(({ key }, index) => choiceCard(step.choices[key], index, decision)).join('')}</div></div></section>
-  <section class="builder-section endings-editor"><h3>Mission Endings</h3><div class="ending-cards">${ENDINGS.map(key => `<fieldset data-ending="${key}"><legend>${key}</legend><label>Narrative outcome<textarea name="text">${esc(mission.endings[key]?.text)}</textarea></label><label>Wizard reaction<textarea name="wizard">${esc(mission.endings[key]?.wizard)}</textarea></label></fieldset>`).join('')}</div></section><div class="save-bar"><button id="save-mission-draft" class="primary" type="button">Save Draft</button><p id="mission-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
+  <section class="builder-section endings-editor"><h3>Mission Endings</h3><div class="ending-cards">${ENDINGS.map(key => `<fieldset data-ending="${key}"><legend>${key}</legend><label>Narrative outcome<textarea name="text">${esc(mission.endings[key]?.text)}</textarea></label><label>Wizard reaction<textarea name="wizard">${esc(mission.endings[key]?.wizard)}</textarea></label></fieldset>`).join('')}</div></section><div class="save-bar"><button id="save-mission-draft" class="primary" type="button">Save Draft</button><div><button id="preview-saved-draft" type="button" data-case-code="${esc(workspace.case_code)}" data-mission-type="${esc(selection.mission_type)}" data-slot-number="${Number(selection.slot_number)}"${saved ? '' : ' disabled'}>Preview Saved Draft</button><small>${saved ? 'Preview uses the last saved version. Unsaved changes are not included.' : 'Save this mission before previewing.'}</small></div><p id="mission-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
 }
 function renderPublishedReview(published = {}) {
   const content = published.protected_content || {}, map = published.resource_map || {}, checklist = published.checklist || {}, orientation = checklist.intervention_orientation || {}, statuses = checklistStatuses('intervention_orientation');
