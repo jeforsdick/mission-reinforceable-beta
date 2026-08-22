@@ -45,13 +45,11 @@ Production reminder cron routes exist at `/api/teacher-daily-prompt` and
 `/api/teacher-reminder-smoke-test`. The dissertation does not deploy or schedule
 a follow-up reminder route. See [Teacher Daily Reminders](docs/teacher-daily-reminders.md).
 
-## Database bootstrap limitation
+## Database bootstrap
 
-> **A fresh database cannot be reconstructed from `supabase/migrations/` alone.**
+> **Fresh database replay begins with the canonical legacy bootstrap.**
 
-The canonical migration chain is additive and assumes foundational objects created by earlier historical/manual setup. In particular, definitions for `cases`, `participants`, `intake_requests`, and `case_game_content` originate outside the current canonical `supabase/migrations/` chain. Files under `research/supabase/` preserve parts of that history, but they are not a supported one-command bootstrap. Before applying canonical migrations to a new environment, inventory and validate those prerequisites rather than assuming the migration directory is complete.
-
-This limitation is documentation only; migration consolidation belongs in a later, dedicated change.
+The canonical migration chain now includes a fresh-project bootstrap for the historical `cases`, `participants`, `intake_requests`, and `case_game_content` foundations. See the [Supabase reproducibility audit](docs/SUPABASE_REPRODUCIBILITY_AUDIT.md) for provenance, security boundaries, live-verification requirements, and the clean-replay command. Files under `research/supabase/` preserve historical setup and seed material but are not part of the canonical replay.
 
 ## Security configuration
 

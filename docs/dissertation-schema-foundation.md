@@ -6,11 +6,11 @@ game has since been connected to relational `game_sessions` and
 `game_responses`; statements about "future" telemetry below describe the
 migration when it was introduced.
 
-> **Bootstrap warning:** `supabase/migrations/` is an additive migration chain,
-> not a complete fresh-database bootstrap. Foundational definitions including
-> `cases`, `participants`, `intake_requests`, and `case_game_content` originate
-> in historical/manual setup outside that canonical chain. Do not assume a new
-> Supabase project can be recreated from the migration directory alone.
+> **Historical note:** when this migration was introduced, foundational definitions
+> including `cases`, `participants`, `intake_requests`, and `case_game_content`
+> originated in historical/manual setup. They are now represented by the earlier
+> canonical bootstrap migration. See `SUPABASE_REPRODUCIBILITY_AUDIT.md` for its
+> provenance and clean-replay limitations.
 
 ## Existing schema assumptions
 
