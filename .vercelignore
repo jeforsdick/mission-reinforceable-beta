@@ -1,0 +1,2 @@
+# Tests under api/ are Node test-runner inputs, not Serverless Function routes.
+api/*.test.mjs

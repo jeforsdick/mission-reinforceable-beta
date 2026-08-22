@@ -27,7 +27,7 @@ async function authorize(request) {
 }
 async function intake(requestId) {
   if (!UUID_PATTERN.test(requestId || '')) throw Object.assign(new Error('Invalid request'), { status: 400 });
-  const response = await supabaseFetch(`/rest/v1/intake_requests?request_id=eq.${encodeURIComponent(requestId)}&select=request_id,teacher_name,teacher_email,coach_name,coach_email&limit=1`);
+  const response = await supabaseFetch(`/rest/v1/intake_requests?request_id=eq.${encodeURIComponent(requestId)}&select=request_id,teacher_name,teacher_email,coach_name,coach_email,converted_case_id&limit=1`);
   const rows = response.ok ? await response.json() : [];
   if (rows.length !== 1) throw Object.assign(new Error('Intake not found'), { status: 404 });
   return rows[0];
