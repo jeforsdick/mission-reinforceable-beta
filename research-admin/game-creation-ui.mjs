@@ -30,6 +30,18 @@ export const ERROR_TYPES = [
   { value: 'other_needs_review', label: 'Other / needs review' },
 ];
 export const DECISIONS = ['The Setup', 'The Pressure', 'The Pivot', 'The Consequence', 'The Finish'];
+export const RESOURCE_SECTIONS = {
+  bip: ['BIP at a Glance', 'Give the teacher the shortest useful overview of the plan.'],
+  functionForest: ['Function Forest', 'Explain what the behavior is likely accomplishing and the important context.'],
+  prevention: ['Prevention Palace', 'Describe what to do before predictable challenges.'],
+  replacement: ['Replacement Reservoir', 'Describe the replacement behaviors the teacher should prompt and teach.'],
+  reinforcement: ['Reinforcement Ridge', 'Describe what to reinforce, how, and when.'],
+  errorCorrection: ['Error Correction Canyon', 'Describe the plan-aligned response when problem behavior occurs.'],
+  library: ['BSP Library', 'Give the teacher quick-reference plan steps or reminders.'],
+  coaching: ['Coaching Cottage', 'Add practical coaching tips, common barriers, or implementation reminders.'],
+  fidelity: ['Fidelity Fortress', 'Summarize the observable teacher actions that matter for plan fidelity.']
+};
+const RESOURCE_BLOCK_TYPES = new Set(['paragraph', 'list', 'definitionList', 'callout']);
 const RATINGS = [{ key: 'A', score: 10, label: 'PLAN ALIGNED' }, { key: 'B', score: 5, label: 'WORKABLE / REFINE' }, { key: 'C', score: 0, label: 'PLAN DRIFT' }];
 const ENDINGS = ['STRONG', 'MIXED', 'FRAGILE'];
 const canonicalFunction = value => FUNCTIONS.find(option => option.value === value || option.label === value)?.value || value || '';
@@ -56,6 +68,29 @@ export function resetMissionAuthoringState(authoringState) {
   authoringState.missionDraft = null;
   authoringState.missionNav = { decision: 1, branch: 'supported' };
   authoringState.missionMessage = '';
+  authoringState.setupDraft = null;
+  authoringState.resourceDraft = null;
+  authoringState.setupMessage = '';
+  authoringState.resourceMessage = '';
+}
+
+export function setupFromWorkspace(workspace) {
+  const setup = workspace?.setup_draft?.setup || workspace?.latest_setup_draft?.setup || {};
+  return { schemaVersion: 1, bipBriefing: typeof setup.bipBriefing === 'string' ? setup.bipBriefing : '' };
+}
+export function normalizeResourceMap(value) {
+  const source = value?.sections && typeof value.sections === 'object' ? value.sections : {};
+  return { schemaVersion: 1, sections: Object.fromEntries(Object.entries(RESOURCE_SECTIONS).map(([key, [title]]) => {
+    const incoming = source[key];
+    const blocks = Array.isArray(incoming?.blocks) ? structuredClone(incoming.blocks) : [];
+    return [key, { title, blocks }];
+  })) };
+}
+export function resourcesFromWorkspace(workspace) {
+  return normalizeResourceMap(workspace?.resource_draft?.resources || workspace?.latest_resource_draft?.resources);
+}
+export function hasUnsupportedResourceBlocks(resources) {
+  return Object.values(resources?.sections || {}).some(section => (section.blocks || []).some(block => !block || typeof block !== 'object' || !RESOURCE_BLOCK_TYPES.has(block.type)));
 }
 
 export function stepId(decision, trajectory = 'supported') {
@@ -147,8 +182,24 @@ function renderPublishedReview(published = {}) {
   const orientationCard = `<form class="checklist-card checklist-form orientation-form" data-key="intervention_orientation"><strong class="checklist-card-label">MR intervention orientation</strong><div class="checklist-card-controls"><select name="status" aria-label="Status for MR intervention orientation">${statuses.map(status => `<option value="${status}"${selected(status, orientation.status || 'pending')}>${status.replaceAll('_', ' ')}</option>`).join('')}</select><input name="status_date" type="date" required value="${esc(orientation.status_date || denverToday())}" aria-label="MR intervention orientation status date"></div><input class="checklist-card-note" name="note" maxlength="1000" value="${esc(orientation.brief_note || '')}" aria-label="Optional note for MR intervention orientation" placeholder="Note"><button class="quiet checklist-card-save">Save orientation</button></form>`;
   return `<section class="published-game-review builder-section"><h2>Published Game Review</h2><p>This reviews the currently published protected game; it does not publish mission drafts.</p>${content.present ? `<p><strong>Protected content version ${Number(content.version) || 0}</strong></p><button id="preview-protected-game" class="primary" type="button" data-case-code="${esc(published.case_code)}">Preview Game</button><p><small>QA Preview is researcher testing only. It does not activate teacher access or count as participant study data.</small></p><div class="launch-reviews">${reviews.map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" ${done ? 'disabled' : ''}><span>${label}</span><strong>${done ? 'Complete ✓' : 'Needs review'}</strong></button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '<p class="needs">No published protected game is available to preview or review yet.</p>'}<h3>Teacher preparation</h3><p>Record the existing intervention orientation requirement here.</p>${orientationCard}</section>`;
 }
-export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '') {
-  const authoring = workspace ? `${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}<section class="resource-map-placeholder"><h2>Resource Map</h2><p>Browser editor coming next.</p>${workspace.resource_draft || workspace.latest_resource_draft ? '<strong>Draft exists</strong>' : ''}</section>` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
+const privacyWarning = 'Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.';
+export function renderGameSetup(setup, message = '') {
+  return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2><p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
+}
+function renderResourceBlock(block, index) {
+  const controls = `<div class="resource-block-controls"><button type="button" data-block-action="up" aria-label="Move block up">Move Up</button><button type="button" data-block-action="down" aria-label="Move block down">Move Down</button><button type="button" data-block-action="remove" aria-label="Remove block">Remove Block</button></div>`;
+  if (!block || typeof block !== 'object' || !RESOURCE_BLOCK_TYPES.has(block.type)) return `<article class="resource-block unsupported" data-block-index="${index}"><p class="error-message"><strong>Unsupported saved block.</strong> This content is preserved until you remove it and replace it with a supported block.</p>${controls}</article>`;
+  if (block.type === 'paragraph') return `<article class="resource-block" data-block-index="${index}" data-block-type="paragraph"><label>Paragraph<textarea name="text">${esc(block.text)}</textarea></label>${controls}</article>`;
+  if (block.type === 'callout') return `<article class="resource-block" data-block-index="${index}" data-block-type="callout">${textField('Label', 'label', block.label)}<label>Text<textarea name="text">${esc(block.text)}</textarea></label>${controls}</article>`;
+  const rows = (Array.isArray(block.items) ? block.items : []).map((item, row) => block.type === 'list' ? `<div class="resource-item" data-item-index="${row}"><input name="item" aria-label="Bullet item" value="${esc(item)}"><button type="button" data-item-remove aria-label="Remove bullet item">Remove item</button></div>` : `<div class="resource-item definition-item" data-item-index="${row}">${textField('Term', 'term', item?.term)}${textField('Definition', 'definition', item?.definition)}<button type="button" data-item-remove aria-label="Remove definition row">Remove row</button></div>`).join('');
+  return `<article class="resource-block" data-block-index="${index}" data-block-type="${block.type}"><strong>${block.type === 'list' ? 'Bullet List' : 'Definition List'}</strong><div class="resource-items">${rows}</div><button type="button" data-item-add>${block.type === 'list' ? 'Add item' : 'Add row'}</button>${controls}</article>`;
+}
+export function renderResourceMap(resources, message = '') {
+  const warning = hasUnsupportedResourceBlocks(resources) ? '<p class="error-message" role="alert">Unsupported legacy Resource Map content was found. It remains preserved until explicitly removed and replaced.</p>' : '';
+  return `<section class="builder-section resource-map-builder"><h2>Resource Map</h2><p class="privacy-warning">${privacyWarning}</p>${warning}${Object.entries(RESOURCE_SECTIONS).map(([key, [title, helper]]) => { const section = resources.sections[key], started = section.blocks.length > 0; return `<details class="resource-section" data-section-key="${key}"><summary><strong>${title}</strong><span>${started ? 'Started' : 'Not started'}</span></summary><p>${helper}</p><div class="resource-blocks">${section.blocks.map(renderResourceBlock).join('')}</div><label>Add Block<select data-add-block><option value="">Choose block type…</option><option value="paragraph">Paragraph</option><option value="list">Bullet List</option><option value="definitionList">Definition List</option><option value="callout">Callout</option></select></label></details>`; }).join('')}<div class="save-bar"><button id="save-resource-map" class="primary" type="button">Save Resource Map Draft</button><p id="resource-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
+}
+export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '', setupDraft, resourceDraft, setupMessage = '', resourceMessage = '') {
+  const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
   return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Author mission drafts</h1><p>AUTHOR → SAVE DRAFT</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
 }
 
@@ -166,4 +217,19 @@ export function captureMission(root, mission, nav) {
   }
   root.querySelectorAll('[data-ending]').forEach(card => { mission.endings[card.dataset.ending] = { text: card.querySelector('[name="text"]').value, wizard: card.querySelector('[name="wizard"]').value }; });
   return mission;
+}
+
+export function captureResourceMap(root, resources) {
+  root.querySelectorAll('.resource-section').forEach(card => {
+    const section = resources.sections[card.dataset.sectionKey];
+    card.querySelectorAll('.resource-block').forEach(element => {
+      const block = section.blocks[Number(element.dataset.blockIndex)];
+      if (!element.dataset.blockType) return;
+      if (block.type === 'paragraph') block.text = element.querySelector('[name="text"]').value;
+      if (block.type === 'callout') { block.label = element.querySelector('[name="label"]').value; block.text = element.querySelector('[name="text"]').value; }
+      if (block.type === 'list') block.items = [...element.querySelectorAll('[name="item"]')].map(input => input.value);
+      if (block.type === 'definitionList') block.items = [...element.querySelectorAll('.definition-item')].map(row => ({ term: row.querySelector('[name="term"]').value, definition: row.querySelector('[name="definition"]').value }));
+    });
+  });
+  return resources;
 }

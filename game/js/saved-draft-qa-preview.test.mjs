@@ -24,7 +24,8 @@ test('published and saved-draft QA use separate assignment resolvers with draft 
 
 test('temporary content has one selected pool, published presentation data, and null version', async () => {
   const auth = await read('./auth.js');
-  assert.match(auth, /published\?\.config \|\| \{ studentAlias:/);
+  assert.match(auth, /Object\.assign\(\{\}, published\?\.config \|\| \{\}/);
+  assert.match(auth, /setup\.bipBriefing[\s\S]*config\.bipBriefing = setup\.bipBriefing/);
   assert.match(auth, /resources: published\?\.resources \|\| null/);
   for (const pool of ['daily_missions', 'wildcard_missions', 'crisis_missions']) assert.match(auth, new RegExp(`${pool}: \\[\\]`));
   assert.match(auth, /\] = \[mission\]/);

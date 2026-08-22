@@ -23,6 +23,7 @@ Your job is to choose responses that follow the plan:
 Avoid public correction, arguing, threats, or making the task feel bigger.`;
   const DEFAULT_HINT_PROMPT = 'Stuck? Ask the wizard for a plan hint.';
   const DEFAULT_BSP_HINT = 'Jordan’s plan focuses on small writing steps, help or break requests, and quick reinforcement for returning to the task.';
+  const UNCONFIGURED_BIP_BRIEFING = 'BIP Briefing is not configured for this game.';
 
   function getChoiceArray(step) {
     const entries = Object.entries(step.choices || {}).map(([key, value]) => Object.assign({ key }, value));
@@ -976,7 +977,11 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       MR.setScreen('play');
       renderStep();
       const firstStep = current.mission.steps[current.stepId];
-      showBIPBriefing(extractBIPBriefing(firstStep && firstStep.text) || DEFAULT_BETA_BIP_BRIEFING);
+      const configuredBriefing = String(MR.teacherConfig.bipBriefing || '').trim();
+      const publicDemoBriefing = MR.teacherConfig.fictional === true && MR.teacherConfig.fixtureId === 'fictional-public-demo'
+        ? extractBIPBriefing(firstStep && firstStep.text) || DEFAULT_BETA_BIP_BRIEFING
+        : '';
+      showBIPBriefing(configuredBriefing || publicDemoBriefing || UNCONFIGURED_BIP_BRIEFING);
       return true;
     },
 

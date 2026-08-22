@@ -278,9 +278,7 @@
         renderHome();
         MR.setScreen('home');
       };
-      MR.$('#study-id').textContent = assignment.qaMode
-        ? `Study ID: ${MR.participantCode} · Case: ${assignment.case.case_code}`
-        : `Study ID: ${MR.participantCode}`;
+      MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
       document.body.classList.toggle('qa-preview', assignment.qaMode === true);
       MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true;
       const draftBanner = MR.$('#draft-qa-preview-banner');
