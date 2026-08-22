@@ -165,8 +165,13 @@
     const mission = missionFromWorkspaceRow(selected);
     if (!mission) throw new Error(`No saved ${assignment.qaDraft.type} mission draft exists in slot ${assignment.qaDraft.slot}.`);
     const published = await protectedGameContent(supabaseClient, assignment.case.id);
+    const setup = workspace.setup_draft?.setup || workspace.latest_setup_draft?.setup || {};
+    const config = Object.assign({}, published?.config || {}, {
+      studentAlias: published?.config?.studentAlias || workspace.case?.student_alias || assignment.case.student_alias
+    });
+    if (typeof setup.bipBriefing === 'string' && setup.bipBriefing.trim()) config.bipBriefing = setup.bipBriefing;
     const content = {
-      config: published?.config || { studentAlias: workspace.case?.student_alias || assignment.case.student_alias },
+      config,
       resources: published?.resources || null,
       daily_missions: [],
       wildcard_missions: [],

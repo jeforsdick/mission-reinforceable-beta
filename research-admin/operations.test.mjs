@@ -41,7 +41,7 @@ const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
 const authoringWorkspace={case_id:'case-1',case_code:'CASE-998',student_alias:'Star',has_crisis_plan:false,active_fidelity_targets:[],mission_drafts:[]};
 const renderedGameCreation=renderGameCreation(authoringWorkspace,null,null);
 assert.match(renderedGameCreation,/Author mission drafts/);
-for(const heading of ['MISSION BANK','Daily Missions','Mystery Missions','Crisis Missions','Resource Map','Browser editor coming next']) assert.match(renderedGameCreation,new RegExp(heading));
+for(const heading of ['GAME SETUP','BIP Briefing','MISSION BANK','Daily Missions','Mystery Missions','Crisis Missions','Resource Map','BIP at a Glance','Fidelity Fortress']) assert.match(renderedGameCreation,new RegExp(heading));
 assert.match(renderedGameCreation,/Legacy local build instructions remain available in documentation during the transition/);
 assert.doesNotMatch(renderedGameCreation,/Terminal|create-private-case-starter|protected-seed|Publish Game/);
 assert.match(js,/research_admin_game_authoring_workspace/);
