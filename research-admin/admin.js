@@ -443,6 +443,7 @@ async function saveResourceMap() {
 }
 
 async function checkFullDraft() {
+  preserveAllAuthoringForms();
   const button = $('#check-full-draft'), message = $('#full-draft-message'); button.disabled = true; message.textContent = 'Checking latest saved revisions…';
   const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
   if (error) { button.disabled = false; message.textContent = `Full Draft could not be checked: ${error.message}`; return; }

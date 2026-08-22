@@ -1,7 +1,9 @@
 const TYPES = Object.freeze({ daily: { label: 'Daily', count: 10 }, wild: { label: 'Mystery', count: 5 }, crisis: { label: 'Crisis', count: 5 } });
 const ENDINGS = new Set(['STRONG', 'MIXED', 'FRAGILE']);
 const KEY_PATTERN = /^(proactive|teaching|reinforcement|response|crisis)_\d{2}$/;
-const COMPONENT_DOMAINS = { Prevent: 'proactive', Teach: 'teaching', Reinforce: 'reinforcement', Respond: 'response', Crisis: 'crisis' };
+const COMPONENTS = new Set(['Prevent', 'Teach', 'Reinforce', 'Respond', 'Crisis']);
+const ERROR_TYPES = new Set(['none', 'missed_prevention_opportunity', 'missed_teaching_opportunity', 'missed_reinforcement_opportunity', 'missed_active_ingredient', 'timing_or_delay', 'contingency_mismatch', 'function_mismatch', 'reinforces_target_pattern', 'vague_or_nonspecific_response', 'public_or_attention_heavy_correction', 'other_needs_review']);
+const FUNCTIONS = new Set(['attention', 'escape', 'tangible', 'automatic', 'multiple', 'unclear']);
 export const RESOURCE_SECTIONS = Object.freeze({ bip: 'BIP at a Glance', functionForest: 'Function Forest', prevention: 'Prevention Palace', replacement: 'Replacement Reservoir', reinforcement: 'Reinforcement Ridge', errorCorrection: 'Error Correction Canyon', library: 'BSP Library', coaching: 'Coaching Cottage', fidelity: 'Fidelity Fortress' });
 const ALLOWED_BLOCKS = new Set(['paragraph', 'list', 'definitionList', 'callout']);
 const FORBIDDEN_FIELD = /(?:^on[a-z]+$|script|html|href|src|url|uri|(?:^|_)(?:path|file)(?:$|_)|(?:file|path)(?:name)?$|executable|command)/i;
@@ -120,6 +122,40 @@ export function validateFullDraft(input) {
     for (const slot of slots.keys()) if (slot < 1 || slot > spec.count) issue('MISSION BANK', 'blocking', `${spec.label} has an invalid saved slot ${slot}.`, `${spec.label} ${slot}`);
   }
   for (const error of validateMissionStructure(plainGroups).errors) issue('MISSION STRUCTURE', 'blocking', `Correct ${error.rule.replaceAll('_', ' ')} in mission ${error.mission_id || '(missing ID)'}.`, error.step_id ? `${error.mission_id || 'Mission'} → ${error.step_id}` : error.mission_id || 'Mission');
+  for (const [type, entries] of Object.entries(snapshot.missions)) for (const { slotNumber, mission } of entries) {
+    if (!mission) continue;
+    const missionPath = `${TYPES[type].label} ${slotNumber}`;
+    const requireText = (value, label, message) => { if (!substantive(value)) issue('MISSION STRUCTURE', 'blocking', message, `${missionPath} → ${label}`, { type: 'mission', missionType: type, slot: slotNumber }); };
+    requireText(mission.id, 'Mission ID', 'Add a mission ID.');
+    requireText(mission.title, 'Mission Title', 'Add a mission title.');
+    requireText(mission.routine, 'Routine', 'Add the mission routine.');
+    if (mission.expectedSteps !== 5) issue('MISSION STRUCTURE', 'blocking', 'Mission playthroughs must contain exactly 5 decisions.', `${missionPath} → Expected Steps`, { type: 'mission', missionType: type, slot: slotNumber });
+    if (!substantive(mission.start) || !mission.steps?.[mission.start]) issue('MISSION STRUCTURE', 'blocking', 'Choose a valid mission start step.', `${missionPath} → Start`, { type: 'mission', missionType: type, slot: slotNumber });
+    for (const ending of ENDINGS) requireText(mission.endings?.[ending]?.text, `${ending} Ending`, `Add the ${ending} ending narrative.`);
+    for (const [stepId, step] of Object.entries(mission.steps || {})) {
+      const decision = /^d(\d+)/.exec(stepId)?.[1] || stepId;
+      const stepPath = `${missionPath} → Decision ${decision}`;
+      if (!substantive(step?.text)) issue('MISSION STRUCTURE', 'blocking', 'Add the scene text.', `${stepPath} → Scene`, { type: 'mission', missionType: type, slot: slotNumber });
+      if (!substantive(step?.hint)) issue('MISSION STRUCTURE', 'blocking', 'Add a hint.', `${stepPath} → Hint`, { type: 'mission', missionType: type, slot: slotNumber });
+      const choices = Object.values(step?.choices || {});
+      if (choices.length !== 3) continue; // The structural finding already reports this once.
+      for (const choice of choices) {
+        const choicePath = `${stepPath} → Choice ${choice?.score ?? '?'}`;
+        if (!substantive(choice?.text)) issue('MISSION STRUCTURE', 'blocking', 'Add the teacher action.', `${choicePath} → Teacher Action`, { type: 'mission', missionType: type, slot: slotNumber });
+        if (!substantive(choice?.consequence)) issue('MISSION STRUCTURE', 'blocking', 'Add what happens next.', `${choicePath} → What Happens Next`, { type: 'mission', missionType: type, slot: slotNumber });
+        if (!substantive(choice?.wizard)) issue('MISSION STRUCTURE', 'blocking', 'Add Wizard feedback.', `${choicePath} → Wizard Feedback`, { type: 'mission', missionType: type, slot: slotNumber });
+        if (!substantive(choice?.feedback)) issue('MISSION STRUCTURE', 'blocking', 'Add the behavioral explanation.', `${choicePath} → Behavioral Explanation`, { type: 'mission', missionType: type, slot: slotNumber });
+        const meta = choice?.meta;
+        if (!meta || typeof meta !== 'object' || Array.isArray(meta)) issue('MISSION STRUCTURE', 'blocking', 'Add canonical choice metadata.', `${choicePath} → Metadata`, { type: 'mission', missionType: type, slot: slotNumber });
+        else {
+          if (!substantive(meta.bipComponent) || !COMPONENTS.has(meta.bipComponent)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical BIP component.', `${choicePath} → BIP Component`, { type: 'mission', missionType: type, slot: slotNumber });
+          if (!substantive(meta.mechanism)) issue('MISSION STRUCTURE', 'blocking', 'Add the choice mechanism.', `${choicePath} → Mechanism`, { type: 'mission', missionType: type, slot: slotNumber });
+          if (!substantive(meta.errorType) || !ERROR_TYPES.has(meta.errorType)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical Error Type.', `${choicePath} → Error Type`, { type: 'mission', missionType: type, slot: slotNumber });
+          if (!substantive(meta.function) || !FUNCTIONS.has(meta.function)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical behavior function.', `${choicePath} → Function`, { type: 'mission', missionType: type, slot: slotNumber });
+        }
+      }
+    }
+  }
   const injectedResources = snapshot.resources && { ...structuredClone(snapshot.resources), studentAlias: snapshot.studentAlias };
   const resourceReport = validateResources(injectedResources, snapshot.studentAlias);
   resourceReport.errors.forEach(item => issue('RESOURCE MAP', 'blocking', item.message, item.path)); resourceReport.warnings.forEach(item => issue('PRIVACY & SAFETY', 'warning', item.message, item.path));
@@ -134,8 +170,6 @@ export function validateFullDraft(input) {
     else if (stepKey) {
       const domain = stepKey.split('_')[0], approvedDomain = manifest.get(stepKey)?.domain;
       if (approvedDomain && approvedDomain !== domain) issue('FIDELITY LINKS', 'blocking', `Fidelity target ${stepKey} does not match its approved domain.`, location);
-      const components = new Set(Object.values(step.choices || {}).map(choice => choice?.meta?.bipComponent).filter(Boolean));
-      for (const component of components) if (COMPONENT_DOMAINS[component] && COMPONENT_DOMAINS[component] !== domain) issue('FIDELITY LINKS', 'blocking', `Fidelity target ${stepKey} conflicts with the ${component} domain.`, location);
       const item = coverage.get(stepKey) || { count: 0, missions: new Map() }; item.count++; item.missions.set(mission.id, (item.missions.get(mission.id) || 0) + 1); coverage.set(stepKey, item);
       if (!snapshot.hasCrisisPlan && stepKey.startsWith('crisis_')) issue('PRIVACY & SAFETY', 'blocking', 'A crisis fidelity target cannot be used without a formal crisis plan.', location);
     }
