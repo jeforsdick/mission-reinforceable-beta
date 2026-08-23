@@ -57,7 +57,7 @@ test('participant gate precedes completion lookup, mission creation, and telemet
   assert.ok(gate < engine.indexOf('await MR.auth.hasCompletedMissionToday()', gate));
   assert.ok(gate < engine.indexOf('const mission = chooseMission(mode)', gate));
   assert.ok(gate < engine.indexOf('startRelationalTelemetry(current)', gate));
-  assert.match(index, /No mission scheduled today\. Come back on your next school day!/);
+  assert.match(index, /id="home-status-bubble"[^>]*hidden[^>]*>No mission today\. Come back on your next school day!</);
 });
 
 test('QA Preview bypasses the calendar and public demo does not load it', () => {
@@ -67,6 +67,8 @@ test('QA Preview bypasses the calendar and public demo does not load it', () => 
 
 test('calendar return state leaves Progress and Resources navigation available', () => {
   assert.match(app, /calendarBlocked[\s\S]*#home-primary-btn/);
+  assert.match(app, /showCalendarStatus = calendarBlocked && !participantLocked/);
+  assert.match(app, /#home-status-bubble'\)\.hidden = !showCalendarStatus/);
   assert.match(index, /id="nav-progress"/);
   assert.match(index, /id="nav-resources"/);
   assert.doesNotMatch(app, /calendarBlocked[\s\S]{0,300}#nav-(?:progress|resources)/);

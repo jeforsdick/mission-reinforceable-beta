@@ -49,11 +49,13 @@ test('QA Preview can run repeatedly without participant lock checks', () => {
   assert.match(engine, /if \(context && !context\.qaMode\)/);
 });
 
-test('locked participant return UI gives next-day copy and exposes no replay controls', () => {
-  assert.match(index, /id="same-day-return-message"[^>]*hidden[^>]*>Come back tomorrow to play another mission!</);
-  assert.match(app, /#same-day-return-message'\)\.hidden = !participantLocked/);
-  assert.match(app, /#home-primary-btn'\)\.hidden = participantLocked/);
-  assert.match(app, /\.mission-menu \[data-start-mode\][\s\S]*button\.hidden = participantLocked/);
+test('locked participant return uses same-day artwork without overlay or replay controls', () => {
+  assert.doesNotMatch(index, /same-day-return-message/);
+  assert.doesNotMatch(app, /same-day-return-message/);
+  assert.match(app, /hasDaily \? \(config\.assets\.sameDayClassroom \|\| config\.assets\.landingClassroom\)/);
+  assert.match(app, /showCalendarStatus = calendarBlocked && !participantLocked/);
+  assert.match(app, /#home-primary-btn'\)\.hidden = participantLocked \|\| calendarBlocked/);
+  assert.match(app, /\.mission-menu \[data-start-mode\][\s\S]*button\.hidden = participantLocked \|\| calendarBlocked/);
 });
 
 test('yesterday completion does not block today', () => {
