@@ -148,11 +148,10 @@
     MR.$('#home-classroom-img').src = classroomPath;
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
     const participantLocked = hasDaily && MR.telemetryContext && !MR.telemetryContext.qaMode;
+    const showCalendarStatus = calendarBlocked && !participantLocked;
     MR.$('#home-primary-btn').hidden = participantLocked || calendarBlocked;
-    MR.$('#same-day-return-message').hidden = !participantLocked;
-    MR.$('#no-mission-message').hidden = !calendarBlocked;
+    MR.$('#home-status-bubble').hidden = !showCalendarStatus;
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
-    MR.$('#daily-completion-message').hidden = !participantLocked;
     MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked || calendarBlocked; });
   }
 
