@@ -16,8 +16,12 @@ const text = value => typeof value === 'string' && value.trim().length > 0;
 const expectedStepIds = () => ['d1_start', ...[2, 3, 4, 5].flatMap(decision => TRAJECTORIES.map(branch => stepId(decision, branch)))];
 const targetKey = target => target?.target_key || target?.key;
 
-export function canUseExampleMissionImporter(workspace) {
-  return Boolean(workspace && workspace.case_id && workspace.case_code === 'CASE-998' && workspace.study_id === 'MR-998');
+export function canUseExampleMissionImporter(workspace, caseOperations) {
+  return Boolean(
+    workspace?.case?.id
+    && workspace.case.case_code === 'CASE-998'
+    && caseOperations?.study_id === 'MR-998'
+  );
 }
 
 function unsafeContent(value, path = 'mission') {
@@ -128,7 +132,8 @@ export function importSummary(review, workspace) {
     const slots = review.entries.filter(item => item.missionType === type).map(item => item.slotNumber).sort((a, b) => a - b);
     return slots.length ? `${LABELS[type]}: ${compactSlots(slots)}` : null;
   }).filter(Boolean);
-  const existing = review.entries.filter(item => (workspace?.mission_drafts || []).some(row => row.mission_type === item.missionType && Number(row.slot_number) === item.slotNumber)).map(item => item.label);
+  const drafts = workspace?.missions || workspace?.mission_drafts || workspace?.latest_mission_drafts || [];
+  const existing = review.entries.filter(item => drafts.some(row => row.mission_type === item.missionType && Number(row.slot_number) === item.slotNumber)).map(item => item.label);
   return { count: review.entries.length, ranges, existing };
 }
 
