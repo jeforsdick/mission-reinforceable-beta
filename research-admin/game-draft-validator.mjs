@@ -12,6 +12,10 @@ const PRIVACY = { email: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i, phone: /(
 const substantive = value => typeof value === 'string' && value.trim().length > 0;
 const missionValue = row => row?.mission || row?.mission_json || row?.draft || row?.content || null;
 const targetKey = target => target?.target_key || target?.key;
+const canonicalDecisionNumber = stepId => {
+  const match = /^d([1-5])_(start|supported|wobbly|escalated)$/.exec(stepId);
+  return match && ((match[1] === '1' && match[2] === 'start') || (match[1] !== '1' && match[2] !== 'start')) ? Number(match[1]) : null;
+};
 const supportedSetup = setup => ({ schemaVersion: 1, bipBriefing: typeof setup?.bipBriefing === 'string' ? setup.bipBriefing : '' });
 
 export function buildFullDraftSnapshot(workspace) {
@@ -162,9 +166,23 @@ export function validateFullDraft(input) {
   resourceReport.errors.forEach(item => issue('RESOURCE MAP', 'blocking', item.message, item.path)); resourceReport.warnings.forEach(item => issue('PRIVACY & SAFETY', 'warning', item.message, item.path));
   const manifest = new Map(snapshot.activeFidelityTargets.map(target => [targetKey(target), target]));
   const coverage = new Map();
+  const missionLinking = new Map();
   for (const [type, entries] of Object.entries(snapshot.missions)) for (const { slotNumber, mission } of entries) for (const [stepId, step] of Object.entries(mission?.steps || {})) {
     const location = `${TYPES[type].label} ${slotNumber} → ${stepId}`;
     const stepKey = step?.meta?.fidelityTargetKey, stepKeys = step?.meta?.fidelityTargetKeys;
+    const decisionNumber = canonicalDecisionNumber(stepId);
+    if (decisionNumber !== null) {
+      const stats = missionLinking.get(mission) || { totalCanonicalScenes: 0, authoredScenes: 0, targets: new Map() };
+      stats.totalCanonicalScenes++;
+      if (typeof stepKey === 'string' && stepKey.length) {
+        stats.authoredScenes++;
+        const target = stats.targets.get(stepKey) || { scenes: 0, decisions: new Set() };
+        target.scenes++;
+        target.decisions.add(decisionNumber);
+        stats.targets.set(stepKey, target);
+      }
+      missionLinking.set(mission, stats);
+    }
     if (Array.isArray(stepKey) || stepKeys !== undefined) issue('FIDELITY LINKS', 'blocking', 'Only one primary fidelity target may be linked to a decision.', location);
     if (stepKey && !KEY_PATTERN.test(stepKey)) issue('FIDELITY LINKS', 'blocking', 'Correct the malformed fidelity target key.', location);
     else if (stepKey && !manifest.has(stepKey)) issue('FIDELITY LINKS', 'blocking', `Fidelity target ${stepKey} is not active for this case.`, location);
@@ -179,7 +197,18 @@ export function validateFullDraft(input) {
       if (!snapshot.hasCrisisPlan && choice?.meta?.bipComponent === 'Crisis') issue('PRIVACY & SAFETY', 'blocking', 'Crisis BIP-component metadata requires a formal crisis plan.', `${location} → Choice ${choiceKey}`);
     }
   }
-  for (const [key] of manifest) { const item = coverage.get(key); if (!item) issue('FIDELITY LINKS', 'warning', `Approved target ${key} is never linked; researcher review is required.`, key); else { if (item.count < 3) issue('FIDELITY LINKS', 'warning', `Target ${key} is linked fewer than 3 times.`, key); if (item.missions.size === 1) issue('FIDELITY LINKS', 'warning', `Target ${key} appears in only one mission.`, key); for (const [missionId, count] of item.missions) if (count > 2) issue('FIDELITY LINKS', 'warning', `Target ${key} is over-concentrated in mission ${missionId}.`, key); } }
+  for (const [key] of manifest) { const item = coverage.get(key); if (!item) issue('FIDELITY LINKS', 'warning', `Approved target ${key} is never linked; researcher review is required.`, key); else { if (item.count < 3) issue('FIDELITY LINKS', 'warning', `Target ${key} is linked fewer than 3 times.`, key); if (item.missions.size === 1) issue('FIDELITY LINKS', 'warning', `Target ${key} appears in only one mission.`, key); } }
+  for (const [mission, stats] of missionLinking) {
+    if (stats.authoredScenes < 5) continue;
+    if (stats.authoredScenes >= 8 && stats.targets.size === 1) {
+      const [key] = stats.targets.keys();
+      if (manifest.has(key)) issue('FIDELITY LINKS', 'warning', `Review: Mission ${mission.id} uses only target ${key} across nearly all linked scenes.`, key);
+      continue;
+    }
+    for (const [key, target] of stats.targets) if (manifest.has(key) && target.scenes / stats.authoredScenes >= 0.8 && target.decisions.size >= 4) {
+      issue('FIDELITY LINKS', 'warning', `Review: Target ${key} dominates fidelity links across this mission.`, key);
+    }
+  }
   const pathLabel = key => ({ bipBriefing: 'BIP Briefing', text: 'Scene / Text', hint: 'Hint', consequence: 'Consequence', wizard: 'Wizard', feedback: 'Feedback', title: 'Title', focus: 'Focus', routine: 'Routine', steps: 'Decisions', choices: 'Choice', endings: 'Ending' })[key] || key;
   const scanAuthored = (value, path) => { if (typeof value === 'string') { if (HTML.test(value)) issue('PRIVACY & SAFETY', 'blocking', 'Remove raw HTML, script, or event-handler content.', path); for (const [kind, pattern] of Object.entries(PRIVACY)) if (pattern.test(value)) issue('PRIVACY & SAFETY', 'warning', `${kind} detected; human privacy review is required.`, path); } else if (Array.isArray(value)) value.forEach((item, index) => scanAuthored(item, `${path} → ${index + 1}`)); else if (value && typeof value === 'object') for (const [key, child] of Object.entries(value)) if (!['id', 'next', 'fidelityTargetKey', 'fidelityTargetKeys'].includes(key)) scanAuthored(child, `${path} → ${pathLabel(key)}`); };
   scanAuthored(setup, 'Game Setup'); for (const [type, entries] of Object.entries(snapshot.missions)) entries.forEach(({ slotNumber, mission }) => scanAuthored(mission, `${TYPES[type].label} ${slotNumber}`));
