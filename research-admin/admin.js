@@ -8,11 +8,10 @@ import { validateFullDraft } from './game-draft-validator.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
-import { canUseExampleMissionImporter, importSummary, reviewExampleMissionImport, saveExampleMissionImport } from './example-mission-importer.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
-const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null, exampleImport: {} };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -371,7 +370,7 @@ function readinessPanel(data) {
 }
 function gameCreationPanel(data) {
   const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: data.case.case_code };
-  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.exampleImport, state.caseOperations);
+  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck);
 }
 
 function redrawGameCreation(scrollToMissionBuilder = false) {
@@ -382,53 +381,11 @@ function redrawGameCreation(scrollToMissionBuilder = false) {
   bindMissionBuilder();
   bindSetupAndResources();
   bindPublishedReview();
-  bindExampleMissionImport();
   restoreResourceOpenSections(panel, state.resourceOpenSections);
   if (scrollToMissionBuilder) document.querySelector('.mission-builder')?.scrollIntoView({
     behavior: 'smooth',
     block: 'start'
   });
-}
-
-function bindExampleMissionImport() {
-  if (!canUseExampleMissionImporter(state.authoringWorkspace, state.caseOperations)) return;
-  $('#review-example-import')?.addEventListener('click', async () => {
-    const input = $('#example-mission-file'), file = input?.files?.[0];
-    if (!file || !file.name.toLowerCase().endsWith('.json')) { state.exampleImport = { message: 'Choose one .json file.' }; redrawGameCreation(); return; }
-    try {
-      const payload = JSON.parse(await file.text());
-      const review = reviewExampleMissionImport(payload, state.authoringWorkspace);
-      state.exampleImport = { review, summary: importSummary(review, state.authoringWorkspace), message: review.valid ? 'Review complete. No database writes have occurred.' : '' };
-    } catch (error) { state.exampleImport = { message: `Import file could not be read: ${error.message}` }; }
-    redrawGameCreation();
-  });
-  $('#run-example-import')?.addEventListener('click', importExampleMissionDrafts);
-}
-
-async function importExampleMissionDrafts() {
-  const review = state.exampleImport.review;
-  if (!canUseExampleMissionImporter(state.authoringWorkspace, state.caseOperations) || !review?.valid) return;
-  const existing = state.exampleImport.summary.existing;
-  const warning = existing.length ? `The following populated slots will receive append-only NEW revisions: ${existing.join(', ')}. Daily 1 will remain untouched. Continue?` : 'Import these validated mission drafts? Daily 1 will remain untouched.';
-  if (!window.confirm(warning)) return;
-  state.exampleImport = { ...state.exampleImport, importing: true, message: `Importing 0 of ${review.entries.length}…` }; redrawGameCreation();
-  const result = await saveExampleMissionImport(review.entries, async entry => {
-    const { error } = await state.client.rpc('research_admin_save_mission_draft', { target_case_id: state.authoringWorkspace.case.id, target_mission_type: entry.missionType, target_slot_number: entry.slotNumber, target_mission: entry.mission });
-    if (error) throw new Error(error.message);
-  }, (current, total) => {
-    state.exampleImport.message = `Importing ${current} of ${total}…`;
-    const message = $('#example-import-message'); if (message) message.textContent = state.exampleImport.message;
-  });
-  if (!result.ok) {
-    const saved = result.saved.length ? result.saved.map(entry => entry.label).join(', ') : 'None';
-    state.exampleImport = { ...state.exampleImport, importing: false, message: `Import stopped at ${result.failed.label}: ${result.error.message}. Successfully saved: ${saved}. Those earlier saves are append-only revisions and were not rolled back; no later slots were attempted.` };
-    redrawGameCreation(); return;
-  }
-  const reloadError = await reloadAuthoringWorkspace();
-  if (reloadError) { state.exampleImport = { message: `${result.saved.length} drafts were saved, but the workspace could not reload: ${reloadError.message}` }; redrawGameCreation(); return; }
-  state.fullDraftCheck = null; state.selectedTab = 'game-creation';
-  state.exampleImport = { message: `${result.saved.length} mission drafts imported to CASE-998.` };
-  redrawGameCreation(); document.querySelector('.mission-bank')?.scrollIntoView({ block: 'start' });
 }
 function captureSetupAndResourceForms() {
   const root = $('#game-creation-panel');
