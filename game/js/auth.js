@@ -152,17 +152,6 @@
     return true;
   }
 
-  function weeklyReportEntry(search) {
-    const params = new URLSearchParams(search);
-    const value = params.get('weekly_report');
-    if (value !== '1') return false;
-    const qaParameters = ['qa_case', 'qa_draft_type', 'qa_draft_slot', 'qa_full_draft'];
-    if (qaParameters.some(name => params.has(name))) {
-      throw new Error('Weekly Teacher Report is not available in QA preview.');
-    }
-    return true;
-  }
-
   function missionFromWorkspaceRow(row) {
     return row && (row.mission || row.mission_json || row.draft || row.content) || null;
   }
@@ -217,7 +206,7 @@
     const rows = workspace.missions || workspace.mission_drafts || workspace.latest_mission_drafts || [];
     const group = type => rows.filter(row => row.mission_type === type).sort((a, b) => Number(a.slot_number) - Number(b.slot_number)).map(missionFromWorkspaceRow).filter(Boolean);
     return {
-      config: Object.assign({}, published?.config || {}, { studentAlias: alias, bipBriefing: setup.bipBriefing || '', weeklyTeacherReport: { targetBehavior: setup.weeklyTeacherReport?.targetBehavior || '', replacementBehavior: setup.weeklyTeacherReport?.replacementBehavior || '', targetRoutine: setup.weeklyTeacherReport?.targetRoutine || '' } }),
+      config: Object.assign(Object.fromEntries(Object.entries(published?.config || {}).filter(([key]) => key !== 'weeklyTeacherReport')), { studentAlias: alias, bipBriefing: setup.bipBriefing || '' }),
       resources: Object.assign({}, resources, { studentAlias: alias }),
       daily_missions: group('daily'), wildcard_missions: group('wild'), crisis_missions: group('crisis'), version: null
     };
@@ -324,7 +313,6 @@
   MR.auth = {
     async getAssignment() {
       const supabaseClient = client();
-      const weeklyReportMode = weeklyReportEntry(window.location.search);
       const { data, error } = await supabaseClient.auth.getUser();
       if (error && error.name !== 'AuthSessionMissingError') {
         throw new Error(`Unable to check your sign-in: ${error.message}`);
@@ -369,7 +357,7 @@
       }
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
-      return { user, participant, case: caseAssignment, qaMode: false, weeklyReportMode };
+      return { user, participant, case: caseAssignment, qaMode: false };
     },
 
     async getGameContent(caseId) {
@@ -398,33 +386,10 @@
 
     getProgressResponses: progressResponses,
 
-    isWeeklyReportEntry: weeklyReportEntry,
-
     async hasCompletedMissionToday() {
       const { data, error } = await client().rpc('has_completed_mission_today');
       if (error) throw new Error(`Unable to check today's mission status: ${error.message}`);
       return data === true;
-    },
-
-    async hasWeeklyCheckin(weekStart) {
-      const { data, error } = await client().from('weekly_teacher_checkins').select('id').eq('week_start', weekStart).eq('qa_mode', false).maybeSingle();
-      if (error) throw new Error(`Unable to check this week's teacher report status: ${error.message}`);
-      return Boolean(data);
-    },
-
-    async submitWeeklyTeacherReport(values) {
-      const { error } = await client().rpc('submit_weekly_teacher_report', {
-        p_access_rating: values.accessRating,
-        p_manageability_rating: values.manageabilityRating,
-        p_bsp_relevance_rating: values.bspRelevanceRating,
-        p_implementation_thinking_rating: values.implementationThinkingRating,
-        p_feedback_usefulness_rating: values.feedbackUsefulnessRating,
-        p_target_behavior_rating: values.targetBehaviorRating,
-        p_replacement_behavior_rating: values.replacementBehaviorRating,
-        p_barriers_facilitators: values.barriersFacilitators,
-        p_behavior_context_note: values.behaviorContextNote
-      });
-      if (error) throw new Error(`Unable to submit the weekly teacher report: ${error.message}`);
     },
 
     hasCurrentStudyDaySignIn,

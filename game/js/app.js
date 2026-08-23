@@ -298,8 +298,6 @@
       applyAssets();
       initAudio();
       wireEvents();
-      await MR.weeklyCheckin.init(assignment);
-      if (assignment.weeklyReportMode) return;
       if (!assignment.qaMode) MR.reminders.hydrateControls();
       MR.resources.render();
       renderHome();

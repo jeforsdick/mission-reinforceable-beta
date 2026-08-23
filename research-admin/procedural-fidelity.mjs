@@ -10,7 +10,7 @@ export const COMPONENTS = {
   ],
   weekly: [
     ['weekly_usage_summary_delivered','Weekly usage summary delivered','The planned weekly MR usage summary was delivered or made available; do not infer this from mission completion.'],
-    ['weekly_teacher_checkin_distributed','Weekly teacher check-in distributed','The check-in was made available during its intended window. Teacher submission is engagement, not procedural fidelity.']
+    ['weekly_teacher_checkin_distributed','Qualtrics Weekly Teacher Report distributed','The Qualtrics report was made available as intended. Mission: Reinforceable does not collect or store its responses.']
   ]
 };
 

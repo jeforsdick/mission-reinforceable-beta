@@ -31,7 +31,7 @@ function validMission() {
 
 function writeFixture(base = fs.mkdtempSync(path.join(os.tmpdir(), 'mr-private-case-'))) {
   fs.mkdirSync(path.join(base, 'content'), { recursive: true });
-  fs.writeFileSync(path.join(base, 'config.js'), "window.MR_TEACHER_CONFIG = { missionFiles: ['content/mission.js'], resourcesFile: 'content/resources.js', studentAlias: 'Fictional', weeklyTeacherReport: { targetBehavior: 'Fictional target behavior', replacementBehavior: 'Fictional replacement behavior', targetRoutine: 'Fictional routine' } };\n");
+  fs.writeFileSync(path.join(base, 'config.js'), "window.MR_TEACHER_CONFIG = { missionFiles: ['content/mission.js'], resourcesFile: 'content/resources.js', studentAlias: 'Fictional' };\n");
   const sections = Object.fromEntries(Object.entries(require('./resource-content-validator').REQUIRED_SECTIONS).map(([key, title]) => [key, { title, blocks: [{ type: 'paragraph', text: `Fictional guidance for ${title}.` }] }]));
   fs.writeFileSync(path.join(base, 'content/resources.js'), `window.MR_RESOURCES = ${JSON.stringify({ schemaVersion: 1, studentAlias: 'Fictional', sections })};\n`);
   fs.writeFileSync(path.join(base, 'content/mission.js'), `POOL.daily.push(${JSON.stringify(validMission())});\n`);
@@ -61,12 +61,11 @@ test('normalizes an explicit false shuffle setting for protected builds', () => 
 });
 
 
-test('participant builder requires protected weekly report case metadata', () => {
+test('participant builder does not require retired weekly report metadata', () => {
   const source = writeFixture();
   fs.writeFileSync(path.join(source, 'config.js'), "window.MR_TEACHER_CONFIG = { missionFiles: ['content/mission.js'], resourcesFile: 'content/resources.js', studentAlias: 'Fictional' };\n");
   const result = runBuilder(source, '--json-output', path.join(source, 'output.json'));
-  assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /weeklyTeacherReport targetBehavior, replacementBehavior, and targetRoutine/);
+  assert.equal(result.status, 0, result.stderr);
 });
 
 test('writes protected JSON and does not warn for an outside source', () => {

@@ -77,27 +77,8 @@ test('database-backed daily completion lock remains a separate second gate', () 
   assert.match(engine, /completeParticipantMission\(sessionId, updates\)/);
 });
 
-test('weekly check-in opens on the last eligible day and closes next Monday', () => {
-  assert.equal(calendar.lastEligibleStudyDayForWeek('2026-09-14'), '2026-09-17');
-  assert.equal(calendar.weeklyCheckinWindow('2026-09-17').isAvailable, true);
-  assert.equal(calendar.weeklyCheckinWindow('2026-09-20').isAvailable, true);
-  assert.equal(calendar.weeklyCheckinWindow('2026-09-21').isAvailable, false);
-});
-
-test('short Granite weeks use their actual last scheduled study day', () => {
-  assert.equal(calendar.lastEligibleStudyDayForWeek('2026-10-12'), '2026-10-14');
-  assert.equal(calendar.lastEligibleStudyDayForWeek('2026-11-23'), '2026-11-24');
-  assert.equal(calendar.lastEligibleStudyDayForWeek('2027-05-24'), '2027-05-26');
-});
-
-test('full Winter and Spring Break weeks have no weekly check-in', () => {
-  assert.equal(calendar.weeklyCheckinWindow('2026-12-23'), null);
-  assert.equal(calendar.weeklyCheckinWindow('2027-03-31'), null);
-});
-
-test('weekly report is absent from the normal game home and public demo', () => {
-  const home = index.slice(index.indexOf('id="home-screen"'), index.indexOf('id="weekly-checkin-screen"'));
-  assert.doesNotMatch(home, /Weekly Teacher Report|weekly-checkin/);
-  assert.doesNotMatch(app, /renderEntry/);
-  assert.doesNotMatch(demoIndex, /Weekly Check-In|weekly-checkin/);
+test('retired weekly report is absent from authenticated game and public demo', () => {
+  assert.doesNotMatch(index, /Weekly Teacher Report|weekly-checkin/);
+  assert.doesNotMatch(app, /weeklyCheckin|weeklyReportMode/);
+  assert.doesNotMatch(demoIndex, /Weekly Teacher Report|weekly-checkin/);
 });

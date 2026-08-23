@@ -38,7 +38,7 @@ Before production deployment, query `pg_class`, `pg_attribute`, `pg_constraint`,
 2. **Dissertation schema:** profiles, coaching/intake snapshots, fidelity targets, relational gameplay telemetry, security helpers, then the legacy `case_intake.status` contract.
 3. **Reminders and onboarding:** target keys, reminder tables/RPCs, intake IDs, onboarding, and intake cleanup.
 4. **QA and signoffs:** published preview, daily mission lock, protected-content signoffs.
-5. **Research operations:** weekly check-ins, comparability, procedural fidelity, operations, observations, and IOA summaries/cleanup.
+5. **Research operations:** retired historical weekly-report storage, comparability, procedural fidelity, operations, observations, and IOA summaries/cleanup.
 6. **Telemetry:** resource-usage events and stale-reminder recovery.
 7. **Game authoring:** intake editing, draft revisions, and draft/full-draft QA preview.
 8. **Drift repair:** append-only canonical intake RPC and obsolete-constraint repair.

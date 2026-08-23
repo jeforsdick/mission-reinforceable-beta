@@ -19,7 +19,8 @@ test('Full Draft loader uses latest saved setup, strict resources, every sorted 
   assert.match(auth, /sort\(\(a, b\) => Number\(a\.slot_number\) - Number\(b\.slot_number\)\)/);
   assert.match(auth, /daily_missions: group\('daily'\), wildcard_missions: group\('wild'\), crisis_missions: group\('crisis'\), version: null/);
   assert.match(auth, /studentAlias: alias, bipBriefing: setup\.bipBriefing/);
-  assert.match(auth, /weeklyTeacherReport/);
+  assert.match(auth, /filter\(\(\[key\]\) => key !== 'weeklyTeacherReport'\)/);
+  assert.doesNotMatch(auth, /setup\.weeklyTeacherReport/);
 });
 
 test('Full Draft QA uses QA telemetry, strict Resource Map behavior, home screen, and unpublished banner', async () => {
