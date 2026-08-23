@@ -12,6 +12,7 @@ const PRIVACY = { email: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i, phone: /(
 const substantive = value => typeof value === 'string' && value.trim().length > 0;
 const missionValue = row => row?.mission || row?.mission_json || row?.draft || row?.content || null;
 const targetKey = target => target?.target_key || target?.key;
+const supportedSetup = setup => ({ schemaVersion: 1, bipBriefing: typeof setup?.bipBriefing === 'string' ? setup.bipBriefing : '' });
 
 export function buildFullDraftSnapshot(workspace) {
   const root = Array.isArray(workspace) ? workspace[0] : workspace || {};
@@ -25,7 +26,7 @@ export function buildFullDraftSnapshot(workspace) {
     hasCrisisPlan: Boolean(root.has_crisis_plan ?? caseRow.has_crisis_plan),
     setupRevisionExists: Boolean(root.setup_draft || root.latest_setup_draft),
     resourceRevisionExists: Boolean(root.resource_draft || root.latest_resource_draft),
-    setup: root.setup_draft?.setup || root.latest_setup_draft?.setup || null,
+    setup: root.setup_draft || root.latest_setup_draft ? supportedSetup(root.setup_draft?.setup || root.latest_setup_draft?.setup) : null,
     resources: root.resource_draft?.resources || root.latest_resource_draft?.resources || null,
     missions, activeFidelityTargets: root.fidelity_targets || root.active_fidelity_targets || []
   };
@@ -36,7 +37,7 @@ export function buildFullDraftPayload(workspace, publishedConfig = {}) {
   if (!snapshot.resourceRevisionExists) throw new Error('No saved Resource Map draft exists for Full Draft QA.');
   const setup = snapshot.setup || {};
   return {
-    config: { ...publishedConfig, studentAlias: snapshot.studentAlias, bipBriefing: setup.bipBriefing || '', weeklyTeacherReport: { targetBehavior: setup.weeklyTeacherReport?.targetBehavior || '', replacementBehavior: setup.weeklyTeacherReport?.replacementBehavior || '', targetRoutine: setup.weeklyTeacherReport?.targetRoutine || '' } },
+    config: Object.assign(Object.fromEntries(Object.entries(publishedConfig).filter(([key]) => key !== 'weeklyTeacherReport')), { studentAlias: snapshot.studentAlias, bipBriefing: setup.bipBriefing || '' }),
     resources: { ...structuredClone(snapshot.resources), studentAlias: snapshot.studentAlias },
     daily_missions: snapshot.missions.daily.map(item => item.mission), wildcard_missions: snapshot.missions.wild.map(item => item.mission), crisis_missions: snapshot.missions.crisis.map(item => item.mission), version: null
   };
@@ -113,7 +114,6 @@ export function validateFullDraft(input) {
   const setup = snapshot.setup || {};
   if (!snapshot.setupRevisionExists) issue('GAME SETUP', 'blocking', 'Add and save Game Setup.', 'Game Setup', { type: 'setup' });
   if (!substantive(setup.bipBriefing)) issue('GAME SETUP', 'blocking', 'Add and save a BIP Briefing.', 'Game Setup → BIP Briefing', { type: 'setup' });
-  for (const [key, label] of [['targetBehavior', 'Target Behavior'], ['replacementBehavior', 'Replacement or Desired Behavior'], ['targetRoutine', 'Target Routine']]) if (!substantive(setup.weeklyTeacherReport?.[key])) issue('GAME SETUP', 'blocking', `Add and save the ${label} weekly check-in label.`, `Game Setup → ${label}`, { type: 'setup' });
   const plainGroups = {};
   for (const [type, spec] of Object.entries(TYPES)) {
     const entries = snapshot.missions[type] || [], slots = new Map(entries.map(item => [item.slotNumber, item])); plainGroups[type === 'wild' ? 'wildcard' : type] = entries.map(item => item.mission).filter(Boolean);
@@ -179,7 +179,7 @@ export function validateFullDraft(input) {
     }
   }
   for (const [key] of manifest) { const item = coverage.get(key); if (!item) issue('FIDELITY LINKS', 'warning', `Approved target ${key} is never linked; researcher review is required.`, key); else { if (item.count < 3) issue('FIDELITY LINKS', 'warning', `Target ${key} is linked fewer than 3 times.`, key); if (item.missions.size === 1) issue('FIDELITY LINKS', 'warning', `Target ${key} appears in only one mission.`, key); for (const [missionId, count] of item.missions) if (count > 2) issue('FIDELITY LINKS', 'warning', `Target ${key} is over-concentrated in mission ${missionId}.`, key); } }
-  const pathLabel = key => ({ bipBriefing: 'BIP Briefing', weeklyTeacherReport: 'Weekly Check-In Labels', targetBehavior: 'Target Behavior', replacementBehavior: 'Replacement or Desired Behavior', targetRoutine: 'Target Routine', text: 'Scene / Text', hint: 'Hint', consequence: 'Consequence', wizard: 'Wizard', feedback: 'Feedback', title: 'Title', focus: 'Focus', routine: 'Routine', steps: 'Decisions', choices: 'Choice', endings: 'Ending' })[key] || key;
+  const pathLabel = key => ({ bipBriefing: 'BIP Briefing', text: 'Scene / Text', hint: 'Hint', consequence: 'Consequence', wizard: 'Wizard', feedback: 'Feedback', title: 'Title', focus: 'Focus', routine: 'Routine', steps: 'Decisions', choices: 'Choice', endings: 'Ending' })[key] || key;
   const scanAuthored = (value, path) => { if (typeof value === 'string') { if (HTML.test(value)) issue('PRIVACY & SAFETY', 'blocking', 'Remove raw HTML, script, or event-handler content.', path); for (const [kind, pattern] of Object.entries(PRIVACY)) if (pattern.test(value)) issue('PRIVACY & SAFETY', 'warning', `${kind} detected; human privacy review is required.`, path); } else if (Array.isArray(value)) value.forEach((item, index) => scanAuthored(item, `${path} → ${index + 1}`)); else if (value && typeof value === 'object') for (const [key, child] of Object.entries(value)) if (!['id', 'next', 'fidelityTargetKey', 'fidelityTargetKeys'].includes(key)) scanAuthored(child, `${path} → ${pathLabel(key)}`); };
   scanAuthored(setup, 'Game Setup'); for (const [type, entries] of Object.entries(snapshot.missions)) entries.forEach(({ slotNumber, mission }) => scanAuthored(mission, `${TYPES[type].label} ${slotNumber}`));
   issue('PRIVACY & SAFETY', 'warning', snapshot.hasCrisisPlan ? 'Human crisis/safety review required before publishing.' : 'No formal crisis plan is recorded. Crisis missions must begin from a safe point or after required safety actions have already occurred under existing school procedures.', 'Crisis safety');

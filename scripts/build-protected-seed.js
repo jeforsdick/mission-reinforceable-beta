@@ -66,13 +66,6 @@ function main(argv) {
   }
   const payload = loadExecutableContent(options.sourceDir);
   if (options.legacyTeacherId) payload.config.teacherId = options.legacyTeacherId;
-  if (options.contentMode === 'participant') {
-    const report = payload.config.weeklyTeacherReport;
-    const required = ['targetBehavior', 'replacementBehavior', 'targetRoutine'];
-    if (!report || required.some(key => typeof report[key] !== 'string' || !report[key].trim())) {
-      throw new Error('Participant protected config requires substantive weeklyTeacherReport targetBehavior, replacementBehavior, and targetRoutine fields.');
-    }
-  }
   const structural = validateStructure(missionGroups(payload));
   if (!structural.valid) throw new Error(`Protected content failed structural validation:\n${formatReport(structural, path.basename(options.sourceDir))}`);
   const resources = validateResources(payload.resources, { expectedAlias: payload.config.studentAlias });
