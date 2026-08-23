@@ -119,6 +119,13 @@
     return data;
   }
 
+  function isReservedDemoAssignment(user, participant, caseAssignment) {
+    const email = String(user && user.email || '').trim().toLowerCase();
+    return caseAssignment.case_code === 'CASE-DEMO-2'
+      && participant.participant_code === 'MR-DEMO-2'
+      && email.endsWith('@testemail.com');
+  }
+
   async function protectedGameContent(supabaseClient, caseId) {
     if (!caseId) throw new Error('No case is available for protected game content.');
 
@@ -357,7 +364,13 @@
       }
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
-      return { user, participant, case: caseAssignment, qaMode: false };
+      return {
+        user,
+        participant,
+        case: caseAssignment,
+        qaMode: false,
+        demoCalendarBypass: isReservedDemoAssignment(user, participant, caseAssignment)
+      };
     },
 
     async getGameContent(caseId) {
