@@ -42,6 +42,18 @@ test('valid schema and canonical mission are accepted and normalized', () => {
   assert.deepEqual(importSummary(review, workspace), { count: 1, ranges: ['Daily: 2'], existing: [] });
 });
 
+test('summary finds populated incoming slots in the RPC missions collection', () => {
+  const review = reviewExampleMissionImport(payload(canonicalMission()), workspace);
+  const workspaceWithDaily2 = {
+    ...workspace,
+    missions: [...workspace.missions, { mission_type: 'daily', slot_number: 2, mission: { title: 'Existing Daily 2' } }],
+  };
+  assert.deepEqual(importSummary(review, workspaceWithDaily2).existing, ['Daily 2']);
+  assert.deepEqual(importSummary(review, workspace).existing, []);
+  assert.equal(workspaceWithDaily2.missions[0].slot_number, 1);
+  assert.equal(workspaceWithDaily2.missions[0].mission.title, 'Manual Daily 1');
+});
+
 for (const [name, change, expected] of [
   ['wrong caseCode', value => { value.caseCode = 'CASE-001'; }, /caseCode/],
   ['wrong participantCode', value => { value.participantCode = 'MR-001'; }, /participantCode/],
