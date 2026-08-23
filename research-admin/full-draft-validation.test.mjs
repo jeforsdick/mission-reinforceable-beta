@@ -14,6 +14,14 @@ function mission(id) {
 }
 function resources() { return { schemaVersion: 1, sections: Object.fromEntries(Object.entries(RESOURCE_SECTIONS).map(([key, title]) => [key, { title, blocks: [{ type: 'paragraph', text: 'Use a calm, brief plan-aligned response.' }] }])) }; }
 function workspace() { const missions = []; for (const [type, count] of [['daily', 10], ['wild', 5], ['crisis', 5]]) for (let slot = count; slot; slot--) missions.push({ mission_type: type, slot_number: slot, mission: mission(`${type}_${slot}`) }); return { case: { id: 'case', case_code: 'CASE-998', student_alias: 'River' }, has_crisis_plan: false, setup_draft: { setup: { schemaVersion: 1, bipBriefing: 'Use the approved plan before each fictional mission.', weeklyTeacherReport: { targetBehavior: 'Target response', replacementBehavior: 'Desired response', targetRoutine: 'Class routine' } } }, resource_draft: { resources: resources() }, fidelity_targets: [], missions }; }
+const canonicalStepIds = ['d1_start', ...[2, 3, 4, 5].flatMap(decision => ['supported', 'wobbly', 'escalated'].map(branch => `d${decision}_${branch}`))];
+function linkCanonicalScenes(value, links) {
+  const targetMission = value.missions[0].mission;
+  targetMission.steps = Object.fromEntries(canonicalStepIds.map((id, index) => [id, structuredClone(targetMission.steps[`s${Math.min(index + 1, 5)}`] || targetMission.steps.s1)]));
+  for (const [stepId, key] of Object.entries(links)) targetMission.steps[stepId].meta.fidelityTargetKey = key;
+  return targetMission;
+}
+const fidelityWarnings = value => validateFullDraft(value).categories['FIDELITY LINKS'].warnings.map(item => item.message);
 
 test('snapshot and protected payload use latest saved rows, slot sorting, authoritative alias, and null version', () => { const value = workspace(), snapshot = buildFullDraftSnapshot(value), payload = buildFullDraftPayload(value); assert.deepEqual(snapshot.missions.daily.map(item => item.slotNumber), [1,2,3,4,5,6,7,8,9,10]); assert.equal(payload.resources.studentAlias, 'River'); assert.equal(value.resource_draft.resources.studentAlias, undefined); assert.equal(payload.daily_missions[0].id, 'daily_1'); assert.equal(payload.version, null); });
 test('complete 10/5/5 saved draft is previewable with human-review warning', () => { const report = validateFullDraft(workspace()); assert.equal(report.blockingCount, 0); assert.equal(report.ready, true); assert(report.categories['PRIVACY & SAFETY'].warnings.length > 0); });
@@ -23,6 +31,61 @@ test('strict browser Resource Map behavior stays in parity and privacy/HTML seve
 test('fidelity manifest and no-plan crisis safeguards block unsupported linkage but not Crisis mission type', () => { const value = workspace(); value.fidelity_targets = [{ target_key: 'proactive_01', domain: 'proactive' }]; let report = validateFullDraft(value); assert.equal(report.ready, true); value.missions[0].mission.steps.s1.meta.fidelityTargetKey = 'proactive_02'; report = validateFullDraft(value); assert.equal(report.ready, false); assert(report.categories['FIDELITY LINKS'].errors.some(item => /not active/.test(item.message))); value.missions[0].mission.steps.s1.meta.fidelityTargetKey = 'crisis_01'; assert.equal(validateFullDraft(value).ready, false); delete value.missions[0].mission.steps.s1.meta.fidelityTargetKey; value.missions[0].mission.steps.s1.choices.A.meta.bipComponent = 'Crisis'; assert.equal(validateFullDraft(value).ready, false); });
 
 test('choice response components may differ from a legitimate step-level fidelity target domain', () => { const value = workspace(); value.has_crisis_plan = true; value.fidelity_targets = [{ target_key: 'proactive_01', domain: 'proactive' }]; const step = value.missions[0].mission.steps.s1; step.meta.fidelityTargetKey = 'proactive_01'; step.choices.A.meta.bipComponent = 'Prevent'; step.choices.B.meta.bipComponent = 'Prevent'; step.choices.C.meta.bipComponent = 'Respond'; const report = validateFullDraft(value); assert.equal(report.categories['FIDELITY LINKS'].errors.length, 0); assert.equal(report.ready, true); });
+
+test('repeated fidelity targets below 80 percent do not trigger within-mission concentration warnings', () => {
+  for (const dominantCount of [5, 6]) {
+    const value = workspace();
+    value.fidelity_targets = [{ target_key: 'response_01', domain: 'response' }, { target_key: 'reinforcement_01', domain: 'reinforcement' }];
+    const ids = canonicalStepIds.slice(1, 11), links = Object.fromEntries(ids.map((id, index) => [id, index < dominantCount ? 'response_01' : 'reinforcement_01']));
+    linkCanonicalScenes(value, links);
+    assert.doesNotMatch(fidelityWarnings(value).join('\n'), /dominates fidelity links|uses only target/);
+  }
+});
+
+test('concentration requires four decisions and at least five linked scenes', () => {
+  const value = workspace();
+  value.fidelity_targets = [{ target_key: 'reinforcement_01', domain: 'reinforcement' }, { target_key: 'response_01', domain: 'response' }];
+  linkCanonicalScenes(value, { d4_supported: 'reinforcement_01', d4_wobbly: 'reinforcement_01', d5_supported: 'reinforcement_01', d5_wobbly: 'reinforcement_01', d5_escalated: 'response_01' });
+  assert.doesNotMatch(fidelityWarnings(value).join('\n'), /dominates fidelity links|uses only target/);
+  const sparse = workspace();
+  sparse.fidelity_targets = [{ target_key: 'reinforcement_01', domain: 'reinforcement' }];
+  linkCanonicalScenes(sparse, Object.fromEntries(canonicalStepIds.slice(0, 4).map(id => [id, 'reinforcement_01'])));
+  assert.doesNotMatch(fidelityWarnings(sparse).join('\n'), /dominates fidelity links|uses only target/);
+});
+
+test('a target in 9 of 10 links across all decisions triggers the dominance warning', () => {
+  const value = workspace();
+  value.fidelity_targets = [{ target_key: 'reinforcement_01', domain: 'reinforcement' }, { target_key: 'response_01', domain: 'response' }];
+  const ids = canonicalStepIds.slice(0, 10);
+  linkCanonicalScenes(value, Object.fromEntries(ids.map((id, index) => [id, index < 9 ? 'reinforcement_01' : 'response_01'])));
+  assert(fidelityWarnings(value).includes('Review: Target reinforcement_01 dominates fidelity links across this mission.'));
+});
+
+test('eight or more links to one target use only the specific single-target warning', () => {
+  for (const linkedCount of [8, 13]) {
+    const value = workspace();
+    value.fidelity_targets = [{ target_key: 'reinforcement_01', domain: 'reinforcement' }];
+    const targetMission = linkCanonicalScenes(value, Object.fromEntries(canonicalStepIds.slice(0, linkedCount).map(id => [id, 'reinforcement_01'])));
+    const warnings = fidelityWarnings(value);
+    assert(warnings.includes(`Review: Mission ${targetMission.id} uses only target reinforcement_01 across nearly all linked scenes.`));
+    assert.doesNotMatch(warnings.join('\n'), /dominates fidelity links/);
+  }
+});
+
+test('fidelity concentration changes preserve invalid, inactive, and bank coverage validation', () => {
+  const invalid = workspace();
+  linkCanonicalScenes(invalid, { d1_start: 'not_a_target' });
+  assert(validateFullDraft(invalid).categories['FIDELITY LINKS'].errors.some(item => /malformed/.test(item.message)));
+  const inactive = workspace();
+  linkCanonicalScenes(inactive, { d1_start: 'response_01' });
+  assert(validateFullDraft(inactive).categories['FIDELITY LINKS'].errors.some(item => /not active/.test(item.message)));
+  const coverage = workspace();
+  coverage.fidelity_targets = [{ target_key: 'response_01', domain: 'response' }];
+  linkCanonicalScenes(coverage, { d1_start: 'response_01' });
+  const warnings = fidelityWarnings(coverage);
+  assert(warnings.includes('Target response_01 is linked fewer than 3 times.'));
+  assert(warnings.includes('Target response_01 appears in only one mission.'));
+});
 
 test('final-authoring mission completeness blocks blank participant-facing fields and required metadata', () => { const mutations = [
   ['mission title', mission => { mission.title = ''; }, /Add a mission title/],
