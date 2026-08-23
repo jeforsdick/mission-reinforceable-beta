@@ -933,7 +933,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     async start(mode) {
       const context = MR.telemetryContext;
       if (context && !context.qaMode) {
-        if (!MR.studyCalendar.isEligibleStudyDay()) {
+        if (!context.demoCalendarBypass && !MR.studyCalendar.isEligibleStudyDay()) {
           if (typeof MR.onStudyCalendarBlocked === 'function') MR.onStudyCalendarBlocked();
           return false;
         }

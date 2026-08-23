@@ -52,7 +52,7 @@ test('Planning Day and kindergarten instructional-day exceptions remain eligible
 });
 
 test('participant gate precedes completion lookup, mission creation, and telemetry', () => {
-  const gate = engine.indexOf('!MR.studyCalendar.isEligibleStudyDay()');
+  const gate = engine.indexOf('!context.demoCalendarBypass && !MR.studyCalendar.isEligibleStudyDay()');
   assert.ok(gate >= 0);
   assert.ok(gate < engine.indexOf('await MR.auth.hasCompletedMissionToday()', gate));
   assert.ok(gate < engine.indexOf('const mission = chooseMission(mode)', gate));
@@ -61,7 +61,7 @@ test('participant gate precedes completion lookup, mission creation, and telemet
 });
 
 test('QA Preview bypasses the calendar and public demo does not load it', () => {
-  assert.match(engine, /if \(context && !context\.qaMode\)[\s\S]*!MR\.studyCalendar\.isEligibleStudyDay\(\)/);
+  assert.match(engine, /if \(context && !context\.qaMode\)[\s\S]*!context\.demoCalendarBypass && !MR\.studyCalendar\.isEligibleStudyDay\(\)/);
   assert.doesNotMatch(demoIndex, /study-calendar\.js/);
 });
 
@@ -75,6 +75,27 @@ test('calendar return state leaves Progress and Resources navigation available',
 test('database-backed daily completion lock remains a separate second gate', () => {
   assert.match(engine, /!MR\.studyCalendar\.isEligibleStudyDay\(\)[\s\S]*await MR\.auth\.hasCompletedMissionToday\(\)/);
   assert.match(engine, /completeParticipantMission\(sessionId, updates\)/);
+});
+
+test('Kai home and engine gates stay open on Saturday and a Granite closure day', () => {
+  for (const date of ['2026-08-15', '2026-09-07']) {
+    assert.equal(calendar.isEligibleStudyDay(date), false);
+    assert.equal(!true && !calendar.isEligibleStudyDay(date), false);
+  }
+  assert.match(app, /!MR\.telemetryContext\.demoCalendarBypass[\s\S]*!MR\.studyCalendar\.isEligibleStudyDay\(\)/);
+  assert.match(engine, /!context\.demoCalendarBypass && !MR\.studyCalendar\.isEligibleStudyDay\(\)/);
+});
+
+test('real participants remain home- and engine-blocked on Saturday and Granite closures', () => {
+  for (const date of ['2026-08-15', '2026-09-07']) {
+    assert.equal(!false && !calendar.isEligibleStudyDay(date), true);
+  }
+});
+
+test('demo bypass skips only calendar eligibility, not daily completion or QA semantics', () => {
+  assert.match(engine, /if \(!context\.demoCalendarBypass && !MR\.studyCalendar\.isEligibleStudyDay\(\)\)[\s\S]*await MR\.auth\.hasCompletedMissionToday\(\)/);
+  assert.match(app, /qaMode: assignment\.qaMode === true,[\s\S]*demoCalendarBypass: assignment\.demoCalendarBypass === true/);
+  assert.match(engine, /qa_mode: context\.qaMode === true/);
 });
 
 test('retired weekly report is absent from authenticated game and public demo', () => {

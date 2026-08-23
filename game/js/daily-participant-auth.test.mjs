@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 
 const read = relative => readFile(new URL(relative, import.meta.url), 'utf8');
 
-async function authHarness({ search = '', user = null, rpcResult = null } = {}) {
+async function authHarness({ search = '', user = null, rpcResult = null, participant, caseAssignment } = {}) {
   const calls = { signOut: [], from: [], rpc: [] };
   const listeners = {};
   const documentListeners = {};
@@ -14,13 +14,18 @@ async function authHarness({ search = '', user = null, rpcResult = null } = {}) 
     async getUser() { return { data: { user }, error: null }; },
     async signOut(options) { calls.signOut.push(options); return { error: null }; }
   };
-  const query = {
-    select() { return this; }, eq() { return this; },
-    async maybeSingle() { return { data: { id: 'participant', participant_code: 'P1', case_id: 'case' }, error: null }; }
-  };
   const supabase = {
     auth,
-    from(table) { calls.from.push(table); return query; },
+    from(table) {
+      calls.from.push(table);
+      const row = table === 'participants'
+        ? participant || { id: 'participant', participant_code: 'P1', case_id: 'case' }
+        : caseAssignment || { id: 'case', case_code: 'CASE-001' };
+      return {
+        select() { return this; }, eq() { return this; },
+        async maybeSingle() { return { data: row, error: null }; }
+      };
+    },
     async rpc(name, args) { calls.rpc.push(name); calls.rpcArgs = calls.rpcArgs || []; calls.rpcArgs.push(args); return { data: rpcResult, error: null }; }
   };
   const context = {
@@ -63,6 +68,37 @@ test('current Denver-day sign-in is accepted and same-day refresh does not sign 
   assert.equal(MR.auth.hasCurrentStudyDaySignIn({ last_sign_in_at: today.toISOString() }, today), true);
   await MR.auth.getAssignment();
   assert.deepEqual(calls.signOut, []);
+});
+
+test('only the exact active Kai assignment and test email receive the calendar bypass', async () => {
+  const base = {
+    user: { id: 'u', email: 'kai@testemail.com', last_sign_in_at: today.toISOString() },
+    participant: { id: 'p', participant_code: 'MR-DEMO-2', case_id: 'c', active: true },
+    caseAssignment: { id: 'c', case_code: 'CASE-DEMO-2', active: true }
+  };
+  assert.equal((await (await authHarness(base)).MR.auth.getAssignment()).demoCalendarBypass, true);
+
+  for (const overrides of [
+    { participant: { ...base.participant, participant_code: 'MR-DEMO-3' } },
+    { caseAssignment: { ...base.caseAssignment, case_code: 'CASE-DEMO-3' } },
+    { user: { ...base.user, email: 'kai@example.com' } }
+  ]) {
+    const assignment = await (await authHarness({ ...base, ...overrides })).MR.auth.getAssignment();
+    assert.equal(assignment.demoCalendarBypass, false);
+    assert.equal(assignment.qaMode, false);
+  }
+});
+
+test('URL parameters cannot request a demo calendar bypass', async () => {
+  const { MR } = await authHarness({
+    search: '?demo=1&calendar_bypass=1',
+    user: { id: 'u', email: 'teacher@testemail.com', last_sign_in_at: today.toISOString() },
+    participant: { id: 'p', participant_code: 'MR-001', case_id: 'c' },
+    caseAssignment: { id: 'c', case_code: 'CASE-001' }
+  });
+  const assignment = await MR.auth.getAssignment();
+  assert.equal(assignment.demoCalendarBypass, false);
+  assert.equal(assignment.qaMode, false);
 });
 
 test('previous Denver-day sign-in is rejected with local sign-out before assignment lookup', async () => {

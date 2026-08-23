@@ -140,7 +140,10 @@
     const config = MR.teacherConfig;
     MR.$('#home-classroom-label').textContent = config.classroomLabel || `${config.displayName}'s Classroom`;
     const hasDaily = MR.engine.hasDailyRunToday();
-    const calendarBlocked = Boolean(MR.telemetryContext && !MR.telemetryContext.qaMode && !MR.studyCalendar.isEligibleStudyDay());
+    const calendarBlocked = Boolean(MR.telemetryContext
+      && !MR.telemetryContext.qaMode
+      && !MR.telemetryContext.demoCalendarBypass
+      && !MR.studyCalendar.isEligibleStudyDay());
     const classroomPath = hasDaily ? (config.assets.sameDayClassroom || config.assets.landingClassroom) : config.assets.landingClassroom;
     MR.$('#home-classroom-img').src = classroomPath;
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
@@ -263,6 +266,7 @@
         participantId: assignment.participant.id,
         caseId: assignment.case.id,
         qaMode: assignment.qaMode === true,
+        demoCalendarBypass: assignment.demoCalendarBypass === true,
         draftQa: Boolean(assignment.qaDraft || assignment.fullDraftQa),
         fullDraftQa: assignment.fullDraftQa === true,
         gameContentVersion: null,
