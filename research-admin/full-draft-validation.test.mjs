@@ -41,3 +41,13 @@ test('expectedSteps 5 with five-decision terminal paths passes final mission che
 test('full-draft RPC is read-only, dedicated, and does not require published content', async () => { const sql = await readFile(new URL('../supabase/migrations/20260822020000_research_admin_full_draft_game_preview.sql', import.meta.url), 'utf8'); assert.match(sql, /research_admin_full_draft_game_preview\(target_case_code text\)/); assert.match(sql, /is_research_admin\(\)/); assert.match(sql, /c\.active = false[\s\S]*p\.active = false/); assert.doesNotMatch(sql, /case_game_content/); assert.doesNotMatch(sql, /\b(?:insert|update|delete)\b/i); });
 
 test('substantive legacy weekly report metadata is ignored by validation and payloads', () => { const value = workspace(); value.setup_draft.setup.weeklyTeacherReport = { targetBehavior: 'Substantive old target', replacementBehavior: 'Substantive old replacement', targetRoutine: 'Substantive old routine' }; const report = validateFullDraft(value); assert.equal(report.ready, true); assert.doesNotMatch(JSON.stringify(report), /Substantive old|weekly check-in label/i); const payload = buildFullDraftPayload(value, { weeklyTeacherReport: value.setup_draft.setup.weeklyTeacherReport }); assert.equal(Object.hasOwn(payload.config, 'weeklyTeacherReport'), false); assert.doesNotMatch(JSON.stringify(payload), /Substantive old/); });
+
+test('Full Draft accepts a substantive heading and blocks empty or unsafe heading text', () => {
+  const value = workspace();
+  value.resource_draft.resources.sections.bip.blocks = [{ type: 'heading', text: 'What you may see' }];
+  assert.equal(validateFullDraft(value).ready, true);
+  value.resource_draft.resources.sections.bip.blocks[0].text = '';
+  assert(validateFullDraft(value).categories['RESOURCE MAP'].errors.some(item => /heading/i.test(item.message)));
+  value.resource_draft.resources.sections.bip.blocks[0].text = '<script>alert(1)</script>';
+  assert.equal(validateFullDraft(value).ready, false);
+});

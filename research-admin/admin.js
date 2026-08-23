@@ -411,7 +411,7 @@ function bindSetupAndResources() {
   document.querySelectorAll('[data-add-block]').forEach(select => select.addEventListener('change', () => {
     if (!select.value) return; preserveAllAuthoringForms();
     const blocks = state.resourceDraft.sections[select.closest('.resource-section').dataset.sectionKey].blocks;
-    blocks.push(select.value === 'paragraph' ? { type: 'paragraph', text: '' } : select.value === 'callout' ? { type: 'callout', label: '', text: '' } : select.value === 'list' ? { type: 'list', items: [''] } : { type: 'definitionList', items: [{ term: '', definition: '' }] });
+    blocks.push(select.value === 'paragraph' || select.value === 'heading' ? { type: select.value, text: '' } : select.value === 'callout' ? { type: 'callout', label: '', text: '' } : select.value === 'list' ? { type: 'list', items: [''] } : { type: 'definitionList', items: [{ term: '', definition: '' }] });
     redrawGameCreation();
   }));
   document.querySelectorAll('[data-block-action]').forEach(button => button.addEventListener('click', () => {

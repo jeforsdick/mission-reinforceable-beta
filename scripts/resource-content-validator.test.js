@@ -103,3 +103,13 @@ test('all four data-only block types pass', () => {
   ];
   assert.equal(validateResources(value).valid, true);
 });
+
+test('heading is canonical, substantive, and subject to HTML safety validation', () => {
+  const value = fixture();
+  value.sections.bip.blocks = [{ type: 'heading', text: 'What you may see' }];
+  assert.equal(validateResources(value).valid, true);
+  value.sections.bip.blocks[0].text = '   ';
+  assert(rules(validateResources(value)).includes('heading_text'));
+  value.sections.bip.blocks[0].text = '<script>alert(1)</script>';
+  assert(rules(validateResources(value)).includes('raw_html_or_script'));
+});

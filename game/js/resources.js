@@ -24,6 +24,7 @@
   function isValidBlock(block) {
     if (!block || typeof block !== 'object' || Array.isArray(block)) return false;
     if (block.type === 'paragraph') return isText(block.text);
+    if (block.type === 'heading') return isText(block.text);
     if (block.type === 'list') return Array.isArray(block.items) && block.items.length > 0 && block.items.every(isText);
     if (block.type === 'definitionList') {
       return Array.isArray(block.items) && block.items.length > 0 && block.items.every(item => (
@@ -66,6 +67,8 @@
   function renderBlock(root, block) {
     if (block.type === 'paragraph') {
       appendTextElement(root, 'p', block.text);
+    } else if (block.type === 'heading') {
+      appendTextElement(root, 'h3', block.text, 'resource-heading');
     } else if (block.type === 'list') {
       const list = document.createElement('ul');
       block.items.forEach(item => appendTextElement(list, 'li', item));

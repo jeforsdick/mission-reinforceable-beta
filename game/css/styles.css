@@ -2497,3 +2497,6 @@ body.qa-preview { padding-top: 4.25rem; }
 }
 #resources-content .resource-callout strong { display: block; margin-bottom: 5px; }
 #resources-content .resource-callout p { margin: 0; }
+
+#resources-content > .resource-heading { margin: 24px 0 8px; color: #321708; font: 900 23px/1.2 var(--display); letter-spacing: .4px; }
+#resources-content > .resource-heading:first-child { margin-top: 0; }
