@@ -12,6 +12,7 @@ const PRIVACY = { email: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i, phone: /(
 const substantive = value => typeof value === 'string' && value.trim().length > 0;
 const missionValue = row => row?.mission || row?.mission_json || row?.draft || row?.content || null;
 const targetKey = target => target?.target_key || target?.key;
+const supportedSetup = setup => ({ schemaVersion: 1, bipBriefing: typeof setup?.bipBriefing === 'string' ? setup.bipBriefing : '' });
 
 export function buildFullDraftSnapshot(workspace) {
   const root = Array.isArray(workspace) ? workspace[0] : workspace || {};
@@ -25,7 +26,7 @@ export function buildFullDraftSnapshot(workspace) {
     hasCrisisPlan: Boolean(root.has_crisis_plan ?? caseRow.has_crisis_plan),
     setupRevisionExists: Boolean(root.setup_draft || root.latest_setup_draft),
     resourceRevisionExists: Boolean(root.resource_draft || root.latest_resource_draft),
-    setup: root.setup_draft?.setup || root.latest_setup_draft?.setup || null,
+    setup: root.setup_draft || root.latest_setup_draft ? supportedSetup(root.setup_draft?.setup || root.latest_setup_draft?.setup) : null,
     resources: root.resource_draft?.resources || root.latest_resource_draft?.resources || null,
     missions, activeFidelityTargets: root.fidelity_targets || root.active_fidelity_targets || []
   };

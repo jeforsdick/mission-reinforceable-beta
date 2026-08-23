@@ -49,10 +49,4 @@ end $$;
 
 drop function if exists public.submit_weekly_teacher_report(smallint,smallint,smallint,smallint,smallint,smallint,smallint,text,text);
 drop function if exists public.submit_weekly_teacher_checkin(smallint,smallint,boolean,text);
-
-drop policy if exists "Participants read own normal weekly check-ins" on public.weekly_teacher_checkins;
-drop policy if exists "Assigned coaches read normal weekly check-ins" on public.weekly_teacher_checkins;
-drop policy if exists "Research admins read weekly check-ins" on public.weekly_teacher_checkins;
-drop index if exists public.weekly_checkins_participant_week_mode_key;
-drop index if exists public.weekly_checkins_case_submitted_idx;
 drop table if exists public.weekly_teacher_checkins;

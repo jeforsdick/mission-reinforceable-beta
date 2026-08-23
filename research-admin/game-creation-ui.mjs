@@ -92,7 +92,7 @@ export function restoreResourceOpenSections(root, keys = []) {
 
 export function setupFromWorkspace(workspace) {
   const setup = workspace?.setup_draft?.setup || workspace?.latest_setup_draft?.setup || {};
-  return { ...structuredClone(setup), schemaVersion: 1, bipBriefing: typeof setup.bipBriefing === 'string' ? setup.bipBriefing : '' };
+  return { schemaVersion: 1, bipBriefing: typeof setup.bipBriefing === 'string' ? setup.bipBriefing : '' };
 }
 export function normalizeResourceMap(value) {
   const source = value?.sections && typeof value.sections === 'object' ? value.sections : {};

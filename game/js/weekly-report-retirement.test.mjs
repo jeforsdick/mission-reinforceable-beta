@@ -18,5 +18,7 @@ test('retirement migration removes only the final weekly-report storage objects'
   assert.match(migration, /drop function if exists public\.submit_weekly_teacher_report\(smallint,smallint,smallint,smallint,smallint,smallint,smallint,text,text\)/);
   assert.match(migration, /drop function if exists public\.submit_weekly_teacher_checkin\(smallint,smallint,boolean,text\)/);
   assert.match(migration, /drop table if exists public\.weekly_teacher_checkins/);
+  assert.doesNotMatch(migration, /drop policy|drop index/i);
+  assert.doesNotMatch(migration, /drop table (?!if exists public\.weekly_teacher_checkins)/i);
   assert.doesNotMatch(migration, /drop (?:table|function).*\b(?:participants|cases|profiles|game_sessions|game_responses|game_resource_events|teacher_reminder|fidelity_targets|observations|coaching_contacts)\b/i);
 });
