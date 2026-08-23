@@ -14,7 +14,7 @@ const REQUIRED_SECTIONS = Object.freeze({
   coaching: 'Coaching Cottage',
   fidelity: 'Fidelity Fortress'
 });
-const ALLOWED_BLOCK_TYPES = new Set(['paragraph', 'list', 'definitionList', 'callout']);
+const ALLOWED_BLOCK_TYPES = new Set(['paragraph', 'heading', 'list', 'definitionList', 'callout']);
 const FORBIDDEN_FIELD = /(?:^on[a-z]+$|script|html|href|src|url|uri|(?:^|_)(?:path|file)(?:$|_)|(?:file|path)(?:name)?$|executable|command)/i;
 const HTML_OR_SCRIPT = /<\s*\/?\s*(?:script|iframe|object|embed|style|[a-z][\w-]*)\b|javascript\s*:|\bon(?:click|load|error|mouse\w*|key\w*|submit|focus|blur)\s*=/i;
 const PRIVACY_PATTERNS = Object.freeze({
@@ -61,6 +61,8 @@ function validateResources(resources, options = {}) {
       if (!ALLOWED_BLOCK_TYPES.has(block.type)) return error('block_type', `${blockPath}.type`, 'unknown block type');
       if (block.type === 'paragraph') {
         if (!substantive(block.text)) error('paragraph_text', `${blockPath}.text`, 'paragraph text must be non-empty text'); else substantiveCount++;
+      } else if (block.type === 'heading') {
+        if (!substantive(block.text)) error('heading_text', `${blockPath}.text`, 'heading text must be non-empty text'); else substantiveCount++;
       } else if (block.type === 'list') {
         if (!Array.isArray(block.items) || block.items.length === 0 || block.items.some(item => !substantive(item))) error('list_items', `${blockPath}.items`, 'list items must be a non-empty array of non-empty text'); else substantiveCount++;
       } else if (block.type === 'definitionList') {

@@ -5,7 +5,7 @@ const COMPONENTS = new Set(['Prevent', 'Teach', 'Reinforce', 'Respond', 'Crisis'
 const ERROR_TYPES = new Set(['none', 'missed_prevention_opportunity', 'missed_teaching_opportunity', 'missed_reinforcement_opportunity', 'missed_active_ingredient', 'timing_or_delay', 'contingency_mismatch', 'function_mismatch', 'reinforces_target_pattern', 'vague_or_nonspecific_response', 'public_or_attention_heavy_correction', 'other_needs_review']);
 const FUNCTIONS = new Set(['attention', 'escape', 'tangible', 'automatic', 'multiple', 'unclear']);
 export const RESOURCE_SECTIONS = Object.freeze({ bip: 'BIP at a Glance', functionForest: 'Function Forest', prevention: 'Prevention Palace', replacement: 'Replacement Reservoir', reinforcement: 'Reinforcement Ridge', errorCorrection: 'Error Correction Canyon', library: 'BSP Library', coaching: 'Coaching Cottage', fidelity: 'Fidelity Fortress' });
-const ALLOWED_BLOCKS = new Set(['paragraph', 'list', 'definitionList', 'callout']);
+const ALLOWED_BLOCKS = new Set(['paragraph', 'heading', 'list', 'definitionList', 'callout']);
 const FORBIDDEN_FIELD = /(?:^on[a-z]+$|script|html|href|src|url|uri|(?:^|_)(?:path|file)(?:$|_)|(?:file|path)(?:name)?$|executable|command)/i;
 const HTML = /<\s*\/?\s*(?:script|iframe|object|embed|style|[a-z][\w-]*)\b|javascript\s*:|\bon(?:click|load|error|mouse\w*|key\w*|submit|focus|blur)\s*=/i;
 const PRIVACY = { email: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i, phone: /(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]\d{3}[\s.-]\d{4}\b/, url: /\b(?:https?:\/\/|www\.)\S+/i, 'full date': /\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4})\b/i };
@@ -93,6 +93,7 @@ function validateResources(resources, alias) {
       const blockPath = `${path} → Block ${index + 1}`;
       if (!object(block) || !ALLOWED_BLOCKS.has(block.type)) return error('block_type', blockPath, 'Remove the unsupported Resource Map block.');
       if (block.type === 'paragraph' && !substantive(block.text)) error('paragraph_text', blockPath, 'Add paragraph text.');
+      if (block.type === 'heading' && !substantive(block.text)) error('heading_text', blockPath, 'Add subsection heading text.');
       if (block.type === 'list' && (!Array.isArray(block.items) || !block.items.length || block.items.some(item => !substantive(item)))) error('list_items', blockPath, 'Complete every list item.');
       if (block.type === 'definitionList' && (!Array.isArray(block.items) || !block.items.length || block.items.some(item => !object(item) || !substantive(item.term) || !substantive(item.definition)))) error('definition_list_items', blockPath, 'Complete every definition term and definition.');
       if (block.type === 'callout' && (!substantive(block.label) || !substantive(block.text))) error('callout_fields', blockPath, 'Complete the callout label and text.');

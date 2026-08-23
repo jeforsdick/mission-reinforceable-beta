@@ -178,3 +178,13 @@ test('failed section telemetry never prevents the selected resource from renderi
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(view.title.textContent, 'Prevention Palace');
 });
+
+test('heading blocks render safely as semantic h3 elements', () => {
+  const markup = '<script>alert(1)</script> What you may see';
+  const view = setup(resources([{ type: 'heading', text: markup }, { type: 'list', items: ['Ask for help'] }]));
+  view.MR.resources.renderResourceSection('bip');
+  assert.deepEqual(view.content.children.map(child => child.tagName), ['H3', 'UL']);
+  assert.equal(view.content.children[0].className, 'resource-heading');
+  assert.equal(view.content.children[0].textContent, markup);
+  assert.equal(view.content.children[0].children.length, 0);
+});
