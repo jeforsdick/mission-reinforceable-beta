@@ -371,7 +371,7 @@ function readinessPanel(data) {
 }
 function gameCreationPanel(data) {
   const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: data.case.case_code };
-  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.exampleImport);
+  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.exampleImport, state.caseOperations);
 }
 
 function redrawGameCreation(scrollToMissionBuilder = false) {
@@ -391,7 +391,7 @@ function redrawGameCreation(scrollToMissionBuilder = false) {
 }
 
 function bindExampleMissionImport() {
-  if (!canUseExampleMissionImporter(state.authoringWorkspace)) return;
+  if (!canUseExampleMissionImporter(state.authoringWorkspace, state.caseOperations)) return;
   $('#review-example-import')?.addEventListener('click', async () => {
     const input = $('#example-mission-file'), file = input?.files?.[0];
     if (!file || !file.name.toLowerCase().endsWith('.json')) { state.exampleImport = { message: 'Choose one .json file.' }; redrawGameCreation(); return; }
@@ -407,13 +407,13 @@ function bindExampleMissionImport() {
 
 async function importExampleMissionDrafts() {
   const review = state.exampleImport.review;
-  if (!canUseExampleMissionImporter(state.authoringWorkspace) || !review?.valid) return;
+  if (!canUseExampleMissionImporter(state.authoringWorkspace, state.caseOperations) || !review?.valid) return;
   const existing = state.exampleImport.summary.existing;
   const warning = existing.length ? `The following populated slots will receive append-only NEW revisions: ${existing.join(', ')}. Daily 1 will remain untouched. Continue?` : 'Import these validated mission drafts? Daily 1 will remain untouched.';
   if (!window.confirm(warning)) return;
   state.exampleImport = { ...state.exampleImport, importing: true, message: `Importing 0 of ${review.entries.length}…` }; redrawGameCreation();
   const result = await saveExampleMissionImport(review.entries, async entry => {
-    const { error } = await state.client.rpc('research_admin_save_mission_draft', { target_case_id: state.authoringWorkspace.case_id, target_mission_type: entry.missionType, target_slot_number: entry.slotNumber, target_mission: entry.mission });
+    const { error } = await state.client.rpc('research_admin_save_mission_draft', { target_case_id: state.authoringWorkspace.case.id, target_mission_type: entry.missionType, target_slot_number: entry.slotNumber, target_mission: entry.mission });
     if (error) throw new Error(error.message);
   }, (current, total) => {
     state.exampleImport.message = `Importing ${current} of ${total}…`;

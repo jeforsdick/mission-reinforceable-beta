@@ -5,7 +5,12 @@ import { blankMission } from './game-creation-ui.mjs';
 import { canUseExampleMissionImporter, importSummary, reviewExampleMissionImport, saveExampleMissionImport, validateExampleMission } from './example-mission-importer.mjs';
 
 const targets = [{ target_key: 'proactive_01', domain: 'proactive' }];
-const workspace = { case_id: 'case-uuid', case_code: 'CASE-998', study_id: 'MR-998', active_fidelity_targets: targets, mission_drafts: [{ mission_type: 'daily', slot_number: 1, mission: { title: 'Manual Daily 1' } }] };
+const workspace = {
+  case: { id: 'case-uuid', case_code: 'CASE-998', student_alias: 'Example Student' },
+  fidelity_targets: targets,
+  missions: [{ mission_type: 'daily', slot_number: 1, mission: { title: 'Manual Daily 1' } }],
+};
+const caseOperations = { study_id: 'MR-998' };
 
 function canonicalMission(type = 'daily', slot = 2) {
   const mission = blankMission('CASE-998', type, slot);
@@ -24,11 +29,11 @@ function canonicalMission(type = 'daily', slot = 2) {
 const payload = mission => ({ schemaVersion: 1, importKind: 'mr998_example_mission_drafts', caseCode: 'CASE-998', participantCode: 'MR-998', missions: [{ missionType: 'daily', slotNumber: 2, mission }] });
 
 test('eligibility is exact to the converted CASE-998 / MR-998 workspace', () => {
-  assert.equal(canUseExampleMissionImporter(workspace), true);
-  assert.equal(canUseExampleMissionImporter({ ...workspace, case_code: 'CASE-001', study_id: 'MR-001' }), false);
-  assert.equal(canUseExampleMissionImporter({ ...workspace, case_code: 'CASE-DEMO-2', study_id: 'MR-DEMO-2' }), false);
-  assert.equal(canUseExampleMissionImporter({ ...workspace, study_id: 'MR-997' }), false);
-  assert.equal(canUseExampleMissionImporter({ case_code: 'CASE-998', study_id: 'MR-998' }), false);
+  assert.equal(canUseExampleMissionImporter(workspace, caseOperations), true);
+  assert.equal(canUseExampleMissionImporter(workspace, { study_id: 'MR-001' }), false);
+  assert.equal(canUseExampleMissionImporter({ ...workspace, case: { ...workspace.case, case_code: 'CASE-001' } }, caseOperations), false);
+  assert.equal(canUseExampleMissionImporter({ ...workspace, case: { ...workspace.case, case_code: 'CASE-DEMO-2' } }, { study_id: 'MR-DEMO-2' }), false);
+  assert.equal(canUseExampleMissionImporter({ ...workspace, case: { ...workspace.case, id: '' } }, caseOperations), false);
 });
 
 test('valid schema and canonical mission are accepted and normalized', () => {
@@ -71,6 +76,8 @@ test('browser integration uses only the protected draft RPC and reloads the work
   const source = await readFile(new URL('./admin.js', import.meta.url), 'utf8');
   const start = source.indexOf('async function importExampleMissionDrafts()'), end = source.indexOf('\nfunction captureSetupAndResourceForms', start), body = source.slice(start, end);
   assert.match(body, /research_admin_save_mission_draft/); assert.match(body, /target_case_id:[\s\S]*target_mission_type:[\s\S]*target_slot_number:[\s\S]*target_mission:/);
+  assert.match(body, /target_case_id: state\.authoringWorkspace\.case\.id/);
+  assert.doesNotMatch(body, /authoringWorkspace\.(?:case_id|case_code|study_id)/);
   assert.match(body, /reloadAuthoringWorkspace\(\)/); assert.match(body, /selectedTab = 'game-creation'/); assert.match(body, /mission-bank/);
   assert.doesNotMatch(body, /\.from\(|service.role|insert\(|update\(|delete\(|publish|teacher|email|telemetry/i);
   assert.match(body, /Daily 1 will remain untouched/);
@@ -78,14 +85,19 @@ test('browser integration uses only the protected draft RPC and reloads the work
 
 test('Mission Bank importer is rendered only for exact eligibility and above slots', async () => {
   const { renderMissionBank } = await import('./game-creation-ui.mjs');
-  const html = renderMissionBank(workspace, null, {});
+  const html = renderMissionBank(workspace, null, {}, caseOperations);
   assert.ok(html.indexOf('EXAMPLE GAME IMPORT') < html.indexOf('mission-slots'));
   assert.match(html, /accept="\.json,application\/json"/); assert.doesNotMatch(html, /zip/i);
-  for (const denied of [{ ...workspace, case_code: 'CASE-001' }, { ...workspace, study_id: 'MR-001' }, { ...workspace, case_code: 'CASE-DEMO-2', study_id: 'MR-DEMO-2' }]) assert.doesNotMatch(renderMissionBank(denied), /EXAMPLE GAME IMPORT/);
+  const denied = [
+    [{ ...workspace, case: { ...workspace.case, case_code: 'CASE-001' } }, caseOperations],
+    [workspace, { study_id: 'MR-001' }],
+    [{ ...workspace, case: { ...workspace.case, case_code: 'CASE-DEMO-2' } }, { study_id: 'MR-DEMO-2' }],
+  ];
+  for (const [deniedWorkspace, deniedOperations] of denied) assert.doesNotMatch(renderMissionBank(deniedWorkspace, null, {}, deniedOperations), /EXAMPLE GAME IMPORT/);
 });
 
 test('Daily 1 is not sent and remains represented by its existing draft', () => {
   const review = reviewExampleMissionImport(payload(canonicalMission()), workspace);
   assert.equal(review.entries.some(entry => entry.missionType === 'daily' && entry.slotNumber === 1), false);
-  assert.equal(workspace.mission_drafts[0].mission.title, 'Manual Daily 1');
+  assert.equal(workspace.missions[0].mission.title, 'Manual Daily 1');
 });

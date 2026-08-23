@@ -16,8 +16,12 @@ const text = value => typeof value === 'string' && value.trim().length > 0;
 const expectedStepIds = () => ['d1_start', ...[2, 3, 4, 5].flatMap(decision => TRAJECTORIES.map(branch => stepId(decision, branch)))];
 const targetKey = target => target?.target_key || target?.key;
 
-export function canUseExampleMissionImporter(workspace) {
-  return Boolean(workspace && workspace.case_id && workspace.case_code === 'CASE-998' && workspace.study_id === 'MR-998');
+export function canUseExampleMissionImporter(workspace, caseOperations) {
+  return Boolean(
+    workspace?.case?.id
+    && workspace.case.case_code === 'CASE-998'
+    && caseOperations?.study_id === 'MR-998'
+  );
 }
 
 function unsafeContent(value, path = 'mission') {
