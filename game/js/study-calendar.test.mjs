@@ -95,8 +95,9 @@ test('full Winter and Spring Break weeks have no weekly check-in', () => {
   assert.equal(calendar.weeklyCheckinWindow('2027-03-31'), null);
 });
 
-test('weekly UI is independent of mission completion and absent from public demo', () => {
-  assert.match(index, /id="weekly-checkin-entry"/);
-  assert.match(app, /MR\.weeklyCheckin\?\.renderEntry\(\)/);
+test('weekly report is absent from the normal game home and public demo', () => {
+  const home = index.slice(index.indexOf('id="home-screen"'), index.indexOf('id="weekly-checkin-screen"'));
+  assert.doesNotMatch(home, /Weekly Teacher Report|weekly-checkin/);
+  assert.doesNotMatch(app, /renderEntry/);
   assert.doesNotMatch(demoIndex, /Weekly Check-In|weekly-checkin/);
 });

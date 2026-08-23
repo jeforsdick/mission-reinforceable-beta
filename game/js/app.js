@@ -151,7 +151,6 @@
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
     MR.$('#daily-completion-message').hidden = !participantLocked;
     MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked || calendarBlocked; });
-    MR.weeklyCheckin?.renderEntry();
   }
 
   function wireEvents() {
@@ -300,6 +299,7 @@
       initAudio();
       wireEvents();
       await MR.weeklyCheckin.init(assignment);
+      if (assignment.weeklyReportMode) return;
       if (!assignment.qaMode) MR.reminders.hydrateControls();
       MR.resources.render();
       renderHome();

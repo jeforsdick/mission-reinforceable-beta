@@ -152,6 +152,17 @@
     return true;
   }
 
+  function weeklyReportEntry(search) {
+    const params = new URLSearchParams(search);
+    const value = params.get('weekly_report');
+    if (value !== '1') return false;
+    const qaParameters = ['qa_case', 'qa_draft_type', 'qa_draft_slot', 'qa_full_draft'];
+    if (qaParameters.some(name => params.has(name))) {
+      throw new Error('Weekly Teacher Report is not available in QA preview.');
+    }
+    return true;
+  }
+
   function missionFromWorkspaceRow(row) {
     return row && (row.mission || row.mission_json || row.draft || row.content) || null;
   }
@@ -313,6 +324,7 @@
   MR.auth = {
     async getAssignment() {
       const supabaseClient = client();
+      const weeklyReportMode = weeklyReportEntry(window.location.search);
       const { data, error } = await supabaseClient.auth.getUser();
       if (error && error.name !== 'AuthSessionMissingError') {
         throw new Error(`Unable to check your sign-in: ${error.message}`);
@@ -357,7 +369,7 @@
       }
       const participant = await activeParticipant(supabaseClient, user);
       const caseAssignment = await activeCase(supabaseClient, participant);
-      return { user, participant, case: caseAssignment, qaMode: false };
+      return { user, participant, case: caseAssignment, qaMode: false, weeklyReportMode };
     },
 
     async getGameContent(caseId) {
@@ -385,6 +397,8 @@
     getProgressSessions: progressSessions,
 
     getProgressResponses: progressResponses,
+
+    isWeeklyReportEntry: weeklyReportEntry,
 
     async hasCompletedMissionToday() {
       const { data, error } = await client().rpc('has_completed_mission_today');
