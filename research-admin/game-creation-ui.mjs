@@ -156,7 +156,7 @@ export function normalizeMission(value, caseCode, type, slot) {
   return mission;
 }
 export function latestDraft(workspace, type, slot) {
-  return (workspace?.mission_drafts || workspace?.latest_mission_drafts || []).find(row => row.mission_type === type && Number(row.slot_number) === Number(slot));
+  return (workspace?.mission_drafts || workspace?.latest_mission_drafts || workspace?.missions || []).find(row => row.mission_type === type && Number(row.slot_number) === Number(slot));
 }
 export function missionFromDraft(row) { return row?.mission || row?.mission_json || row?.draft || row?.content || null; }
 const esc = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
