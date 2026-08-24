@@ -18,13 +18,18 @@ const primaryNavigation = (html) => {
 };
 
 for (const page of publicPages) {
-  test(`${page} exposes coach login before the primary teacher CTA`, async () => {
+  test(`${page} exposes the public links in order with teacher login as the primary CTA`, async () => {
     const nav = primaryNavigation(await readFile(new URL(page, import.meta.url), 'utf8'));
     const coachLink = '<a href="/coach-dashboard/">Coach Login</a>';
     const teacherLink = '<a class="nav-cta" href="/game/">Teacher Login</a>';
 
     assert.equal(nav.match(/>Coach Login<\/a>/g)?.length, 1);
     assert.equal(nav.match(/>Teacher Login<\/a>/g)?.length, 1);
+    assert.deepEqual(
+      [...nav.matchAll(/<a\b[^>]*>([^<]+)<\/a>/g)].map((match) => match[1]),
+      ['Home', 'Research', 'New Game', 'Play Demo', 'Coach Login', 'Teacher Login'],
+    );
+    assert.doesNotMatch(nav, />New Game Intake<\/a>/);
     assert.ok(nav.indexOf(coachLink) < nav.indexOf(teacherLink));
     assert.match(nav, /<a href="\/coach-dashboard\/">Coach Login<\/a>\s*<a class="nav-cta" href="\/game\/">Teacher Login<\/a>/);
   });
@@ -37,6 +42,14 @@ test('responsive public navigation keeps both login links visible', async () => 
   assert.match(mobileRules, /\.nav-links,\s*\.nav-links a,/);
   assert.match(mobileRules, /\.nav-links a,\s*\.button \{\s*justify-content: center;/);
   assert.doesNotMatch(mobileRules, /\.nav-links[^{}]*\{[^{}]*display:\s*none/);
+});
+
+test('desktop public navigation stays on one line and prevents link text wrapping', async () => {
+  const css = await readFile(new URL('assets/site/site.css', import.meta.url), 'utf8');
+  const desktopRules = css.slice(0, css.indexOf('@media (max-width: 960px)'));
+
+  assert.match(desktopRules, /\.nav-links\s*\{[^}]*flex-wrap:\s*nowrap;/s);
+  assert.match(desktopRules, /\.nav-links a\s*\{[^}]*white-space:\s*nowrap;/s);
 });
 
 test('coach dashboard authorization still rejects teachers and inactive users', () => {
