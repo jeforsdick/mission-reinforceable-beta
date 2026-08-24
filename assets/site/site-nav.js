@@ -5,6 +5,10 @@
 
   if (!header || !toggle || !menu) return;
 
+  const mobileBrandStyle = document.createElement('style');
+  mobileBrandStyle.textContent = '@media (max-width: 700px) { .brand-logo { width: clamp(125px, 38vw, 165px); } }';
+  document.head.append(mobileBrandStyle);
+
   header.classList.add('nav-enhanced');
   toggle.hidden = false;
 
