@@ -208,6 +208,25 @@ test('weekly snapshot exposes expected denominator and excused context including
   assert.equal(snapshot.adherence.expectedMissionDays,4);
 });
 
+test('weekly adherence cannot include dates outside the displayed week', () => {
+  const snapshot=weeklyPracticeSnapshot({
+    sessions:[
+      {status:'completed',ended_at:'2026-09-16T18:00:00Z',qa_mode:false},
+      {status:'completed',ended_at:'2026-09-23T18:00:00Z',qa_mode:false}
+    ],
+    studyDayStatuses:[
+      {study_date:'2026-09-14',reason:'teacher_unavailable'},
+      {study_date:'2026-09-21',reason:'teacher_unavailable'}
+    ]
+  });
+  // The most recent completion defines Sep 21–25; neither the prior completion nor
+  // its prior-week excuse can enter this denominator.
+  assert.equal(snapshot.checkin.week_start,'2026-09-21');
+  assert.equal(snapshot.adherence.scheduledStudyDays,5);
+  assert.equal(snapshot.adherence.excusedStudyDays,1);
+  assert.equal(snapshot.adherence.completedExpectedMissionDays,1);
+});
+
 
 const resourceEvent = (event_name, occurred_at, section_key = null, overrides = {}) => ({
   participant_id: 'participant-a', event_name, occurred_at, section_key,

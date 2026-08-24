@@ -14,6 +14,24 @@ function requestOrigin(request) {
   if (!protocol || !host || protocol.includes(',') || host.includes(',')) throw new Error('Trusted request origin unavailable');
   return new URL(`${protocol}://${host}`).origin;
 }
+function previousDate(dateKey) {
+  const date = new Date(`${dateKey}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+function interventionAdherencePeriod(history = [], denverToday) {
+  // A later append for the same effective date is the authoritative correction.
+  const currentByDate = new Map([...history].sort((a, b) =>
+    String(a.effective_date).localeCompare(String(b.effective_date)) ||
+    String(a.recorded_at).localeCompare(String(b.recorded_at)) || String(a.id).localeCompare(String(b.id))
+  ).map(row => [row.effective_date, row]));
+  const phases = [...currentByDate.values()].sort((a, b) => a.effective_date.localeCompare(b.effective_date));
+  const intervention = phases.find(row => row.phase === 'intervention');
+  if (!intervention) return null;
+  const next = phases.find(row => row.effective_date > intervention.effective_date && row.phase !== 'intervention');
+  const periodEnd = next && next.effective_date <= denverToday ? previousDate(next.effective_date) : denverToday;
+  return { period_start: intervention.effective_date, period_end: periodEnd, ended_before: next?.effective_date || null };
+}
 module.exports = async function handler(request, response) {
   if (server.methodGuard(request, response)) return;
   try {
@@ -31,20 +49,23 @@ module.exports = async function handler(request, response) {
       const urls = await issueStatusUrls({ participantId: participant.id, caseId: participant.case_id, studyDate, origin });
       return server.json(response, 200, { study_date: studyDate, urls, email_sent: false, export_fixture: true });
     }
-    const [history, current, adherence] = await Promise.all([
+    const [history, current, phaseHistory] = await Promise.all([
       rows(`/rest/v1/participant_study_day_status_events?case_id=eq.${encodeURIComponent(body.case_id)}&select=id,study_date,reason,source,recorded_at,supersedes_event_id,recorded_by_type&order=study_date.desc,recorded_at.desc,id.desc`),
       (async () => {
         const rpc = await server.supabaseFetch('/rest/v1/rpc/current_participant_study_day_status', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: body.case_id }) });
         if (!rpc.ok) throw new Error('Current study-day context could not be derived');
         return rpc.json();
       })(),
-      (async () => {
-        const rpc = await server.supabaseFetch('/rest/v1/rpc/mission_adherence_summary', { method: 'POST', body: JSON.stringify({ target_case_id: body.case_id, period_start: '2026-08-12', period_end: dateParts(new Date(), TIMEZONE) }) });
-        if (!rpc.ok) throw new Error('Mission adherence summary could not be derived');
-        return rpc.json();
-      })()
+      rows(`/rest/v1/research_case_phase_events?case_id=eq.${encodeURIComponent(body.case_id)}&select=id,phase,effective_date,recorded_at&order=effective_date.asc,recorded_at.asc,id.asc`)
     ]);
-    return server.json(response, 200, { history, current, adherence, reasons: REASONS });
+    const period = interventionAdherencePeriod(phaseHistory, dateParts(new Date(), TIMEZONE));
+    let adherence = null;
+    if (period && period.period_end >= period.period_start) {
+      const rpc = await server.supabaseFetch('/rest/v1/rpc/mission_adherence_summary', { method: 'POST', body: JSON.stringify({ target_case_id: body.case_id, period_start: period.period_start, period_end: period.period_end }) });
+      if (!rpc.ok) throw new Error('Mission adherence summary could not be derived');
+      adherence = await rpc.json();
+    }
+    return server.json(response, 200, { history, current, adherence, adherence_period: period, adherence_state: period ? 'available' : 'intervention_not_started', reasons: REASONS });
   } catch (error) {
     console.error('Research Admin study-day context request failed', {
       action: request.body?.action,
@@ -56,3 +77,4 @@ module.exports = async function handler(request, response) {
 };
 
 module.exports.requestOrigin = requestOrigin;
+module.exports.interventionAdherencePeriod = interventionAdherencePeriod;
