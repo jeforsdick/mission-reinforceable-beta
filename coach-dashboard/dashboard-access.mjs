@@ -9,7 +9,7 @@ async function loadCaseDetails(client, caseIds, cases) {
     client.from('fidelity_targets').select('id, case_id, domain, description, sort_order').in('case_id', caseIds).eq('active', true).order('sort_order'),
     client.from('game_sessions').select('id, case_id, mission_id, mission_title, started_at, ended_at, status, score, max_score, duration_seconds, active_duration_seconds, plan_aligned_count, refine_count, missed_count, total_hints_opened, qa_mode').in('case_id', caseIds).eq('qa_mode', false).order('started_at', { ascending: false }),
     client.from('game_responses').select('id, session_id, case_id, fidelity_target_id, fidelity_domain, alignment, hint_opened, hint_open_count, created_at, qa_mode').in('case_id', caseIds).eq('qa_mode', false),
-    client.from('game_resource_events').select('case_id, event_name, section_key, qa_mode').in('case_id', caseIds).eq('qa_mode', false)
+    client.from('game_resource_events').select('id, participant_id, case_id, event_name, section_key, game_content_version, qa_mode, occurred_at').in('case_id', caseIds).eq('qa_mode', false).order('occurred_at', { ascending: true })
   ]);
   const failed = queries.find(result => result.error);
   if (failed) throw failed.error;

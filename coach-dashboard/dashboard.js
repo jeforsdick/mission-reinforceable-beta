@@ -1,4 +1,4 @@
-import { DOMAIN_LABELS, analyzeCase, coachingCopy, resourceMapUse, sessionPercent, statusFor, targetPerformance, weeklyPracticeSnapshot } from './dashboard-metrics.mjs';
+import { DOMAIN_LABELS, analyzeCase, coachingCopy, resourceMapVisits, sessionPercent, statusFor, targetPerformance, weeklyPracticeSnapshot } from './dashboard-metrics.mjs';
 import { canAccessCoachDashboard, loadDashboardCases } from './dashboard-access.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
@@ -23,12 +23,31 @@ function renderWeeklySnapshot(item) {
   return `<dl class="snapshot-grid">${value('Week', formatStudyWeek(row.week_start, row.week_end))}${value('Missions completed', `${snapshot.missionsCompleted} of ${row.scheduled_study_days} scheduled study days`)}${value('Average Mission Score', snapshot.averageScore === null ? 'Not available' : `${snapshot.averageScore}%`)}${value('Most Recent Score', snapshot.mostRecentScore === null ? 'Not available' : `${snapshot.mostRecentScore}%`)}</dl><p class="snapshot-disclaimer">Use this snapshot as context for your normal coaching conversations. Mission scores reflect game-practice choices, not classroom fidelity.</p>`;
 }
 
-function renderResourceMapUse(events) {
-  const usage = resourceMapUse(events);
-  if (!usage.visited) return '<p class="resource-use-status">Not yet visited</p>';
-  const count = usage.sectionCount;
-  const status = count ? `Visited · ${count} ${count === 1 ? 'section' : 'sections'} viewed` : 'Visited · No sections opened yet';
-  return `<p class="resource-use-status">${status}</p>${count ? `<p class="resource-use-sections"><strong>Sections viewed:</strong><br>${escapeHtml(usage.sectionNames.join(', '))}</p>` : ''}`;
+function formatResourceVisit(value) {
+  const date = new Date(value);
+  const day = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+  const time = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit' }).format(date);
+  return `${day} · ${time}`;
+}
+
+function formatResourceVisitDate(value) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
+}
+
+function renderResourceVisit(visit) {
+  const sections = visit.sectionNames.length
+    ? `<p class="resource-visit-viewed">Viewed:</p><ul>${visit.sectionNames.map(name => `<li>${escapeHtml(name)}</li>`).join('')}</ul>`
+    : '<p class="resource-visit-empty">No sections opened during this visit.</p>';
+  return `<article class="resource-visit"><h3>Resource Map visited</h3><time datetime="${escapeHtml(visit.occurredAt)}">${escapeHtml(formatResourceVisit(visit.occurredAt))}</time>${sections}</article>`;
+}
+
+function renderResourceMapHistory(events) {
+  const visits = resourceMapVisits(events);
+  if (!visits.length) return '<p class="resource-history-empty">Not yet visited.</p>';
+  const recentLimit = 5;
+  const recent = visits.slice(0, recentLimit).map(renderResourceVisit).join('');
+  const older = visits.slice(recentLimit).map(renderResourceVisit).join('');
+  return `<p class="resource-history-summary">Resource Map visits: <strong>${visits.length}</strong> · Most recent: ${escapeHtml(formatResourceVisitDate(visits[0].occurredAt))}</p><div class="resource-visit-list">${recent}</div>${older ? `<details class="resource-history-more"><summary>Show all Resource Map visits</summary><div class="resource-visit-list">${older}</div></details>` : ''}`;
 }
 
 function renderHome() {
@@ -58,7 +77,7 @@ function renderDetail(caseId) {
   $('#teacher-heading').innerHTML = `<div><p class="eyebrow">Teacher coaching summary</p><h1>${escapeHtml(intake.teacher_name || 'Teacher name unavailable')}</h1><p>Student ${escapeHtml(intake.student_initials || '—')} · Grade ${escapeHtml(intake.grade_level || '—')}</p></div><dl><div><dt>Last practice</dt><dd>${formatDate(last?.started_at)}</dd></div><div><dt>Sessions this week</dt><dd>${analysis.thisWeek}</dd></div><div><dt>Total recent practice time</dt><dd>${duration(analysis.totalSeconds)}</dd></div></dl>`;
   $('#detail-metrics').innerHTML = metric('Plan-Aligned Decisions', analysis.planAlignedPercent === null ? 'Not available' : `${analysis.planAlignedPercent}%`, analysis.planAlignedPercent === null ? 'More practice data is needed to calculate this metric.' : 'of recent response opportunities') + metric('Practice Completed', analysis.thisWeek, 'sessions this week') + metric('Hint Use', analysis.totalDecisions ? `${analysis.hintCount} / ${analysis.totalDecisions}` : 'Not available', 'hints / recent decisions') + metric('Current Coaching Focus', analysis.focus);
   $('#weekly-practice-snapshot').innerHTML = renderWeeklySnapshot(item);
-  $('#resource-map-use').innerHTML = renderResourceMapUse(item.resourceEvents);
+  $('#resource-map-history').innerHTML = renderResourceMapHistory(item.resourceEvents);
   $('#summary-text').textContent = copy.summary; $('#move-text').textContent = copy.move;
   $('#domain-chart').innerHTML = analysis.domains.some(row => row.percent !== null) ? analysis.domains.map(row => `<div class="bar-row"><span>${DOMAIN_LABELS[row.domain]}</span><div class="bar-track"><span style="width:${row.percent ?? 0}%"></span></div><strong>${row.percent === null ? 'No opportunities' : `${row.percent}%`}</strong></div>`).join('') : empty('More practice data is needed to calculate fidelity-area performance.');
   $('#session-chart').innerHTML = lineChart(analysis.sessions, analysis.responses);
