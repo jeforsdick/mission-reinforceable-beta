@@ -123,6 +123,7 @@ a {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  margin-left: 28px;
   flex-wrap: nowrap;
   flex: 0 0 auto;
 }
@@ -164,6 +165,7 @@ a {
 
   .nav-links {
     gap: 4px;
+    margin-left: 10px;
   }
 
   .nav-links a {
@@ -1748,6 +1750,7 @@ p {
 
   .nav-links {
     justify-content: flex-start;
+    margin-left: 0;
   }
 
   .brand-logo {
