@@ -51,6 +51,9 @@ async function issueStatusUrls({ participantId, caseId, studyDate, origin }, dep
   if (!UUID.test(participantId) || !UUID.test(caseId) || !DATE.test(studyDate)) throw new Error('Invalid status-link scope');
   // Reject impossible calendar dates and prevent issuing a date other than the requested Denver date.
   if (addDays(studyDate, 0) !== studyDate) throw new Error('Invalid study date');
+  // Validate the destination before creating capabilities. QA callers pass their
+  // authenticated request origin; scheduled-email callers retain the configured fallback.
+  const site = publicOrigin(origin);
   const { base, key } = configuration();
   const fetchImpl = dependencies.fetch || global.fetch;
   const expiration = expiresForStudyDate(studyDate).toISOString();
@@ -58,7 +61,6 @@ async function issueStatusUrls({ participantId, caseId, studyDate, origin }, dep
   const rows = issued.map(item => ({ token_hash: tokenHash(item.raw), participant_id: participantId, case_id: caseId, study_date: studyDate, reason: item.reason, expires_at: expiration }));
   const result = await fetchImpl(`${base}/participant_study_day_status_tokens`, { method: 'POST', headers: { ...serviceHeaders(key), Prefer: 'return=minimal' }, body: JSON.stringify(rows) });
   if (!result.ok) throw new Error('Status links could not be issued');
-  const site = publicOrigin(origin);
   return Object.fromEntries(issued.map(item => [`${item.reason}_url`, `${site}/study-day-status/?token=${encodeURIComponent(item.raw)}`]));
 }
 async function recordToken(token, dependencies = {}) {
