@@ -1,5 +1,15 @@
 # Teacher daily reminders (production schedule)
 
+## Future study-day status links
+
+Study-day status links are **GET/prefetch safe**: a GET request only serves the
+confirmation page and never mutates study-day status. Recording requires the
+browser-side POST that the page normally makes after JavaScript runs. This is
+not a claim that every automated browser or scanner is prevented from executing
+that POST. If the automatic POST fails while JavaScript is available, the page
+shows a manual retry button. Without JavaScript, it shows an explanatory message
+only.
+
 The dissertation intervention schedules one logical `daily_prompt` on each
 eligible intervention study day. `followup_reminder` is not part of the current
 dissertation intervention package and is not scheduled. Its

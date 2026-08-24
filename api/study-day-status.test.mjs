@@ -10,7 +10,10 @@ const page=fs.readFileSync(new URL('../study-day-status/index.html',import.meta.
 const browser=fs.readFileSync(new URL('../study-day-status/status.js',import.meta.url),'utf8');
 
 function response(){return {statusCode:0,headers:{},setHeader(k,v){this.headers[k]=v;},status(code){this.statusCode=code;return this;},json(body){this.body=body;return this;}};}
-test('GET is scanner-safe and never invokes the recording service',async()=>{const result=response();await handler({method:'GET'},result);assert.equal(result.statusCode,405);assert.equal(result.headers.Allow,'POST');assert.match(browser,/fetch\('\/api\/study-day-status', \{ method: 'POST'/);});
+test('GET alone is prefetch-safe and never mutates study-day status',async()=>{const result=response();await handler({method:'GET'},result);assert.equal(result.statusCode,405);assert.equal(result.headers.Allow,'POST');assert.doesNotMatch(page,/method=["']post/i);});
+test('JavaScript auto-POST is the normal one-tap recording flow',()=>{assert.match(browser,/fetch\('\/api\/study-day-status', \{ method: 'POST'/);assert.match(browser,/\n  record\(\);/);assert.match(browser,/GET\/prefetch safe/);});
+test('failed JavaScript POST reveals the manual retry button',()=>{assert.match(page,/<button id="fallback" type="button">Record today's status<\/button>/);assert.match(browser,/if \(!error\.permanent\) \{ fallback\.hidden = false; fallback\.disabled = false; \}/);assert.match(browser,/fallback\.addEventListener\('click'/);});
+test('no-JavaScript state is explanatory only and exposes no fake submit control',()=>{assert.match(page,/<noscript><p class="noscript">JavaScript is needed to record this update\. Please open this link in a standard browser\.<\/p><\/noscript>/);const noScript=page.match(/<noscript>([\s\S]*?)<\/noscript>/)[1];assert.doesNotMatch(noScript,/<button|<form|<style/i);});
 test('valid browser POST records through a hashed service-role RPC and returns generic copy',async()=>{
  process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='service-secret';let call;
  const result=await service.recordToken('A'.repeat(43),{fetch:async(url,options)=>{call={url,options};return {ok:true,json:async()=>[{reason:'teacher_absent',already_recorded:false}]};}});

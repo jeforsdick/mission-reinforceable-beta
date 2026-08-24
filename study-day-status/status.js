@@ -22,5 +22,7 @@
     }
   }
   fallback.addEventListener('click', () => { if (!complete) record(); });
+  // GET/prefetch safe: serving the page never mutates study-day status.
+  // The normal one-tap flow records only through this browser-side POST.
   record();
 })();
