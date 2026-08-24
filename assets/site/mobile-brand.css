@@ -1,0 +1,5 @@
+@media (max-width: 700px) {
+  .brand-logo {
+    width: clamp(125px, 38vw, 165px);
+  }
+}
