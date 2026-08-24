@@ -16,12 +16,15 @@
         <img class="brand-logo" src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
       </a>
       <nav class="nav-links" aria-label="Primary navigation">
+        <div class="nav-menu" id="primary-nav-menu">
         <a href="../">Home</a>
         <a href="../research/">Research</a>
         <a class="nav-active" href="./" aria-current="page">New Game</a>
         <a href="/demo/">Play Demo</a>
         <a href="/coach-dashboard/">Coach Login</a>
+        </div>
         <a class="nav-cta" href="/game/">Teacher Login</a>
+        <button class="nav-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primary-nav-menu" hidden><span aria-hidden="true"></span></button>
       </nav>
     </div>
   </header>
@@ -96,5 +99,6 @@
   <footer class="site-footer"><div class="footer-inner"><span>Mission: Reinforceable</span><span>Individualized game request</span></div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="intake.js"></script>
+  <script src="../assets/site/site-nav.js"></script>
 </body>
 </html>
