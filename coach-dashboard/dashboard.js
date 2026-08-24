@@ -20,7 +20,9 @@ function renderWeeklySnapshot(item) {
   const snapshot = weeklyPracticeSnapshot(item);
   if (!snapshot) return '<div class="empty-state"><p>No completed game practice is available for a weekly snapshot yet.</p></div>';
   const row = snapshot.checkin; const value = (label, content) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(content)}</dd></div>`;
-  return `<dl class="snapshot-grid">${value('Week', formatStudyWeek(row.week_start, row.week_end))}${value('Missions completed', `${snapshot.missionsCompleted} of ${row.scheduled_study_days} scheduled study days`)}${value('Average Mission Score', snapshot.averageScore === null ? 'Not available' : `${snapshot.averageScore}%`)}${value('Most Recent Score', snapshot.mostRecentScore === null ? 'Not available' : `${snapshot.mostRecentScore}%`)}</dl><p class="snapshot-disclaimer">Use this snapshot as context for your normal coaching conversations. Mission scores reflect game-practice choices, not classroom fidelity.</p>`;
+  const completion = snapshot.adherence.expectedMissionDays === 0 ? 'No expected mission days' : `${snapshot.missionsCompleted} of ${snapshot.adherence.expectedMissionDays} expected mission days`;
+  const excused = snapshot.adherence.excusedStudyDays ? `<p class="snapshot-context">${escapeHtml(`${snapshot.adherence.excusedStudyDays} scheduled day${snapshot.adherence.excusedStudyDays === 1 ? '' : 's'} excused`)}</p>` : '';
+  return `<dl class="snapshot-grid">${value('Week', formatStudyWeek(row.week_start, row.week_end))}${value('Missions completed', completion)}${value('Average Mission Score', snapshot.averageScore === null ? 'Not available' : `${snapshot.averageScore}%`)}${value('Most Recent Score', snapshot.mostRecentScore === null ? 'Not available' : `${snapshot.mostRecentScore}%`)}</dl>${excused}<p class="snapshot-disclaimer">Use this snapshot as context for your normal coaching conversations. Mission scores reflect game-practice choices, not classroom fidelity.</p>`;
 }
 
 function formatResourceVisit(value) {

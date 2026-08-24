@@ -31,15 +31,20 @@ module.exports = async function handler(request, response) {
       const urls = await issueStatusUrls({ participantId: participant.id, caseId: participant.case_id, studyDate, origin });
       return server.json(response, 200, { study_date: studyDate, urls, email_sent: false, export_fixture: true });
     }
-    const [history, current] = await Promise.all([
+    const [history, current, adherence] = await Promise.all([
       rows(`/rest/v1/participant_study_day_status_events?case_id=eq.${encodeURIComponent(body.case_id)}&select=id,study_date,reason,source,recorded_at,supersedes_event_id,recorded_by_type&order=study_date.desc,recorded_at.desc,id.desc`),
       (async () => {
         const rpc = await server.supabaseFetch('/rest/v1/rpc/current_participant_study_day_status', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: body.case_id }) });
         if (!rpc.ok) throw new Error('Current study-day context could not be derived');
         return rpc.json();
+      })(),
+      (async () => {
+        const rpc = await server.supabaseFetch('/rest/v1/rpc/mission_adherence_summary', { method: 'POST', body: JSON.stringify({ target_case_id: body.case_id, period_start: '2026-08-12', period_end: dateParts(new Date(), TIMEZONE) }) });
+        if (!rpc.ok) throw new Error('Mission adherence summary could not be derived');
+        return rpc.json();
       })()
     ]);
-    return server.json(response, 200, { history, current, reasons: REASONS });
+    return server.json(response, 200, { history, current, adherence, reasons: REASONS });
   } catch (error) {
     console.error('Research Admin study-day context request failed', {
       action: request.body?.action,

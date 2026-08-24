@@ -14,7 +14,18 @@ async function loadCaseDetails(client, caseIds, cases) {
   const failed = queries.find(result => result.error);
   if (failed) throw failed.error;
   const [intakes, targets, sessions, responses, resourceEvents] = queries.map(result => result.data || []);
-  return cases.map(row => ({ id: row.id, intake: intakes.find(item => item.case_id === row.id) || null, targets: targets.filter(item => item.case_id === row.id), sessions: sessions.filter(item => item.case_id === row.id), responses: responses.filter(item => item.case_id === row.id), resourceEvents: resourceEvents.filter(item => item.case_id === row.id) }));
+  const summaries = await Promise.all(cases.map(async row => {
+    const latest = sessions.filter(item => item.case_id === row.id && item.status === 'completed')[0];
+    if (!latest || typeof client.rpc !== 'function') return null;
+    const { denverDateKey } = await import('./dashboard-metrics.mjs');
+    const date = denverDateKey(latest.ended_at || latest.started_at);
+    const day = new Date(`${date}T12:00:00Z`); const offset = (day.getUTCDay() || 7) - 1; day.setUTCDate(day.getUTCDate() - offset);
+    const start = day.toISOString().slice(0, 10); day.setUTCDate(day.getUTCDate() + 4);
+    const result = await client.rpc('mission_adherence_summary', { target_case_id: row.id, period_start: start, period_end: day.toISOString().slice(0, 10) });
+    if (result.error) throw result.error;
+    return result.data;
+  }));
+  return cases.map((row,index) => ({ id: row.id, intake: intakes.find(item => item.case_id === row.id) || null, targets: targets.filter(item => item.case_id === row.id), sessions: sessions.filter(item => item.case_id === row.id), responses: responses.filter(item => item.case_id === row.id), resourceEvents: resourceEvents.filter(item => item.case_id === row.id), missionAdherence: summaries[index] }));
 }
 
 export async function loadDashboardCases(client, userId, role) {
