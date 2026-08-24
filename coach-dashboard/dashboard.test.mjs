@@ -222,6 +222,25 @@ test('Resource Map data follows the existing case-scoped secure query path', asy
   ]);
 });
 
+test('Resource Map table keeps its exact RLS grants and role-scoped policies', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20260819050000_resource_usage_telemetry.sql', import.meta.url), 'utf8');
+  const sql = migration.replace(/\s+/g, ' ');
+
+  assert.match(sql, /alter table public\.game_resource_events enable row level security;/i);
+  assert.match(sql, /revoke all on table public\.game_resource_events from anon, authenticated;/i);
+  assert.match(sql, /grant select, insert on table public\.game_resource_events to authenticated;/i);
+
+  assert.match(sql, /create policy "Participants create their own resource events" on public\.game_resource_events for insert to authenticated with check \( qa_mode = false and public\.owns_active_participant_case\(participant_id, case_id\) \);/i);
+  assert.match(sql, /create policy "Assigned coaches read participant resource events" on public\.game_resource_events for select to authenticated using \(qa_mode = false and public\.is_active_case_coach\(case_id\)\);/i);
+  assert.match(sql, /create policy "Research admins read resource events" on public\.game_resource_events for select to authenticated using \(\(select public\.is_research_admin\(\)\)\);/i);
+  assert.match(sql, /create policy "Research admins create QA resource events" on public\.game_resource_events for insert to authenticated/i);
+
+  const selectPolicies = sql.match(/create policy [^;]+ on public\.game_resource_events for select to authenticated [^;]+;/gi) || [];
+  assert.equal(selectPolicies.length, 2, 'only assigned-coach and research-admin SELECT policies may exist');
+  assert.doesNotMatch(sql, /grant select[^;]*on table public\.game_resource_events to anon/i);
+  assert.doesNotMatch(sql, /for select to authenticated using \((?:true|auth\.uid\(\) is not null)\)/i);
+});
+
 test('teacher heading explicitly renders white without changing authorization', async () => {
   const css = await readFile(new URL('./dashboard.css', import.meta.url), 'utf8');
   assert.match(css, /\.teacher-heading h1\{color:#fff\}/);
