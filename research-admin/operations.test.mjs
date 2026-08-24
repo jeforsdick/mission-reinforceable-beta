@@ -38,7 +38,7 @@ assert.match(css,/\.baseline-checklist-grid\s*\{[^}]*grid-template-columns:repea
 const checklistRpc="operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null})";
 assert.ok(js.includes(checklistRpc));
 const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
-const authoringWorkspace={case_id:'case-1',case_code:'CASE-998',student_alias:'Star',has_crisis_plan:false,active_fidelity_targets:[],mission_drafts:[]};
+const authoringWorkspace={case:{id:'case-1',case_code:'CASE-998',student_alias:'Star'},has_crisis_plan:false,fidelity_targets:[],missions:[]};
 const renderedGameCreation=renderGameCreation(authoringWorkspace,null,null);
 assert.match(renderedGameCreation,/Author mission drafts/);
 for(const heading of ['GAME SETUP','BIP Briefing','MISSION BANK','Daily Missions','Mystery Missions','Crisis Missions','Resource Map','BIP at a Glance','Fidelity Fortress']) assert.match(renderedGameCreation,new RegExp(heading));

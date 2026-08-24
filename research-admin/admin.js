@@ -274,8 +274,9 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
 
 async function recordSignoff(event) {
   const button = event.currentTarget;
-  const version = state.readiness?.protected_content?.version;
-  if (!window.confirm(`Mark this review complete for protected content version ${version}?`)) return;
+  const version = Number(button.dataset.contentVersion);
+  if (!Number.isInteger(version) || version < 1) { $('#signoff-message').textContent = 'The protected version is missing. Reload before reviewing.'; return; }
+  if (!window.confirm(`Mark this review complete for protected content version v${version}?`)) return;
   button.disabled = true;
   const { error } = await state.client.rpc('research_admin_record_case_signoff', {
     target_case_id: state.readiness.case.id,
@@ -358,7 +359,7 @@ async function loadReadiness(requestId) {
   if (fidelityError) throw fidelityError; state.fidelity = fidelity; state.readiness = data;
   const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{target_case_id:data.case.id}); if(operationsError) throw operationsError; const {data:observationData,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{target_case_id:data.case.id});if(observationError)throw observationError;
   const { data: authoring, error: authoringError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: data.case.id });
-  state.authoringWorkspace = authoringError ? null : { ...authoring, ...authoring.case, case_id: authoring.case?.id, active_fidelity_targets: authoring.fidelity_targets || [], mission_drafts: authoring.missions || [] };
+  state.authoringWorkspace = authoringError ? null : authoring;
   state.setupDraft = state.authoringWorkspace ? setupFromWorkspace(state.authoringWorkspace) : null;
   state.resourceDraft = state.authoringWorkspace ? resourcesFromWorkspace(state.authoringWorkspace) : null;
   state.authoringLoadError = authoringError?.message || '';
@@ -375,7 +376,7 @@ function gameCreationPanel(data) {
   const manifest = state.authoringWorkspace && draftRevisionManifest(state.authoringWorkspace);
   const source = state.publishedSource;
   const draftChanged = Boolean(source && (manifest.setup_revision_id !== source.source_setup_revision_id || manifest.resource_revision_id !== source.source_resource_revision_id || JSON.stringify(manifest.missions) !== JSON.stringify(source.source_mission_revision_manifest)));
-  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: data.case.case_code, draft_changed: draftChanged };
+  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged };
   return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.publishResult);
 }
 
@@ -437,7 +438,7 @@ function bindMissionBuilder() {
     const mission_type = button.dataset.missionType, slot_number = Number(button.dataset.slotNumber);
     state.missionSelection = { mission_type, slot_number };
     const row = latestDraft(state.authoringWorkspace, mission_type, slot_number);
-    state.missionDraft = normalizeMission(missionFromDraft(row), state.authoringWorkspace.case_code, mission_type, slot_number);
+    state.missionDraft = normalizeMission(missionFromDraft(row), state.authoringWorkspace.case.case_code, mission_type, slot_number);
     state.missionNav = { decision: 1, branch: 'supported' }; state.missionMessage = ''; redrawGameCreation(true);
   }));
   document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
@@ -458,29 +459,29 @@ async function saveMissionDraft() {
   if (!state.missionSelection || !state.missionDraft || !/^[A-Za-z0-9_-]+$/.test(state.missionDraft.id)) { message.textContent = 'Use a mission ID containing only letters, numbers, underscores, or hyphens.'; return; }
   button.disabled = true; message.textContent = 'Saving…';
   const selection = { ...state.missionSelection };
-  const { error } = await state.client.rpc('research_admin_save_mission_draft', { target_case_id: state.authoringWorkspace.case_id, target_mission_type: selection.mission_type, target_slot_number: selection.slot_number, target_mission: state.missionDraft });
+  const { error } = await state.client.rpc('research_admin_save_mission_draft', { target_case_id: state.authoringWorkspace.case.id, target_mission_type: selection.mission_type, target_slot_number: selection.slot_number, target_mission: state.missionDraft });
   if (error) { button.disabled = false; message.textContent = `Draft was not saved: ${error.message}`; return; }
-  const { data, error: reloadError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
+  const { data, error: reloadError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case.id });
   if (reloadError) { button.disabled = false; message.textContent = `Draft saved, but the workspace could not reload: ${reloadError.message}`; return; }
-  state.authoringWorkspace = { ...data, ...data.case, case_id: data.case.id, active_fidelity_targets: data.fidelity_targets || [], mission_drafts: data.missions || [] }; state.fullDraftCheck = null;
-  state.missionSelection = selection; state.missionDraft = normalizeMission(missionFromDraft(latestDraft(state.authoringWorkspace, selection.mission_type, selection.slot_number)), state.authoringWorkspace.case_code, selection.mission_type, selection.slot_number); state.missionMessage = 'Draft saved.'; state.selectedTab = 'game-creation'; redrawGameCreation();
+  state.authoringWorkspace = data; state.fullDraftCheck = null;
+  state.missionSelection = selection; state.missionDraft = normalizeMission(missionFromDraft(latestDraft(state.authoringWorkspace, selection.mission_type, selection.slot_number)), state.authoringWorkspace.case.case_code, selection.mission_type, selection.slot_number); state.missionMessage = 'Draft saved.'; state.selectedTab = 'game-creation'; redrawGameCreation();
 }
 async function reloadAuthoringWorkspace() {
-  const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
+  const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case.id });
   if (error) return error;
-  state.authoringWorkspace = { ...data, ...data.case, case_id: data.case.id, active_fidelity_targets: data.fidelity_targets || [], mission_drafts: data.missions || [] };
+  state.authoringWorkspace = data;
   return null;
 }
 async function saveGameSetup() {
   preserveAllAuthoringForms(); const button = $('#save-game-setup'), message = $('#setup-save-message'); button.disabled = true; message.textContent = 'Saving…';
-  const { error } = await state.client.rpc('research_admin_save_game_setup_draft', { target_case_id: state.authoringWorkspace.case_id, target_setup: state.setupDraft });
+  const { error } = await state.client.rpc('research_admin_save_game_setup_draft', { target_case_id: state.authoringWorkspace.case.id, target_setup: state.setupDraft });
   if (error) { button.disabled = false; message.textContent = `Game setup was not saved: ${error.message}`; return; }
   const reloadError = await reloadAuthoringWorkspace(); if (reloadError) { message.textContent = `Game setup saved, but the workspace could not reload: ${reloadError.message}`; return; }
   state.setupDraft = setupFromWorkspace(state.authoringWorkspace); state.setupMessage = 'Game setup saved.'; state.fullDraftCheck = null; redrawGameCreation();
 }
 async function saveResourceMap() {
   preserveAllAuthoringForms(); const button = $('#save-resource-map'), message = $('#resource-save-message'); button.disabled = true; message.textContent = 'Saving…';
-  const { error } = await state.client.rpc('research_admin_save_resource_map_draft', { target_case_id: state.authoringWorkspace.case_id, target_resources: state.resourceDraft });
+  const { error } = await state.client.rpc('research_admin_save_resource_map_draft', { target_case_id: state.authoringWorkspace.case.id, target_resources: state.resourceDraft });
   if (error) { button.disabled = false; message.textContent = `Resource Map draft was not saved: ${error.message}`; return; }
   const reloadError = await reloadAuthoringWorkspace(); if (reloadError) { message.textContent = `Resource Map draft saved, but the workspace could not reload: ${reloadError.message}`; return; }
   state.resourceDraft = resourcesFromWorkspace(state.authoringWorkspace); state.resourceMessage = 'Resource Map draft saved.'; state.fullDraftCheck = null; redrawGameCreation();
@@ -489,7 +490,7 @@ async function saveResourceMap() {
 async function checkFullDraft() {
   preserveAllAuthoringForms();
   const button = $('#check-full-draft'), message = $('#full-draft-message'); button.disabled = true; message.textContent = 'Checking latest saved revisions…';
-  const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
+  const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case.id });
   if (error) { button.disabled = false; message.textContent = `Full Draft could not be checked: ${error.message}`; return; }
   // Deliberately validate the temporary reload without replacing any unsaved editor state.
   const report = validateFullDraft(data);
@@ -497,7 +498,7 @@ async function checkFullDraft() {
   state.validatedRevisionManifest = null;
   if (report.ready) {
     const expected = draftRevisionManifest(data);
-    const { data: manifest, error: manifestError } = await state.client.rpc('research_admin_game_draft_manifest', { target_case_id: state.authoringWorkspace.case_id });
+    const { data: manifest, error: manifestError } = await state.client.rpc('research_admin_game_draft_manifest', { target_case_id: state.authoringWorkspace.case.id });
     if (manifestError || JSON.stringify(manifest) !== JSON.stringify(expected)) {
       state.fullDraftCheck = null;
       message.textContent = manifestError ? `Full Draft manifest could not be secured: ${manifestError.message}` : 'Saved drafts changed during Full Draft Check. Run the check again.';
@@ -514,7 +515,7 @@ async function publishProtectedVersion() {
   if (!confirmed) return;
   const button = $('#publish-protected-version'), message = $('#publish-message');
   button.disabled = true; message.textContent = 'Publishing protected version…';
-  const { data, error } = await state.client.rpc('research_admin_publish_game_draft', { target_case_id: state.authoringWorkspace.case_id, validated_revision_manifest: state.validatedRevisionManifest });
+  const { data, error } = await state.client.rpc('research_admin_publish_game_draft', { target_case_id: state.authoringWorkspace.case.id, validated_revision_manifest: state.validatedRevisionManifest });
   if (error) { button.disabled = false; message.textContent = `Protected version was not published: ${error.message}`; return; }
   state.publishResult = data;
   await openDetail(state.selected.request_id, 'game-creation');
