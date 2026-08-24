@@ -3,7 +3,7 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, setupFromWorkspace } from './game-creation-ui.mjs';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, setupFromWorkspace } from './game-creation-ui.mjs';
 import { validateFullDraft } from './game-draft-validator.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
@@ -11,7 +11,7 @@ import { intakeChanges, missingRequired } from './edit-intake.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
-const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, selected: null, accounts: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null, validatedRevisionManifest: null, publishResult: null, publishedSource: null };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -362,6 +362,9 @@ async function loadReadiness(requestId) {
   state.setupDraft = state.authoringWorkspace ? setupFromWorkspace(state.authoringWorkspace) : null;
   state.resourceDraft = state.authoringWorkspace ? resourcesFromWorkspace(state.authoringWorkspace) : null;
   state.authoringLoadError = authoringError?.message || '';
+  const { data: publishedVersion, error: versionError } = await state.client.rpc('research_admin_game_publish_status', { target_case_id: data.case.id });
+  if (versionError) throw versionError;
+  state.publishedSource = publishedVersion || null;
   state.caseOperations=operations.cases?.[0];state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData; return data;
 }
 function readinessPanel(data) {
@@ -369,8 +372,11 @@ function readinessPanel(data) {
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 function gameCreationPanel(data) {
-  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: data.case.case_code };
-  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck);
+  const manifest = state.authoringWorkspace && draftRevisionManifest(state.authoringWorkspace);
+  const source = state.publishedSource;
+  const draftChanged = Boolean(source && (manifest.setup_revision_id !== source.source_setup_revision_id || manifest.resource_revision_id !== source.source_resource_revision_id || JSON.stringify(manifest.missions) !== JSON.stringify(source.source_mission_revision_manifest)));
+  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: data.case.case_code, draft_changed: draftChanged };
+  return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.publishResult);
 }
 
 function redrawGameCreation(scrollToMissionBuilder = false) {
@@ -404,6 +410,9 @@ function bindSetupAndResources() {
   $('#save-game-setup')?.addEventListener('click', saveGameSetup);
   $('#save-resource-map')?.addEventListener('click', saveResourceMap);
   $('#check-full-draft')?.addEventListener('click', checkFullDraft);
+  $('#publish-protected-version')?.addEventListener('click', publishProtectedVersion);
+  $('#preview-published-version')?.addEventListener('click', event => window.open(`../game/?qa_case=${encodeURIComponent(event.currentTarget.dataset.caseCode)}`, '_blank', 'noopener'));
+  $('#continue-published-review')?.addEventListener('click', () => document.querySelector('.published-game-review')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   $('#preview-full-draft')?.addEventListener('click', event => window.open(fullDraftPreviewUrl(event.currentTarget.dataset.caseCode), '_blank', 'noopener'));
   document.querySelectorAll('[data-check-nav="setup"]').forEach(button => button.addEventListener('click', () => $('.game-setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })));
   document.querySelectorAll('[data-check-mission-type]').forEach(button => button.addEventListener('click', () => document.querySelector(`.mission-slot[data-mission-type="${button.dataset.checkMissionType}"][data-slot-number="${button.dataset.checkSlot}"]`)?.click()));
@@ -483,7 +492,32 @@ async function checkFullDraft() {
   const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: state.authoringWorkspace.case_id });
   if (error) { button.disabled = false; message.textContent = `Full Draft could not be checked: ${error.message}`; return; }
   // Deliberately validate the temporary reload without replacing any unsaved editor state.
-  state.fullDraftCheck = validateFullDraft(data); redrawGameCreation();
+  const report = validateFullDraft(data);
+  state.fullDraftCheck = report;
+  state.validatedRevisionManifest = null;
+  if (report.ready) {
+    const expected = draftRevisionManifest(data);
+    const { data: manifest, error: manifestError } = await state.client.rpc('research_admin_game_draft_manifest', { target_case_id: state.authoringWorkspace.case_id });
+    if (manifestError || JSON.stringify(manifest) !== JSON.stringify(expected)) {
+      state.fullDraftCheck = null;
+      message.textContent = manifestError ? `Full Draft manifest could not be secured: ${manifestError.message}` : 'Saved drafts changed during Full Draft Check. Run the check again.';
+      return;
+    }
+    state.validatedRevisionManifest = manifest;
+  }
+  redrawGameCreation();
+}
+
+async function publishProtectedVersion() {
+  if (!state.fullDraftCheck?.ready || !state.validatedRevisionManifest) return;
+  const confirmed = window.confirm('Publish this saved draft as the next protected version?\n\nThis creates an immutable protected game version for this case.\nIt does not activate teacher access, send email, enable reminders, or change study phase.');
+  if (!confirmed) return;
+  const button = $('#publish-protected-version'), message = $('#publish-message');
+  button.disabled = true; message.textContent = 'Publishing protected version…';
+  const { data, error } = await state.client.rpc('research_admin_publish_game_draft', { target_case_id: state.authoringWorkspace.case_id, validated_revision_manifest: state.validatedRevisionManifest });
+  if (error) { button.disabled = false; message.textContent = `Protected version was not published: ${error.message}`; return; }
+  state.publishResult = data;
+  await openDetail(state.selected.request_id, 'game-creation');
 }
 
 function fidelityPanel() {

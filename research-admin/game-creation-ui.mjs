@@ -74,6 +74,18 @@ export function resetMissionAuthoringState(authoringState) {
   authoringState.resourceMessage = '';
   authoringState.resourceOpenSections = [];
   authoringState.fullDraftCheck = null;
+  authoringState.validatedRevisionManifest = null;
+  authoringState.publishResult = null;
+}
+
+export function draftRevisionManifest(workspace) {
+  const order = { daily: 1, wild: 2, crisis: 3 };
+  const missions = (workspace?.missions || workspace?.mission_drafts || []).map(row => ({
+    mission_type: row.mission_type,
+    slot_number: Number(row.slot_number),
+    revision_id: row.revision_id || row.id
+  })).sort((a, b) => order[a.mission_type] - order[b.mission_type] || a.slot_number - b.slot_number);
+  return { setup_revision_id: workspace?.setup_draft?.revision_id || null, resource_revision_id: workspace?.resource_draft?.revision_id || null, missions };
 }
 
 export function captureResourceOpenSections(root) {
@@ -220,9 +232,16 @@ export function renderFullDraftCheck(workspace, check) {
   const report = check ? `<div class="full-draft-report"><h3 class="${ready ? 'ready' : 'needs'}">${ready ? 'READY TO PREVIEW' : `${check.blockingCount} ITEMS NEED ACTION`}</h3>${Object.entries(check.categories).map(([name, category]) => { const status = category.errors.length ? 'NEEDS ACTION' : category.warnings.length ? 'WARNING' : 'PASS'; return `<section class="check-category"><h4>${esc(name)} <span class="${status === 'PASS' ? 'ready' : status === 'WARNING' ? 'warning' : 'needs'}">${status}</span></h4>${[...category.errors, ...category.warnings].map(item => `<div class="check-finding"><span>${item.severity === 'blocking' ? 'Needs action' : 'Review'}: ${esc(item.message)}</span>${item.action?.type === 'setup' ? '<button type="button" data-check-nav="setup">Go to Game Setup</button>' : item.action?.type === 'mission' ? `<button type="button" data-check-mission-type="${esc(item.action.missionType)}" data-check-slot="${Number(item.action.slot)}">Open ${esc(item.path)}</button>` : item.path?.startsWith('Resource Map') ? `<button type="button" data-check-resource="${esc(Object.entries(RESOURCE_SECTIONS).find(([, [title]]) => item.path.includes(title))?.[0] || '')}">Open Resource Map</button>` : ''}</div>`).join('') || '<p>No findings.</p>'}</section>`; }).join('')}<p><small>Automated privacy scanning and coverage checks are aids, not certification of privacy, behavioral validity, or crisis safety.</small></p></div>` : '';
   return `<section class="builder-section full-draft-check"><p class="eyebrow">CHECK &amp; PREVIEW FULL DRAFT</p><h2>Check &amp; Preview Full Draft</h2><p>Check the latest saved Game Setup, Resource Map, and mission drafts before previewing the complete game.</p><p><strong>Unsaved changes are not included.</strong></p><div class="actions"><button id="check-full-draft" class="primary" type="button">Check Full Draft</button><button id="preview-full-draft" type="button" data-case-code="${esc(workspace.case_code)}"${ready ? '' : ' disabled'}>Preview Full Draft Game</button></div><p id="full-draft-message" class="message" role="status"></p>${report}</section>`;
 }
+export function renderProtectedPublishing(workspace, check, published = {}, publishResult = null) {
+  const ready = check?.ready === true;
+  const current = published.protected_content || {};
+  const result = publishResult || (current.present ? { version: current.version, published_at: current.updated_at } : null);
+  const status = current.present ? `<p><strong>Published version: v${Number(current.version)}</strong><br>Draft status: ${published.draft_changed ? 'Changes since v' + Number(current.version) : 'Matches v' + Number(current.version)}</p>` : '<p>No protected version has been published.</p>';
+  return `<section class="builder-section protected-publishing"><p class="eyebrow">PUBLISH PROTECTED VERSION</p><h2>${publishResult ? 'PROTECTED VERSION PUBLISHED' : ready ? 'READY TO PUBLISH' : 'NOT READY'}</h2>${status}${publishResult ? `<p><strong>Version: v${Number(result.version)}</strong><br>Published: ${esc(dateLabel(result.published_at))}</p><div class="actions"><button id="preview-published-version" class="primary" type="button" data-case-code="${esc(published.case_code)}">Preview Published Version</button><button id="continue-published-review" type="button">Continue to Published Game Review</button></div>` : ready ? '<p>Full Draft passed. Publishing will create a protected immutable version. It will NOT activate teacher access.</p><button id="publish-protected-version" class="primary" type="button">Publish Protected Version</button>' : '<p>Run Check Full Draft and resolve all blocking findings before publishing.</p>'}<p id="publish-message" class="message" role="status"></p></section>`;
+}
 export function fullDraftPreviewUrl(caseCode) { return `../game/?${new URLSearchParams({ qa_case: caseCode, qa_full_draft: '1' })}`; }
-export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '', setupDraft, resourceDraft, setupMessage = '', resourceMessage = '', fullDraftCheck = null) {
-  const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
+export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '', setupDraft, resourceDraft, setupMessage = '', resourceMessage = '', fullDraftCheck = null, publishResult = null) {
+  const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}${renderProtectedPublishing(workspace, fullDraftCheck, published, publishResult)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
   return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Author mission drafts</h1><p>AUTHOR → SAVE DRAFT</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
 }
 
