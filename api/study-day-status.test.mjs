@@ -7,6 +7,7 @@ const service=require('../server/study-day-status-service');
 const handler=require('./study-day-status');
 const adminHandler=require('./research-admin-study-day-status');
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260824040000_study_day_status_reporting.sql',import.meta.url),'utf8');
+const teacherUnavailableMigration=fs.readFileSync(new URL('../supabase/migrations/20260824050000_teacher_unavailable_status.sql',import.meta.url),'utf8');
 const bootstrap=fs.readFileSync(new URL('../supabase/migrations/20260812000000_legacy_schema_bootstrap.sql',import.meta.url),'utf8');
 const participantCompositeKey=fs.readFileSync(new URL('../supabase/migrations/20260818020000_weekly_teacher_checkins.sql',import.meta.url),'utf8');
 const page=fs.readFileSync(new URL('../study-day-status/index.html',import.meta.url),'utf8');
@@ -19,15 +20,17 @@ test('failed JavaScript POST reveals the manual retry button',()=>{assert.match(
 test('no-JavaScript state is explanatory only and exposes no fake submit control',()=>{assert.match(page,/<noscript><p class="noscript">JavaScript is needed to record this update\. Please open this link in a standard browser\.<\/p><\/noscript>/);const noScript=page.match(/<noscript>([\s\S]*?)<\/noscript>/)[1];assert.doesNotMatch(noScript,/<button|<form|<style/i);});
 test('valid browser POST records through a hashed service-role RPC and returns generic copy',async()=>{
  process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='service-secret';let call;
- const result=await service.recordToken('A'.repeat(43),{fetch:async(url,options)=>{call={url,options};return {ok:true,json:async()=>[{reason:'teacher_absent',already_recorded:false}]};}});
- assert.equal(result.status,200);assert.equal(result.body.message,"You're marked as out today.");assert.match(call.url,/rpc\/record_study_day_status_token$/);assert.doesNotMatch(call.options.body,/A{20}/);assert.match(call.options.body,/[0-9a-f]{64}/);assert.equal(call.options.headers.Authorization,'Bearer service-secret');
+ const result=await service.recordToken('A'.repeat(43),{fetch:async(url,options)=>{call={url,options};return {ok:true,json:async()=>[{reason:'teacher_unavailable',already_recorded:false}]};}});
+ assert.equal(result.status,200);assert.equal(result.body.heading,'✓ Got it.');assert.equal(result.body.message,"You're excused from today's mission.");assert.equal(result.body.detail,"You don't need to complete Mission: Reinforceable today.");assert.match(call.url,/rpc\/record_study_day_status_token$/);assert.doesNotMatch(call.options.body,/A{20}/);assert.match(call.options.body,/[0-9a-f]{64}/);assert.equal(call.options.headers.Authorization,'Bearer service-secret');
 });
 test('opaque URLs are participant/date/reason-scoped while only hashes are persisted',async()=>{
  process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='secret';process.env.PUBLIC_SITE_URL='https://mission.example';let inserted;
  const urls=await service.issueStatusUrls({participantId:'11111111-1111-4111-8111-111111111111',caseId:'22222222-2222-4222-8222-222222222222',studyDate:'2026-08-24'},{fetch:async(_url,options)=>{inserted=JSON.parse(options.body);return {ok:true};}});
  assert.deepEqual(inserted.map(x=>x.reason),service.REASONS);assert.ok(inserted.every(x=>x.study_date==='2026-08-24'&&/^[0-9a-f]{64}$/.test(x.token_hash)));
  for(const row of inserted)assert.ok(!Object.values(urls).some(url=>url.includes(row.token_hash)));
- assert.deepEqual(Object.keys(urls),['teacher_absent_url','student_absent_url','schedule_disruption_url']);
+ assert.deepEqual(service.REASONS,['teacher_unavailable']);assert.deepEqual(inserted.map(x=>x.reason),['teacher_unavailable']);
+ assert.deepEqual(Object.keys(urls),['teacher_unavailable_url']);
+ assert.doesNotMatch(JSON.stringify(urls),/teacher_absent|student_absent|schedule_disruption/);
 });
 test('Research Admin QA derives HTTPS request origin without production URL configuration or email',async()=>{
  const savedPublic=process.env.PUBLIC_SITE_URL,savedGame=process.env.TEACHER_GAME_URL;
@@ -35,7 +38,7 @@ test('Research Admin QA derives HTTPS request origin without production URL conf
  process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='service-secret';
  const calls=[];global.fetch=async(url,options={})=>{calls.push({url:String(url),options});if(String(url).endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:'admin-id'})};if(String(url).includes('/profiles?'))return {ok:true,json:async()=>[{id:'admin-id',role:'research_admin',active:true}]};if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'11111111-1111-4111-8111-111111111111',case_id:'22222222-2222-4222-8222-222222222222',participant_code:'MR-998',cases:{case_code:'CASE-998'}}]};if(String(url).endsWith('/participant_study_day_status_tokens'))return {ok:true};throw new Error(`Unexpected request: ${url}`);};
  const result=response();await adminHandler({method:'POST',headers:{authorization:'Bearer admin-token','x-forwarded-proto':'https','x-forwarded-host':'qa.mission.example'},body:{action:'generate_qa',case_id:'22222222-2222-4222-8222-222222222222'}},result);
- assert.equal(result.statusCode,200);assert.equal(result.body.email_sent,false);assert.equal(Object.keys(result.body.urls).length,3);for(const url of Object.values(result.body.urls))assert.match(url,/^https:\/\/qa\.mission\.example\/study-day-status\/\?token=/);
+ assert.equal(result.statusCode,200);assert.equal(result.body.email_sent,false);assert.deepEqual(Object.keys(result.body.urls),['teacher_unavailable_url']);assert.match(result.body.urls.teacher_unavailable_url,/^https:\/\/qa\.mission\.example\/study-day-status\/\?token=/);
  assert.ok(calls.some(call=>call.url.endsWith('/participant_study_day_status_tokens')));assert.ok(!calls.some(call=>/resend|email/i.test(call.url)));
  if(savedPublic===undefined)delete process.env.PUBLIC_SITE_URL;else process.env.PUBLIC_SITE_URL=savedPublic;if(savedGame===undefined)delete process.env.TEACHER_GAME_URL;else process.env.TEACHER_GAME_URL=savedGame;
 });
@@ -70,6 +73,14 @@ test('migration enforces append-only history, idempotency, deterministic latest 
  assert.match(migration,/order by e\.recorded_at desc, e\.id desc/);assert.match(migration,/supersedes_event_id/);
  assert.match(migration,/revoke all on public\.participant_study_day_status_tokens, public\.participant_study_day_status_events from anon, authenticated/);
  assert.doesNotMatch(migration,/grant insert[\s\S]*to (anon|authenticated)/);assert.match(migration,/grant execute on function public\.record_study_day_status_token\(text\) to service_role/);
+});
+test('forward migration permits current and legacy reasons without rewriting history or append-only protections',()=>{
+ for(const reason of ['teacher_unavailable','teacher_absent','student_absent','schedule_disruption'])assert.match(teacherUnavailableMigration,new RegExp(`'${reason}'`));
+ assert.match(teacherUnavailableMigration,/alter table public\.participant_study_day_status_tokens[\s\S]*add constraint participant_study_day_status_tokens_reason_check/);
+ assert.match(teacherUnavailableMigration,/alter table public\.participant_study_day_status_events[\s\S]*add constraint participant_study_day_status_events_reason_check/);
+ assert.doesNotMatch(teacherUnavailableMigration,/drop table|create table|update public\.participant_study_day_status_(tokens|events)|delete from|truncate/i);
+ assert.match(teacherUnavailableMigration,/target_reason <> 'teacher_unavailable'/);
+ assert.doesNotMatch(teacherUnavailableMigration,/target_reason[^;]*teacher_absent[^;]*then/i);
 });
 test('feature remains contextual, QA-only, and cannot enable or send reminders',()=>{
  const files=[migration,fs.readFileSync(new URL('./research-admin-study-day-status.js',import.meta.url),'utf8'),fs.readFileSync(new URL('../research-admin/operations-ui.mjs',import.meta.url),'utf8')].join('\n');

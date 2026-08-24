@@ -38,6 +38,19 @@ assert.match(css,/\.baseline-checklist-grid\s*\{[^}]*grid-template-columns:repea
 const checklistRpc="operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null})";
 assert.ok(js.includes(checklistRpc));
 const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
+const statusMarkup=renderOperations({...readyFixture(),study_day_status:{history:[
+ {id:'current',study_date:'2026-08-24',reason:'teacher_unavailable',source:'daily_email',recorded_at:'2026-08-24T13:12:00Z'},
+ {id:'old-teacher',study_date:'2026-08-23',reason:'teacher_absent',source:'daily_email',recorded_at:'2026-08-23T13:12:00Z'},
+ {id:'old-student',study_date:'2026-08-22',reason:'student_absent',source:'daily_email',recorded_at:'2026-08-22T13:12:00Z'},
+ {id:'old-schedule',study_date:'2026-08-21',reason:'schedule_disruption',source:'daily_email',recorded_at:'2026-08-21T13:12:00Z'}
+],current:[{event_id:'current'}]}},{},x=>String(x));
+assert.match(statusMarkup,/Teacher unavailable/);
+for(const legacy of ['Teacher out (legacy)','Student out (legacy)','Schedule changed (legacy)'])assert.ok(statusMarkup.includes(legacy));
+const correction=statusMarkup.match(/<form class="study-status-correction[\s\S]*?<\/form>/)[0];
+assert.match(correction,/option value="teacher_unavailable">Teacher unavailable/);assert.match(correction,/option value="clear">Clear excuse/);
+assert.doesNotMatch(correction,/option value="(?:teacher_absent|student_absent|schedule_disruption)"/);
+const qaStatusMarkup=renderOperations({...readyFixture(),study_id:'MR-998'},{},x=>String(x));
+assert.match(qaStatusMarkup,/Generate today’s QA status link/);assert.doesNotMatch(qaStatusMarkup,/Generate today’s QA status links/);
 const authoringWorkspace={case:{id:'case-1',case_code:'CASE-998',student_alias:'Star'},has_crisis_plan:false,fidelity_targets:[],missions:[]};
 const renderedGameCreation=renderGameCreation(authoringWorkspace,null,null);
 assert.match(renderedGameCreation,/Author mission drafts/);
