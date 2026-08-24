@@ -1,12 +1,11 @@
 'use strict';
 
 const crypto = require('node:crypto');
-const REASONS = Object.freeze(['teacher_absent', 'student_absent', 'schedule_disruption']);
+// Legacy reasons remain database-readable, but new teacher capabilities have one purpose.
+const REASONS = Object.freeze(['teacher_unavailable']);
 const TIMEZONE = 'America/Denver';
 const SUCCESS = Object.freeze({
-  teacher_absent: { heading: '✓ Got it.', message: "You're marked as out today.", detail: "You don't need to complete a mission today." },
-  student_absent: { heading: '✓ Got it.', message: 'Your student is marked as out today.', detail: "You don't need to complete a mission today." },
-  schedule_disruption: { heading: '✓ Got it.', message: "Today's schedule change has been recorded.", detail: '' }
+  teacher_unavailable: { heading: '✓ Got it.', message: "You're excused from today's mission.", detail: "You don't need to complete Mission: Reinforceable today." }
 });
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;

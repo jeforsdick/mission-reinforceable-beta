@@ -2,6 +2,11 @@
 
 ## Future study-day status links
 
+The reusable teacher action is **“Excuse me from today.”** It issues only a
+`teacher_unavailable` link and does not ask for a reason or note. This helper is
+ready for a future daily email template; this feature does not itself send email
+or enable production reminders.
+
 Study-day status links are **GET/prefetch safe**: a GET request only serves the
 confirmation page and never mutates study-day status. Recording requires the
 browser-side POST that the page normally makes after JavaScript runs. This is
