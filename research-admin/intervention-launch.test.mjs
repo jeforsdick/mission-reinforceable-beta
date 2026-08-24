@@ -19,14 +19,24 @@ test('RPC hard-gates activation and validates the current protected version',()=
 });
 
 test('revocation atomically turns off access and existing reminder eligibility',()=>{
+  const access=migration.slice(migration.indexOf('create function public.research_admin_set_intervention_game_access'),migration.indexOf('create function public.research_admin_set_teacher_reminders'));
   assert.match(migration,/update public\.teacher_reminder_settings set enabled=false,deactivated_at=changed[\s\S]*where participant_id=target_participant_id and enabled/);
-  assert.match(migration,/research_intervention_launch_events/);assert.match(migration,/game_access_disabled/);assert.match(migration,/reminders_disabled/);
+  assert.match(access,/if reminders_were_enabled then[\s\S]*'reminders_disabled'/);assert.match(access,/case when target_enabled then 'game_access_enabled' else 'game_access_disabled'/);
+  assert.equal((access.match(/'reminders_disabled'/g)||[]).length,1,'shutdown audit is conditional and cannot duplicate when reminders were off');
 });
 
-test('reminders reuse settings, fail closed, and do not create delivery events',()=>{
-  assert.match(migration,/teacher_communication_system_ready/);assert.match(migration,/Production email delivery has not been enabled\./);
+test('reminders reuse settings behind a server-only RPC and do not create delivery events',()=>{
+  assert.doesNotMatch(migration,/teacher_communication_system_ready|app\.settings\.teacher_reminder_system_enabled/);
   assert.match(migration,/insert into public\.teacher_reminder_settings/);assert.doesNotMatch(migration,/insert into public\.teacher_reminder_events/);
   assert.match(migration,/Game access must be active before reminders can be enabled\./);
+  assert.match(migration,/revoke all on function public\.research_admin_set_teacher_reminders\(uuid,boolean,uuid\) from public, anon, authenticated/);
+  assert.match(migration,/grant execute on function public\.research_admin_set_teacher_reminders\(uuid,boolean,uuid\) to service_role/);
+  assert.doesNotMatch(admin,/state\.client\.rpc\('research_admin_set_teacher_reminders/);assert.match(admin,/adminApi\('\/api\/research-admin-set-teacher-reminders'/);
+});
+
+test('Research Operations reuses semantic revision-manifest comparison',()=>{
+  assert.match(admin,/publishedManifest=source&&\{setup_revision_id:[\s\S]{0,300}!sameDraftRevisionManifest\(manifest,publishedManifest\)/);
+  assert.doesNotMatch(admin,/JSON\.stringify\(manifest\.missions\)/);
 });
 
 test('baseline and Intervention launch controls communicate separate actions',()=>{

@@ -268,8 +268,8 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
  $('#phase-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_phase',{target_case_id:caseId,target_phase:f.get('phase'),target_effective_date:f.get('effective_date'),target_decision_note:f.get('note')||null});});
  $('#activate-game-access')?.addEventListener('click',()=>{if(window.confirm('Activate Mission: Reinforceable game access for this teacher?\n\nThis will activate the participant and case for normal teacher gameplay. It will not send email or enable reminders.'))operationRpc('research_admin_set_intervention_game_access',{target_case_id:caseId,target_enabled:true});});
  $('#deactivate-game-access')?.addEventListener('click',()=>{if(window.confirm('Deactivate Mission: Reinforceable game access for this teacher?\n\nThis will deactivate the participant and case and turn off daily reminders. It will not delete study records.'))operationRpc('research_admin_set_intervention_game_access',{target_case_id:caseId,target_enabled:false});});
- $('#enable-daily-reminders')?.addEventListener('click',()=>{if(window.confirm('Enable daily Mission: Reinforceable reminders for this teacher?\n\nThis changes reminder eligibility but does not send an email now.'))operationRpc('research_admin_set_teacher_reminders',{target_case_id:caseId,target_enabled:true});});
- $('#disable-daily-reminders')?.addEventListener('click',()=>operationRpc('research_admin_set_teacher_reminders',{target_case_id:caseId,target_enabled:false}));
+ $('#enable-daily-reminders')?.addEventListener('click',()=>{if(window.confirm('Enable daily Mission: Reinforceable reminders for this teacher?\n\nThis changes reminder eligibility but does not send an email now.'))setTeacherReminders(caseId,true);});
+ $('#disable-daily-reminders')?.addEventListener('click',()=>setTeacherReminders(caseId,false));
  bindTaskControls(caseId);
  $('#coaching-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget),focuses=f.getAll('focus').filter(x=>COACHING_FOCUSES.includes(x));if(!focuses.length){window.alert('Select at least one coaching focus.');return;}operationRpc('research_admin_record_coaching_contact',{target_case_id:caseId,target_contact_date:f.get('date'),target_format:f.get('format'),target_provider_role:f.get('provider'),target_focuses:focuses,target_approximate_duration_minutes:f.get('duration')?Number(f.get('duration')):null,target_brief_note:f.get('note')||null});});
  $('#event-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_study_event',{target_case_id:caseId,target_event_date:f.get('date'),target_event_type:f.get('type'),target_brief_note:f.get('note'),target_affects_observation:f.has('affects_observation'),target_affects_mr_exposure:f.has('affects_mr_exposure'),target_affects_phase_interpretation:f.has('affects_phase_interpretation'),target_action_taken:f.get('action_taken')||null});});
@@ -302,6 +302,10 @@ async function communicationReadiness(){
   const {data:{session}}=await state.client.auth.getSession();
   const response=await fetch('/api/research-admin-communication-readiness',{headers:{Authorization:`Bearer ${session?.access_token||''}`}});
   const result=await response.json();if(!response.ok)throw new Error(result.error||'Communication readiness unavailable');return result;
+}
+async function setTeacherReminders(caseId,enabled){
+  try{await adminApi('/api/research-admin-set-teacher-reminders',{case_id:caseId,enabled});await loadIntakes();await openDetail(state.selected.request_id,state.selectedTab);}
+  catch(error){window.alert(error.message);}
 }
 async function createAccount(type, button) {
   button.disabled = true;
@@ -380,14 +384,16 @@ async function loadReadiness(requestId) {
 }
 function readinessPanel(data) {
   const manifest=state.authoringWorkspace&&draftRevisionManifest(state.authoringWorkspace),source=state.publishedSource;
-  const draftChanged=Boolean(source&&manifest&&(manifest.setup_revision_id!==source.source_setup_revision_id||manifest.resource_revision_id!==source.source_resource_revision_id||JSON.stringify(manifest.missions)!==JSON.stringify(source.source_mission_revision_manifest)));
+  const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
+  const draftChanged=Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
   return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,unpublishedDraftChanges:draftChanged})
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 function gameCreationPanel(data) {
   const manifest = state.authoringWorkspace && draftRevisionManifest(state.authoringWorkspace);
   const source = state.publishedSource;
-  const draftChanged = Boolean(source && (manifest.setup_revision_id !== source.source_setup_revision_id || manifest.resource_revision_id !== source.source_resource_revision_id || JSON.stringify(manifest.missions) !== JSON.stringify(source.source_mission_revision_manifest)));
+  const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
+  const draftChanged = Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
   const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged };
   return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.publishResult);
 }
