@@ -15,12 +15,42 @@ export const RESOURCE_SECTION_LABELS = {
   fidelity: 'Fidelity Fortress'
 };
 
-export function resourceMapUse(events = []) {
-  const relevant = events.filter(row => ['resources_opened', 'resource_section_opened'].includes(row?.event_name));
-  const sectionKeys = [...new Set(relevant
-    .filter(row => row.event_name === 'resource_section_opened' && RESOURCE_SECTION_LABELS[row.section_key])
-    .map(row => row.section_key))];
-  return { visited: relevant.length > 0, sectionCount: sectionKeys.length, sectionNames: sectionKeys.map(key => RESOURCE_SECTION_LABELS[key]) };
+export function resourceMapVisits(events = []) {
+  const streams = new Map();
+  const visits = [];
+  const chronological = events
+    .filter(row => row?.qa_mode === false && ['resources_opened', 'resource_section_opened'].includes(row?.event_name))
+    .map((row, index) => ({ row, index }))
+    .sort((a, b) => new Date(a.row.occurred_at) - new Date(b.row.occurred_at) || a.index - b.index);
+
+  for (const { row } of chronological) {
+    // A case can have more than one participant over its lifetime. Never join their
+    // event streams, even though the dashboard has already scoped rows to one case.
+    const streamKey = row.participant_id || '__legacy_participant__';
+    if (row.event_name === 'resources_opened') {
+      const visit = {
+        occurredAt: row.occurred_at,
+        gameContentVersion: row.game_content_version ?? null,
+        sectionKeys: [],
+        sectionNames: []
+      };
+      streams.set(streamKey, visit);
+      visits.push(visit);
+      continue;
+    }
+
+    const visit = streams.get(streamKey);
+    if (!visit || !RESOURCE_SECTION_LABELS[row.section_key]) continue;
+    // A section event from a malformed, different-version stream cannot be safely
+    // attributed to the open visit. The version remains on each returned visit.
+    if ((row.game_content_version ?? null) !== visit.gameContentVersion) continue;
+    if (!visit.sectionKeys.includes(row.section_key)) {
+      visit.sectionKeys.push(row.section_key);
+      visit.sectionNames.push(RESOURCE_SECTION_LABELS[row.section_key]);
+    }
+  }
+
+  return visits.sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt));
 }
 
 export function percent(aligned, total) {

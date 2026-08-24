@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { analyzeCase, coachingCopy, resourceMapUse, sessionPercent, statusFor, targetPerformance } from './dashboard-metrics.mjs';
+import { analyzeCase, coachingCopy, resourceMapVisits, sessionPercent, statusFor, targetPerformance } from './dashboard-metrics.mjs';
 import { canAccessCoachDashboard, loadDashboardCases } from './dashboard-access.mjs';
 
 const now = new Date('2026-08-13T12:00:00Z');
@@ -178,34 +178,61 @@ test('weekly snapshot copy preserves self-report and classroom-fidelity boundari
 });
 
 
-test('Resource Map summary distinguishes never visited from an open without sections', () => {
-  assert.deepEqual(resourceMapUse([]), { visited: false, sectionCount: 0, sectionNames: [] });
-  assert.deepEqual(resourceMapUse([{ event_name: 'resources_opened', section_key: null }]), { visited: true, sectionCount: 0, sectionNames: [] });
+const resourceEvent = (event_name, occurred_at, section_key = null, overrides = {}) => ({
+  participant_id: 'participant-a', event_name, occurred_at, section_key,
+  game_content_version: 'v1', qa_mode: false, ...overrides
 });
 
-test('Resource Map summary deduplicates sections and maps canonical keys', () => {
-  const one = resourceMapUse([
-    { event_name: 'resource_section_opened', section_key: 'bip' },
-    { event_name: 'resource_section_opened', section_key: 'bip' }
+test('each Resource Map open creates a distinct newest-first visit and assigns sections to the preceding open', () => {
+  const visits = resourceMapVisits([
+    resourceEvent('resource_section_opened', '2026-08-24T14:00:00Z', 'library'), // orphan
+    resourceEvent('resources_opened', '2026-08-24T14:01:00Z'),
+    resourceEvent('resource_section_opened', '2026-08-24T14:02:00Z', 'prevention'),
+    resourceEvent('resource_section_opened', '2026-08-24T14:03:00Z', 'reinforcement'),
+    resourceEvent('resources_opened', '2026-08-24T15:01:00Z'),
+    resourceEvent('resource_section_opened', '2026-08-24T15:02:00Z', 'prevention')
   ]);
-  assert.equal(one.sectionCount, 1);
-  assert.deepEqual(one.sectionNames, ['BIP at a Glance']);
-
-  const three = resourceMapUse(['prevention', 'reinforcement', 'functionForest', 'prevention'].map(section_key => ({ event_name: 'resource_section_opened', section_key })));
-  assert.equal(three.sectionCount, 3);
-  assert.deepEqual(three.sectionNames, ['Prevention Palace', 'Reinforcement Ridge', 'Function Forest']);
+  assert.equal(visits.length, 2);
+  assert.equal(visits[0].occurredAt, '2026-08-24T15:01:00Z');
+  assert.deepEqual(visits[0].sectionNames, ['Prevention Palace']);
+  assert.deepEqual(visits[1].sectionNames, ['Prevention Palace', 'Reinforcement Ridge']);
 });
 
-test('unknown Resource Map section keys are ignored without hiding valid visits', () => {
-  assert.deepEqual(resourceMapUse([{ event_name: 'resource_section_opened', section_key: 'futurePlace' }]), { visited: true, sectionCount: 0, sectionNames: [] });
+test('Resource Map visits preserve first-open order, deduplicate within a visit, and render every canonical label', () => {
+  const keys = ['bip', 'functionForest', 'prevention', 'replacement', 'reinforcement', 'errorCorrection', 'library', 'coaching', 'fidelity', 'bip'];
+  const visits = resourceMapVisits([
+    resourceEvent('resources_opened', '2026-08-24T14:00:00Z'),
+    ...keys.map((key, index) => resourceEvent('resource_section_opened', `2026-08-24T14:${String(index + 1).padStart(2, '0')}:00Z`, key))
+  ]);
+  assert.deepEqual(visits[0].sectionNames, ['BIP at a Glance', 'Function Forest', 'Prevention Palace', 'Replacement Reservoir', 'Reinforcement Ridge', 'Error Correction Canyon', 'BSP Library', 'Coaching Cottage', 'Fidelity Fortress']);
 });
 
-test('Resource Map UI includes all honest empty and visited states', async () => {
+test('Resource Map grouping excludes QA, unknown, orphan, cross-participant, and mismatched-version sections safely', () => {
+  const visits = resourceMapVisits([
+    resourceEvent('resource_section_opened', '2026-08-24T13:00:00Z', 'bip'),
+    resourceEvent('resources_opened', '2026-08-24T14:00:00Z'),
+    resourceEvent('resource_section_opened', '2026-08-24T14:01:00Z', 'futurePlace'),
+    resourceEvent('resource_section_opened', '2026-08-24T14:02:00Z', 'bip', { qa_mode: true }),
+    resourceEvent('resource_section_opened', '2026-08-24T14:03:00Z', 'bip', { participant_id: 'participant-b' }),
+    resourceEvent('resource_section_opened', '2026-08-24T14:04:00Z', 'bip', { game_content_version: 'v2' })
+  ]);
+  assert.equal(visits.length, 1);
+  assert.deepEqual(visits[0].sectionNames, []);
+  assert.equal(visits[0].gameContentVersion, 'v1');
+});
+
+test('Resource Map UI includes history, no-section, expansion, local-time, and empty states', async () => {
   const source = await readFile(new URL('./dashboard.js', import.meta.url), 'utf8');
-  assert.match(source, /Not yet visited/);
-  assert.match(source, /Visited · No sections opened yet/);
-  assert.match(source, /sections?'} viewed/);
-  assert.match(source, /Sections viewed:/);
+  assert.match(source, /Not yet visited\./);
+  assert.match(source, /No sections opened during this visit\./);
+  assert.match(source, /Show all Resource Map visits/);
+  assert.match(source, /timeZone: 'America\/Denver'/);
+});
+
+test('Resource Map History is last in the visible case dashboard, after Recent Practice', async () => {
+  const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
+  assert.ok(html.indexOf('Recent Practice') < html.indexOf('Resource Map History'));
+  assert.match(html, /<h2>Resource Map History<\/h2>[\s\S]*<\/section>/);
 });
 
 test('Resource Map data follows the existing case-scoped secure query path', async () => {
@@ -216,9 +243,10 @@ test('Resource Map data follows the existing case-scoped secure query path', asy
   assert.equal(caseData.resourceEvents.length, 1);
   const call = client.calls.find(row => row.table === 'game_resource_events');
   assert.deepEqual(call.operations, [
-    ['select', 'case_id, event_name, section_key, qa_mode'],
+    ['select', 'id, participant_id, case_id, event_name, section_key, game_content_version, qa_mode, occurred_at'],
     ['in', 'case_id', ['case-a']],
-    ['eq', 'qa_mode', false]
+    ['eq', 'qa_mode', false],
+    ['order', 'occurred_at', { ascending: true }]
   ]);
 });
 
