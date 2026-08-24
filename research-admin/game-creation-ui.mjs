@@ -88,6 +88,27 @@ export function draftRevisionManifest(workspace) {
   return { setup_revision_id: workspace?.setup_draft?.revision_id || null, resource_revision_id: workspace?.resource_draft?.revision_id || null, missions };
 }
 
+export function sameDraftRevisionManifest(a, b) {
+  if (a?.setup_revision_id !== b?.setup_revision_id || a?.resource_revision_id !== b?.resource_revision_id) return false;
+  const order = { daily: 1, wild: 2, crisis: 3 };
+  const normalize = manifest => (Array.isArray(manifest?.missions) ? manifest.missions : []).map(mission => ({
+    mission_type: mission?.mission_type,
+    slot_number: Number(mission?.slot_number),
+    revision_id: mission?.revision_id
+  })).sort((left, right) =>
+    (order[left.mission_type] ?? 99) - (order[right.mission_type] ?? 99)
+      || String(left.mission_type).localeCompare(String(right.mission_type))
+      || left.slot_number - right.slot_number
+  );
+  const left = normalize(a);
+  const right = normalize(b);
+  return left.length === right.length && left.every((mission, index) =>
+    mission.mission_type === right[index].mission_type
+      && mission.slot_number === right[index].slot_number
+      && mission.revision_id === right[index].revision_id
+  );
+}
+
 export function captureResourceOpenSections(root) {
   if (!root) return [];
   return Array.from(root.querySelectorAll('.resource-section[open]'), section => section.dataset.sectionKey)

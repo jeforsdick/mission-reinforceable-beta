@@ -3,7 +3,7 @@ import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percen
 import { ioaNeedsReview } from './observations-model.mjs';
 import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, setupFromWorkspace } from './game-creation-ui.mjs';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs';
 import { validateFullDraft } from './game-draft-validator.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
@@ -499,7 +499,7 @@ async function checkFullDraft() {
   if (report.ready) {
     const expected = draftRevisionManifest(data);
     const { data: manifest, error: manifestError } = await state.client.rpc('research_admin_game_draft_manifest', { target_case_id: state.authoringWorkspace.case.id });
-    if (manifestError || JSON.stringify(manifest) !== JSON.stringify(expected)) {
+    if (manifestError || !sameDraftRevisionManifest(manifest, expected)) {
       state.fullDraftCheck = null;
       message.textContent = manifestError ? `Full Draft manifest could not be secured: ${manifestError.message}` : 'Saved drafts changed during Full Draft Check. Run the check again.';
       return;

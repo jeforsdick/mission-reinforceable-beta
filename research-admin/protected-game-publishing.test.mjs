@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { draftRevisionManifest, renderGameCreation } from './game-creation-ui.mjs';
+import { draftRevisionManifest, renderGameCreation, sameDraftRevisionManifest } from './game-creation-ui.mjs';
 
 const sql = fs.readFileSync(new URL('../supabase/migrations/20260824000000_protected_game_publishing.sql', import.meta.url), 'utf8');
 const admin = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
@@ -37,6 +37,56 @@ test('browser binds successful strict validation to the exact latest manifest', 
   assert.match(admin, /research_admin_publish_game_draft/);
   const manifest = draftRevisionManifest({ setup_draft:{revision_id:'s'}, resource_draft:{revision_id:'r'}, missions:[{mission_type:'wild',slot_number:2,revision_id:'w2'},{mission_type:'daily',slot_number:1,revision_id:'d1'}] });
   assert.deepEqual(manifest, { setup_revision_id:'s', resource_revision_id:'r', missions:[{mission_type:'daily',slot_number:1,revision_id:'d1'},{mission_type:'wild',slot_number:2,revision_id:'w2'}] });
+});
+
+test('draft revision manifests compare semantically without depending on object or mission order', () => {
+  const expected = {
+    setup_revision_id: 'setup-1',
+    resource_revision_id: 'resource-1',
+    missions: [
+      { mission_type: 'daily', slot_number: 1, revision_id: 'daily-1' },
+      { mission_type: 'wild', slot_number: 2, revision_id: 'wild-2' },
+      { mission_type: 'crisis', slot_number: 1, revision_id: 'crisis-1' }
+    ]
+  };
+  const reorderedKeys = {
+    missions: expected.missions.map(({ mission_type, slot_number, revision_id }) => ({ revision_id, slot_number: String(slot_number), mission_type })),
+    resource_revision_id: 'resource-1',
+    setup_revision_id: 'setup-1'
+  };
+  const reorderedMissions = { ...reorderedKeys, missions: [...reorderedKeys.missions].reverse() };
+
+  assert.equal(sameDraftRevisionManifest(expected, reorderedKeys), true);
+  assert.equal(sameDraftRevisionManifest(expected, reorderedMissions), true);
+});
+
+test('draft revision manifest comparison detects every protected source change', () => {
+  const manifest = {
+    setup_revision_id: 'setup-1',
+    resource_revision_id: 'resource-1',
+    missions: [
+      { mission_type: 'daily', slot_number: 1, revision_id: 'daily-1' },
+      { mission_type: 'wild', slot_number: 2, revision_id: 'wild-2' }
+    ]
+  };
+  const changed = update => structuredClone(Object.assign(structuredClone(manifest), update));
+
+  assert.equal(sameDraftRevisionManifest(manifest, changed({ setup_revision_id: 'setup-2' })), false);
+  assert.equal(sameDraftRevisionManifest(manifest, changed({ resource_revision_id: 'resource-2' })), false);
+  const changedRevision = changed({}); changedRevision.missions[0].revision_id = 'daily-2';
+  assert.equal(sameDraftRevisionManifest(manifest, changedRevision), false);
+  const missingMission = changed({}); missingMission.missions.pop();
+  assert.equal(sameDraftRevisionManifest(manifest, missingMission), false);
+  const changedSlot = changed({}); changedSlot.missions[0].slot_number = 2;
+  assert.equal(sameDraftRevisionManifest(manifest, changedSlot), false);
+  const changedType = changed({}); changedType.missions[0].mission_type = 'crisis';
+  assert.equal(sameDraftRevisionManifest(manifest, changedType), false);
+});
+
+test('Full Draft Check uses semantic manifest comparison and retains the server manifest', () => {
+  assert.match(admin, /!sameDraftRevisionManifest\(manifest, expected\)/);
+  assert.doesNotMatch(admin, /JSON\.stringify\(manifest\) !== JSON\.stringify\(expected\)/);
+  assert.match(admin, /state\.validatedRevisionManifest = manifest/);
 });
 
 test('all publishing actions and previews use the real nested authoring workspace case', () => {
