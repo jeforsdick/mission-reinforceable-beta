@@ -5,7 +5,10 @@ import { createRequire } from 'node:module';
 const require=createRequire(import.meta.url);
 const service=require('../server/study-day-status-service');
 const handler=require('./study-day-status');
+const adminHandler=require('./research-admin-study-day-status');
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260824040000_study_day_status_reporting.sql',import.meta.url),'utf8');
+const bootstrap=fs.readFileSync(new URL('../supabase/migrations/20260812000000_legacy_schema_bootstrap.sql',import.meta.url),'utf8');
+const participantCompositeKey=fs.readFileSync(new URL('../supabase/migrations/20260818020000_weekly_teacher_checkins.sql',import.meta.url),'utf8');
 const page=fs.readFileSync(new URL('../study-day-status/index.html',import.meta.url),'utf8');
 const browser=fs.readFileSync(new URL('../study-day-status/status.js',import.meta.url),'utf8');
 
@@ -26,6 +29,27 @@ test('opaque URLs are participant/date/reason-scoped while only hashes are persi
  for(const row of inserted)assert.ok(!Object.values(urls).some(url=>url.includes(row.token_hash)));
  assert.deepEqual(Object.keys(urls),['teacher_absent_url','student_absent_url','schedule_disruption_url']);
 });
+test('Research Admin QA derives HTTPS request origin without production URL configuration or email',async()=>{
+ const savedPublic=process.env.PUBLIC_SITE_URL,savedGame=process.env.TEACHER_GAME_URL;
+ delete process.env.PUBLIC_SITE_URL;delete process.env.TEACHER_GAME_URL;
+ process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='service-secret';
+ const calls=[];global.fetch=async(url,options={})=>{calls.push({url:String(url),options});if(String(url).endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:'admin-id'})};if(String(url).includes('/profiles?'))return {ok:true,json:async()=>[{id:'admin-id',role:'research_admin',active:true}]};if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'11111111-1111-4111-8111-111111111111',case_id:'22222222-2222-4222-8222-222222222222',participant_code:'MR-998',cases:{case_code:'CASE-998'}}]};if(String(url).endsWith('/participant_study_day_status_tokens'))return {ok:true};throw new Error(`Unexpected request: ${url}`);};
+ const result=response();await adminHandler({method:'POST',headers:{authorization:'Bearer admin-token','x-forwarded-proto':'https','x-forwarded-host':'qa.mission.example'},body:{action:'generate_qa',case_id:'22222222-2222-4222-8222-222222222222'}},result);
+ assert.equal(result.statusCode,200);assert.equal(result.body.email_sent,false);assert.equal(Object.keys(result.body.urls).length,3);for(const url of Object.values(result.body.urls))assert.match(url,/^https:\/\/qa\.mission\.example\/study-day-status\/\?token=/);
+ assert.ok(calls.some(call=>call.url.endsWith('/participant_study_day_status_tokens')));assert.ok(!calls.some(call=>/resend|email/i.test(call.url)));
+ if(savedPublic===undefined)delete process.env.PUBLIC_SITE_URL;else process.env.PUBLIC_SITE_URL=savedPublic;if(savedGame===undefined)delete process.env.TEACHER_GAME_URL;else process.env.TEACHER_GAME_URL=savedGame;
+});
+test('QA origin rejects insecure non-local HTTP before token insertion',async()=>{
+ process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='secret';let inserted=false;
+ await assert.rejects(service.issueStatusUrls({participantId:'11111111-1111-4111-8111-111111111111',caseId:'22222222-2222-4222-8222-222222222222',studyDate:'2026-08-24',origin:'http://qa.mission.example'},{fetch:async()=>{inserted=true;return {ok:true};}}),/secure PUBLIC_SITE_URL/);assert.equal(inserted,false);
+ assert.equal(adminHandler.requestOrigin({headers:{'x-forwarded-proto':'http',host:'localhost:3000'}}),'http://localhost:3000');
+});
+test('Research Admin logs safe failure context but no raw status token',async()=>{
+ process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='secret';const logs=[];const prior=console.error;console.error=(...values)=>logs.push(values);
+ global.fetch=async(url)=>{if(String(url).endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:'admin-id'})};if(String(url).includes('/profiles?'))return {ok:true,json:async()=>[{id:'admin-id',role:'research_admin',active:true}]};if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'11111111-1111-4111-8111-111111111111',case_id:'22222222-2222-4222-8222-222222222222',participant_code:'MR-998',cases:{case_code:'CASE-998'}}]};return {ok:false};};
+ try{const result=response();await adminHandler({method:'POST',headers:{authorization:'Bearer admin-token','x-forwarded-proto':'https',host:'qa.example'},body:{action:'generate_qa',case_id:'22222222-2222-4222-8222-222222222222'}},result);assert.equal(result.statusCode,500);assert.deepEqual(result.body,{error:'Study-day context request failed'});}finally{console.error=prior;}
+ const output=JSON.stringify(logs);assert.match(output,/generate_qa/);assert.match(output,/22222222-2222-4222-8222-222222222222/);assert.match(output,/Status links could not be issued/);assert.doesNotMatch(output,/[A-Za-z0-9_-]{40,}/);
+});
 test('invalid and expired tokens are rejected without protected data',async()=>{
  assert.equal((await service.recordToken('bad')).status,400);
  process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='secret';
@@ -38,6 +62,10 @@ test('Denver study-date and next-morning buffer handle MST and MDT',()=>{
  assert.equal(service.expiresForStudyDate('2026-08-24').toISOString(),'2026-08-25T12:00:00.000Z');
 });
 test('migration enforces append-only history, idempotency, deterministic latest state, and RLS',()=>{
+ assert.match(migration,/create table public\.participant_study_day_status_tokens/);assert.match(migration,/create table public\.participant_study_day_status_events/);
+ assert.match(bootstrap,/create table if not exists public\.participants[\s\S]*participant_code text not null unique/);assert.match(bootstrap,/case_id uuid not null references public\.cases\(id\)/);assert.match(bootstrap,/create table if not exists public\.cases[\s\S]*case_code text not null unique/);
+ assert.match(participantCompositeKey,/participants_id_case_id_key unique \(id, case_id\)/);assert.match(migration,/foreign key \(participant_id, case_id\) references public\.participants\(id, case_id\)/);
+ assert.match(migration,/insert into public\.participant_study_day_status_events/);assert.match(migration,/grant execute on function public\.record_study_day_status_token\(text\) to service_role/);
  assert.match(migration,/append-only[\s\S]*before update or delete/);assert.match(migration,/token_id uuid unique/);
  assert.match(migration,/order by e\.recorded_at desc, e\.id desc/);assert.match(migration,/supersedes_event_id/);
  assert.match(migration,/revoke all on public\.participant_study_day_status_tokens, public\.participant_study_day_status_events from anon, authenticated/);

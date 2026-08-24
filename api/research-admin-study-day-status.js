@@ -8,6 +8,12 @@ async function rows(path) {
   if (!response.ok) throw new Error('Study-day context could not be loaded');
   return response.json();
 }
+function requestOrigin(request) {
+  const protocol = String(request.headers?.['x-forwarded-proto'] || '').trim().toLowerCase();
+  const host = String(request.headers?.['x-forwarded-host'] || request.headers?.host || '').trim();
+  if (!protocol || !host || protocol.includes(',') || host.includes(',')) throw new Error('Trusted request origin unavailable');
+  return new URL(`${protocol}://${host}`).origin;
+}
 module.exports = async function handler(request, response) {
   if (server.methodGuard(request, response)) return;
   try {
@@ -21,7 +27,8 @@ module.exports = async function handler(request, response) {
       const qa = participant.participant_code === 'MR-998' || ['MR-998', 'CASE-998'].includes(participant.cases?.case_code);
       if (!qa) return server.json(response, 403, { error: 'Status-link QA is restricted to MR-998.' });
       const studyDate = dateParts(new Date(), TIMEZONE);
-      const urls = await issueStatusUrls({ participantId: participant.id, caseId: participant.case_id, studyDate });
+      const origin = requestOrigin(request);
+      const urls = await issueStatusUrls({ participantId: participant.id, caseId: participant.case_id, studyDate, origin });
       return server.json(response, 200, { study_date: studyDate, urls, email_sent: false, export_fixture: true });
     }
     const [history, current] = await Promise.all([
@@ -33,5 +40,14 @@ module.exports = async function handler(request, response) {
       })()
     ]);
     return server.json(response, 200, { history, current, reasons: REASONS });
-  } catch (error) { return server.json(response, error.status || 500, { error: error.status ? error.message : 'Study-day context request failed' }); }
+  } catch (error) {
+    console.error('Research Admin study-day context request failed', {
+      action: request.body?.action,
+      case_id: request.body?.case_id,
+      message: error.message
+    });
+    return server.json(response, error.status || 500, { error: error.status ? error.message : 'Study-day context request failed' });
+  }
 };
+
+module.exports.requestOrigin = requestOrigin;
