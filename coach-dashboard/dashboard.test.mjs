@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { analyzeCase, coachingCopy, sessionPercent, statusFor, targetPerformance } from './dashboard-metrics.mjs';
+import { analyzeCase, coachingCopy, resourceMapUse, sessionPercent, statusFor, targetPerformance } from './dashboard-metrics.mjs';
 import { canAccessCoachDashboard, loadDashboardCases } from './dashboard-access.mjs';
 
 const now = new Date('2026-08-13T12:00:00Z');
@@ -132,14 +132,14 @@ test('research admin loads all active cases and their dashboard data without coa
   const client = mockClient({ cases: [{ id: 'case-a', active: true }, { id: 'case-b', active: true }] });
   const cases = await loadDashboardCases(client, 'admin-user', 'research_admin');
   assert.deepEqual(cases.map(row => row.id), ['case-a', 'case-b']);
-  assert.deepEqual(client.calls.map(call => call.table), ['cases', 'case_intake', 'fidelity_targets', 'game_sessions', 'game_responses']);
+  assert.deepEqual(client.calls.map(call => call.table), ['cases', 'case_intake', 'fidelity_targets', 'game_sessions', 'game_responses', 'game_resource_events']);
   assert.equal(client.calls.some(call => call.table === 'case_coaches'), false);
   assert.equal(client.calls.some(call => call.operations.some(operation => ['insert', 'upsert', 'update'].includes(operation[0]))), false);
   assert.deepEqual(client.calls[0].operations, [['select', 'id, active'], ['eq', 'active', true]]);
   for (const call of client.calls.slice(1)) {
     assert.ok(call.operations.some(operation => operation[0] === 'in' && operation[1] === 'case_id' && operation[2].join(',') === 'case-a,case-b'));
   }
-  for (const call of client.calls.filter(call => ['game_sessions', 'game_responses'].includes(call.table))) {
+  for (const call of client.calls.filter(call => ['game_sessions', 'game_responses', 'game_resource_events'].includes(call.table))) {
     assert.ok(call.operations.some(operation => operation[0] === 'eq' && operation[1] === 'qa_mode' && operation[2] === false));
   }
 });
@@ -175,4 +175,74 @@ test('weekly snapshot copy preserves self-report and classroom-fidelity boundari
   assert.doesNotMatch(source, /Teacher confidence|MR helpfulness|coach_note|target_behavior_rating|replacement_behavior_rating/);
   assert.match(source, /not classroom fidelity/);
   assert.doesNotMatch(source, /weekly[^\n]*(weakest|recommendation|teacher should)/i);
+});
+
+
+test('Resource Map summary distinguishes never visited from an open without sections', () => {
+  assert.deepEqual(resourceMapUse([]), { visited: false, sectionCount: 0, sectionNames: [] });
+  assert.deepEqual(resourceMapUse([{ event_name: 'resources_opened', section_key: null }]), { visited: true, sectionCount: 0, sectionNames: [] });
+});
+
+test('Resource Map summary deduplicates sections and maps canonical keys', () => {
+  const one = resourceMapUse([
+    { event_name: 'resource_section_opened', section_key: 'bip' },
+    { event_name: 'resource_section_opened', section_key: 'bip' }
+  ]);
+  assert.equal(one.sectionCount, 1);
+  assert.deepEqual(one.sectionNames, ['BIP at a Glance']);
+
+  const three = resourceMapUse(['prevention', 'reinforcement', 'functionForest', 'prevention'].map(section_key => ({ event_name: 'resource_section_opened', section_key })));
+  assert.equal(three.sectionCount, 3);
+  assert.deepEqual(three.sectionNames, ['Prevention Palace', 'Reinforcement Ridge', 'Function Forest']);
+});
+
+test('unknown Resource Map section keys are ignored without hiding valid visits', () => {
+  assert.deepEqual(resourceMapUse([{ event_name: 'resource_section_opened', section_key: 'futurePlace' }]), { visited: true, sectionCount: 0, sectionNames: [] });
+});
+
+test('Resource Map UI includes all honest empty and visited states', async () => {
+  const source = await readFile(new URL('./dashboard.js', import.meta.url), 'utf8');
+  assert.match(source, /Not yet visited/);
+  assert.match(source, /Visited · No sections opened yet/);
+  assert.match(source, /sections?'} viewed/);
+  assert.match(source, /Sections viewed:/);
+});
+
+test('Resource Map data follows the existing case-scoped secure query path', async () => {
+  const client = mockClient({ cases: [{ id: 'case-a', active: true }], game_resource_events: [
+    { case_id: 'case-a', event_name: 'resource_section_opened', section_key: 'coaching', qa_mode: false }
+  ] });
+  const [caseData] = await loadDashboardCases(client, 'admin-user', 'research_admin');
+  assert.equal(caseData.resourceEvents.length, 1);
+  const call = client.calls.find(row => row.table === 'game_resource_events');
+  assert.deepEqual(call.operations, [
+    ['select', 'case_id, event_name, section_key, qa_mode'],
+    ['in', 'case_id', ['case-a']],
+    ['eq', 'qa_mode', false]
+  ]);
+});
+
+test('Resource Map table keeps its exact RLS grants and role-scoped policies', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20260819050000_resource_usage_telemetry.sql', import.meta.url), 'utf8');
+  const sql = migration.replace(/\s+/g, ' ');
+
+  assert.match(sql, /alter table public\.game_resource_events enable row level security;/i);
+  assert.match(sql, /revoke all on table public\.game_resource_events from anon, authenticated;/i);
+  assert.match(sql, /grant select, insert on table public\.game_resource_events to authenticated;/i);
+
+  assert.match(sql, /create policy "Participants create their own resource events" on public\.game_resource_events for insert to authenticated with check \( qa_mode = false and public\.owns_active_participant_case\(participant_id, case_id\) \);/i);
+  assert.match(sql, /create policy "Assigned coaches read participant resource events" on public\.game_resource_events for select to authenticated using \(qa_mode = false and public\.is_active_case_coach\(case_id\)\);/i);
+  assert.match(sql, /create policy "Research admins read resource events" on public\.game_resource_events for select to authenticated using \(\(select public\.is_research_admin\(\)\)\);/i);
+  assert.match(sql, /create policy "Research admins create QA resource events" on public\.game_resource_events for insert to authenticated/i);
+
+  const selectPolicies = sql.match(/create policy [^;]+ on public\.game_resource_events for select to authenticated [^;]+;/gi) || [];
+  assert.equal(selectPolicies.length, 2, 'only assigned-coach and research-admin SELECT policies may exist');
+  assert.doesNotMatch(sql, /grant select[^;]*on table public\.game_resource_events to anon/i);
+  assert.doesNotMatch(sql, /for select to authenticated using \((?:true|auth\.uid\(\) is not null)\)/i);
+});
+
+test('teacher heading explicitly renders white without changing authorization', async () => {
+  const css = await readFile(new URL('./dashboard.css', import.meta.url), 'utf8');
+  assert.match(css, /\.teacher-heading h1\{color:#fff\}/);
+  assert.equal(canAccessCoachDashboard({ role: 'teacher', active: true }), false);
 });

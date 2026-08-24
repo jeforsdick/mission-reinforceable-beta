@@ -2,6 +2,27 @@ export const DOMAINS = ['proactive', 'teaching', 'reinforcement', 'response', 'c
 export const DOMAIN_LABELS = { proactive: 'Proactive', teaching: 'Teaching', reinforcement: 'Reinforcement', response: 'Response', crisis: 'Crisis' };
 export const MIN_OPPORTUNITIES = 2;
 
+// These are the canonical Resource Map keys and titles used by game/js/resources.js.
+export const RESOURCE_SECTION_LABELS = {
+  bip: 'BIP at a Glance',
+  functionForest: 'Function Forest',
+  prevention: 'Prevention Palace',
+  replacement: 'Replacement Reservoir',
+  reinforcement: 'Reinforcement Ridge',
+  errorCorrection: 'Error Correction Canyon',
+  library: 'BSP Library',
+  coaching: 'Coaching Cottage',
+  fidelity: 'Fidelity Fortress'
+};
+
+export function resourceMapUse(events = []) {
+  const relevant = events.filter(row => ['resources_opened', 'resource_section_opened'].includes(row?.event_name));
+  const sectionKeys = [...new Set(relevant
+    .filter(row => row.event_name === 'resource_section_opened' && RESOURCE_SECTION_LABELS[row.section_key])
+    .map(row => row.section_key))];
+  return { visited: relevant.length > 0, sectionCount: sectionKeys.length, sectionNames: sectionKeys.map(key => RESOURCE_SECTION_LABELS[key]) };
+}
+
 export function percent(aligned, total) {
   return total > 0 ? Math.round((aligned / total) * 100) : null;
 }
