@@ -183,6 +183,7 @@ function bindDetail() {
   document.querySelectorAll('.create-account').forEach(button => button.addEventListener('click', () => createAccount(button.dataset.type, button)));
   $('.qa-link')?.addEventListener('click', generateQaLink);
   $('#test-password-form')?.addEventListener('submit', setTestPassword);
+  $('.generate-weekly-checkin')?.addEventListener('click', generateWeeklyCheckin);
   $('#preview-protected-game')?.addEventListener('click', event => {
     // Preview Game is QA only. This does not turn the game on or count as study data.
     const caseCode = event.currentTarget.dataset.caseCode;
@@ -206,6 +207,12 @@ function bindDetail() {
   bindMissionBuilder();
   bindSetupAndResources();
   if ($('#fidelity-form-wrap')) renderFidelityForm();
+}
+
+async function generateWeeklyCheckin(event) {
+  const button=event.currentTarget; button.disabled=true;
+  try { const result=await adminApi('/api/research-admin-study-day-status',{action:'generate_weekly_qa',case_id:state.readiness.case.id,week_start:button.dataset.weekStart}); const target=$('#weekly-checkin-qa-result'); target.innerHTML=`<strong>No email sent.</strong><br>${result.qualtrics_configured?`<a href="${escapeHtml(result.qualtrics_url)}" target="_blank" rel="noopener">Open QA Qualtrics link</a><br>`:'Qualtrics URL not configured<br>'}<a href="${escapeHtml(result.completion_test_url)}" target="_blank" rel="noopener">Test completion return</a>`; }
+  catch(error){ $('#weekly-checkin-qa-result').textContent=error.message; button.disabled=false; }
 }
 
 async function saveIntakeChanges(event) {
@@ -373,6 +380,7 @@ async function loadReadiness(requestId) {
   const { data: fidelity, error: fidelityError } = await state.client.rpc('research_admin_procedural_fidelity_dashboard', { target_case_id: data.case.id });
   if (fidelityError) throw fidelityError; state.fidelity = fidelity; state.readiness = data;
   const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{target_case_id:data.case.id}); if(operationsError) throw operationsError; const {data:observationData,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{target_case_id:data.case.id});if(observationError)throw observationError;
+  const participantId=fidelity.participant_id; const {data:weeklyCheckins,error:weeklyError}=await state.client.rpc('research_admin_weekly_checkins',{target_participant_id:participantId,target_case_id:data.case.id}); if(weeklyError)throw weeklyError;
   const { data: authoring, error: authoringError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: data.case.id });
   state.authoringWorkspace = authoringError ? null : authoring;
   state.setupDraft = state.authoringWorkspace ? setupFromWorkspace(state.authoringWorkspace) : null;
@@ -383,7 +391,7 @@ async function loadReadiness(requestId) {
   state.publishedSource = publishedVersion || null;
   try { state.communications = await communicationReadiness(); } catch { state.communications = { teacher_reminder_system_enabled: false, game_login_email_enabled: false }; }
   let studyDayStatus={history:[],current:[]};try{studyDayStatus=await adminApi('/api/research-admin-study-day-status',{action:'history',case_id:data.case.id});}catch{}
-  state.caseOperations=operations.cases?.[0];state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData;state.caseOperations.study_day_status=studyDayStatus; return data;
+  state.caseOperations=operations.cases?.[0];state.caseOperations.weekly_checkins=weeklyCheckins||[];state.caseOperations.weekly_qualtrics_configured=null;state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData;state.caseOperations.study_day_status=studyDayStatus; return data;
 }
 function readinessPanel(data) {
   const manifest=state.authoringWorkspace&&draftRevisionManifest(state.authoringWorkspace),source=state.publishedSource;

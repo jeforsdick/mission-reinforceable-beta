@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+const migration=fs.readFileSync(new URL('../supabase/migrations/20260824070000_external_weekly_qualtrics_checkins.sql',import.meta.url),'utf8');
+test('schema stores administration metadata but no Qualtrics answers',()=>{assert.match(migration,/participant_weekly_checkins/);assert.doesNotMatch(migration,/target_behavior_rating|replacement_behavior_rating|social_validity|teacher_comment|survey_answer/);assert.match(migration,/raw tokens are never persisted/i);});
+test('completion is idempotent and stamps both records',()=>{assert.match(migration,/coalesce\(token_row\.completed_at,now\(\)\)/);assert.match(migration,/completed_at=coalesce\(completed_at,completion_time\)/);});
+test('expectation is phase-bound and independent of daily unavailable events',()=>{assert.match(migration,/phase='intervention'/);assert.doesNotMatch(migration,/teacher_unavailable/);assert.match(migration,/target_week_start\+4<intervention_start/);});
+test('browser mutation and production sending remain disabled',()=>{assert.match(migration,/revoke all .*anon,authenticated/);assert.doesNotMatch(fs.readFileSync(new URL('../vercel.json',import.meta.url),'utf8'),/weekly-checkin/);assert.doesNotMatch(fs.readFileSync(new URL('./research-admin-study-day-status.js',import.meta.url),'utf8'),/resend|sendEmail|TEACHER_REMINDER_SYSTEM_ENABLED/i);});
+
+test('same-date phase corrections resolve before Intervention boundaries',()=>{assert.equal((migration.match(/partition by pe\.effective_date order by pe\.recorded_at desc,pe\.id desc/g)||[]).length,4);assert.doesNotMatch(migration,/phase='intervention' order by pe\.effective_date,pe\.recorded_at limit 1/);});
