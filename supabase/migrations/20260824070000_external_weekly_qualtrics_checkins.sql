@@ -34,8 +34,12 @@ begin
  select p.participant_code into target_code from public.participants p where p.id=target_participant_id and p.case_id=target_case_id;
  if target_code is null then raise exception 'participant/case assignment not found' using errcode='P0002'; end if;
  is_qa := target_code='MR-998';
- select pe.effective_date into intervention_start from public.research_case_phase_events pe where pe.case_id=target_case_id and pe.phase='intervention' order by pe.effective_date,pe.recorded_at limit 1;
- select (pe.effective_date-1) into intervention_end from public.research_case_phase_events pe where pe.case_id=target_case_id and pe.effective_date>intervention_start and pe.phase<>'intervention' order by pe.effective_date,pe.recorded_at limit 1;
+ with resolved as (
+   select phase,effective_date from (select pe.phase,pe.effective_date,row_number() over(partition by pe.effective_date order by pe.recorded_at desc,pe.id desc) precedence from public.research_case_phase_events pe where pe.case_id=target_case_id) ranked where precedence=1
+ ) select r.effective_date into intervention_start from resolved r where r.phase='intervention' order by r.effective_date limit 1;
+ with resolved as (
+   select phase,effective_date from (select pe.phase,pe.effective_date,row_number() over(partition by pe.effective_date order by pe.recorded_at desc,pe.id desc) precedence from public.research_case_phase_events pe where pe.case_id=target_case_id) ranked where precedence=1
+ ) select r.effective_date-1 into intervention_end from resolved r where r.effective_date>intervention_start and r.phase<>'intervention' order by r.effective_date limit 1;
  intervention_end:=coalesce(intervention_end,(now() at time zone 'America/Denver')::date+365);
  if intervention_start is null or target_week_start+4<intervention_start or target_week_start>intervention_end
    or not exists(select 1 from generate_series(target_week_start,target_week_start+4,interval '1 day') d where public.is_mr_dissertation_study_day(d::date))
@@ -70,8 +74,12 @@ declare result jsonb; intervention_start date; intervention_end date;
 begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
  if not exists(select 1 from public.participants p where p.id=target_participant_id and p.case_id=target_case_id) then raise exception 'participant/case assignment not found' using errcode='P0002'; end if;
- select pe.effective_date into intervention_start from public.research_case_phase_events pe where pe.case_id=target_case_id and pe.phase='intervention' order by pe.effective_date,pe.recorded_at limit 1;
- select pe.effective_date-1 into intervention_end from public.research_case_phase_events pe where pe.case_id=target_case_id and pe.effective_date>intervention_start and pe.phase<>'intervention' order by pe.effective_date,pe.recorded_at limit 1;
+ with resolved as (
+   select phase,effective_date from (select pe.phase,pe.effective_date,row_number() over(partition by pe.effective_date order by pe.recorded_at desc,pe.id desc) precedence from public.research_case_phase_events pe where pe.case_id=target_case_id) ranked where precedence=1
+ ) select r.effective_date into intervention_start from resolved r where r.phase='intervention' order by r.effective_date limit 1;
+ with resolved as (
+   select phase,effective_date from (select pe.phase,pe.effective_date,row_number() over(partition by pe.effective_date order by pe.recorded_at desc,pe.id desc) precedence from public.research_case_phase_events pe where pe.case_id=target_case_id) ranked where precedence=1
+ ) select r.effective_date-1 into intervention_end from resolved r where r.effective_date>intervention_start and r.phase<>'intervention' order by r.effective_date limit 1;
  intervention_end:=coalesce(intervention_end,(now() at time zone 'America/Denver')::date);
  select coalesce(jsonb_agg(jsonb_build_object('week_start',w.monday,'week_end',w.monday+4,'expected',true,'link_issued_at',c.link_issued_at,'completed_at',c.completed_at,'qa_mode',coalesce(c.qa_mode,false),'status',case when c.completed_at is not null then 'complete' when c.link_issued_at is not null then 'link_issued' when w.monday>(now() at time zone 'America/Denver')::date then 'upcoming' else 'due' end) order by w.monday),'[]'::jsonb)
  into result from (select d::date monday from generate_series(intervention_start-(extract(isodow from intervention_start)::int-1),intervention_end,interval '7 days') d where intervention_start is not null and d::date<=intervention_end and d::date+4>=intervention_start and exists(select 1 from generate_series(d::date,d::date+4,interval '1 day') sd where public.is_mr_dissertation_study_day(sd::date))) w left join public.participant_weekly_checkins c on c.participant_id=target_participant_id and c.case_id=target_case_id and c.week_start=w.monday;

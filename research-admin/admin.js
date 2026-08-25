@@ -211,7 +211,7 @@ function bindDetail() {
 
 async function generateWeeklyCheckin(event) {
   const button=event.currentTarget; button.disabled=true;
-  try { const result=await adminApi('/api/research-admin-weekly-checkin',{participant_id:state.fidelity.participant_id,case_id:state.readiness.case.id,week_start:button.dataset.weekStart}); const target=$('#weekly-checkin-qa-result'); target.innerHTML=`<strong>No email sent.</strong><br>${result.qualtrics_configured?`<a href="${escapeHtml(result.qualtrics_url)}" target="_blank" rel="noopener">Open QA Qualtrics link</a><br>`:'Qualtrics URL not configured<br>'}<a href="${escapeHtml(result.completion_test_url)}" target="_blank" rel="noopener">Test completion return</a>`; }
+  try { const result=await adminApi('/api/research-admin-study-day-status',{action:'generate_weekly_qa',case_id:state.readiness.case.id,week_start:button.dataset.weekStart}); const target=$('#weekly-checkin-qa-result'); target.innerHTML=`<strong>No email sent.</strong><br>${result.qualtrics_configured?`<a href="${escapeHtml(result.qualtrics_url)}" target="_blank" rel="noopener">Open QA Qualtrics link</a><br>`:'Qualtrics URL not configured<br>'}<a href="${escapeHtml(result.completion_test_url)}" target="_blank" rel="noopener">Test completion return</a>`; }
   catch(error){ $('#weekly-checkin-qa-result').textContent=error.message; button.disabled=false; }
 }
 

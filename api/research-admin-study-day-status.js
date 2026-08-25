@@ -1,6 +1,7 @@
 'use strict';
 const server = require('./research-admin-server');
 const { issueStatusUrls, dateParts, TIMEZONE, REASONS } = require('../server/study-day-status-service');
+const weekly = require('../server/weekly-checkin-service');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function rows(path) {
@@ -37,10 +38,18 @@ module.exports = async function handler(request, response) {
   try {
     await server.authorize(request);
     const body = request.body || {};
-    if (!UUID.test(body.case_id || '') || !['history', 'generate_qa'].includes(body.action)) return server.json(response, 400, { error: 'Invalid request' });
+    if (!UUID.test(body.case_id || '') || !['history', 'generate_qa', 'generate_weekly_qa'].includes(body.action)) return server.json(response, 400, { error: 'Invalid request' });
     const participants = await rows(`/rest/v1/participants?case_id=eq.${encodeURIComponent(body.case_id)}&select=id,case_id,participant_code,cases!inner(case_code)&limit=1`);
     if (participants.length !== 1) return server.json(response, 404, { error: 'Participant not found' });
     const participant = participants[0];
+    if (body.action === 'generate_weekly_qa') {
+      if (participant.participant_code !== 'MR-998' || !/^\d{4}-\d{2}-\d{2}$/.test(body.week_start || '')) return server.json(response, 403, { error: 'Weekly check-in QA is restricted to MR-998.' });
+      const raw = weekly.createRawToken(), tokenHash = weekly.hashToken(raw);
+      const rpc = await server.supabaseFetch('/rest/v1/rpc/research_admin_generate_weekly_checkin', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id, target_week_start: body.week_start, target_token_hash: tokenHash }) });
+      if (!rpc.ok) return server.json(response, 409, { error: 'Weekly check-in could not be generated' });
+      const origin = requestOrigin(request);
+      return server.json(response, 200, { qualtrics_url: weekly.buildQualtricsUrl(raw), completion_test_url: weekly.completionUrl(raw, origin), qualtrics_configured: Boolean(process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL), email_sent: false, message: 'No email sent.' });
+    }
     if (body.action === 'generate_qa') {
       const qa = participant.participant_code === 'MR-998' || ['MR-998', 'CASE-998'].includes(participant.cases?.case_code);
       if (!qa) return server.json(response, 403, { error: 'Status-link QA is restricted to MR-998.' });
