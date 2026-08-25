@@ -51,4 +51,4 @@ function methodGuard(request, response) {
   if (request.method === 'POST') return false;
   response.setHeader('Allow', 'POST'); json(response, 405, { error: 'Method not allowed' }); return true;
 }
-module.exports = { audit, authorize, authUsersForEmail, intake, json, methodGuard, normalizeEmail, profilesForEmail, supabaseFetch };
+module.exports = { UUID_PATTERN, audit, authorize, authUsersForEmail, intake, json, methodGuard, normalizeEmail, profilesForEmail, supabaseFetch };

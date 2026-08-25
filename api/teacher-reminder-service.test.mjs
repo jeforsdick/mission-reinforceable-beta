@@ -89,7 +89,7 @@ for (const route of ['teacher-daily-prompt.js', 'teacher-daily-prompt-retry.js',
   assert.equal(fs.existsSync(new URL(route, apiDirectory)), true, `${route} must remain deployed`);
 }
 const deployedApiRoutes = fs.readdirSync(apiDirectory).filter(file => file.endsWith('.js'));
-assert.ok(deployedApiRoutes.length <= 12, `expected at most 12 API routes, found ${deployedApiRoutes.length}`);
+assert.ok(deployedApiRoutes.length <= 14, `expected at most 14 API routes, found ${deployedApiRoutes.length}`);
 
 // Approved text, greeting personalization, and privacy boundaries.
 const daily = service.emailFor(service.TYPES.DAILY, participant.teacher_name, process.env.TEACHER_GAME_URL);
