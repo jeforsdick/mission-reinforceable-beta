@@ -10,7 +10,14 @@ test('cleanup has an explicit allowlist and protects both reserved fixture pairs
     assert.match(sql, new RegExp(`protected[^\\n]*${code.replaceAll('-', '\\-')}|${code.replaceAll('-', '\\-')}[^\\n]*protected`, 'i'));
   }
   assert.match(sql, /cleanup_case_allowlist/);
-  assert.match(sql, /\('CASE-999', 'MR-999', '[^']+'\)/);
+  const destructiveAllowlist = sql.match(/insert into cleanup_case_allowlist values([\s\S]*?)\n\n-- Capture IDs/i)?.[1] ?? '';
+  const targetedPairs = [...destructiveAllowlist.matchAll(/\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/g)]
+    .map(([, caseCode, participantCode, reason]) => [caseCode, participantCode, reason]);
+  assert.deepEqual(targetedPairs, [
+    ['CASE-DEMO', 'MR-DEMO', 'obsolete predecessor demo fixture'],
+    ['CASE-999', 'MR-999', 'obsolete fictional authoring/database QA fixture'],
+  ]);
+  assert.doesNotMatch(destructiveAllowlist, /CASE-998|MR-998|CASE-DEMO-2|MR-DEMO-2/);
   assert.doesNotMatch(sql, /delete\s+from[\s\S]{0,160}(?:<>|!=|not\s+in)\s*\(?\s*['"]CASE-998/i);
 });
 
