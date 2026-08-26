@@ -46,6 +46,33 @@ test('cleanup never deletes Auth users or profiles and is not a migration', () =
   assert.doesNotMatch(path.pathname, /supabase\/migrations/);
 });
 
+test('only CASE-999 / MR-999 may omit its auth user and profile', () => {
+  const profileGuard = sql.match(/if exists \([\s\S]*?join public[.]profiles pr[\s\S]*?raise exception 'cleanup aborted: allowlisted participant has a missing or non-test teacher profile';/i)?.[0] ?? '';
+
+  assert.match(profileGuard, /left join public[.]profiles pr on pr[.]id = t[.]auth_user_id/i);
+  assert.match(profileGuard, /where pr[.]id is null\s+and not \(\s*t[.]case_code = 'CASE-999'\s+and t[.]participant_code = 'MR-999'\s+and t[.]auth_user_id is null\s*\)/i);
+  assert.equal((profileGuard.match(/auth_user_id is null/gi) ?? []).length, 1);
+  assert.doesNotMatch(profileGuard, /case_code\s+in\s*\([^)]*CASE-999/i);
+  assert.doesNotMatch(profileGuard, /participant_code\s+in\s*\([^)]*MR-999/i);
+});
+
+test('CASE-DEMO / MR-DEMO remains subject to linked fake teacher validation', () => {
+  const profileGuard = sql.match(/if exists \([\s\S]*?join public[.]profiles pr[\s\S]*?raise exception 'cleanup aborted: allowlisted participant has a missing or non-test teacher profile';/i)?.[0] ?? '';
+
+  assert.match(profileGuard, /pr[.]role <> 'teacher'/i);
+  assert.match(profileGuard, /pr[.]email is null/i);
+  assert.match(profileGuard, /pr[.]email !~\* '@testemail\[.\]com\$'/i);
+  assert.doesNotMatch(profileGuard, /CASE-DEMO[\s\S]{0,100}auth_user_id is null/i);
+  assert.doesNotMatch(profileGuard, /MR-DEMO[\s\S]{0,100}auth_user_id is null/i);
+});
+
+test('fake-account report naturally excludes targets without linked profiles', () => {
+  const report = sql.match(/create temp table cleanup_fake_teacher_accounts[\s\S]*?;/i)?.[0] ?? '';
+
+  assert.match(report, /from cleanup_targets t join public[.]profiles pr on pr[.]id = t[.]auth_user_id/i);
+  assert.doesNotMatch(report, /left join|CASE-999|MR-999/i);
+});
+
 test('every persistent table and trigger named by cleanup exists in the final migration schema', () => {
   const migrationsDirectory = new URL('../supabase/migrations/', import.meta.url);
   const migrations = readdirSync(migrationsDirectory)
