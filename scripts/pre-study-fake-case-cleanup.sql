@@ -170,6 +170,11 @@ begin
     select 1 from cleanup_targets t
     left join public.profiles pr on pr.id = t.auth_user_id
     where pr.id is null
+      and not (
+        t.case_code = 'CASE-999'
+        and t.participant_code = 'MR-999'
+        and t.auth_user_id is null
+      )
   ) then
     raise exception 'cleanup aborted: allowlisted participant has a missing or non-test teacher profile';
   end if;
