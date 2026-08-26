@@ -28,6 +28,20 @@ The first local attempt stopped before touching a database because the authoring
 
 The PR's Vercel deployment is **Ready**. Static route/configuration checks also confirm 12 deployable API files with no duplicate route introduced by this audit.
 
+## PRE-STUDY DATA CLEANUP
+
+Use the one-time, non-migration `scripts/pre-study-fake-case-cleanup.sql` only in the
+Supabase SQL Editor. First run its SELECT-only preview and compare every listed case
+with Research Admin. Then run the complete transaction unchanged so its default
+`ROLLBACK` provides a rehearsal. Confirm the verification results retain both
+`CASE-998` / `MR-998` and `CASE-DEMO-2` / `MR-DEMO-2`, remove only the approved
+allowlist, and report no orphan references. Only after that review should the final
+`ROLLBACK` be changed to `COMMIT` and the complete script rerun.
+
+The cleanup does not delete Supabase Auth users or profiles. Review its final report
+and handle any now-unused fake Auth accounts separately, while preserving Research
+Admin and any account that still has another assignment.
+
 ## NEEDS MANUAL PRODUCTION CONFIGURATION
 
 - Point and validate the `missionreinforceable.com` production domain.
