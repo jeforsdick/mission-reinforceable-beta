@@ -12,7 +12,43 @@
 -- PERMANENTLY PROTECTED: CASE-998 / MR-998 and CASE-DEMO-2 / MR-DEMO-2.
 
 /* ========================================================================
-   SELECT-ONLY PREVIEW (safe to run by itself)
+   SELECT-ONLY FULL INVENTORY (safe to run by itself)
+   ======================================================================== */
+-- Review every non-protected current assignment in Research Admin. This query
+-- is deliberately broader than the destructive allowlist below: appearing here
+-- does NOT authorize deletion. Exact additional case/participant pairs must be
+-- approved by Jess and then added to both allowlist VALUES blocks with evidence.
+select
+  c.id as case_id,
+  c.case_code,
+  p.id as participant_id,
+  p.participant_code,
+  pr.email as teacher_email,
+  coalesce((
+    select pe.phase
+    from public.research_case_phase_events pe
+    where pe.case_id = c.id
+    order by pe.effective_date desc, pe.recorded_at desc, pe.id desc
+    limit 1
+  ), 'not_started') as current_phase,
+  c.created_at as case_created_at,
+  p.created_at as participant_created_at,
+  exists (
+    select 1 from public.game_sessions gs
+    where gs.case_id = c.id and (p.id is null or gs.participant_id = p.id)
+  ) as has_gameplay,
+  exists (
+    select 1 from public.case_game_content gc where gc.case_id = c.id
+  ) as has_protected_content
+from public.cases c
+left join public.participants p on p.case_id = c.id
+left join public.profiles pr on pr.id = p.auth_user_id
+where not (c.case_code = 'CASE-998' and p.participant_code = 'MR-998')
+  and not (c.case_code = 'CASE-DEMO-2' and p.participant_code = 'MR-DEMO-2')
+order by c.created_at, c.case_code, p.participant_code;
+
+/* ========================================================================
+   SELECT-ONLY DESTRUCTIVE-ALLOWLIST PREVIEW (safe to run by itself)
    ======================================================================== */
 with obsolete_case_allowlist(case_code, participant_code, evidence) as (
   values
@@ -147,8 +183,6 @@ from cleanup_targets t join public.profiles pr on pr.id = t.auth_user_id;
 -- Immutable/append-only history triggers protect normal application behavior.
 -- Disable only the named DELETE blockers in this transaction, then restore them.
 alter table public.research_classroom_observation_summary_revisions disable trigger research_classroom_observation_summary_revisions_no_delete;
-alter table public.research_classroom_ioa_results disable trigger research_classroom_ioa_results_no_delete;
-alter table public.research_classroom_observation_records disable trigger research_classroom_observation_records_no_delete;
 alter table public.research_classroom_observations disable trigger research_classroom_observations_no_delete;
 alter table public.research_observation_setup_events disable trigger research_observation_setup_events_no_delete;
 alter table public.research_case_protocol disable trigger research_case_protocol_no_delete;
@@ -165,11 +199,7 @@ alter table public.research_intervention_launch_events disable trigger research_
 alter table public.participant_study_day_status_events disable trigger participant_study_day_status_events_immutable;
 
 -- Child-first manual order. No ON DELETE behavior is assumed.
-delete from public.research_classroom_ioa_results where observation_id in
-  (select o.id from public.research_classroom_observations o join cleanup_targets t on t.case_id=o.case_id);
 delete from public.research_classroom_observation_summary_revisions where observation_id in
-  (select o.id from public.research_classroom_observations o join cleanup_targets t on t.case_id=o.case_id);
-delete from public.research_classroom_observation_records where observation_id in
   (select o.id from public.research_classroom_observations o join cleanup_targets t on t.case_id=o.case_id);
 delete from public.research_classroom_observations o using cleanup_targets t where o.case_id=t.case_id;
 delete from public.research_observation_setup_events o using cleanup_targets t where o.case_id=t.case_id;
@@ -182,7 +212,6 @@ delete from public.participant_weekly_checkins e using cleanup_targets t where e
 delete from public.research_intervention_launch_events e using cleanup_targets t where e.participant_id=t.participant_id and e.case_id=t.case_id;
 delete from public.mr_procedural_fidelity_reviews e using cleanup_targets t where e.participant_id=t.participant_id and e.case_id=t.case_id;
 delete from public.research_admin_test_account_actions e using cleanup_targets t where e.participant_id=t.participant_id and e.case_id=t.case_id;
-delete from public.weekly_teacher_checkins e using cleanup_targets t where e.participant_id=t.participant_id and e.case_id=t.case_id;
 delete from public.teacher_reminder_events e using cleanup_targets t where e.participant_id=t.participant_id and e.case_id=t.case_id;
 delete from public.teacher_reminder_settings e using cleanup_targets t where e.participant_id=t.participant_id;
 delete from public.game_resource_events e using cleanup_targets t where e.participant_id=t.participant_id and e.case_id=t.case_id;
@@ -190,7 +219,6 @@ delete from public.game_responses e using cleanup_targets t where e.participant_
 delete from public.game_sessions e using cleanup_targets t where e.participant_id=t.participant_id and e.case_id=t.case_id;
 
 delete from public.case_protected_content_signoffs e using cleanup_targets t where e.case_id=t.case_id;
-delete from public.mission_bank_comparability_reviews e using cleanup_targets t where e.case_id=t.case_id;
 delete from public.case_game_content_versions e using cleanup_targets t where e.case_id=t.case_id;
 delete from public.case_game_mission_draft_revisions e using cleanup_targets t where e.case_id=t.case_id;
 delete from public.case_game_resource_draft_revisions e using cleanup_targets t where e.case_id=t.case_id;
@@ -215,8 +243,6 @@ delete from public.cases c using cleanup_targets t where c.id=t.case_id;
 
 -- Restore normal immutable-history behavior before verification/COMMIT.
 alter table public.research_classroom_observation_summary_revisions enable trigger research_classroom_observation_summary_revisions_no_delete;
-alter table public.research_classroom_ioa_results enable trigger research_classroom_ioa_results_no_delete;
-alter table public.research_classroom_observation_records enable trigger research_classroom_observation_records_no_delete;
 alter table public.research_classroom_observations enable trigger research_classroom_observations_no_delete;
 alter table public.research_observation_setup_events enable trigger research_observation_setup_events_no_delete;
 alter table public.research_case_protocol enable trigger research_case_protocol_no_delete;
