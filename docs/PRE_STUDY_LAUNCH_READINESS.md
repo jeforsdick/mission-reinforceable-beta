@@ -5,7 +5,7 @@ Audit date: 2026-08-26. Baseline: `66f46df` (current `main` snapshot supplied to
 ## PASS — Ready for study
 
 - **Repository regression suite:** `node --test` passed all 355 tests. The suite covers authorization, Research Admin, Coaching Dashboard, observations, reminders, protected authoring/publishing, gameplay and telemetry, study-day status/adherence, weekly Qualtrics tracking, phase boundaries, and calendar parity.
-- **Clean replay process:** `scripts/replay-clean-supabase.sh` provides one fail-fast, local-only command that starts Supabase, resets an empty local database through every committed migration, lints the result, and runs the migration architecture test. It never uses `--linked`, a remote database URL, skipped migrations, or repair SQL.
+- **Clean replay process:** `scripts/replay-clean-supabase.sh` provides one fail-fast, local-only command that starts Supabase, resets an empty local database through every committed migration, lints the result, and runs the migration architecture test. The **Clean Supabase migration replay / Replay every migration from empty** GitHub Actions check runs that command on a disposable Ubuntu runner without production secrets. Neither path uses `--linked`, a remote database URL, skipped migrations, or repair SQL.
 - **Protected authoring:** append-only setup, Resource Map, and mission drafts; full-draft preview/validation; immutable publishing; and version-bound Behavior, Privacy, and QA reviews are represented in migrations and exercised by tests.
 - **Gameplay and telemetry:** sessions, responses, hints, completion integrity, QA exclusion, Resource Map events, access audit, and reminder architecture are represented and tested.
 - **Study-day excuse and adherence:** hashed status tokens, append-only status events, current teacher-unavailable state, and the expected-mission denominator are represented and tested. Phase calculations exclude Baseline and stop at the next post-Intervention phase.
@@ -16,17 +16,17 @@ Audit date: 2026-08-26. Baseline: `66f46df` (current `main` snapshot supplied to
 
 ### Clean replay evidence status
 
-The required **true database replay is not yet evidenced by this execution environment**. The exact command is:
+The required **true database replay must be evidenced by the GitHub Actions check named `Clean Supabase migration replay / Replay every migration from empty`**. The exact command used locally and in CI is:
 
 ```sh
 ./scripts/replay-clean-supabase.sh
 ```
 
-It stopped before touching a database because this environment has neither the Supabase CLI nor Docker. Installing Docker was also blocked by the environment's package mirror. Therefore the clean replay result for this audit run is **FAIL (environment prerequisite unavailable)**, not a claim that a migration failed. No first SQL migration failure was encountered, and no migration was changed.
+The first local attempt stopped before touching a database because the authoring environment had neither the Supabase CLI nor Docker. CI now supplies both prerequisites on an isolated runner. Until the named check completes successfully, clean replay remains **PENDING** and must not be represented as a static-test pass. No SQL migration failure has yet been encountered, and no migration has been changed.
 
 ### Vercel evidence status
 
-Static route/configuration and tests passed, but an actual preview was not possible because this environment has no Vercel CLI, project link, or Vercel credentials. Vercel Ready status is therefore **NOT VERIFIED**, rather than Ready.
+The PR's Vercel deployment is **Ready**. Static route/configuration checks also confirm 12 deployable API files with no duplicate route introduced by this audit.
 
 ## NEEDS MANUAL PRODUCTION CONFIGURATION
 
@@ -36,13 +36,10 @@ Static route/configuration and tests passed, but an actual preview was not possi
 - Configure the real Qualtrics weekly survey URL.
 - Configure the Qualtrics embedded token and completion redirect.
 - Keep the production reminder kill switch **OFF** until end-to-end production validation succeeds.
-- In an isolated Docker-capable environment, run `./scripts/replay-clean-supabase.sh` and retain its successful output.
-- Run a Vercel preview with the production project's authorized credentials and require **Ready** before launch.
 
 ## BLOCKERS
 
-- Clean database replay evidence is blocked in this environment by missing Supabase CLI/Docker prerequisites. This is a release-evidence blocker, not a discovered schema defect.
-- Vercel preview Ready evidence is blocked in this environment by missing CLI/project credentials. This is a deployment-evidence blocker, not a discovered route defect.
+- Clean database replay remains a release-evidence blocker until `Clean Supabase migration replay / Replay every migration from empty` completes successfully. If it fails, the first genuine SQL failure must be repaired and the entire check rerun from empty.
 - No repository-architecture blocker was identified by the static audit or 355-test suite.
 
 ## POST-LAUNCH / NOT REQUIRED

@@ -3,6 +3,14 @@ set -euo pipefail
 
 # Destructive operations are deliberately restricted to the local Supabase stack.
 # Never add --linked or a production database URL to this script.
+if [[ $# -ne 0 ]]; then
+  echo "this script accepts no project ref, database URL, or CLI arguments" >&2
+  exit 64
+fi
+if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" || -n "${SUPABASE_DB_URL:-}" ]]; then
+  echo "refusing to replay while remote Supabase credentials are present" >&2
+  exit 64
+fi
 if ! command -v supabase >/dev/null 2>&1; then
   echo "supabase CLI is required" >&2
   exit 127
