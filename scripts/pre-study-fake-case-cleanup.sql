@@ -163,9 +163,18 @@ begin
   if exists (
     select 1 from cleanup_targets t
     join public.profiles pr on pr.id = t.auth_user_id
-    where pr.role <> 'teacher'
-       or pr.email is null
-       or pr.email !~* '@testemail[.]com$'
+    where not coalesce((
+      (pr.role = 'teacher'
+       and pr.email is not null
+       and pr.email ~* '@testemail[.]com$')
+      or (
+        -- Exact legacy exception: preserve Jess's active Research Admin account.
+        t.case_code = 'CASE-DEMO'
+        and t.participant_code = 'MR-DEMO'
+        and pr.role = 'research_admin'
+        and pr.active = true
+      )
+    ), false)
   ) or exists (
     select 1 from cleanup_targets t
     left join public.profiles pr on pr.id = t.auth_user_id
@@ -190,7 +199,8 @@ $cleanup_guards$;
 -- Report only; profiles and auth.users are deliberately never deleted.
 create temp table cleanup_fake_teacher_accounts on commit drop as
 select distinct pr.id as profile_id, pr.email, pr.role, t.auth_user_id
-from cleanup_targets t join public.profiles pr on pr.id = t.auth_user_id;
+from cleanup_targets t join public.profiles pr on pr.id = t.auth_user_id
+where pr.role is distinct from 'research_admin';
 
 -- Immutable/append-only history triggers protect normal application behavior.
 -- Disable only the named DELETE blockers in this transaction, then restore them.
@@ -279,6 +289,7 @@ select count(*) as orphan_participant_case_references
 from public.participants p left join public.cases c on c.id=p.case_id where c.id is null;
 
 -- These fake teacher/auth accounts may be manually removed after case cleanup.
+-- Research Admin profiles are excluded and must remain untouched.
 -- This report is informational: this script never deletes profiles or auth.users.
 select profile_id, email, role, auth_user_id
 from cleanup_fake_teacher_accounts order by email;

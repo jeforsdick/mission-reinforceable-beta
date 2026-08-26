@@ -42,6 +42,7 @@ test('full inventory reports every requested field without authorizing deletion'
 
 test('cleanup never deletes Auth users or profiles and is not a migration', () => {
   assert.doesNotMatch(sql, /delete\s+from\s+(?:auth[.]users|public[.]profiles|profiles)\b/i);
+  assert.doesNotMatch(sql, /update\s+(?:auth[.]users|public[.]profiles|profiles)\b/i);
   assert.match(sql, /never deletes profiles or auth[.]users/i);
   assert.doesNotMatch(path.pathname, /supabase\/migrations/);
 });
@@ -56,20 +57,26 @@ test('only CASE-999 / MR-999 may omit its auth user and profile', () => {
   assert.doesNotMatch(profileGuard, /participant_code\s+in\s*\([^)]*MR-999/i);
 });
 
-test('CASE-DEMO / MR-DEMO remains subject to linked fake teacher validation', () => {
+test('only CASE-DEMO / MR-DEMO may use the active research-admin profile exception', () => {
   const profileGuard = sql.match(/if exists \([\s\S]*?join public[.]profiles pr[\s\S]*?raise exception 'cleanup aborted: allowlisted participant has a missing or non-test teacher profile';/i)?.[0] ?? '';
 
-  assert.match(profileGuard, /pr[.]role <> 'teacher'/i);
-  assert.match(profileGuard, /pr[.]email is null/i);
-  assert.match(profileGuard, /pr[.]email !~\* '@testemail\[.\]com\$'/i);
+  const legacyException = profileGuard.match(/t[.]case_code = 'CASE-DEMO'\s+and t[.]participant_code = 'MR-DEMO'\s+and pr[.]role = 'research_admin'\s+and pr[.]active = true/i)?.[0] ?? '';
+  assert.ok(legacyException, 'exact CASE-DEMO / MR-DEMO exception must require an active research_admin profile');
+  assert.equal((profileGuard.match(/pr[.]role = 'research_admin'/gi) ?? []).length, 1);
+  assert.equal((profileGuard.match(/pr[.]active = true/gi) ?? []).length, 1);
+  assert.match(profileGuard, /pr[.]role = 'teacher'\s+and pr[.]email is not null\s+and pr[.]email ~\* '@testemail\[.\]com\$'/i);
+  assert.doesNotMatch(legacyException, /email/i);
   assert.doesNotMatch(profileGuard, /CASE-DEMO[\s\S]{0,100}auth_user_id is null/i);
   assert.doesNotMatch(profileGuard, /MR-DEMO[\s\S]{0,100}auth_user_id is null/i);
+  assert.doesNotMatch(profileGuard, /case_code\s+in\s*\([^)]*CASE-DEMO/i);
+  assert.doesNotMatch(profileGuard, /participant_code\s+in\s*\([^)]*MR-DEMO/i);
 });
 
-test('fake-account report naturally excludes targets without linked profiles', () => {
+test('fake-account report excludes missing profiles and all research-admin profiles', () => {
   const report = sql.match(/create temp table cleanup_fake_teacher_accounts[\s\S]*?;/i)?.[0] ?? '';
 
   assert.match(report, /from cleanup_targets t join public[.]profiles pr on pr[.]id = t[.]auth_user_id/i);
+  assert.match(report, /where pr[.]role is distinct from 'research_admin'/i);
   assert.doesNotMatch(report, /left join|CASE-999|MR-999/i);
 });
 
