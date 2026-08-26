@@ -2,9 +2,9 @@
 --
 -- Read this first:
 --   1. Run only the SELECT-only preview below and compare it with Research Admin.
---   2. The repository proves only CASE-999 / MR-999 is an obsolete fictional
---      database fixture (research/supabase/004_update_case_999_resources_v5.sql).
---      Do not add a live case merely because its name looks like a test.
+--   2. Jess approved CASE-DEMO / MR-DEMO and CASE-999 / MR-999 after reviewing
+--      the live Research Admin / Supabase inventory. Do not add a live case
+--      merely because its name looks like a test.
 --   3. Run the transaction unchanged once. It ends in ROLLBACK as a rehearsal.
 --   4. Inspect every verification result, then replace the FINAL ROLLBACK with
 --      COMMIT and rerun the complete transaction. Never run only part of it.
@@ -52,9 +52,12 @@ order by c.created_at, c.case_code, p.participant_code;
    ======================================================================== */
 with obsolete_case_allowlist(case_code, participant_code, evidence) as (
   values
+    -- Jess-approved obsolete predecessor demo fixture.
+    ('CASE-DEMO'::text, 'MR-DEMO'::text,
+     'obsolete predecessor demo fixture'::text),
     -- Public fictional authoring fixture with a repository SQL deployment file.
     ('CASE-999'::text, 'MR-999'::text,
-     'research/supabase/004_update_case_999_resources_v5.sql'::text)
+     'obsolete fictional authoring/database QA fixture'::text)
 )
 select
   c.id as case_id,
@@ -83,7 +86,9 @@ order by c.case_code, p.participant_code;
 
 -- Also inspect allowlisted codes that are absent or have an unexpected assignment.
 with obsolete_case_allowlist(case_code, participant_code) as (
-  values ('CASE-999'::text, 'MR-999'::text) -- fictional authoring fixture
+  values
+    ('CASE-DEMO'::text, 'MR-DEMO'::text), -- obsolete predecessor demo fixture
+    ('CASE-999'::text, 'MR-999'::text) -- obsolete fictional authoring/database QA fixture
 )
 select a.case_code as expected_case_code,
        a.participant_code as expected_participant_code,
@@ -106,9 +111,11 @@ create temp table cleanup_case_allowlist (
 ) on commit drop;
 
 insert into cleanup_case_allowlist values
+  -- CASE-DEMO / MR-DEMO: Jess-approved obsolete predecessor demo fixture.
+  ('CASE-DEMO', 'MR-DEMO', 'obsolete predecessor demo fixture'),
   -- CASE-999 / MR-999: public fictional authoring fixture; deployed by the
   -- guarded one-off research/supabase/004_update_case_999_resources_v5.sql.
-  ('CASE-999', 'MR-999', 'obsolete public fictional authoring/database QA fixture');
+  ('CASE-999', 'MR-999', 'obsolete fictional authoring/database QA fixture');
 
 -- Capture IDs once, after guards, so every DELETE remains positively allowlisted.
 create temp table cleanup_targets on commit drop as
