@@ -1,0 +1,6 @@
+# Local, disposable Supabase project configuration. This project id is not a
+# hosted project reference and must never be replaced with the production ref.
+project_id = "mission-reinforceable-local"
+
+[db]
+major_version = 15
