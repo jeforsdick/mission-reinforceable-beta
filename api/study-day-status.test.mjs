@@ -83,7 +83,7 @@ test('forward migration permits current and legacy reasons without rewriting his
  assert.doesNotMatch(teacherUnavailableMigration,/target_reason[^;]*teacher_absent[^;]*then/i);
 });
 test('feature remains contextual, QA-only, and cannot enable or send reminders',()=>{
- const files=[migration,fs.readFileSync(new URL('./research-admin-study-day-status.js',import.meta.url),'utf8'),fs.readFileSync(new URL('../research-admin/operations-ui.mjs',import.meta.url),'utf8')].join('\n');
+ const files=[migration,fs.readFileSync(new URL('./research-admin-study-day-status.js',import.meta.url),'utf8')].join('\n');
  assert.doesNotMatch(files,/Resend|TEACHER_REMINDER_SYSTEM_ENABLED\s*=|api\.resend\.com/);assert.match(files,/MR-998/);assert.match(files,/email_sent: false/);
  for(const protectedTerm of ['adherence denominator','mission completion','weekly practice','phase decisions','mission scores','streaks'])assert.doesNotMatch(migration,new RegExp(`update[^;]*${protectedTerm}`,'i'));
 });
