@@ -4,6 +4,7 @@ import test from 'node:test';
 import { attentionForCase, dashboardCaseCounts, partitionDashboardCases } from './operations-model.mjs';
 
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260827000000_research_admin_case_archival.sql', import.meta.url), 'utf8');
+const demo2Migration = fs.readFileSync(new URL('../supabase/migrations/20260827010000_archive_mr_demo_2_fixture.sql', import.meta.url), 'utf8');
 const admin = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
 const html = fs.readFileSync(new URL('./index.html', import.meta.url), 'utf8');
 
@@ -74,4 +75,16 @@ test('migration is additive, deterministic, pair-scoped, and exposes archival me
   assert.doesNotMatch(migration,/like\s+'|~\s+'|substring|left\s*\(/i);
   assert.match(migration,/CASE-998 and CASE-DEMO-2/);
   assert.doesNotMatch(migration,/set\s+(?:active|current_phase)|participant[s]?\s+set/i);
+});
+
+test('follow-up migration archives only the exact CASE-DEMO-2 / MR-DEMO-2 pair', () => {
+  assert.match(demo2Migration,/c\.case_code\s*=\s*'CASE-DEMO-2'/);
+  assert.match(demo2Migration,/p\.case_id\s*=\s*c\.id/);
+  assert.match(demo2Migration,/p\.participant_code\s*=\s*'MR-DEMO-2'/);
+  assert.match(demo2Migration,/coalesce\(c\.archived_at, timestamptz '2026-08-27 01:00:00\+00'\)/);
+  assert.match(demo2Migration,/archive_reason\s*=\s*'Reserved fictional demo fixture hidden from default Research Admin dashboard before dissertation launch\.'/);
+  assert.doesNotMatch(demo2Migration,/CASE-998|MR-998/);
+  assert.doesNotMatch(demo2Migration,/like\s+|ilike\s+|similar\s+to|~|substring|left\s*\(/i);
+  assert.doesNotMatch(demo2Migration,/\bdelete\s+from\b|\btruncate\b/i);
+  assert.doesNotMatch(demo2Migration,/\b(active|current_phase)\s*=|update\s+public\.participants/i);
 });
