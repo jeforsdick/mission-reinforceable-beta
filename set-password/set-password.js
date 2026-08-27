@@ -1,12 +1,12 @@
 (function(){
   'use strict';
   const SUPABASE_URL='https://vyiwwwmcoahwkgiictmc.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NDQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
+  const SUPABASE_PUBLISHABLE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
   const status=document.querySelector('#setup-status'),form=document.querySelector('#password-form'),error=document.querySelector('#form-error');
   const invalid=()=>{form.hidden=true;status.textContent='This secure link is invalid or has expired. Please contact the research team for a new login email.';};
   async function start(){
     if(!window.supabase)return invalid();
-    const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+    const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{detectSessionInUrl:true}});
     try{
       const code=new URL(location.href).searchParams.get('code');
       if(code){const {error:exchangeError}=await client.auth.exchangeCodeForSession(code);if(exchangeError)return invalid();}

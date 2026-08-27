@@ -2,10 +2,12 @@
 
 const { authorize, json, supabaseFetch, UUID_PATTERN } = require('./research-admin-server');
 const { configuration } = require('../server/game-login-email');
+const sendGameLogin = require('../server/research-admin-send-game-login');
 
 module.exports = async function handler(request, response) {
+  if (request.method === 'POST') return sendGameLogin(request, response);
   if (request.method !== 'GET') {
-    response.setHeader('Allow', 'GET');
+    response.setHeader('Allow', 'GET, POST');
     return json(response, 405, { error: 'Method not allowed' });
   }
   try {

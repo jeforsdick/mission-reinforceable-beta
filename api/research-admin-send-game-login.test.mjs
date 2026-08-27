@@ -3,9 +3,21 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import emailModule from '../server/game-login-email.js';
 
-const endpoint=await readFile(new URL('./research-admin-send-game-login.js',import.meta.url),'utf8');
+const endpoint=await readFile(new URL('../server/research-admin-send-game-login.js',import.meta.url),'utf8');
+const communicationEndpoint=await readFile(new URL('./research-admin-communication-readiness.js',import.meta.url),'utf8');
 const migration=await readFile(new URL('../supabase/migrations/20260827020000_game_login_email_audit.sql',import.meta.url),'utf8');
 const setup=await readFile(new URL('../set-password/set-password.js',import.meta.url),'utf8');
+const gameAuth=await readFile(new URL('../game/js/auth.js',import.meta.url),'utf8');
+
+function browserConfiguration(source){
+  return Object.fromEntries(['SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY'].map(name=>[name,source.match(new RegExp(`${name}\\s*=\\s*'([^']+)'`))?.[1]]));
+}
+
+test('password setup uses the exact canonical teacher-game Supabase project configuration',()=>{
+  assert.deepEqual(browserConfiguration(setup),browserConfiguration(gameAuth));
+  assert.ok(browserConfiguration(setup).SUPABASE_PUBLISHABLE_KEY);
+  assert.doesNotMatch(setup,/service.role|SERVICE_ROLE/i);
+});
 
 test('configuration is fail-closed and requires validated production URLs',()=>{
   assert.equal(emailModule.configuration({}).enabled,false);
@@ -21,6 +33,7 @@ test('access-only template contains teacher identity but no student or case cont
 });
 
 test('endpoint derives recipient, uses supported recovery contract and preserves independent actions',()=>{
+  assert.match(communicationEndpoint,/request\.method === 'POST'[\s\S]*sendGameLogin/);assert.match(endpoint,/body\.action !== 'send_game_login'/);
   assert.match(endpoint,/authorize\(request\)/);assert.match(endpoint,/research_admin_assert_intervention_launch_ready/);assert.match(endpoint,/profile\.role !== 'teacher'/);
   assert.match(endpoint,/type: 'recovery', email, options: \{ redirectTo: config\.setupUrl \}/);assert.match(endpoint,/Idempotency-Key/);assert.match(endpoint,/to: \[email\]/);
   assert.doesNotMatch(endpoint,/body\.teacher_email|body\.participant_id|body\.password/);
@@ -34,5 +47,5 @@ test('audit is append-only, correlated, and excludes recovery secrets',()=>{
 });
 
 test('password setup updates Supabase directly with length, match, invalid-link, and game redirect handling',()=>{
-  assert.match(setup,/exchangeCodeForSession/);assert.match(setup,/getSession/);assert.match(setup,/password\.length<12\|\|password\.length>64/);assert.match(setup,/password!==confirmation/);assert.match(setup,/auth\.updateUser\(\{password\}\)/);assert.match(setup,/location\.replace\('\/game\/'\)/);assert.match(setup,/invalid or has expired/);assert.doesNotMatch(setup,/fetch\(/);
+  assert.match(setup,/detectSessionInUrl:true/);assert.match(setup,/exchangeCodeForSession/);assert.match(setup,/getSession/);assert.match(setup,/password\.length<12\|\|password\.length>64/);assert.match(setup,/password!==confirmation/);assert.match(setup,/auth\.updateUser\(\{password\}\)/);assert.match(setup,/location\.replace\('\/game\/'\)/);assert.match(setup,/invalid or has expired/);assert.doesNotMatch(setup,/fetch\(/);
 });

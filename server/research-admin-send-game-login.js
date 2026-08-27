@@ -1,7 +1,7 @@
 'use strict';
 
-const { authorize, json, methodGuard, normalizeEmail, supabaseFetch, UUID_PATTERN } = require('./research-admin-server');
-const { configuration, formatGameLoginEmail } = require('../server/game-login-email');
+const { authorize, json, methodGuard, normalizeEmail, supabaseFetch, UUID_PATTERN } = require('../api/research-admin-server');
+const { configuration, formatGameLoginEmail } = require('./game-login-email');
 
 async function rows(path) {
   const response = await supabaseFetch(path);
@@ -20,7 +20,7 @@ module.exports = async function handler(request, response) {
   let context;
   try {
     const actor = await authorize(request), body = request.body || {}, keys = Object.keys(body).sort();
-    if (keys.length !== 2 || keys[0] !== 'case_id' || keys[1] !== 'request_id' || !UUID_PATTERN.test(body.case_id) || !UUID_PATTERN.test(body.request_id)) return json(response, 400, { error: 'Exactly case_id and request_id are required.' });
+    if (keys.length !== 3 || keys[0] !== 'action' || keys[1] !== 'case_id' || keys[2] !== 'request_id' || body.action !== 'send_game_login' || !UUID_PATTERN.test(body.case_id) || !UUID_PATTERN.test(body.request_id)) return json(response, 400, { error: 'Exactly action, case_id, and request_id are required.' });
     const config = configuration();
     if (!config.enabled) return json(response, 503, { error: 'Production game-login email delivery has not been enabled.' });
 
