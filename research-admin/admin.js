@@ -383,7 +383,10 @@ async function provisionCase(event) {
   const args = { target_request_id: state.selected.request_id, study_id: String(form.get('study_id')).trim(), new_case_code: String(form.get('case_code')).trim(), student_game_alias: String(form.get('student_alias')).trim(), reviewed_targets: reviewedTargets() };
   const { data, error } = await state.client.rpc('provision_intake_case', args);
   if (error) { $('#provision-message').textContent = error.message; button.disabled = false; return; }
-  state.selected.status = 'converted'; state.selected.converted_case_id = data?.[0]?.case_id; await openDetail(state.selected.request_id, state.selectedTab);
+  const caseId = data?.[0]?.case_id;
+  const { error: taskError } = await state.client.rpc('research_admin_ensure_weekly_qualtrics_case_task', { target_case_id: caseId });
+  if (taskError) { $('#provision-message').textContent = taskError.message; button.disabled = false; return; }
+  state.selected.status = 'converted'; state.selected.converted_case_id = caseId; await openDetail(state.selected.request_id, state.selectedTab);
 }
 async function loadReadiness(requestId) {
   const { data, error } = await state.client.rpc('research_admin_case_readiness', { target_request_id: requestId });
@@ -400,9 +403,9 @@ async function loadReadiness(requestId) {
   const { data: publishedVersion, error: versionError } = await state.client.rpc('research_admin_game_publish_status', { target_case_id: data.case.id });
   if (versionError) throw versionError;
   state.publishedSource = publishedVersion || null;
-  try { state.communications = await communicationReadiness(data.case.id); } catch { state.communications = { teacher_reminder_system_enabled: false, game_login_email_enabled: false }; }
+  try { state.communications = await communicationReadiness(data.case.id); } catch { state.communications = { teacher_reminder_system_enabled: false, game_login_email_enabled: false, weekly_qualtrics_configured: false }; }
   let studyDayStatus={history:[],current:[]};try{studyDayStatus=await adminApi('/api/research-admin-study-day-status',{action:'history',case_id:data.case.id});}catch{}
-  state.caseOperations=operations.cases?.[0];state.caseOperations.weekly_checkins=weeklyCheckins||[];state.caseOperations.weekly_qualtrics_configured=null;state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData;state.caseOperations.study_day_status=studyDayStatus; return data;
+  state.caseOperations=operations.cases?.[0];state.caseOperations.weekly_checkins=weeklyCheckins||[];state.caseOperations.weekly_qualtrics_configured=state.communications.weekly_qualtrics_configured===true;state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData;state.caseOperations.study_day_status=studyDayStatus; return data;
 }
 function readinessPanel(data) {
   const manifest=state.authoringWorkspace&&draftRevisionManifest(state.authoringWorkspace),source=state.publishedSource;

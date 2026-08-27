@@ -4,8 +4,8 @@ const { issueStatusUrls, dateParts, TIMEZONE, REASONS } = require('../server/stu
 const weekly = require('../server/weekly-checkin-service');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-async function rows(path) {
-  const response = await server.supabaseFetch(path);
+async function rows(path, options) {
+  const response = await server.supabaseFetch(path, options);
   if (!response.ok) throw new Error('Study-day context could not be loaded');
   return response.json();
 }
@@ -47,8 +47,11 @@ module.exports = async function handler(request, response) {
       const raw = weekly.createRawToken(), tokenHash = weekly.hashToken(raw);
       const rpc = await server.supabaseFetch('/rest/v1/rpc/research_admin_generate_weekly_checkin', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id, target_week_start: body.week_start, target_token_hash: tokenHash }) });
       if (!rpc.ok) return server.json(response, 409, { error: 'Weekly check-in could not be generated' });
+      const weeklyRows = await rows('/rest/v1/rpc/research_admin_weekly_checkins', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id }) });
       const origin = requestOrigin(request);
-      return server.json(response, 200, { qualtrics_url: weekly.buildQualtricsUrl(raw), completion_test_url: weekly.completionUrl(raw, origin), qualtrics_configured: Boolean(process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL), email_sent: false, message: 'No email sent.' });
+      const weekNumber = weeklyRows.findIndex(row => row.week_start === body.week_start) + 1;
+      if (!weekNumber) return server.json(response, 409, { error: 'Intervention week could not be resolved' });
+      return server.json(response, 200, { qualtrics_url: weekly.buildQualtricsUrl(raw, participant.participant_code, weekNumber), completion_test_url: weekly.completionUrl(raw, origin), qualtrics_configured: weekly.qualtricsConfiguration().configured, email_sent: false, message: 'No email sent.' });
     }
     if (body.action === 'generate_qa') {
       const qa = participant.participant_code === 'MR-998' || ['MR-998', 'CASE-998'].includes(participant.cases?.case_code);
