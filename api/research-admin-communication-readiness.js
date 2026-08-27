@@ -3,6 +3,7 @@
 const { authorize, json, supabaseFetch, UUID_PATTERN } = require('./research-admin-server');
 const { configuration } = require('../server/game-login-email');
 const sendGameLogin = require('../server/research-admin-send-game-login');
+const { qualtricsConfiguration } = require('../server/weekly-checkin-service');
 
 module.exports = async function handler(request, response) {
   if (request.method === 'POST') return sendGameLogin(request, response);
@@ -21,7 +22,8 @@ module.exports = async function handler(request, response) {
     }
     const result = {
       teacher_reminder_system_enabled: process.env.TEACHER_REMINDER_SYSTEM_ENABLED === 'true',
-      game_login_email_enabled: configuration().enabled
+      game_login_email_enabled: configuration().enabled,
+      weekly_qualtrics_configured: qualtricsConfiguration().configured
     };
     if (latest) result.game_login_email_status = { outcome: latest.action === 'game_login_email_sent' ? 'sent' : 'failed', recorded_at: latest.recorded_at };
     return json(response, 200, result);

@@ -5,7 +5,7 @@ export function renderWeeklyCheckins(item,e){
  const rows=item.weekly_checkins||[], configured=item.weekly_qualtrics_configured;
  const list=rows.length?rows.map(row=>`<li><strong>Week of ${e(row.week_start)}–${e(row.week_end)}</strong><br>Expected · ${row.link_issued_at?'Link issued':'Link not issued'} · ${row.completed_at?`Complete · ${e(new Date(row.completed_at).toLocaleString())}`:e(row.status==='upcoming'?'Upcoming':'Not complete')}</li>`).join(''):'<li>No Intervention weeks expected yet.</li>';
  const qa=item.study_id==='MR-998'&&rows.length?`<div class="no-print"><button class="primary generate-weekly-checkin" data-week-start="${e(rows.at(-1).week_start)}" type="button">Generate QA Weekly Check-In</button><p><strong>No email sent.</strong></p><div id="weekly-checkin-qa-result" class="message"></div></div>`:'';
- return `<section class="weekly-checkins"><h3>WEEKLY TEACHER CHECK-INS</h3><p>Weekly Teacher Report — administered externally in Qualtrics.</p>${configured===false?'<p class="needs">Qualtrics URL not configured</p>':''}<ol>${list}</ol>${qa}</section>`;
+ return `<section class="weekly-checkins"><h3>WEEKLY TEACHER CHECK-INS</h3><p>Weekly Teacher Report — administered externally in Qualtrics.</p><p class="${configured?'':'needs'}">Qualtrics Weekly Teacher Report: ${configured?'Configured':'Not configured'}</p><ol>${list}</ol>${qa}</section>`;
 }
 export const privacy='<small class="privacy-help">Keep notes brief. Do not include student names, diagnoses, or protected BIP/BSP content.</small>';
 const opts=(values,current)=>values.map(v=>`<option value="${v}" ${v===current?'selected':''}>${v.replaceAll('_',' ')}</option>`).join('');

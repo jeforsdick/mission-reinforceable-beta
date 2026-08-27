@@ -4,12 +4,23 @@ const TOKEN_PARAMETER = 'mr_weekly_token';
 const EMAIL_SUBJECT = 'Quick Mission: Reinforceable weekly check-in';
 function createRawToken() { return crypto.randomBytes(32).toString('base64url'); }
 function hashToken(token) { return crypto.createHash('sha256').update(String(token), 'utf8').digest('hex'); }
-function buildQualtricsUrl(rawToken, configuredUrl = process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL) {
-  if (!configuredUrl) return null;
-  const url = new URL(configuredUrl);
+function qualtricsConfiguration(configuredUrl = process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL) {
+  try {
+    const url = new URL(configuredUrl);
+    const surveyPath = /^\/jfe\/form\/SV_[A-Za-z0-9_-]+\/?$/i.test(url.pathname);
+    const qualtricsHost = /(^|\.)qualtrics\.com$/i.test(url.hostname);
+    return { configured: url.protocol === 'https:' && !url.username && !url.password && qualtricsHost && surveyPath, url };
+  } catch { return { configured: false, url: null }; }
+}
+function buildQualtricsUrl(rawToken, participantCode, weekNumber, configuredUrl = process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL) {
+  const config = qualtricsConfiguration(configuredUrl);
+  if (!config.configured) return null;
+  const url = new URL(config.url);
   url.search = '';
   url.hash = '';
   url.searchParams.set(TOKEN_PARAMETER, rawToken);
+  url.searchParams.set('participant_code', participantCode);
+  url.searchParams.set('week_number', String(weekNumber));
   return url.toString();
 }
 function completionUrl(rawToken, origin) {
@@ -32,4 +43,4 @@ function interventionWeeks(start, end) {
   }
   return weeks;
 }
-module.exports={TOKEN_PARAMETER,EMAIL_SUBJECT,createRawToken,hashToken,buildQualtricsUrl,completionUrl,weeklyEmail,interventionWeeks};
+module.exports={TOKEN_PARAMETER,EMAIL_SUBJECT,createRawToken,hashToken,qualtricsConfiguration,buildQualtricsUrl,completionUrl,weeklyEmail,interventionWeeks};

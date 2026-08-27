@@ -99,3 +99,12 @@ test('canonical intake repair removes drift without widening RPC execution', () 
   const beforeRepair = migrations.slice(0, repairIndex).map(({ sql }) => sql).join('\n');
   assert.match(beforeRepair, /research_onboarding_actions_action_type_check[\s\S]*?'intake_edited'/);
 });
+
+test('every Supabase migration version is unique', () => {
+  const versions = files.map(name => name.match(/^(\d{14})_/)).map((match, index) => {
+    assert.ok(match, `${files[index]} must begin with a 14-digit migration version`);
+    return match[1];
+  });
+  assert.equal(new Set(versions).size, versions.length, `duplicate migration version: ${versions.find((version, index) => versions.indexOf(version) !== index)}`);
+  assert.ok(files.includes('20260827030000_weekly_qualtrics_operations_tasks.sql'));
+});
