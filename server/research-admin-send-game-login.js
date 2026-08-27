@@ -45,8 +45,8 @@ module.exports = async function handler(request, response) {
     context = { case_id: body.case_id, participant_id: participantId, actor: actor.id, protected_content_version: version, attempt_id: body.request_id };
     await record({ ...context, action: 'game_login_email_attempted' });
 
-    const linkResponse = await supabaseFetch('/auth/v1/admin/generate_link', { method: 'POST', body: JSON.stringify({ type: 'recovery', email, options: { redirectTo: config.setupUrl } }) });
-    const link = await linkResponse.json().catch(() => null), actionLink = link?.properties?.action_link;
+    const linkResponse = await supabaseFetch('/auth/v1/admin/generate_link', { method: 'POST', body: JSON.stringify({ type: 'recovery', email, redirect_to: config.setupUrl }) });
+    const link = await linkResponse.json().catch(() => null), actionLink = link?.action_link;
     if (!linkResponse.ok || !actionLink) throw Object.assign(new Error('Password setup link generation failed.'), { failure: 'auth_link_generation_failed' });
     const message = formatGameLoginEmail({ teacherName: profile.display_name, teacherEmail: email, actionLink, gameUrl: config.gameUrl });
     const resendResponse = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': `game-login/${body.request_id}` }, body: JSON.stringify({ from: config.from, to: [email], ...message }) });

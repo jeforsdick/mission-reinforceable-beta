@@ -35,7 +35,8 @@ test('access-only template contains teacher identity but no student or case cont
 test('endpoint derives recipient, uses supported recovery contract and preserves independent actions',()=>{
   assert.match(communicationEndpoint,/request\.method === 'POST'[\s\S]*sendGameLogin/);assert.match(endpoint,/body\.action !== 'send_game_login'/);
   assert.match(endpoint,/authorize\(request\)/);assert.match(endpoint,/research_admin_assert_intervention_launch_ready/);assert.match(endpoint,/profile\.role !== 'teacher'/);
-  assert.match(endpoint,/type: 'recovery', email, options: \{ redirectTo: config\.setupUrl \}/);assert.match(endpoint,/Idempotency-Key/);assert.match(endpoint,/to: \[email\]/);
+  assert.match(endpoint,/type: 'recovery', email, redirect_to: config\.setupUrl/);assert.match(endpoint,/link\?\.action_link/);assert.match(endpoint,/Idempotency-Key/);assert.match(endpoint,/to: \[email\]/);
+  assert.doesNotMatch(endpoint,/options\s*:\s*\{\s*redirectTo|properties\?*\.action_link/);
   assert.doesNotMatch(endpoint,/body\.teacher_email|body\.participant_id|body\.password/);
   for(const mutation of [/update public\.cases/i,/update public\.participants/i,/set_teacher_reminders/i])assert.doesNotMatch(endpoint,mutation);
 });
