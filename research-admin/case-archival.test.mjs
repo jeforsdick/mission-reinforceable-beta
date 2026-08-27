@@ -35,14 +35,20 @@ test('archived records are omitted from attention while current baseline still w
   assert.match(admin,/const all=current\.flatMap/);
 });
 
-test('counts exclude archived cases and preserve activation and intervention meanings', () => {
+test('Intervention Active excludes archived cases and preserves activation and phase meanings', () => {
   const cases=[
     fixture({study_id:'MR-001',case_active:false,participant_active:false}),
     fixture({study_id:'MR-002',current_phase:'intervention',case_active:true,participant_active:true}),
     fixture({study_id:'MR-003',current_phase:'intervention',case_active:false,participant_active:true}),
     fixture({study_id:'MR-OLD',current_phase:'intervention',case_active:true,participant_active:true,archived_at:'2026-08-27T00:00:00Z'})
   ];
-  assert.deepEqual(dashboardCaseCounts(cases),{prepared:3,intervention:1});
+  assert.deepEqual(dashboardCaseCounts(cases),{intervention:1});
+});
+
+test('Prepared Cases retains converted-intake meaning while excluding archived case IDs', () => {
+  assert.match(admin,/const currentCaseIds=new Set\(current\.map\(item=>item\.id\)\)/);
+  assert.match(admin,/row=>row\.status==='converted'&&currentCaseIds\.has\(row\.converted_case_id\)/);
+  assert.doesNotMatch(admin,/prepared:\s*current\.length/);
 });
 
 test('home offers a display-only archived toggle and labels revealed records', () => {
@@ -51,6 +57,8 @@ test('home offers a display-only archived toggle and labels revealed records', (
   assert.match(admin,/Hide archived cases':'Show archived cases/);
   assert.match(admin,/archivedCase\?'Archived'/);
   assert.doesNotMatch(admin,/archiveCase|unarchive|\.delete\(/i);
+  assert.match(admin,/matchingIntake=state\.intakes\.some\(row=>row\.converted_case_id===item\.id\)/);
+  assert.match(admin,/!archivedCase\|\|matchingIntake\?`<button class=\"primary open-case\"/);
 });
 
 test('migration is additive, deterministic, pair-scoped, and exposes archival metadata', () => {

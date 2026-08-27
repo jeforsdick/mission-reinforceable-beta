@@ -21,7 +21,6 @@ export function partitionDashboardCases(cases=[]){
 export function dashboardCaseCounts(cases=[]){
   const {current}=partitionDashboardCases(cases);
   return {
-    prepared: current.length,
     intervention: current.filter(item=>item.current_phase==='intervention'&&item.case_active===true&&item.participant_active===true).length
   };
 }
