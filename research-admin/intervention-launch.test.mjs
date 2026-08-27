@@ -44,7 +44,8 @@ test('baseline and Intervention launch controls communicate separate actions',()
   assert.match(baseline,/Published &amp; reviewed — waiting for intervention launch/);assert.match(baseline,/id="activate-game-access"[^>]*disabled/);assert.match(baseline,/Available after Intervention begins\./);
   const intervention=renderOperations(fixture('intervention'),prepared,String);
   assert.match(intervention,/Ready to launch/);assert.match(intervention,/id="activate-game-access"/);assert.doesNotMatch(intervention,/id="activate-game-access"[^>]*disabled/);
-  assert.match(intervention,/Production email delivery has not been enabled\./);assert.match(intervention,/Pending production email setup/);assert.doesNotMatch(intervention,/send-game-login/);
+  assert.match(intervention,/Production email delivery has not been enabled\./);assert.match(intervention,/Pending production email setup/);assert.match(intervention,/id="send-game-login"[^>]*disabled/);
+  assert.ok(intervention.indexOf('STEP 1 — GAME ACCESS')<intervention.indexOf('STEP 2 — SEND GAME LOGIN'));assert.ok(intervention.indexOf('STEP 2 — SEND GAME LOGIN')<intervention.indexOf('STEP 3 — DAILY REMINDERS'));
   assert.match(intervention,/published version v1/);assert.match(intervention,/Unpublished draft changes are not included/);
   assert.match(admin,/It will not send email or enable reminders/);
 });

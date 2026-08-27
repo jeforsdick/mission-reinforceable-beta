@@ -285,6 +285,7 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
  $('#phase-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_phase',{target_case_id:caseId,target_phase:f.get('phase'),target_effective_date:f.get('effective_date'),target_decision_note:f.get('note')||null});});
  $('#activate-game-access')?.addEventListener('click',()=>{if(window.confirm('Activate Mission: Reinforceable game access for this teacher?\n\nThis will activate the participant and case for normal teacher gameplay. It will not send email or enable reminders.'))operationRpc('research_admin_set_intervention_game_access',{target_case_id:caseId,target_enabled:true});});
  $('#deactivate-game-access')?.addEventListener('click',()=>{if(window.confirm('Deactivate Mission: Reinforceable game access for this teacher?\n\nThis will deactivate the participant and case and turn off daily reminders. It will not delete study records.'))operationRpc('research_admin_set_intervention_game_access',{target_case_id:caseId,target_enabled:false});});
+ $('#send-game-login')?.addEventListener('click',async event=>{if(!window.confirm(`${event.currentTarget.textContent}?\n\nThis sends a private password-setup link. It does not change Game Access or Daily Reminders.`))return;const button=event.currentTarget;button.disabled=true;try{await adminApi('/api/research-admin-communication-readiness',{action:'send_game_login',case_id:caseId,request_id:crypto.randomUUID()});await openDetail(state.selected.request_id,state.selectedTab);}catch(error){window.alert(error.message);await openDetail(state.selected.request_id,state.selectedTab);}});
  $('#enable-daily-reminders')?.addEventListener('click',()=>{if(window.confirm('Enable daily Mission: Reinforceable reminders for this teacher?\n\nThis changes reminder eligibility but does not send an email now.'))setTeacherReminders(caseId,true);});
  $('#disable-daily-reminders')?.addEventListener('click',()=>setTeacherReminders(caseId,false));
  document.querySelectorAll('.study-status-correction').forEach(form=>form.addEventListener('submit',async event=>{event.preventDefault();const reason=new FormData(form).get('reason');const {data:{user}}=await state.client.auth.getUser();const {error}=await state.client.rpc('research_admin_correct_study_day_status',{target_event_id:form.dataset.eventId,target_reason:reason==='clear'?null:reason,target_actor_id:user.id});if(error)window.alert(error.message);else await openDetail(state.selected.request_id,state.selectedTab);}));
@@ -317,9 +318,9 @@ async function adminApi(path, body) {
   if (!response.ok) throw new Error(result.error || 'Request failed');
   return result;
 }
-async function communicationReadiness(){
+async function communicationReadiness(caseId){
   const {data:{session}}=await state.client.auth.getSession();
-  const response=await fetch('/api/research-admin-communication-readiness',{headers:{Authorization:`Bearer ${session?.access_token||''}`}});
+  const response=await fetch(`/api/research-admin-communication-readiness${caseId?`?case_id=${encodeURIComponent(caseId)}`:''}`,{headers:{Authorization:`Bearer ${session?.access_token||''}`}});
   const result=await response.json();if(!response.ok)throw new Error(result.error||'Communication readiness unavailable');return result;
 }
 async function setTeacherReminders(caseId,enabled){
@@ -399,7 +400,7 @@ async function loadReadiness(requestId) {
   const { data: publishedVersion, error: versionError } = await state.client.rpc('research_admin_game_publish_status', { target_case_id: data.case.id });
   if (versionError) throw versionError;
   state.publishedSource = publishedVersion || null;
-  try { state.communications = await communicationReadiness(); } catch { state.communications = { teacher_reminder_system_enabled: false, game_login_email_enabled: false }; }
+  try { state.communications = await communicationReadiness(data.case.id); } catch { state.communications = { teacher_reminder_system_enabled: false, game_login_email_enabled: false }; }
   let studyDayStatus={history:[],current:[]};try{studyDayStatus=await adminApi('/api/research-admin-study-day-status',{action:'history',case_id:data.case.id});}catch{}
   state.caseOperations=operations.cases?.[0];state.caseOperations.weekly_checkins=weeklyCheckins||[];state.caseOperations.weekly_qualtrics_configured=null;state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData;state.caseOperations.study_day_status=studyDayStatus; return data;
 }
@@ -407,7 +408,7 @@ function readinessPanel(data) {
   const manifest=state.authoringWorkspace&&draftRevisionManifest(state.authoringWorkspace),source=state.publishedSource;
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged=Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
-  return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,unpublishedDraftChanges:draftChanged})
+  return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,gameLoginEmailEnabled:state.communications.game_login_email_enabled===true,gameLoginEmailStatus:state.communications.game_login_email_status,unpublishedDraftChanges:draftChanged})
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 function gameCreationPanel(data) {
