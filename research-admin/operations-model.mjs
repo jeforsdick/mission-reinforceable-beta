@@ -11,6 +11,20 @@ export const PHASES = ['prebaseline','baseline','intervention','maintenance','co
 export const COACHING_FOCUSES = ['observation','consultation','performance_feedback','modeling','data_review','problem_solving','responsive_support','other'];
 export const TASK_CATEGORIES = ['meeting','follow_up','scheduling','research_admin','observation_planning','measure_follow_up','closeout','other'];
 export const LIFECYCLE_STAGES = ['Enrollment','Prebaseline','Baseline','Game Ready','Intervention','End Measures','Maintenance','Closeout'];
+export const isArchivedCase = item => item?.archived_at != null;
+export function partitionDashboardCases(cases=[]){
+  return {
+    current: cases.filter(item=>!isArchivedCase(item)),
+    archived: cases.filter(isArchivedCase)
+  };
+}
+export function dashboardCaseCounts(cases=[]){
+  const {current}=partitionDashboardCases(cases);
+  return {
+    prepared: current.length,
+    intervention: current.filter(item=>item.current_phase==='intervention'&&item.case_active===true&&item.participant_active===true).length
+  };
+}
 export const requiredBaselineKeys = CHECKLIST.slice(0,10).map(([key])=>key);
 export function denverToday(now=new Date()){
   return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
