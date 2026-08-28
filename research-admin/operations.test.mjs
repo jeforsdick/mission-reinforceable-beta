@@ -38,6 +38,17 @@ assert.match(css,/\.baseline-checklist-grid\s*\{[^}]*grid-template-columns:repea
 const checklistRpc="operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null})";
 assert.ok(js.includes(checklistRpc));
 const renderedOperations=renderOperations(readyFixture(),{},x=>String(x));
+const qualtricsUrl='https://x.qualtrics.com/jfe/form/SV_example?participant_code=MR-001';
+const configuredOperations=renderOperations(readyFixture(),{},x=>String(x),{qualtricsMeasures:{tses_pre:{configured:true,url:qualtricsUrl},tses_post:{configured:true,url:qualtricsUrl},urp_ir:{configured:true,url:qualtricsUrl},teacher_interview:{configured:true,url:'https://x.qualtrics.com/jfe/form/SV_interview'}}});
+for(const label of ['Open TSES Pre','Open TSES Post','Open URP-IR','Open Interview Record'])assert.match(configuredOperations,new RegExp(label));
+assert.equal((configuredOperations.match(/Copy Teacher Link/g)||[]).length,3);
+assert.match(configuredOperations,/Researcher-entered form\. Enter the participant Study ID at the top\./);
+assert.equal((configuredOperations.match(/class="inline-record measure-form"/g)||[]).length,4,'all existing manual measure forms remain');
+assert.match(renderedOperations,/TSES Pre Qualtrics survey not configured/);
+assert.match(js,/copy-qualtrics-link[\s\S]*navigator\.clipboard/);
+assert.match(js,/window\.prompt\('Copy teacher link:'/);
+const copyBinding=js.slice(js.indexOf("document.querySelectorAll('.copy-qualtrics-link')"),js.indexOf(' bindObservationControls(caseId)'));
+assert.doesNotMatch(copyBinding,/operationRpc|research_admin_record_measure|fetch\(/,'opening and copying have no record side effects');
 const statusMarkup=renderOperations({...readyFixture(),study_day_status:{history:[
  {id:'current',study_date:'2026-08-24',reason:'teacher_unavailable',source:'daily_email',recorded_at:'2026-08-24T13:12:00Z'},
  {id:'old-teacher',study_date:'2026-08-23',reason:'teacher_absent',source:'daily_email',recorded_at:'2026-08-23T13:12:00Z'},
