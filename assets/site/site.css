@@ -1076,6 +1076,67 @@ p {
   background: #fff;
 }
 
+.completion-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.completion-main {
+  width: min(760px, calc(100% - 36px));
+  margin: 0 auto;
+  padding: clamp(64px, 12vh, 120px) 0;
+  display: grid;
+  flex: 1;
+  place-items: center;
+}
+
+.completion-card {
+  width: 100%;
+  padding: clamp(32px, 7vw, 64px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  text-align: center;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: var(--shadow);
+}
+
+.completion-card .eyebrow {
+  justify-content: center;
+  margin: 0 0 12px;
+}
+
+.completion-card h1 {
+  margin: 0;
+  color: var(--navy);
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  line-height: 1.08;
+}
+
+.completion-detail {
+  max-width: 580px;
+  margin: 18px auto 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.completion-icon {
+  min-height: 64px;
+  margin-bottom: 12px;
+  color: var(--purple-dark);
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.completion-card .button {
+  margin-top: 24px;
+}
+
+.completion-card .button[hidden] {
+  display: none;
+}
+
 .footer-inner {
   width: min(1120px, calc(100% - 36px));
   margin: 0 auto;

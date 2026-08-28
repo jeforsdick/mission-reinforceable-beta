@@ -9,6 +9,7 @@ const publicPages = [
   'demo/index.html',
   'research/index.html',
   'intake/index.html',
+  'weekly-checkin-complete/index.html',
 ];
 
 const primaryNavigation = (html) => {
