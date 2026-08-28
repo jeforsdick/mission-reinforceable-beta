@@ -10,7 +10,7 @@ export const MEASURES = [['tses_pre','TSES — Pre-Baseline'],['tses_post','TSES
 export const PHASES = ['prebaseline','baseline','intervention','maintenance','complete','withdrawn'];
 export const COACHING_FOCUSES = ['observation','consultation','performance_feedback','modeling','data_review','problem_solving','responsive_support','other'];
 export const TASK_CATEGORIES = ['meeting','follow_up','scheduling','research_admin','observation_planning','measure_follow_up','closeout','other'];
-export const LIFECYCLE_STAGES = ['Enrollment','Prebaseline','Baseline','Game Ready','Intervention','End Measures','Maintenance','Closeout'];
+export const LIFECYCLE_STAGES = ['Enrollment','Prebaseline','Baseline','Game Ready','Intervention','Maintenance','End Measures','Closeout'];
 export const isArchivedCase = item => item?.archived_at != null;
 export function partitionDashboardCases(cases=[]){
   return {
@@ -83,7 +83,8 @@ export function lifecycleStage(item){
   if(phase==='baseline'&&item.protocol&&stats.baseline>=item.protocol.planned_baseline_observations&&!gameReadiness(item).ready) return 'Game Ready';
   if(phase==='baseline') return 'Baseline';
   if(phase==='intervention') return 'Intervention';
-  if(phase==='maintenance') return measureNeeds(item).some(key=>key!=='tses_pre')?'End Measures':'Maintenance';
+  if(phase==='maintenance') return 'Maintenance';
+  if(phase==='complete'&&measureNeeds(item).some(key=>key!=='tses_pre')) return 'End Measures';
   return 'Closeout';
 }
 export function nextAction(item,now=new Date()){
@@ -108,12 +109,12 @@ export function nextAction(item,now=new Date()){
     return 'Objective intervention criteria are met. Review trend and make the researcher phase decision.';
   }
   if(phase==='maintenance'){
-    if(['tses_post','urp_ir','teacher_interview'].some(key=>measures[key]?.status!=='complete')) return 'Post-intervention measures are still needed.';
     if(stats.maintenance===0) return 'Record the first maintenance observation.';
     if(stats.maintenance===1) return 'Maintenance observation 2 is next.';
     if(stats.maintenance===2) return 'Maintenance target range met. Decide whether one more probe is needed.';
-    return 'Maintenance observations are complete. Review closeout.';
+    return 'Maintenance target range met. Record a deliberate phase change when maintenance is complete.';
   }
+  if(phase==='complete'&&['tses_post','urp_ir','teacher_interview'].some(key=>measures[key]?.status!=='complete')) return 'Complete the post-intervention measures.';
   return 'Case closeout is recorded.';
 }
 export function baselineReadiness(item){
@@ -129,7 +130,7 @@ export function baselineReadiness(item){
 export function measureNeeds(item){
   const current=currentByKey(item.measures,'measure_key'), phase=item.current_phase||'prebaseline', keys=[];
   if(['baseline','intervention','maintenance','complete'].includes(phase)&&current.tses_pre?.status!=='complete') keys.push('tses_pre');
-  if(['maintenance','complete'].includes(phase)) for(const key of ['tses_post','urp_ir','teacher_interview']) if(current[key]?.status!=='complete') keys.push(key);
+  if(phase==='complete') for(const key of ['tses_post','urp_ir','teacher_interview']) if(current[key]?.status!=='complete') keys.push(key);
   return keys;
 }
 export function interventionReadiness(item){

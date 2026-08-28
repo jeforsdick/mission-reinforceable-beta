@@ -10,3 +10,12 @@ test('required case ensure is idempotent and rejects archived or demo fixtures',
 test('provisioning remains successful when a later task ensure fails',()=>{const provision=admin.slice(admin.indexOf('async function provisionCase'),admin.indexOf('async function ensureWeeklyQualtricsTasks'));assert.ok(provision.indexOf("state.selected.status = 'converted'")<provision.indexOf('ensureWeeklyQualtricsTasks(caseId)'));assert.doesNotMatch(provision,/taskError[\s\S]*return/);assert.match(admin,/Promise\.allSettled/);assert.match(admin,/will be retried on the next Research Operations load/);});
 test('Research Operations load self-heals both tasks before loading dashboard data',()=>{const load=admin.slice(admin.indexOf('async function loadReadiness'),admin.indexOf('function readinessPanel'));assert.match(load,/ensureWeeklyQualtricsTasks\(data\.case\.id\)/);assert.match(admin,/research_admin_ensure_weekly_qualtrics_study_task/);assert.match(admin,/research_admin_ensure_weekly_qualtrics_case_task/);assert.ok(load.indexOf('ensureWeeklyQualtricsTasks')<load.indexOf('research_admin_operations_dashboard'));});
 test('task creation has no lifecycle, access, reminder, measure, or observation mutations',()=>{assert.doesNotMatch(migration,/update public\.(cases|participants|teacher_reminder_settings|research_case_phase_events|research_measure_events|research_observations)/i);assert.doesNotMatch(migration,/net\.http|cron/i);});
+
+test('Weekly Teacher Report expectations are bounded to Intervention only',()=>{
+ const lifecycle=fs.readFileSync(new URL('../supabase/migrations/20260824070000_external_weekly_qualtrics_checkins.sql',import.meta.url),'utf8');
+ const fn=lifecycle.slice(lifecycle.indexOf('create function public.research_admin_weekly_checkins'),lifecycle.indexOf('revoke all on function public.research_admin_weekly_checkins'));
+ assert.match(fn,/where r\.phase='intervention'/);
+ assert.match(fn,/r\.effective_date>intervention_start and r\.phase<>'intervention'/);
+ assert.match(fn,/select r\.effective_date-1 into intervention_end/);
+ assert.doesNotMatch(fn,/phase='maintenance'|phase in \('intervention','maintenance'\)/);
+});
