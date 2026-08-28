@@ -4,6 +4,7 @@ const { authorize, json, supabaseFetch, UUID_PATTERN } = require('./research-adm
 const { configuration } = require('../server/game-login-email');
 const sendGameLogin = require('../server/research-admin-send-game-login');
 const { qualtricsConfiguration } = require('../server/weekly-checkin-service');
+const { measureConfiguration } = require('../server/qualtrics-measures');
 
 module.exports = async function handler(request, response) {
   if (request.method === 'POST') return sendGameLogin(request, response);
@@ -15,15 +16,21 @@ module.exports = async function handler(request, response) {
     await authorize(request);
     const caseId = request.query?.case_id;
     if (caseId && !UUID_PATTERN.test(caseId)) return json(response, 400, { error: 'Invalid case.' });
-    let latest = null;
+    let latest = null, participantCode = null;
     if (caseId) {
+      const participantResponse = await supabaseFetch(`/rest/v1/participants?case_id=eq.${encodeURIComponent(caseId)}&select=participant_code&limit=2`);
+      if (!participantResponse.ok) throw Object.assign(new Error('Participant lookup failed'), { status: 502 });
+      const participants = await participantResponse.json();
+      if (participants.length !== 1 || !participants[0].participant_code) throw Object.assign(new Error('Case participant not found'), { status: 404 });
+      participantCode = participants[0].participant_code;
       const auditResponse = await supabaseFetch(`/rest/v1/research_intervention_launch_events?case_id=eq.${caseId}&action=in.(game_login_email_sent,game_login_email_failed)&select=action,recorded_at&order=recorded_at.desc&limit=1`);
       if (auditResponse.ok) latest = (await auditResponse.json())[0] || null;
     }
     const result = {
       teacher_reminder_system_enabled: process.env.TEACHER_REMINDER_SYSTEM_ENABLED === 'true',
       game_login_email_enabled: configuration().enabled,
-      weekly_qualtrics_configured: qualtricsConfiguration().configured
+      weekly_qualtrics_configured: qualtricsConfiguration().configured,
+      qualtrics_measures: measureConfiguration(participantCode)
     };
     if (latest) result.game_login_email_status = { outcome: latest.action === 'game_login_email_sent' ? 'sent' : 'failed', recorded_at: latest.recorded_at };
     return json(response, 200, result);
