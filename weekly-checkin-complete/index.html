@@ -1,3 +1,53 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Weekly check-in completion</title><style>body{margin:0;background:#f4f7f5;color:#17352d;font:18px/1.5 system-ui,sans-serif;display:grid;min-height:100vh;place-items:center}.card{background:white;border-radius:18px;box-shadow:0 10px 35px #17352d22;margin:1rem;max-width:30rem;padding:2.5rem;text-align:center}h1{font-size:2rem;margin:.25rem}.check{color:#18865b;font-size:3rem}p{margin:.75rem 0}button{background:#176b50;border:0;border-radius:.5rem;color:white;font:inherit;font-weight:700;margin-top:1rem;padding:.7rem 1rem}</style></head>
-<body><main class="card" aria-live="polite"><div id="completion-icon" class="check" aria-hidden="true"></div><h1 id="completion-title">Finishing your weekly check-in…</h1><p id="completion-detail">Please keep this page open for a moment.</p><button id="completion-retry" type="button" hidden>Try again</button></main><script type="module" src="./completion.js"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Weekly Check-In Complete | Mission: Reinforceable</title>
+  <link rel="icon" href="/favicon.png" />
+  <link rel="stylesheet" href="/assets/site/site.css" />
+  <link rel="stylesheet" href="/assets/site/mobile-brand.css" />
+</head>
+<body>
+  <div class="site-shell completion-page">
+    <header class="site-header">
+      <div class="nav-wrap">
+        <a class="brand" href="/" aria-label="Mission: Reinforceable Home">
+          <img class="brand-icon" src="/favicon.png" alt="" />
+          <img class="brand-logo" src="/assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable" />
+        </a>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <div class="nav-menu" id="primary-nav-menu">
+            <a href="/">Home</a>
+            <a href="/research/">Research</a>
+            <a href="/intake/">New Game</a>
+            <a href="/demo/">Play Demo</a>
+            <a href="/coach-dashboard/">Coach Login</a>
+          </div>
+          <a class="nav-cta" href="/game/">Teacher Login</a>
+          <button class="nav-toggle" type="button" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primary-nav-menu" hidden><span aria-hidden="true"></span></button>
+        </nav>
+      </div>
+    </header>
+
+    <main class="completion-main">
+      <section class="completion-card" aria-live="polite" aria-labelledby="completion-title">
+        <div id="completion-icon" class="completion-icon" aria-hidden="true"></div>
+        <p class="eyebrow">Weekly Check-In</p>
+        <h1 id="completion-title">Finishing your weekly check-in…</h1>
+        <p id="completion-detail" class="completion-detail">Please keep this page open for a moment.</p>
+        <button id="completion-retry" class="button button-primary" type="button" hidden>Retry</button>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>Mission: Reinforceable</span>
+        <span>Game-based practice for behavior support implementation.</span>
+      </div>
+    </footer>
+  </div>
+  <script type="module" src="./completion.js"></script>
+  <script src="/assets/site/site-nav.js"></script>
+</body>
+</html>

@@ -14,8 +14,8 @@ if (typeof document !== 'undefined') {
   const icon = document.querySelector('#completion-icon'), title = document.querySelector('#completion-title'), detail = document.querySelector('#completion-detail'), retry = document.querySelector('#completion-retry');
   const render = state => {
     icon.textContent = state === 'success' ? '✓' : '';
-    title.textContent = state === 'success' ? 'All done!' : state === 'finishing' ? 'Finishing your weekly check-in…' : "We couldn't confirm your weekly check-in.";
-    detail.textContent = state === 'success' ? 'Your weekly Mission: Reinforceable check-in is complete. Thanks for taking a minute to check in.' : state === 'finishing' ? 'Please keep this page open for a moment.' : state === 'invalid' ? 'This completion link is invalid or has expired.' : 'Please try again. If the problem continues, you may close this page and contact the study team.';
+    title.textContent = state === 'success' ? 'Weekly Check-In Complete' : state === 'finishing' ? 'Finishing your weekly check-in…' : "We couldn't confirm your weekly check-in.";
+    detail.textContent = state === 'success' ? 'Thanks! Your weekly Mission: Reinforceable check-in has been recorded.' : state === 'finishing' ? 'Please keep this page open for a moment.' : state === 'invalid' ? 'This completion link is invalid or has expired.' : 'Please try again. If the problem continues, you may close this page and contact the study team.';
     retry.hidden = state !== 'retry';
   };
   const run = () => completeWeeklyCheckin({ token, onState: render });
