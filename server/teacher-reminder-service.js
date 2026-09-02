@@ -52,8 +52,8 @@ function localMinuteOfDay(now, timezone) {
 }
 
 function reminderTimeMinutes(value) {
-  const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(value || '08:00:00');
-  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return null;
+  const match = /^(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value || '');
+  if (!match || Number(match[1]) > 23 || Number(match[2]) !== 0 || Number(match[3] || 0) !== 0) return null;
   return Number(match[1]) * 60 + Number(match[2]);
 }
 

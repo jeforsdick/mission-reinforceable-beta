@@ -1,11 +1,11 @@
--- Participant-ready local reminder timing. The 08:00 default preserves the
--- existing early-morning Denver delivery for already-configured participants.
+-- Participant-ready local reminder timing. A preference must be configured
+-- explicitly; the hourly cron intentionally supports hour precision only.
 alter table public.teacher_reminder_settings
-add column preferred_reminder_time time not null default time '08:00';
+add column preferred_reminder_time time;
 
 alter table public.teacher_reminder_settings
-add constraint teacher_reminder_time_minute_precision
-check (date_trunc('minute', preferred_reminder_time) = preferred_reminder_time);
+add constraint teacher_reminder_time_hour_precision
+check (date_trunc('hour', preferred_reminder_time) = preferred_reminder_time);
 
 drop function public.eligible_teacher_reminders(boolean);
 create function public.eligible_teacher_reminders(require_followup boolean default false)
@@ -20,6 +20,7 @@ where trs.enabled
 and trs.activated_at is not null and trs.activated_at <= now()
 and (trs.deactivated_at is null or trs.deactivated_at > now())
 and (not require_followup or trs.followup_enabled)
+and trs.preferred_reminder_time is not null
 and p.active and c.active and pr.active and pr.role = 'teacher'
 and nullif(btrim(pr.email), '') is not null;
 $$;
@@ -35,8 +36,13 @@ returns boolean language sql stable security definer set search_path = '' as $$
 select exists (
   select 1 from public.game_sessions gs
   join public.participants p on p.id = gs.participant_id and p.case_id = gs.case_id
+  join public.case_game_content gc on gc.case_id = gs.case_id
   where gs.participant_id = target_participant_id
-  and gs.status = 'completed' and gs.qa_mode = false
+  and gs.status = 'completed' and gs.qa_mode = false and gs.mode = 'daily'
+  and gs.game_content_version = gc.version
+  and jsonb_array_length(gc.daily_missions) > 0
+  and gs.mission_id = (gc.daily_missions ->
+    ((replace(target_study_date::text, '-', '')::integer % jsonb_array_length(gc.daily_missions))::integer) ->> 'id')
   and (coalesce(gs.ended_at, gs.started_at) at time zone study_timezone)::date = target_study_date
 );
 $$;
@@ -83,4 +89,4 @@ revoke execute on function public.claim_teacher_reminder_event(uuid, uuid, text,
 grant execute on function public.claim_teacher_reminder_event(uuid, uuid, text, date, boolean) to service_role;
 
 comment on column public.teacher_reminder_settings.preferred_reminder_time is
-'Participant preferred daily reminder wall-clock time, interpreted only in America/Denver.';
+'Explicit participant preferred daily reminder hour, interpreted only in America/Denver; NULL is ineligible.';

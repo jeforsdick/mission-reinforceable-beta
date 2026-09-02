@@ -121,9 +121,16 @@ assert.equal(service.isReminderDue(new Date('2026-07-06T13:59:00Z'), 'America/De
 assert.equal(service.isReminderDue(new Date('2026-07-06T14:00:00Z'), 'America/Denver', '08:00:00'), true);
 assert.equal(service.isReminderDue(new Date('2026-07-06T14:59:00Z'), 'America/Denver', '08:00:00'), true);
 assert.equal(service.isReminderDue(new Date('2026-07-06T15:00:00Z'), 'America/Denver', '08:00:00'), false);
-assert.equal(service.isReminderDue(new Date('2026-07-06T14:30:00Z'), 'America/Denver', undefined), true);
-assert.match(timingMigration, /preferred_reminder_time time not null default time '08:00'/);
-assert.match(timingMigration, /Participant preferred daily reminder wall-clock time, interpreted only in America\/Denver/);
+assert.equal(service.isReminderDue(new Date('2026-07-06T14:30:00Z'), 'America/Denver', undefined), false);
+assert.equal(service.isReminderDue(new Date('2026-07-06T14:30:00Z'), 'America/Denver', '08:30:00'), false);
+assert.match(timingMigration, /add column preferred_reminder_time time;/);
+assert.match(timingMigration, /teacher_reminder_time_hour_precision/);
+assert.match(timingMigration, /trs\.preferred_reminder_time is not null/);
+assert.match(timingMigration, /Explicit participant preferred daily reminder hour, interpreted only in America\/Denver; NULL is ineligible/);
+assert.match(timingMigration, /gs\.mode = 'daily'/);
+assert.match(timingMigration, /gs\.game_content_version = gc\.version/);
+assert.match(timingMigration, /gs\.mission_id = \(gc\.daily_missions/);
+assert.match(timingMigration, /replace\(target_study_date::text, '-', ''\)::integer % jsonb_array_length\(gc\.daily_missions\)/);
 assert.throws(() => service.studyDate(now(), ''), /required/);
 assert.throws(() => service.studyDate(now(), 'Not\/A_Timezone'), /invalid/);
 assert.equal(service.idempotencyKey(participant.participant_id, '2026-08-14', service.TYPES.DAILY), `teacher-reminder/${participant.participant_id}/2026-08-14/daily_prompt`);
@@ -200,6 +207,12 @@ assert.equal(response.body.sent, 1);
 
 // A candidate outside this invocation's local window is skipped before completion/claim.
 mock = mockFetch({ candidates: [{ ...participant, preferred_reminder_time: '10:00:00' }] });
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
+assert.equal(response.body.skipped, 1);
+assert.equal(mock.calls.some(call => call.url.includes('has_completed') || call.url.includes('claim_') || call.url.includes('resend.com')), false);
+
+// Missing preferences are ineligible and never silently receive an 08:00 reminder.
+mock = mockFetch({ candidates: [{ ...participant, preferred_reminder_time: null }] });
 response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
 assert.equal(response.body.skipped, 1);
 assert.equal(mock.calls.some(call => call.url.includes('has_completed') || call.url.includes('claim_') || call.url.includes('resend.com')), false);

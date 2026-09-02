@@ -36,8 +36,9 @@ reliability/retry infrastructure, not a second intervention prompt. Both routes
 therefore use the same database identity
 `(participant_id, study_date, reminder_type)` and matching Resend idempotency
 key, permitting at most one provider delivery for that logical prompt.
-The normal job sends only when the Denver wall-clock time is in the half-open
-60-minute window beginning at that teacher's preference. `Intl.DateTimeFormat`
+The normal job provides **hour-level delivery precision**: preferences must be
+configured on the hour, and it sends when the Denver wall-clock time is in the
+half-open 60-minute window beginning at that teacher's preference. `Intl.DateTimeFormat`
 with `America/Denver` supplies the local date and time, so daylight-saving
 changes use MST/MDT rather than a fixed UTC offset. The retry job can reclaim a
 failed event (or a pending event stale for 30 minutes), but the normal job
@@ -104,20 +105,23 @@ Delivery never marks a mission incomplete, writes a `game_session`, counts a
 gameplay dose, or changes participant/case activity, phase, or gameplay.
 Mission completion remains independently determined from `game_sessions`.
 Before claiming either reminder type, the service calls
-`has_completed_mission_on_study_date`: only a non-QA `game_sessions` row with
-`status = 'completed'`, associated with the participant and whose ended (or,
-if absent, started) timestamp has today's Denver date, suppresses delivery.
+`has_completed_mission_on_study_date`. It requires a non-QA completed row whose
+`mode` is `daily`, `game_content_version` equals the participant case's current
+published version, and `mission_id` equals the deterministic daily mission ID
+selected from `case_game_content.daily_missions` using the same `YYYYMMDD modulo
+pool length` rule as gameplay. Mystery/wildcard, crisis, demo/QA, outdated, and
+unrelated mission sessions cannot suppress the daily reminder. The ended (or,
+if absent, started) timestamp must also have today's Denver date.
 
 ## Participant reminder preference
 
 Migration `20260902000000_participant_reminder_timing.sql` adds the smallest
 needed schema field, `teacher_reminder_settings.preferred_reminder_time`. It is
-a minute-precision SQL `time`, deliberately interpreted in the single study
-timezone rather than storing a UTC offset. No suitable reminder-time field
-previously existed. Existing rows receive `08:00`, preserving the prior
-early-morning behavior during the dissertation's initial MDT period; new rows
-use the same documented fallback. Research operations may set the value
-directly when activating a participant. This change intentionally adds no
+a nullable, hour-precision SQL `time`, deliberately interpreted in the single
+study timezone rather than storing a UTC offset. No suitable reminder-time
+field previously existed. There is no implicit fallback: existing and new rows
+remain ineligible until research operations explicitly configure a preference.
+This change intentionally adds no
 general timezone UI or participant-specific timezone field.
 
 ## Production smoke test
