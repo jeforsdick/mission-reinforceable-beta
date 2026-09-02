@@ -146,11 +146,36 @@ function createHandler(type, dependencies = {}) {
 function createSmokeTestHandler(dependencies = {}) {
   const fetchImpl = dependencies.fetch || global.fetch;
   return async function handler(request, response) {
-    if (request.method !== 'GET') {
-      response.setHeader('Allow', 'GET');
+    const emailPathTest = request.query && request.query.action === 'resend-email-test';
+    const expectedMethod = emailPathTest ? 'POST' : 'GET';
+    if (emailPathTest) response.setHeader('Cache-Control', 'no-store');
+    if (request.method !== expectedMethod) {
+      response.setHeader('Allow', expectedMethod);
       return response.status(405).json({ error: 'Method not allowed' });
     }
     if (!authorized(request.headers && request.headers.authorization, process.env.CRON_SECRET)) return response.status(401).json({ error: 'Unauthorized' });
+    if (emailPathTest) {
+      if (!process.env.RESEND_API_KEY || !process.env.TEST_EMAIL_RECIPIENT) {
+        return response.status(503).json({ error: 'Test email configuration is incomplete' });
+      }
+      try {
+        const send = await fetchImpl('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: 'Mission: Reinforceable <missions@mail.missionreinforceable.com>',
+            to: [process.env.TEST_EMAIL_RECIPIENT],
+            subject: 'Mission: Reinforceable Email Test',
+            text: 'The Resend/Vercel email connection for Mission: Reinforceable is working.'
+          })
+        });
+        if (!send.ok) return response.status(502).json({ error: 'Test email could not be sent' });
+        const provider = await send.json();
+        return response.status(200).json({ success: true, message_id: provider.id || null });
+      } catch {
+        return response.status(502).json({ error: 'Test email could not be sent' });
+      }
+    }
     try {
       validateConfiguration(['RESEND_API_KEY', 'TEACHER_REMINDER_FROM_EMAIL', 'TEACHER_GAME_URL', 'TEACHER_REMINDER_TIMEZONE', 'TEACHER_REMINDER_TEST_EMAIL']);
       const email = emailFor(TYPES.DAILY, null, process.env.TEACHER_GAME_URL);
