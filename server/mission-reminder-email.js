@@ -15,21 +15,39 @@ const ASSET_FILES = Object.freeze({
 
 function canonicalGameUrl(value) {
   let url;
-  try { url = new URL(value); } catch { throw new Error('Test mission email URL is invalid'); }
+  try { url = new URL(value); } catch { throw new Error('Mission reminder email URL is invalid'); }
   if (url.protocol !== 'https:' || url.pathname !== '/game/' || url.search || url.hash || url.username || url.password) {
-    throw new Error('Test mission email URL must be an authenticated /game/ URL');
+    throw new Error('Mission reminder email URL must be an authenticated /game/ URL');
   }
   return url;
 }
 
-function buildTestMissionEmail(gameUrl) {
+function teacherFirstName(teacherName) {
+  if (typeof teacherName !== 'string') return null;
+  const parts = teacherName.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return null;
+  const honorifics = /^(?:mr|mrs|ms|miss|mx|dr|prof)\.?$/i;
+  const firstName = honorifics.test(parts[0]) ? parts[1] : parts[0];
+  return firstName || null;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+function buildMissionReminderEmail(gameUrl, teacherName, subject = SUBJECT) {
   const missionUrl = canonicalGameUrl(gameUrl);
   const ctaUrl = missionUrl.href;
   const assets = Object.fromEntries(Object.entries(ASSET_FILES).map(([key, file]) => [key, new URL(ASSET_ROOT + file, missionUrl.origin).href]));
+  const greetingName = teacherFirstName(teacherName) || 'Hero';
+  const greeting = `Good morning, ${greetingName}!`;
+  const safeGreeting = escapeHtml(greeting);
   const text = `MISSION: REINFORCEABLE
 YOUR DAILY MISSION AWAITS
 
-Good morning, Hero!
+${greeting}
 
 Your Mission: Reinforceable mission is ready for today.
 Take a few minutes, make your choices, and keep making a difference for your student.
@@ -50,9 +68,9 @@ Every mission makes a difference.
 Mission: Reinforceable is a research project designed to support educators in implementing high-quality behavior supports.`;
 
   const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><title>${SUBJECT}</title></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="x-apple-disable-message-reformatting"><title>${escapeHtml(subject)}</title></head>
 <body style="margin:0;padding:0;background-color:#f4f1f7;color:#302826;font-family:Arial,Helvetica,sans-serif;">
-<div role="article" aria-roledescription="email" aria-label="${SUBJECT}" lang="en" style="background-color:#f4f1f7;">
+<div role="article" aria-roledescription="email" aria-label="${escapeHtml(subject)}" lang="en" style="background-color:#f4f1f7;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background-color:#f4f1f7;"><tr><td align="center" style="padding:20px 10px;">
 <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #ded7e3;">
 <tr><td align="center" style="padding:18px 18px 10px;background-color:#ffffff;">
@@ -70,7 +88,7 @@ Mission: Reinforceable is a research project designed to support educators in im
 </td></tr>
 <tr><td style="padding:0 20px 16px;background-color:#ffffff;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#fff4d8" style="width:100%;background-color:#fff4d8;border:3px solid #49362d;box-shadow:inset 0 0 0 2px #d6a844;"><tr><td style="padding:18px 18px 16px;color:#302826;font-size:16px;line-height:24px;">
-<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td width="42" valign="middle"><img src="${assets.heart}" width="32" alt="Heart" style="display:block;width:32px;height:auto;border:0;"></td><td valign="middle"><h1 style="margin:0;color:#49362d;font-family:'Courier New',Courier,monospace;font-size:22px;line-height:27px;">Good morning, Hero!</h1></td></tr></table>
+<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td width="42" valign="middle"><img src="${assets.heart}" width="32" alt="Heart" style="display:block;width:32px;height:auto;border:0;"></td><td valign="middle"><h1 style="margin:0;color:#49362d;font-family:'Courier New',Courier,monospace;font-size:22px;line-height:27px;">${safeGreeting}</h1></td></tr></table>
 <p style="margin:12px 0 8px;">Your Mission: Reinforceable mission is ready for today.</p>
 <p style="margin:0 0 13px;">Take a few minutes, make your choices, and keep making a difference for your student.</p>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td width="42" valign="top"><img src="${assets.behaviorXp}" width="31" alt="Behavior XP encouragement" style="display:block;width:31px;height:auto;border:0;"></td><td valign="top"><p style="margin:0 0 5px;font-weight:bold;color:#60388c;">You've got this!</p><p style="margin:0;">See you in there,<br><strong>Mission: Reinforceable</strong></p></td></tr></table>
@@ -88,7 +106,7 @@ Mission: Reinforceable is a research project designed to support educators in im
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td width="46" valign="top"><img src="${assets.hat}" width="34" alt="Research scholar hat" style="display:block;width:34px;height:auto;border:0;"></td><td valign="top" style="color:#746b78;font-size:11px;line-height:17px;">Mission: Reinforceable is a research project designed to support educators in implementing high-quality behavior supports.</td></tr></table>
 </td></tr></table></td></tr></table></div></body></html>`;
 
-  return { from: SENDER, subject: SUBJECT, html, text, ctaUrl, assets };
+  return { from: SENDER, subject, html, text, ctaUrl, assets };
 }
 
-module.exports = { SUBJECT, SENDER, ASSET_ROOT, ASSET_FILES, buildTestMissionEmail };
+module.exports = { SUBJECT, SENDER, ASSET_ROOT, ASSET_FILES, teacherFirstName, buildMissionReminderEmail };

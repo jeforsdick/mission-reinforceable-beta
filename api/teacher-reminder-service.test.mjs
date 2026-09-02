@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const service = require('../server/teacher-reminder-service.js');
+const sharedEmail = require('../server/mission-reminder-email.js');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260814010000_teacher_reminders.sql', import.meta.url), 'utf8');
 const recoveryMigration = fs.readFileSync(new URL('../supabase/migrations/20260820000000_teacher_reminder_stale_pending_recovery.sql', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
@@ -20,7 +21,7 @@ Object.assign(process.env, {
   TEST_EMAIL_RECIPIENT: 'path-test@example.org'
 });
 
-const participant = { participant_id: '11111111-1111-4111-8111-111111111111', case_id: '22222222-2222-4222-8222-222222222222', teacher_name: 'Ms. <Rivera>', teacher_email: 'teacher@example.org' };
+const participant = { participant_id: '11111111-1111-4111-8111-111111111111', case_id: '22222222-2222-4222-8222-222222222222', teacher_name: 'Jordan <Rivera>', teacher_email: 'teacher@example.org' };
 const now = () => new Date('2026-08-15T01:30:00.000Z'); // August 14 in study timezone.
 const makeResponse = () => ({ statusCode: 0, body: null, headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
 const invoke = async (handler, authorization = 'Bearer cron-secret', overrides = {}) => { const response = makeResponse(); await handler({ method: 'GET', headers: { authorization }, ...overrides }, response); return response; };
@@ -96,14 +97,19 @@ assert.ok(deployedApiRoutes.length <= 12, `expected at most 12 API routes, found
 const daily = service.emailFor(service.TYPES.DAILY, participant.teacher_name, process.env.TEACHER_GAME_URL);
 const followup = service.emailFor(service.TYPES.FOLLOWUP, participant.teacher_name, process.env.TEACHER_GAME_URL);
 assert.equal(daily.subject, 'Mission: Reinforceable — Today’s Mission Is Ready');
-assert.doesNotMatch(daily.text, /Rivera/);
-assert.match(followup.text, /^Hello Ms\. <Rivera>,/);
-assert.match(followup.html, /^.*Hello Ms\. &lt;Rivera&gt;,/);
+assert.match(daily.text, /Good morning, Jordan!/);
+assert.match(daily.html, /Good morning, Jordan!/);
+assert.doesNotMatch(daily.html, /&lt;Rivera&gt;/);
+assert.match(followup.text, /^Hello Jordan <Rivera>,/);
+assert.match(followup.html, /^.*Hello Jordan &lt;Rivera&gt;,/);
 for (const forbidden of ['Student Alias X', 'Case-99', 'Study-88', 'escape behavior', 'fidelity score', 'Coach Smith']) {
   assert.doesNotMatch(daily.text + daily.html + followup.text + followup.html, new RegExp(forbidden, 'i'));
 }
-assert.match(daily.text, /approximately 5 minutes/);
 assert.match(daily.text, /jess\.olson@utah\.edu/);
+const fallbackDaily = service.emailFor(service.TYPES.DAILY, null, process.env.TEACHER_GAME_URL);
+assert.match(fallbackDaily.text, /Good morning, Hero!/);
+assert.match(fallbackDaily.html, /Good morning, Hero!/);
+assert.equal(daily.from, sharedEmail.SENDER);
 
 assert.equal(service.studyDate(now(), 'America/Denver'), '2026-08-14');
 assert.throws(() => service.studyDate(now(), ''), /required/);
@@ -143,7 +149,14 @@ assert.equal(resend.options.headers['Idempotency-Key'], `teacher-reminder/${part
 const payload = JSON.parse(resend.options.body);
 assert.deepEqual(payload.to, [participant.teacher_email]);
 assert.equal(payload.subject, daily.subject);
+assert.equal(payload.from, 'Mission: Reinforceable <missions@mail.missionreinforceable.com>');
+assert.equal(payload.html, daily.html);
+assert.equal(payload.text, daily.text);
+assert.equal(payload.html, sharedEmail.buildMissionReminderEmail(process.env.TEACHER_GAME_URL, participant.teacher_name, daily.subject).html);
 assert.ok(!JSON.stringify(payload).includes(participant.case_id));
+for (const secret of [process.env.CRON_SECRET, process.env.SUPABASE_SERVICE_ROLE_KEY, process.env.RESEND_API_KEY]) {
+  assert.doesNotMatch(JSON.stringify(payload) + JSON.stringify(response.body), new RegExp(secret));
+}
 
 // Sent and pending claims cannot produce duplicate or concurrent sends.
 mock = mockFetch({ eventStatus: 'sent' });
@@ -169,7 +182,7 @@ assert.match(migration, /from public\.game_sessions gs[\s\S]*gs\.status = 'compl
 mock = mockFetch({ completed: false });
 response = await invoke(service.createHandler(service.TYPES.FOLLOWUP, { fetch: mock.fetch, now }));
 assert.equal(response.body.sent, 1);
-assert.match(JSON.parse(mock.calls.find(call => call.url.includes('resend.com')).options.body).text, /^Hello Ms\. <Rivera>,/);
+assert.match(JSON.parse(mock.calls.find(call => call.url.includes('resend.com')).options.body).text, /^Hello Jordan <Rivera>,/);
 
 // followup_enabled=false is excluded by the service-only candidate RPC (empty result).
 mock = mockFetch({ candidates: [] });
@@ -245,7 +258,11 @@ const smokeSend = mock.calls.at(0);
 assert.equal(smokeSend.url, 'https://api.resend.com/emails');
 assert.equal(smokeSend.options.headers['Idempotency-Key'], 'teacher-reminder-smoke-test/daily-prompt-production-v1');
 assert.deepEqual(JSON.parse(smokeSend.options.body).to, ['smoke@example.org']);
-assert.equal(JSON.parse(smokeSend.options.body).subject, daily.subject);
+const smokePayload = JSON.parse(smokeSend.options.body);
+assert.equal(smokePayload.subject, daily.subject);
+assert.equal(smokePayload.from, sharedEmail.SENDER);
+assert.equal(smokePayload.html, fallbackDaily.html);
+assert.equal(smokePayload.text, fallbackDaily.text);
 assert.equal(mock.calls.some(call => call.url.includes('supabase') || call.url.includes('teacher_reminder_events')), false);
 
 // The temporary path test reuses the smoke-test function and has its own narrow POST action.
