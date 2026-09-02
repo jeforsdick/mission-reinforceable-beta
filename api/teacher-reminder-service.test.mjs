@@ -7,7 +7,8 @@ const service = require('../server/teacher-reminder-service.js');
 const sharedEmail = require('../server/mission-reminder-email.js');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260814010000_teacher_reminders.sql', import.meta.url), 'utf8');
 const recoveryMigration = fs.readFileSync(new URL('../supabase/migrations/20260820000000_teacher_reminder_stale_pending_recovery.sql', import.meta.url), 'utf8');
-const timingMigration = fs.readFileSync(new URL('../supabase/migrations/20260902000000_participant_teacher_reminder_timing.sql', import.meta.url), 'utf8');
+const safetyMigration = fs.readFileSync(new URL('../supabase/migrations/20260902000000_teacher_reminder_daily_safety.sql', import.meta.url), 'utf8');
+const scheduleDocumentation = fs.readFileSync(new URL('../docs/teacher-reminder-schedule.md', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 const dailyRoute = fs.readFileSync(new URL('./teacher-daily-prompt.js', import.meta.url), 'utf8');
 const retryRoute = fs.readFileSync(new URL('./teacher-daily-prompt-retry.js', import.meta.url), 'utf8');
@@ -75,9 +76,12 @@ assert.match(recoveryMigration, /existing\.status = 'pending'[\s\S]*interval '30
 assert.match(recoveryMigration, /attempt_count = existing\.attempt_count \+ 1/);
 assert.doesNotMatch(recoveryMigration, /cascade/i);
 assert.deepEqual(vercel.crons, [
-  { path: '/api/teacher-daily-prompt', schedule: '0 * * * 1-5' },
-  { path: '/api/teacher-daily-prompt-retry', schedule: '30 * * * 1-5' }
+  { path: '/api/teacher-daily-prompt', schedule: '0 13 * * 1-5' },
+  { path: '/api/teacher-daily-prompt-retry', schedule: '0 15 * * 1-5' }
 ]);
+assert.ok(vercel.crons.every(cron => !cron.schedule.includes('* * * 1-5')), 'reminder jobs must not run hourly');
+assert.match(scheduleDocumentation, /7 AM during Mountain Daylight Time and 6 AM during Mountain Standard Time/);
+assert.match(scheduleDocumentation, /does not promise an exact 7:00 or 7:30 delivery/);
 assert.equal(new Set(vercel.crons.map(cron => cron.path)).size, vercel.crons.length);
 assert.equal(JSON.stringify(vercel).includes('followup'), false);
 for (const route of [dailyRoute, retryRoute]) {
@@ -114,16 +118,9 @@ assert.match(fallbackDaily.text, /Good morning, Hero!/);
 assert.match(fallbackDaily.html, /Good morning, Hero!/);
 assert.equal(daily.from, sharedEmail.SENDER);
 
-// The additive setting is nullable without a default, and the RPC enforces an
-// hour-aligned, half-open local window on the fixed participant timezone.
-assert.match(timingMigration, /add column preferred_reminder_time time without time zone null;/);
-assert.doesNotMatch(timingMigration.match(/add column preferred_reminder_time[^;]+;/)[0], /default/i);
-assert.match(timingMigration, /preferred_reminder_time is not null/);
-assert.match(timingMigration, /extract\(minute from trs\.preferred_reminder_time\) = 0/);
-assert.match(timingMigration, /extract\(second from trs\.preferred_reminder_time\) = 0/);
-assert.match(timingMigration, />= date_trunc\('day',[\s\S]+\+ trs\.preferred_reminder_time/);
-assert.match(timingMigration, /< date_trunc\('day',[\s\S]+interval '60 minutes'/);
-assert.match(timingMigration, /at time zone 'America\/Denver'/);
+// Scheduling is study-wide; no schema, runtime, or documentation contract
+// retains participant-specific reminder-time configuration.
+assert.doesNotMatch(safetyMigration + scheduleDocumentation + JSON.stringify(vercel), /preferred_reminder_time/i);
 
 // Exact daily completion is case-, version-, mission-, mode-, QA-, status-,
 // participant-, and Denver-date-specific and uses gameplay's YYYYMMDD rotation.
@@ -133,10 +130,10 @@ for (const condition of [
   /gs\.game_content_version = content\.version/, /gs\.mission_id = content\.daily_missions/,
   /replace\(target_study_date::text, '-', ''\)/,
   /gs\.ended_at at time zone study_timezone/
-]) assert.match(timingMigration, condition);
-for (const unrelated of ["wild", "wildcard", "crisis"]) assert.doesNotMatch(timingMigration, new RegExp(`gs\\.mode = '${unrelated}'`));
-assert.match(timingMigration, /where not retry_reclamation/);
-assert.match(timingMigration, /where retry_reclamation[\s\S]*existing\.status = 'failed'[\s\S]*existing\.status = 'pending'/);
+]) assert.match(safetyMigration, condition);
+for (const unrelated of ["wild", "wildcard", "crisis"]) assert.doesNotMatch(safetyMigration, new RegExp(`gs\\.mode = '${unrelated}'`));
+assert.match(safetyMigration, /where not retry_reclamation/);
+assert.match(safetyMigration, /where retry_reclamation[\s\S]*existing\.status = 'failed'[\s\S]*existing\.status = 'pending'/);
 
 assert.equal(service.studyDate(now(), 'America/Denver'), '2026-08-14');
 assert.equal(service.studyDate(new Date('2027-01-15T06:30:00Z'), 'America/Denver'), '2027-01-14'); // MST
@@ -173,7 +170,7 @@ process.env.TEACHER_REMINDER_SYSTEM_ENABLED = 'true';
 response = await invoke(handler);
 assert.equal(response.statusCode, 200);
 assert.equal(response.body.sent, 1);
-assert.equal(JSON.parse(mock.calls.find(call => call.url.includes('/rpc/eligible_teacher_reminders')).options.body).target_evaluation_time, now().toISOString());
+assert.deepEqual(JSON.parse(mock.calls.find(call => call.url.includes('/rpc/eligible_teacher_reminders')).options.body), { require_followup: false });
 const resend = mock.calls.find(call => call.url.includes('resend.com'));
 assert.equal(resend.options.headers['Idempotency-Key'], `teacher-reminder/${participant.participant_id}/2026-08-14/daily_prompt`);
 const payload = JSON.parse(resend.options.body);

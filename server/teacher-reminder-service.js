@@ -95,7 +95,7 @@ function createHandler(type, dependencies = {}) {
     const summary = { study_date: date, eligible_study_day: isEligibleStudyDay(date), sent: 0, skipped: 0, failed: 0 };
     if (!summary.eligible_study_day) return response.status(200).json(summary);
     try {
-      const candidatesResponse = await fetchImpl(`${base}/rpc/eligible_teacher_reminders`, { method: 'POST', headers, body: JSON.stringify({ require_followup: type === TYPES.FOLLOWUP, target_evaluation_time: evaluationTime.toISOString() }) });
+      const candidatesResponse = await fetchImpl(`${base}/rpc/eligible_teacher_reminders`, { method: 'POST', headers, body: JSON.stringify({ require_followup: type === TYPES.FOLLOWUP }) });
       if (!candidatesResponse.ok) throw new Error(`Candidate lookup returned ${candidatesResponse.status}`);
       const candidates = await candidatesResponse.json();
       for (const candidate of candidates) {
