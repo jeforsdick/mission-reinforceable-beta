@@ -7,6 +7,7 @@ const service = require('../server/teacher-reminder-service.js');
 const sharedEmail = require('../server/mission-reminder-email.js');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260814010000_teacher_reminders.sql', import.meta.url), 'utf8');
 const recoveryMigration = fs.readFileSync(new URL('../supabase/migrations/20260820000000_teacher_reminder_stale_pending_recovery.sql', import.meta.url), 'utf8');
+const timingMigration = fs.readFileSync(new URL('../supabase/migrations/20260902000000_participant_teacher_reminder_timing.sql', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 const dailyRoute = fs.readFileSync(new URL('./teacher-daily-prompt.js', import.meta.url), 'utf8');
 const retryRoute = fs.readFileSync(new URL('./teacher-daily-prompt-retry.js', import.meta.url), 'utf8');
@@ -35,7 +36,8 @@ function mockFetch({ candidates = [participant], completed = false, eventStatus 
     if (String(url).includes('/rpc/eligible_teacher_reminders')) return { ok: true, status: 200, json: async () => candidates };
     if (String(url).includes('/rpc/has_completed_mission_on_study_date')) return { ok: true, status: 200, json: async () => completed };
     if (String(url).includes('/rpc/claim_teacher_reminder_event')) {
-      const claimed = status === null || status === 'failed' || status === 'stale_pending';
+      const retry = JSON.parse(options.body).retry_reclamation;
+      const claimed = retry ? status === 'failed' || status === 'stale_pending' : status === null;
       if (claimed) status = 'pending';
       return { ok: true, status: 200, json: async () => [{ event_id: 'event-1', claimed }] };
     }
@@ -73,16 +75,17 @@ assert.match(recoveryMigration, /existing\.status = 'pending'[\s\S]*interval '30
 assert.match(recoveryMigration, /attempt_count = existing\.attempt_count \+ 1/);
 assert.doesNotMatch(recoveryMigration, /cascade/i);
 assert.deepEqual(vercel.crons, [
-  { path: '/api/teacher-daily-prompt', schedule: '0 14 * * 1-5' },
-  { path: '/api/teacher-daily-prompt-retry', schedule: '0 15 * * 1-5' }
+  { path: '/api/teacher-daily-prompt', schedule: '0 * * * 1-5' },
+  { path: '/api/teacher-daily-prompt-retry', schedule: '30 * * * 1-5' }
 ]);
 assert.equal(new Set(vercel.crons.map(cron => cron.path)).size, vercel.crons.length);
 assert.equal(JSON.stringify(vercel).includes('followup'), false);
 for (const route of [dailyRoute, retryRoute]) {
-  assert.match(route, /module\.exports = createHandler\(TYPES\.DAILY\);/);
+  assert.match(route, /module\.exports = createHandler\(TYPES\.DAILY/);
   assert.doesNotMatch(route, /TYPES\.FOLLOWUP|followup_reminder/);
 }
-assert.equal(retryRoute, dailyRoute);
+assert.match(retryRoute, /createHandler\(TYPES\.DAILY, \{ retry: true \}\)/);
+assert.doesNotMatch(dailyRoute, /retry: true/);
 assert.equal(service.TYPES.DAILY, 'daily_prompt');
 for (const helper of ['teacher-reminder-service.js', 'granite-study-calendar.js', 'teacher-followup-reminder.js']) {
   assert.equal(fs.existsSync(new URL(helper, apiDirectory)), false, `${helper} must not consume an API function slot`);
@@ -111,7 +114,33 @@ assert.match(fallbackDaily.text, /Good morning, Hero!/);
 assert.match(fallbackDaily.html, /Good morning, Hero!/);
 assert.equal(daily.from, sharedEmail.SENDER);
 
+// The additive setting is nullable without a default, and the RPC enforces an
+// hour-aligned, half-open local window on the fixed participant timezone.
+assert.match(timingMigration, /add column preferred_reminder_time time without time zone null;/);
+assert.doesNotMatch(timingMigration.match(/add column preferred_reminder_time[^;]+;/)[0], /default/i);
+assert.match(timingMigration, /preferred_reminder_time is not null/);
+assert.match(timingMigration, /extract\(minute from trs\.preferred_reminder_time\) = 0/);
+assert.match(timingMigration, /extract\(second from trs\.preferred_reminder_time\) = 0/);
+assert.match(timingMigration, />= date_trunc\('day',[\s\S]+\+ trs\.preferred_reminder_time/);
+assert.match(timingMigration, /< date_trunc\('day',[\s\S]+interval '60 minutes'/);
+assert.match(timingMigration, /at time zone 'America\/Denver'/);
+
+// Exact daily completion is case-, version-, mission-, mode-, QA-, status-,
+// participant-, and Denver-date-specific and uses gameplay's YYYYMMDD rotation.
+for (const condition of [
+  /gs\.participant_id = target_participant_id/, /gs\.case_id = target_case_id/,
+  /gs\.status = 'completed'/, /gs\.qa_mode = false/, /gs\.mode = 'daily'/,
+  /gs\.game_content_version = content\.version/, /gs\.mission_id = content\.daily_missions/,
+  /replace\(target_study_date::text, '-', ''\)/,
+  /gs\.ended_at at time zone study_timezone/
+]) assert.match(timingMigration, condition);
+for (const unrelated of ["wild", "wildcard", "crisis"]) assert.doesNotMatch(timingMigration, new RegExp(`gs\\.mode = '${unrelated}'`));
+assert.match(timingMigration, /where not retry_reclamation/);
+assert.match(timingMigration, /where retry_reclamation[\s\S]*existing\.status = 'failed'[\s\S]*existing\.status = 'pending'/);
+
 assert.equal(service.studyDate(now(), 'America/Denver'), '2026-08-14');
+assert.equal(service.studyDate(new Date('2027-01-15T06:30:00Z'), 'America/Denver'), '2027-01-14'); // MST
+assert.equal(service.studyDate(new Date('2026-07-15T05:30:00Z'), 'America/Denver'), '2026-07-14'); // MDT
 assert.throws(() => service.studyDate(now(), ''), /required/);
 assert.throws(() => service.studyDate(now(), 'Not\/A_Timezone'), /invalid/);
 assert.equal(service.idempotencyKey(participant.participant_id, '2026-08-14', service.TYPES.DAILY), `teacher-reminder/${participant.participant_id}/2026-08-14/daily_prompt`);
@@ -144,6 +173,7 @@ process.env.TEACHER_REMINDER_SYSTEM_ENABLED = 'true';
 response = await invoke(handler);
 assert.equal(response.statusCode, 200);
 assert.equal(response.body.sent, 1);
+assert.equal(JSON.parse(mock.calls.find(call => call.url.includes('/rpc/eligible_teacher_reminders')).options.body).target_evaluation_time, now().toISOString());
 const resend = mock.calls.find(call => call.url.includes('resend.com'));
 assert.equal(resend.options.headers['Idempotency-Key'], `teacher-reminder/${participant.participant_id}/2026-08-14/daily_prompt`);
 const payload = JSON.parse(resend.options.body);
@@ -167,17 +197,22 @@ mock = mockFetch({ eventStatus: 'pending' });
 response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
 assert.deepEqual({ sent: response.body.sent, skipped: response.body.skipped }, { sent: 0, skipped: 1 });
 assert.equal(mock.calls.some(call => call.url.includes('resend.com')), false);
-mock = mockFetch({ eventStatus: 'stale_pending' });
+mock = mockFetch({ eventStatus: 'failed' });
 response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
+assert.deepEqual({ sent: response.body.sent, skipped: response.body.skipped }, { sent: 0, skipped: 1 });
+assert.equal(mock.calls.some(call => call.url.includes('resend.com')), false);
+mock = mockFetch({ eventStatus: 'stale_pending' });
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now, retry: true }));
 assert.equal(response.body.sent, 1);
 assert.equal(mock.calls.filter(call => call.url.includes('resend.com')).length, 1);
 
-// Follow-up completion is checked in relational game_sessions through the RPC.
+// Daily completion is checked in relational game_sessions through the exact RPC.
 mock = mockFetch({ completed: true });
-response = await invoke(service.createHandler(service.TYPES.FOLLOWUP, { fetch: mock.fetch, now }));
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now }));
 assert.equal(response.body.skipped, 1);
 assert.equal(mock.calls.some(call => call.url.includes('resend.com')), false);
-assert.match(migration, /from public\.game_sessions gs[\s\S]*gs\.status = 'completed'/);
+const completionCall = mock.calls.find(call => call.url.includes('/rpc/has_completed_mission_on_study_date'));
+assert.deepEqual(JSON.parse(completionCall.options.body), { target_participant_id: participant.participant_id, target_case_id: participant.case_id, target_study_date: '2026-08-14', study_timezone: 'America/Denver' });
 
 mock = mockFetch({ completed: false });
 response = await invoke(service.createHandler(service.TYPES.FOLLOWUP, { fetch: mock.fetch, now }));
@@ -224,7 +259,7 @@ assert.deepEqual(JSON.parse(patch.options.body), { status: 'failed' });
 assert.equal(mock.calls.some(call => /game_sessions|participants|cases/.test(call.url) && call.options.method === 'PATCH'), false);
 
 // A failed row is reclaimed; the retry retains the exact provider key.
-response = await invoke(handler);
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now, retry: true }));
 assert.equal(response.statusCode, 200);
 assert.equal(response.body.sent, 1);
 const resendCalls = mock.calls.filter(call => call.url.includes('resend.com'));
