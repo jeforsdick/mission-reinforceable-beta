@@ -257,8 +257,8 @@ const pathTestSend = JSON.parse(mock.calls.at(0).options.body);
 assert.deepEqual(pathTestSend, {
   from: 'Mission: Reinforceable <missions@mail.missionreinforceable.com>',
   to: ['path-test@example.org'],
-  subject: 'Mission: Reinforceable Email Test',
-  text: 'The Resend/Vercel email connection for Mission: Reinforceable is working.'
+  subject: 'Quick Mission: Reinforceable Test',
+  text: 'Hey Nicole,\n\nYou are my guinea pig. Did this email come through? Text me if it did!\n\nJess'
 });
 response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), 'Bearer wrong', { method: 'POST', query: { action: 'resend-email-test' } });
 assert.equal(response.statusCode, 401);

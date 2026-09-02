@@ -165,8 +165,8 @@ function createSmokeTestHandler(dependencies = {}) {
           body: JSON.stringify({
             from: 'Mission: Reinforceable <missions@mail.missionreinforceable.com>',
             to: [process.env.TEST_EMAIL_RECIPIENT],
-            subject: 'Mission: Reinforceable Email Test',
-            text: 'The Resend/Vercel email connection for Mission: Reinforceable is working.'
+            subject: 'Quick Mission: Reinforceable Test',
+            text: 'Hey Nicole,\n\nYou are my guinea pig. Did this email come through? Text me if it did!\n\nJess'
           })
         });
         if (!send.ok) return response.status(502).json({ error: 'Test email could not be sent' });
