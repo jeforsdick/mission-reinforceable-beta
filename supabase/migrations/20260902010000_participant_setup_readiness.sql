@@ -4,14 +4,6 @@
 alter table public.participants add column is_test boolean not null default false;
 create index participants_real_study_idx on public.participants(participant_code) where not is_test;
 
--- Existing reserved QA fixtures are explicitly excluded from dissertation data.
-update public.participants p set is_test = true
-from public.cases c, public.profiles pr
-where p.case_id = c.id and p.auth_user_id = pr.id
-and ((p.participant_code = 'MR-998' and c.case_code = 'CASE-998')
-  or (p.participant_code like 'MR-DEMO-%' and c.case_code like 'CASE-DEMO-%'))
-and lower(pr.email) like '%@testemail.com';
-
 create or replace function public.eligible_teacher_reminders(require_followup boolean default false)
 returns table (participant_id uuid, case_id uuid, teacher_name text, teacher_email text)
 language sql stable security definer set search_path = '' as $$
@@ -79,9 +71,6 @@ returns jsonb language plpgsql security definer set search_path = '' as $$
 declare result jsonb;
 begin
  if not public.is_research_admin() then raise exception 'research admin required' using errcode='42501'; end if;
- if target_is_test and not exists(select 1 from public.participants p join public.cases c on c.id=p.case_id join public.profiles pr on pr.id=p.auth_user_id where c.id=target_case_id and lower(pr.email) like '%@testemail.com' and (p.participant_code='MR-998' or p.participant_code like 'MR-DEMO-%')) then
-  raise exception 'Only reserved test IDs with a testemail.com teacher may be marked test' using errcode='22023';
- end if;
  update public.participants set is_test=target_is_test,updated_at=now() where case_id=target_case_id returning jsonb_build_object('participant_id',id,'is_test',is_test) into result;
  if result is null then raise exception 'case participant not found' using errcode='P0002'; end if;
  return result;
@@ -89,4 +78,4 @@ end $$;
 
 revoke all on function public.research_admin_participant_readiness(uuid,date), public.research_admin_simulate_test_reminder(uuid,date), public.research_admin_set_test_participant(uuid,boolean) from public;
 grant execute on function public.research_admin_participant_readiness(uuid,date), public.research_admin_simulate_test_reminder(uuid,date), public.research_admin_set_test_participant(uuid,boolean) to authenticated;
-comment on column public.participants.is_test is 'True for fake/QA participants excluded from production reminder recipients and dissertation outcomes/counts.';
+comment on column public.participants.is_test is 'Explicitly set by a research admin for fake/QA participants excluded from production reminder recipients and dissertation outcomes/counts; never inferred from participant identity or email.';
