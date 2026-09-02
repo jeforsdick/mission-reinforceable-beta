@@ -42,15 +42,16 @@ Vercel on the project's custom domain is the intended current deployment model. 
 
 ### Temporary Resend path test
 
-The server-only `POST /api/resend-email-test` route sends one plain-text test
-message to `TEST_EMAIL_RECIPIENT`. It uses `RESEND_API_KEY` and the existing
-`CRON_SECRET`; none of these values are returned to the browser or written to
-logs. After configuring `TEST_EMAIL_RECIPIENT` in Vercel, invoke a deployed
-preview or production URL with:
+The existing server-only `/api/teacher-reminder-smoke-test` function has a
+temporary `resend-email-test` action that sends one plain-text test message to
+`TEST_EMAIL_RECIPIENT`. It uses `RESEND_API_KEY` and the existing `CRON_SECRET`;
+none of these values are returned to the browser or written to logs. After
+configuring `TEST_EMAIL_RECIPIENT` in Vercel, invoke a deployed preview or
+production URL with:
 
 ```sh
 curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
-  https://YOUR-DEPLOYMENT.example/api/resend-email-test
+  "https://YOUR-DEPLOYMENT.example/api/teacher-reminder-smoke-test?action=resend-email-test"
 ```
 
 A successful response includes `{"success":true,"message_id":"..."}`.

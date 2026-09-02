@@ -16,13 +16,14 @@ Object.assign(process.env, {
   SUPABASE_SERVICE_ROLE_KEY: 'service-secret', RESEND_API_KEY: 'resend-secret',
   TEACHER_REMINDER_FROM_EMAIL: 'Mission <mission@example.org>',
   TEACHER_GAME_URL: 'https://mission.example.org/game/', TEACHER_REMINDER_TIMEZONE: 'America/Denver',
-  TEACHER_REMINDER_TEST_EMAIL: 'smoke@example.org', TEACHER_REMINDER_SYSTEM_ENABLED: 'true'
+  TEACHER_REMINDER_TEST_EMAIL: 'smoke@example.org', TEACHER_REMINDER_SYSTEM_ENABLED: 'true',
+  TEST_EMAIL_RECIPIENT: 'path-test@example.org'
 });
 
 const participant = { participant_id: '11111111-1111-4111-8111-111111111111', case_id: '22222222-2222-4222-8222-222222222222', teacher_name: 'Ms. <Rivera>', teacher_email: 'teacher@example.org' };
 const now = () => new Date('2026-08-15T01:30:00.000Z'); // August 14 in study timezone.
 const makeResponse = () => ({ statusCode: 0, body: null, headers: {}, setHeader(k, v) { this.headers[k] = v; }, status(code) { this.statusCode = code; return this; }, json(body) { this.body = body; return this; } });
-const invoke = async (handler, authorization = 'Bearer cron-secret') => { const response = makeResponse(); await handler({ method: 'GET', headers: { authorization } }, response); return response; };
+const invoke = async (handler, authorization = 'Bearer cron-secret', overrides = {}) => { const response = makeResponse(); await handler({ method: 'GET', headers: { authorization }, ...overrides }, response); return response; };
 
 function mockFetch({ candidates = [participant], completed = false, eventStatus = null, resendOutcomes = [true], sentPatchOk = true } = {}) {
   const calls = [];
@@ -89,7 +90,7 @@ for (const route of ['teacher-daily-prompt.js', 'teacher-daily-prompt-retry.js',
   assert.equal(fs.existsSync(new URL(route, apiDirectory)), true, `${route} must remain deployed`);
 }
 const deployedApiRoutes = fs.readdirSync(apiDirectory).filter(file => file.endsWith('.js'));
-assert.ok(deployedApiRoutes.length <= 13, `expected at most 13 API routes, found ${deployedApiRoutes.length}`);
+assert.ok(deployedApiRoutes.length <= 12, `expected at most 12 API routes, found ${deployedApiRoutes.length}`);
 
 // Approved text, greeting personalization, and privacy boundaries.
 const daily = service.emailFor(service.TYPES.DAILY, participant.teacher_name, process.env.TEACHER_GAME_URL);
@@ -246,6 +247,28 @@ assert.equal(smokeSend.options.headers['Idempotency-Key'], 'teacher-reminder-smo
 assert.deepEqual(JSON.parse(smokeSend.options.body).to, ['smoke@example.org']);
 assert.equal(JSON.parse(smokeSend.options.body).subject, daily.subject);
 assert.equal(mock.calls.some(call => call.url.includes('supabase') || call.url.includes('teacher_reminder_events')), false);
+
+// The temporary path test reuses the smoke-test function and has its own narrow POST action.
+mock = mockFetch();
+response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), 'Bearer cron-secret', { method: 'POST', query: { action: 'resend-email-test' } });
+assert.equal(response.statusCode, 200);
+assert.deepEqual(response.body, { success: true, message_id: 'resend-1' });
+const pathTestSend = JSON.parse(mock.calls.at(0).options.body);
+assert.deepEqual(pathTestSend, {
+  from: 'Mission: Reinforceable <missions@mail.missionreinforceable.com>',
+  to: ['path-test@example.org'],
+  subject: 'Mission: Reinforceable Email Test',
+  text: 'The Resend/Vercel email connection for Mission: Reinforceable is working.'
+});
+response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), 'Bearer wrong', { method: 'POST', query: { action: 'resend-email-test' } });
+assert.equal(response.statusCode, 401);
+process.env.TEST_EMAIL_RECIPIENT = '';
+response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), 'Bearer cron-secret', { method: 'POST', query: { action: 'resend-email-test' } });
+assert.deepEqual({ status: response.statusCode, body: response.body }, { status: 503, body: { error: 'Test email configuration is incomplete' } });
+process.env.TEST_EMAIL_RECIPIENT = 'path-test@example.org';
+mock = mockFetch({ resendOutcomes: [false] });
+response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), 'Bearer cron-secret', { method: 'POST', query: { action: 'resend-email-test' } });
+assert.deepEqual({ status: response.statusCode, body: response.body }, { status: 502, body: { error: 'Test email could not be sent' } });
 process.env.TEACHER_REMINDER_SYSTEM_ENABLED = 'true';
 
 console.log('Teacher reminder eligibility, privacy, authorization, completion, failure, timezone, and idempotency checks passed.');
