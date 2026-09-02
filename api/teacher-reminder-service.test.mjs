@@ -76,12 +76,12 @@ assert.match(recoveryMigration, /existing\.status = 'pending'[\s\S]*interval '30
 assert.match(recoveryMigration, /attempt_count = existing\.attempt_count \+ 1/);
 assert.doesNotMatch(recoveryMigration, /cascade/i);
 assert.deepEqual(vercel.crons, [
-  { path: '/api/teacher-daily-prompt', schedule: '0 13 * * 1-5' },
-  { path: '/api/teacher-daily-prompt-retry', schedule: '0 15 * * 1-5' }
+  { path: '/api/teacher-daily-prompt', schedule: '0 14 * * 1-5' },
+  { path: '/api/teacher-daily-prompt-retry', schedule: '0 16 * * 1-5' }
 ]);
 assert.ok(vercel.crons.every(cron => !cron.schedule.includes('* * * 1-5')), 'reminder jobs must not run hourly');
-assert.match(scheduleDocumentation, /7 AM during Mountain Daylight Time and 6 AM during Mountain Standard Time/);
-assert.match(scheduleDocumentation, /does not promise an exact 7:00 or 7:30 delivery/);
+assert.match(scheduleDocumentation, /approximately 8 AM during Mountain Daylight Time and 7 AM during Mountain Standard Time/);
+assert.match(scheduleDocumentation, /closest year-round compromise to approximately 7:30 AM Mountain Time/);
 assert.equal(new Set(vercel.crons.map(cron => cron.path)).size, vercel.crons.length);
 assert.equal(JSON.stringify(vercel).includes('followup'), false);
 for (const route of [dailyRoute, retryRoute]) {
