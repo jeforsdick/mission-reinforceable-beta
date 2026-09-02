@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';
 
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260902010000_participant_setup_readiness.sql',import.meta.url),'utf8');
+const setterFix=fs.readFileSync(new URL('../supabase/migrations/20260902020000_fix_test_participant_setter.sql',import.meta.url),'utf8');
 
 test('participant readiness reports every researcher setup gate and operational history',()=>{
   const html=renderParticipantReadiness({study_id:'MR-101',teacher_name:'Teacher One',teacher_email:'teacher@example.org',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:false,reminders_enabled:false,eligible:false,reason_not_eligible:'Participant or case is inactive',last_reminder:{study_date:'2026-09-01',status:'sent'},last_daily_completion:{ended_at:'2026-09-01T20:00:00Z',mission_id:'daily-1',qa_mode:false}},x=>String(x));
@@ -73,6 +74,15 @@ test('TEST to REAL removes only simulated reminder claims',()=>{
   assert.match(setter,/delete from public\.teacher_reminder_events/);
   assert.match(setter,/e\.provider_message_id='simulated-test'/);
   assert.doesNotMatch(setter,/provider_message_id is not null|status='sent'/);
+});
+
+test('corrective test-participant setter avoids a nonexistent participant timestamp',()=>{
+  assert.match(setterFix,/create or replace function public\.research_admin_set_test_participant/);
+  assert.match(setterFix,/if not public\.is_research_admin\(\)/);
+  assert.match(setterFix,/update public\.participants set is_test=target_is_test where case_id=target_case_id/);
+  assert.doesNotMatch(setterFix,/update public\.participants\s+set[^;]*updated_at/i);
+  assert.match(setterFix,/if not target_is_test then[\s\S]*e\.provider_message_id='simulated-test'/);
+  assert.doesNotMatch(setterFix,/provider_message_id is not null|status='sent'/);
 });
 
 test('case-specific PDF report labels test data as excluded from dissertation reporting',()=>{
