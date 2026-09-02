@@ -8,6 +8,7 @@ import { validateFullDraft } from './game-draft-validator.mjs';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
+import { renderParticipantReadiness } from './participant-readiness.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5aXd3d21jb2Fod2tnaWljdG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYzMDE0NzMsImV4cCI6MjEwMTg3NzQ3M30.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ';
@@ -289,6 +290,7 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
  $('#send-game-login')?.addEventListener('click',async event=>{if(!window.confirm(`${event.currentTarget.textContent}?\n\nThis sends a private password-setup link. It does not change Game Access or Daily Reminders.`))return;const button=event.currentTarget;button.disabled=true;try{await adminApi('/api/research-admin-communication-readiness',{action:'send_game_login',case_id:caseId,request_id:crypto.randomUUID()});await openDetail(state.selected.request_id,state.selectedTab);}catch(error){window.alert(error.message);await openDetail(state.selected.request_id,state.selectedTab);}});
  $('#enable-daily-reminders')?.addEventListener('click',()=>{if(window.confirm('Enable daily Mission: Reinforceable reminders for this teacher?\n\nThis changes reminder eligibility but does not send an email now.'))setTeacherReminders(caseId,true);});
  $('#disable-daily-reminders')?.addEventListener('click',()=>setTeacherReminders(caseId,false));
+ $('#simulate-test-reminder')?.addEventListener('click',async()=>{const {data,error}=await state.client.rpc('research_admin_simulate_test_reminder',{target_case_id:caseId});const output=$('#simulate-test-reminder-result');if(output)output.textContent=error?error.message:`Result: ${String(data?.outcome||'unknown').replaceAll('_',' ')}`;});
  document.querySelectorAll('.study-status-correction').forEach(form=>form.addEventListener('submit',async event=>{event.preventDefault();const reason=new FormData(form).get('reason');const {data:{user}}=await state.client.auth.getUser();const {error}=await state.client.rpc('research_admin_correct_study_day_status',{target_event_id:form.dataset.eventId,target_reason:reason==='clear'?null:reason,target_actor_id:user.id});if(error)window.alert(error.message);else await openDetail(state.selected.request_id,state.selectedTab);}));
  $('#generate-study-status-qa')?.addEventListener('click',async()=>{const output=$('#study-status-qa-result');try{const result=await adminApi('/api/research-admin-study-day-status',{action:'generate_qa',case_id:caseId});output.innerHTML=`No email sent. <a href="${escapeHtml(result.urls.teacher_unavailable_url)}" target="_blank" rel="noopener">Excuse me from today</a>`;}catch(error){output.textContent=error.message;}});
  bindTaskControls(caseId);
@@ -411,6 +413,7 @@ async function loadReadiness(requestId) {
   const { data: fidelity, error: fidelityError } = await state.client.rpc('research_admin_procedural_fidelity_dashboard', { target_case_id: data.case.id });
   if (fidelityError) throw fidelityError; state.fidelity = fidelity; state.readiness = data;
   const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{target_case_id:data.case.id}); if(operationsError) throw operationsError; const {data:observationData,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{target_case_id:data.case.id});if(observationError)throw observationError;
+  const {data:participantReadiness,error:participantReadinessError}=await state.client.rpc('research_admin_participant_readiness',{target_case_id:data.case.id});if(participantReadinessError)throw participantReadinessError;state.participantReadiness=participantReadiness;
   const participantId=fidelity.participant_id; const {data:weeklyCheckins,error:weeklyError}=await state.client.rpc('research_admin_weekly_checkins',{target_participant_id:participantId,target_case_id:data.case.id}); if(weeklyError)throw weeklyError;
   const { data: authoring, error: authoringError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: data.case.id });
   state.authoringWorkspace = authoringError ? null : authoring;
@@ -428,7 +431,7 @@ function readinessPanel(data) {
   const manifest=state.authoringWorkspace&&draftRevisionManifest(state.authoringWorkspace),source=state.publishedSource;
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged=Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
-  return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,gameLoginEmailEnabled:state.communications.game_login_email_enabled===true,gameLoginEmailStatus:state.communications.game_login_email_status,unpublishedDraftChanges:draftChanged,qualtricsMeasures:state.communications.qualtrics_measures})
+  return renderParticipantReadiness(state.participantReadiness,escapeHtml)+renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,gameLoginEmailEnabled:state.communications.game_login_email_enabled===true,gameLoginEmailStatus:state.communications.game_login_email_status,unpublishedDraftChanges:draftChanged,qualtricsMeasures:state.communications.qualtrics_measures})
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 function gameCreationPanel(data) {
