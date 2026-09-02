@@ -43,6 +43,27 @@ function studyDate(now, timezone) {
   }
 }
 
+function localMinuteOfDay(now, timezone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(now);
+  const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return Number(value.hour) * 60 + Number(value.minute);
+}
+
+function reminderTimeMinutes(value) {
+  const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(value || '08:00:00');
+  if (!match || Number(match[1]) > 23 || Number(match[2]) > 59) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function isReminderDue(now, timezone, preferredTime, windowMinutes = 60) {
+  const preferred = reminderTimeMinutes(preferredTime);
+  if (preferred === null) return false;
+  const elapsed = (localMinuteOfDay(now, timezone) - preferred + 1440) % 1440;
+  return elapsed < windowMinutes;
+}
+
 function idempotencyKey(participantId, date, type) {
   return `teacher-reminder/${participantId}/${date}/${type}`;
 }
@@ -66,6 +87,7 @@ function validateConfiguration(names) {
 
 function createHandler(type, dependencies = {}) {
   const fetchImpl = dependencies.fetch || global.fetch;
+  const retryOnly = dependencies.retryOnly === true;
   return async function handler(request, response) {
     if (request.method !== 'GET') {
       response.setHeader('Allow', 'GET');
@@ -82,8 +104,8 @@ function createHandler(type, dependencies = {}) {
       console.error('Teacher reminder configuration is invalid.', { error: error.message });
       return response.status(500).json({ error: 'Reminder job unavailable' });
     }
-    let date;
-    try { date = studyDate(dependencies.now ? dependencies.now() : new Date(), process.env.TEACHER_REMINDER_TIMEZONE); } catch (error) {
+    let date, currentTime;
+    try { currentTime = dependencies.now ? dependencies.now() : new Date(); date = studyDate(currentTime, process.env.TEACHER_REMINDER_TIMEZONE); } catch (error) {
       console.error('Teacher reminder timezone is invalid.', { error: error.message });
       return response.status(500).json({ error: 'Reminder job unavailable' });
     }
@@ -97,12 +119,15 @@ function createHandler(type, dependencies = {}) {
       if (!candidatesResponse.ok) throw new Error(`Candidate lookup returned ${candidatesResponse.status}`);
       const candidates = await candidatesResponse.json();
       for (const candidate of candidates) {
-        if (type === TYPES.FOLLOWUP) {
+        if (!isReminderDue(currentTime, process.env.TEACHER_REMINDER_TIMEZONE, candidate.preferred_reminder_time)) {
+          summary.skipped++; continue;
+        }
+        {
           const completionResponse = await fetchImpl(`${base}/rpc/has_completed_mission_on_study_date`, { method: 'POST', headers, body: JSON.stringify({ target_participant_id: candidate.participant_id, target_study_date: date, study_timezone: process.env.TEACHER_REMINDER_TIMEZONE }) });
           if (!completionResponse.ok) { summary.failed++; continue; }
           if (await completionResponse.json()) { summary.skipped++; continue; }
         }
-        const claimResponse = await fetchImpl(`${base}/rpc/claim_teacher_reminder_event`, { method: 'POST', headers, body: JSON.stringify({ target_participant_id: candidate.participant_id, target_case_id: candidate.case_id, target_reminder_type: type, target_study_date: date }) });
+        const claimResponse = await fetchImpl(`${base}/rpc/claim_teacher_reminder_event`, { method: 'POST', headers, body: JSON.stringify({ target_participant_id: candidate.participant_id, target_case_id: candidate.case_id, target_reminder_type: type, target_study_date: date, retry_only: retryOnly }) });
         if (!claimResponse.ok) { summary.failed++; continue; }
         const [claim] = await claimResponse.json();
         if (!claim || !claim.claimed) { summary.skipped++; continue; }
@@ -193,4 +218,4 @@ function createSmokeTestHandler(dependencies = {}) {
   };
 }
 
-module.exports = { TYPES, SUBJECTS, emailFor, studyDate, idempotencyKey, authorized, validateConfiguration, createHandler, createSmokeTestHandler };
+module.exports = { TYPES, SUBJECTS, emailFor, studyDate, localMinuteOfDay, reminderTimeMinutes, isReminderDue, idempotencyKey, authorized, validateConfiguration, createHandler, createSmokeTestHandler };

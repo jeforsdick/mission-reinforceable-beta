@@ -24,10 +24,11 @@ dissertation uses only `daily_prompt`.
 
 ## Production schedule and security
 
-`vercel.json` invokes two thin authenticated routes on weekdays:
+`vercel.json` invokes two thin authenticated routes hourly on weekdays so an
+arbitrary participant preference can be matched without per-teacher jobs:
 
-- `GET /api/teacher-daily-prompt` at `0 14 * * 1-5` (14:00 UTC).
-- `GET /api/teacher-daily-prompt-retry` at `0 15 * * 1-5` (15:00 UTC).
+- `GET /api/teacher-daily-prompt` at `0 * * * 1-5`.
+- `GET /api/teacher-daily-prompt-retry` at `30 * * * 1-5`.
 
 Both thin routes require `Authorization: Bearer $CRON_SECRET` and call the same
 daily handler with `reminder_type = daily_prompt`. The retry route is
@@ -35,9 +36,12 @@ reliability/retry infrastructure, not a second intervention prompt. Both routes
 therefore use the same database identity
 `(participant_id, study_date, reminder_type)` and matching Resend idempotency
 key, permitting at most one provider delivery for that logical prompt.
-These UTC invocations occur in the early weekday morning in America/Denver;
-exact Vercel invocation time is operational infrastructure, not a participant
-outcome.
+The normal job sends only when the Denver wall-clock time is in the half-open
+60-minute window beginning at that teacher's preference. `Intl.DateTimeFormat`
+with `America/Denver` supplies the local date and time, so daylight-saving
+changes use MST/MDT rather than a fixed UTC offset. The retry job can reclaim a
+failed event (or a pending event stale for 30 minutes), but the normal job
+cannot; it is therefore not a second normal reminder.
 
 Shared reminder and Granite calendar helper modules live under `server/`, not
 `api/`. Only intentional HTTP handlers therefore consume Vercel Serverless
@@ -99,6 +103,22 @@ A Resend failure changes only the operational reminder event to `failed`.
 Delivery never marks a mission incomplete, writes a `game_session`, counts a
 gameplay dose, or changes participant/case activity, phase, or gameplay.
 Mission completion remains independently determined from `game_sessions`.
+Before claiming either reminder type, the service calls
+`has_completed_mission_on_study_date`: only a non-QA `game_sessions` row with
+`status = 'completed'`, associated with the participant and whose ended (or,
+if absent, started) timestamp has today's Denver date, suppresses delivery.
+
+## Participant reminder preference
+
+Migration `20260902000000_participant_reminder_timing.sql` adds the smallest
+needed schema field, `teacher_reminder_settings.preferred_reminder_time`. It is
+a minute-precision SQL `time`, deliberately interpreted in the single study
+timezone rather than storing a UTC offset. No suitable reminder-time field
+previously existed. Existing rows receive `08:00`, preserving the prior
+early-morning behavior during the dissertation's initial MDT period; new rows
+use the same documented fallback. Research operations may set the value
+directly when activating a participant. This change intentionally adds no
+general timezone UI or participant-specific timezone field.
 
 ## Production smoke test
 
