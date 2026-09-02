@@ -18,6 +18,10 @@ export function partitionDashboardCases(cases=[]){
     archived: cases.filter(isArchivedCase)
   };
 }
+export function visibleDashboardCases(realCases=[],testCases=[],{showArchived=false,showTest=false}={}){
+  const real=partitionDashboardCases(realCases),test=partitionDashboardCases(testCases);
+  return [...real.current,...(showArchived?real.archived:[]),...(showTest?test.current:[]),...(showArchived&&showTest?test.archived:[])];
+}
 export function dashboardCaseCounts(cases=[]){
   const {current}=partitionDashboardCases(cases);
   return {

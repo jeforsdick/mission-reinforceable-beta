@@ -54,7 +54,7 @@ test('Prepared Cases retains converted-intake meaning while excluding archived c
 
 test('home offers a display-only archived toggle and labels revealed records', () => {
   assert.match(html,/id="archived-cases-toggle"[^>]*>Show archived cases<\/button>/);
-  assert.match(admin,/visibleCases=state\.showArchivedCases\?\[\.\.\.current,\.\.\.archived\]:current/);
+  assert.match(admin,/visibleCases=visibleDashboardCases\(state\.operations\.cases,state\.testCases,\{showArchived:state\.showArchivedCases,showTest:state\.showTestCases\}\)/);
   assert.match(admin,/Hide archived cases':'Show archived cases/);
   assert.match(admin,/archivedCase\?'Archived'/);
   assert.doesNotMatch(admin,/archiveCase|unarchive|\.delete\(/i);
