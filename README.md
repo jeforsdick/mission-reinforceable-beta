@@ -40,6 +40,21 @@ Authenticated and QA gameplay require `case_game_content`; there is no public-fo
 
 Vercel on the project's custom domain is the intended current deployment model. Relative browser assets and navigation should remain portable for local static testing, but GitHub Pages is not the production deployment model. Vercel environment variables provide server-only configuration for API routes.
 
+### Temporary Resend path test
+
+The server-only `POST /api/resend-email-test` route sends one plain-text test
+message to `TEST_EMAIL_RECIPIENT`. It uses `RESEND_API_KEY` and the existing
+`CRON_SECRET`; none of these values are returned to the browser or written to
+logs. After configuring `TEST_EMAIL_RECIPIENT` in Vercel, invoke a deployed
+preview or production URL with:
+
+```sh
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" \
+  https://YOUR-DEPLOYMENT.example/api/resend-email-test
+```
+
+A successful response includes `{"success":true,"message_id":"..."}`.
+
 Production reminder cron routes exist at `/api/teacher-daily-prompt` and
 `/api/teacher-daily-prompt-retry`; the protected smoke-test route is
 `/api/teacher-reminder-smoke-test`. The dissertation does not deploy or schedule
