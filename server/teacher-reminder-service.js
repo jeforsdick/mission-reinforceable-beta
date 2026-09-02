@@ -2,6 +2,7 @@
 
 const crypto = require('node:crypto');
 const { isEligibleStudyDay } = require('./granite-study-calendar');
+const { buildTestMissionEmail } = require('./test-mission-email');
 
 const TYPES = Object.freeze({ DAILY: 'daily_prompt', FOLLOWUP: 'followup_reminder' });
 const SUBJECTS = Object.freeze({
@@ -155,18 +156,20 @@ function createSmokeTestHandler(dependencies = {}) {
     }
     if (!authorized(request.headers && request.headers.authorization, process.env.CRON_SECRET)) return response.status(401).json({ error: 'Unauthorized' });
     if (emailPathTest) {
-      if (!process.env.RESEND_API_KEY || !process.env.TEST_EMAIL_RECIPIENT) {
+      if (!process.env.RESEND_API_KEY || !process.env.TEST_EMAIL_RECIPIENT || !process.env.TEACHER_GAME_URL) {
         return response.status(503).json({ error: 'Test email configuration is incomplete' });
       }
       try {
+        const email = buildTestMissionEmail(process.env.TEACHER_GAME_URL);
         const send = await fetchImpl('https://api.resend.com/emails', {
           method: 'POST',
           headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: 'Mission: Reinforceable <missions@mail.missionreinforceable.com>',
+            from: email.from,
             to: [process.env.TEST_EMAIL_RECIPIENT],
-            subject: 'Quick Mission: Reinforceable Test',
-            text: 'Hey Nicole,\n\nYou are my guinea pig. Did this email come through? Text me if it did!\n\nJess'
+            subject: email.subject,
+            html: email.html,
+            text: email.text
           })
         });
         if (!send.ok) return response.status(502).json({ error: 'Test email could not be sent' });

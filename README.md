@@ -43,8 +43,10 @@ Vercel on the project's custom domain is the intended current deployment model. 
 ### Temporary Resend path test
 
 The existing server-only `/api/teacher-reminder-smoke-test` function has a
-temporary `resend-email-test` action that sends one plain-text test message to
-`TEST_EMAIL_RECIPIENT`. It uses `RESEND_API_KEY` and the existing `CRON_SECRET`;
+temporary `resend-email-test` action that sends one HTML test message (with a
+plain-text fallback) to `TEST_EMAIL_RECIPIENT`. The reusable template lives in
+`server/test-mission-email.js` and uses the canonical `TEACHER_GAME_URL` for its
+CTA. It uses `RESEND_API_KEY` and the existing `CRON_SECRET`;
 none of these values are returned to the browser or written to logs. After
 configuring `TEST_EMAIL_RECIPIENT` in Vercel, invoke a deployed preview or
 production URL with:

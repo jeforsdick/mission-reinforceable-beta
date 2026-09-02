@@ -254,12 +254,21 @@ response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), '
 assert.equal(response.statusCode, 200);
 assert.deepEqual(response.body, { success: true, message_id: 'resend-1' });
 const pathTestSend = JSON.parse(mock.calls.at(0).options.body);
-assert.deepEqual(pathTestSend, {
-  from: 'Mission: Reinforceable <missions@mail.missionreinforceable.com>',
-  to: ['path-test@example.org'],
-  subject: 'Quick Mission: Reinforceable Test',
-  text: 'Hey Nicole,\n\nYou are my guinea pig. Did this email come through? Text me if it did!\n\nJess'
-});
+assert.equal(pathTestSend.from, 'Mission: Reinforceable <missions@mail.missionreinforceable.com>');
+assert.deepEqual(pathTestSend.to, ['path-test@example.org']);
+assert.equal(pathTestSend.subject, 'Your Mission: Reinforceable mission is ready');
+assert.match(pathTestSend.html, /^<!doctype html>/);
+assert.match(pathTestSend.text, /Good morning, Hero!/);
+for (const body of [pathTestSend.html, pathTestSend.text]) {
+  assert.match(body, /START TODAY'S MISSION/);
+  assert.match(body, /https:\/\/mission\.example\.org\/game\//);
+  assert.match(body, /jess\.olson@utah\.edu/);
+  assert.match(body, /continue implementing the student's behavior support plan as usual/);
+}
+assert.match(pathTestSend.html, /alt="Mission: Reinforceable classroom with the Wizard"/);
+assert.match(pathTestSend.html, /https:\/\/mission\.example\.org\/assets\/game\/skin-v2\/landing-page-classroom\.png/);
+assert.doesNotMatch(JSON.stringify(pathTestSend), /api-key|cron-secret|service-key/);
+assert.doesNotMatch(JSON.stringify(response.body), /api-key|cron-secret|service-key/);
 response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), 'Bearer wrong', { method: 'POST', query: { action: 'resend-email-test' } });
 assert.equal(response.statusCode, 401);
 process.env.TEST_EMAIL_RECIPIENT = '';
