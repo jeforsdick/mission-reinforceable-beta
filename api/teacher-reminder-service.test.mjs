@@ -265,8 +265,30 @@ for (const body of [pathTestSend.html, pathTestSend.text]) {
   assert.match(body, /jess\.olson@utah\.edu/);
   assert.match(body, /continue implementing the student's behavior support plan as usual/);
 }
-assert.match(pathTestSend.html, /alt="Mission: Reinforceable classroom with the Wizard"/);
-assert.match(pathTestSend.html, /https:\/\/mission\.example\.org\/assets\/game\/skin-v2\/landing-page-classroom\.png/);
+assert.match(pathTestSend.html, /alt="A magical Mission: Reinforceable classroom ready for today's mission"/);
+const requiredEmailAssets = [
+  'mission-reinforceable-title.png', 'landing-page-classroom.png', 'heart-icon.png',
+  'behavior-xp-icon.png', 'hat-icon.png', 'potion-icon.png', 'sparkle-icon.png'
+];
+for (const asset of requiredEmailAssets) {
+  assert.ok(pathTestSend.html.includes(`https://mission.example.org/assets/game/skin-v2/${asset}`));
+}
+assert.doesNotMatch(pathTestSend.html, /sword[^"'<> ]*\.png/i);
+for (const altText of ['Heart', 'Behavior XP encouragement', 'Support potion', 'Research scholar hat', 'Magical sparkle']) {
+  assert.match(pathTestSend.html, new RegExp(`alt="${altText}"`));
+}
+assert.match(pathTestSend.html, /href="https:\/\/mission\.example\.org\/game\/"[^>]*>START TODAY'S MISSION<\/a>/);
+assert.match(pathTestSend.html, /v:roundrect[\s\S]*START TODAY'S MISSION[\s\S]*<!\[endif\]-->/);
+assert.match(pathTestSend.html, /width:100%;max-width:598px;height:auto/);
+for (const supportCopy of [
+  'Do not reply directly to this email.',
+  'If you have difficulty accessing the mission, please contact Jess at ',
+  "If the mission is unavailable or you are unable to complete it, please continue implementing the student's behavior support plan as usual."
+]) {
+  assert.match(pathTestSend.html, new RegExp(supportCopy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  assert.match(pathTestSend.text, new RegExp(supportCopy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+}
+assert.ok(pathTestSend.html.length > 0 && pathTestSend.text.length > 0);
 assert.doesNotMatch(JSON.stringify(pathTestSend), /api-key|cron-secret|service-key/);
 assert.doesNotMatch(JSON.stringify(response.body), /api-key|cron-secret|service-key/);
 response = await invoke(service.createSmokeTestHandler({ fetch: mock.fetch }), 'Bearer wrong', { method: 'POST', query: { action: 'resend-email-test' } });
