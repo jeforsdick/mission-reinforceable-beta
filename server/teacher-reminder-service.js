@@ -66,6 +66,7 @@ function validateConfiguration(names) {
 
 function createHandler(type, dependencies = {}) {
   const fetchImpl = dependencies.fetch || global.fetch;
+  const retry = dependencies.retry === true;
   return async function handler(request, response) {
     if (request.method !== 'GET') {
       response.setHeader('Allow', 'GET');
@@ -82,8 +83,9 @@ function createHandler(type, dependencies = {}) {
       console.error('Teacher reminder configuration is invalid.', { error: error.message });
       return response.status(500).json({ error: 'Reminder job unavailable' });
     }
+    const evaluationTime = dependencies.now ? dependencies.now() : new Date();
     let date;
-    try { date = studyDate(dependencies.now ? dependencies.now() : new Date(), process.env.TEACHER_REMINDER_TIMEZONE); } catch (error) {
+    try { date = studyDate(evaluationTime, process.env.TEACHER_REMINDER_TIMEZONE); } catch (error) {
       console.error('Teacher reminder timezone is invalid.', { error: error.message });
       return response.status(500).json({ error: 'Reminder job unavailable' });
     }
@@ -97,12 +99,10 @@ function createHandler(type, dependencies = {}) {
       if (!candidatesResponse.ok) throw new Error(`Candidate lookup returned ${candidatesResponse.status}`);
       const candidates = await candidatesResponse.json();
       for (const candidate of candidates) {
-        if (type === TYPES.FOLLOWUP) {
-          const completionResponse = await fetchImpl(`${base}/rpc/has_completed_mission_on_study_date`, { method: 'POST', headers, body: JSON.stringify({ target_participant_id: candidate.participant_id, target_study_date: date, study_timezone: process.env.TEACHER_REMINDER_TIMEZONE }) });
-          if (!completionResponse.ok) { summary.failed++; continue; }
-          if (await completionResponse.json()) { summary.skipped++; continue; }
-        }
-        const claimResponse = await fetchImpl(`${base}/rpc/claim_teacher_reminder_event`, { method: 'POST', headers, body: JSON.stringify({ target_participant_id: candidate.participant_id, target_case_id: candidate.case_id, target_reminder_type: type, target_study_date: date }) });
+        const completionResponse = await fetchImpl(`${base}/rpc/has_completed_mission_on_study_date`, { method: 'POST', headers, body: JSON.stringify({ target_participant_id: candidate.participant_id, target_case_id: candidate.case_id, target_study_date: date, study_timezone: process.env.TEACHER_REMINDER_TIMEZONE }) });
+        if (!completionResponse.ok) { summary.failed++; continue; }
+        if (await completionResponse.json()) { summary.skipped++; continue; }
+        const claimResponse = await fetchImpl(`${base}/rpc/claim_teacher_reminder_event`, { method: 'POST', headers, body: JSON.stringify({ target_participant_id: candidate.participant_id, target_case_id: candidate.case_id, target_reminder_type: type, target_study_date: date, retry_reclamation: retry }) });
         if (!claimResponse.ok) { summary.failed++; continue; }
         const [claim] = await claimResponse.json();
         if (!claim || !claim.claimed) { summary.skipped++; continue; }
