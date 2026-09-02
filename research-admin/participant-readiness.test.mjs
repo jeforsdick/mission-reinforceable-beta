@@ -11,6 +11,28 @@ test('participant readiness reports every researcher setup gate and operational 
   for(const label of ['Auth linked','Case assigned','Participant active','Reminder system enabled','Eligible for reminder','Participant or case is inactive','2026-09-01 · sent','daily-1']) assert.match(html,new RegExp(label));
 });
 
+test('disabled and enabled participants render the appropriate nearby reminder action',()=>{
+  const disabled=renderParticipantReadiness({study_id:'MR-101',study_date:'2026-09-02',reminders_enabled:false,eligible:false,reason_not_eligible:'Daily reminders are not enabled'},x=>String(x));
+  assert.match(disabled,/Not eligible: Daily reminders are not enabled[\s\S]*Enable Daily Reminders/);
+  assert.match(disabled,/class="primary reminder-setting-action no-print"[\s\S]*data-enabled="true"/);
+  const enabled=renderParticipantReadiness({study_id:'MR-101',study_date:'2026-09-02',reminders_enabled:true,eligible:true},x=>String(x));
+  assert.match(enabled,/class="quiet reminder-setting-action no-print"[\s\S]*data-enabled="false"[\s\S]*Disable Daily Reminders/);
+});
+
+test('both readiness actions confirm, reuse reminder settings, and refresh readiness',()=>{
+  const admin=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
+  assert.match(admin,/\.reminder-setting-action/);
+  assert.match(admin,/Enable daily Mission: Reinforceable reminders for this teacher\?/);
+  assert.match(admin,/Disable daily Mission: Reinforceable reminders for this teacher\?/);
+  assert.match(admin,/if\(window\.confirm\(prompt\)\)setTeacherReminders\(caseId,enabled\)/);
+  assert.match(admin,/setTeacherReminders[\s\S]*\/api\/research-admin-set-teacher-reminders[\s\S]*await loadIntakes\(\);await openDetail/);
+});
+
+test('readiness controls add no API route, RPC, schema, or reminder implementation',()=>{
+  const source=fs.readFileSync(new URL('./participant-readiness.mjs',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/\/api\/|\.rpc\(|teacher_reminder_settings|create (?:or replace )?function/i);
+});
+
 test('fake participants are unmistakable and document the safe end-to-end path',()=>{
   const html=renderParticipantReadiness({study_id:'MR-998',teacher_email:'fake@testemail.com',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:true,eligible:true,is_test:true,completed_required_today:true,last_daily_completion:{ended_at:'today',mission_id:'required-daily',qa_mode:false}},x=>String(x));
   assert.match(html,/TEST PARTICIPANT/);
