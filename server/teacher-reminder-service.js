@@ -2,7 +2,7 @@
 
 const crypto = require('node:crypto');
 const { isEligibleStudyDay } = require('./granite-study-calendar');
-const { buildTestMissionEmail } = require('./test-mission-email');
+const { buildMissionReminderEmail } = require('./mission-reminder-email');
 
 const TYPES = Object.freeze({ DAILY: 'daily_prompt', FOLLOWUP: 'followup_reminder' });
 const SUBJECTS = Object.freeze({
@@ -17,6 +17,7 @@ function escapeHtml(value) {
 }
 
 function emailFor(type, teacherName, gameUrl) {
+  if (type === TYPES.DAILY) return buildMissionReminderEmail(gameUrl, teacherName, SUBJECTS[type]);
   const safeUrl = escapeHtml(gameUrl);
   const linkText = `Start Today’s Mission: ${gameUrl}`;
   if (type === TYPES.FOLLOWUP) {
@@ -27,11 +28,6 @@ function emailFor(type, teacherName, gameUrl) {
       html: `<!doctype html><html><body><p>${escapeHtml(greeting)}</p><p>This is a brief reminder to complete today’s Mission: Reinforceable activity when you have a few minutes.</p><p><a href="${safeUrl}">${escapeHtml(linkText)}</a></p><p>If you are unable to complete the mission today, please continue implementing the student’s behavior support plan as usual.</p><p>Thank you,</p><p>Jess</p></body></html>`
     };
   }
-  return {
-    subject: SUBJECTS[type],
-    text: `Your Mission: Reinforceable activity for today is ready. Please complete this brief mission when you have a few minutes, ideally before the classroom routine in which you typically implement the behavior support plan. Today’s mission should take approximately 5 minutes to complete.\n\n${linkText}\n\nAs a reminder, the mission is designed to help you review and practice plan-aligned responses connected to the behavior support plan you are already implementing. Please continue to follow the behavior support plan and any school or district procedures currently in place.\n\nIf you have difficulty accessing the mission, please contact Jess at jess.olson@utah.edu. If the mission is unavailable or you are unable to complete it, please continue implementing the student’s behavior support plan as usual.\n\nThank you,\n\nJess`,
-    html: `<!doctype html><html><body><p>Your Mission: Reinforceable activity for today is ready. Please complete this brief mission when you have a few minutes, ideally before the classroom routine in which you typically implement the behavior support plan. Today’s mission should take approximately 5 minutes to complete.</p><p><a href="${safeUrl}">${escapeHtml(linkText)}</a></p><p>As a reminder, the mission is designed to help you review and practice plan-aligned responses connected to the behavior support plan you are already implementing. Please continue to follow the behavior support plan and any school or district procedures currently in place.</p><p>If you have difficulty accessing the mission, please contact Jess at jess.olson@utah.edu. If the mission is unavailable or you are unable to complete it, please continue implementing the student’s behavior support plan as usual.</p><p>Thank you,</p><p>Jess</p></body></html>`
-  };
 }
 
 function studyDate(now, timezone) {
@@ -113,7 +109,7 @@ function createHandler(type, dependencies = {}) {
         const email = emailFor(type, candidate.teacher_name, process.env.TEACHER_GAME_URL);
         let provider;
         try {
-          const sendResponse = await fetchImpl('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey(candidate.participant_id, date, type) }, body: JSON.stringify({ from: process.env.TEACHER_REMINDER_FROM_EMAIL, to: [candidate.teacher_email], subject: email.subject, html: email.html, text: email.text }) });
+          const sendResponse = await fetchImpl('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey(candidate.participant_id, date, type) }, body: JSON.stringify({ from: email.from || process.env.TEACHER_REMINDER_FROM_EMAIL, to: [candidate.teacher_email], subject: email.subject, html: email.html, text: email.text }) });
           if (!sendResponse.ok) throw new Error(`Resend returned ${sendResponse.status}`);
           provider = await sendResponse.json();
         } catch (error) {
@@ -160,7 +156,7 @@ function createSmokeTestHandler(dependencies = {}) {
         return response.status(503).json({ error: 'Test email configuration is incomplete' });
       }
       try {
-        const email = buildTestMissionEmail(process.env.TEACHER_GAME_URL);
+        const email = buildMissionReminderEmail(process.env.TEACHER_GAME_URL);
         const send = await fetchImpl('https://api.resend.com/emails', {
           method: 'POST',
           headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -185,7 +181,7 @@ function createSmokeTestHandler(dependencies = {}) {
       const send = await fetchImpl('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': 'teacher-reminder-smoke-test/daily-prompt-production-v1' },
-        body: JSON.stringify({ from: process.env.TEACHER_REMINDER_FROM_EMAIL, to: [process.env.TEACHER_REMINDER_TEST_EMAIL], subject: email.subject, html: email.html, text: email.text })
+        body: JSON.stringify({ from: email.from, to: [process.env.TEACHER_REMINDER_TEST_EMAIL], subject: email.subject, html: email.html, text: email.text })
       });
       if (!send.ok) throw new Error(`Resend returned ${send.status}`);
       const provider = await send.json();
