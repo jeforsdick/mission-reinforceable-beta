@@ -59,3 +59,25 @@ test('production completion suppression remains qa_mode false and exact Daily mi
   assert.match(safety,/gs\.mission_id = content\.daily_missions/);
   assert.match(safety,/gs\.game_content_version = content\.version/);
 });
+
+test('study-wide operations and dissertation observation summaries exclude tests but direct inspection remains',()=>{
+  assert.match(migration,/research_admin_operations_dashboard[\s\S]*target_case_id is null and not p\.is_test/);
+  assert.match(migration,/research_admin_observation_dashboard[\s\S]*target_case_id is null and not participant\.is_test/);
+  assert.match(migration,/target_case_id is not null and o\.case_id=target_case_id/);
+  assert.match(migration,/target_case_id is not null and c\.id=target_case_id/);
+});
+
+test('TEST to REAL removes only simulated reminder claims',()=>{
+  const setter=migration.slice(migration.indexOf('create function public.research_admin_set_test_participant'),migration.indexOf('revoke all on function public.research_admin_participant_readiness'));
+  assert.match(setter,/if not target_is_test then/);
+  assert.match(setter,/delete from public\.teacher_reminder_events/);
+  assert.match(setter,/e\.provider_message_id='simulated-test'/);
+  assert.doesNotMatch(setter,/provider_message_id is not null|status='sent'/);
+});
+
+test('case-specific PDF report labels test data as excluded from dissertation reporting',()=>{
+  const report=fs.readFileSync(new URL('./case-report.mjs',import.meta.url),'utf8');
+  const admin=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
+  assert.match(report,/TEST PARTICIPANT — EXCLUDED FROM DISSERTATION REPORTING/);
+  assert.match(admin,/is_test: state\.participantReadiness\?\.is_test === true/);
+});

@@ -251,7 +251,7 @@ function openCaseReport() {
   const reportWindow = window.open('', '_blank');
   if (!reportWindow) { window.alert('Allow pop-ups to open the Case PDF print window.'); return; }
   reportWindow.opener = null;
-  const item = { ...state.caseOperations, case_code: state.readiness.case.case_code, student_alias: state.readiness.case.student_alias };
+  const item = { ...state.caseOperations, case_code: state.readiness.case.case_code, student_alias: state.readiness.case.student_alias, is_test: state.participantReadiness?.is_test === true };
   reportWindow.document.open();
   reportWindow.document.write(renderCaseReport(item, state.readiness, state.fidelity, escapeHtml));
   reportWindow.document.close();
