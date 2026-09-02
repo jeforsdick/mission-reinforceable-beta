@@ -1,6 +1,6 @@
 {
   "private": true,
   "dependencies": {
-    "resend": "latest"
+    "resend": "6.25.0"
   }
 }
