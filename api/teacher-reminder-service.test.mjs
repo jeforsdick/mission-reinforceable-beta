@@ -8,6 +8,7 @@ const sharedEmail = require('../server/mission-reminder-email.js');
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260814010000_teacher_reminders.sql', import.meta.url), 'utf8');
 const recoveryMigration = fs.readFileSync(new URL('../supabase/migrations/20260820000000_teacher_reminder_stale_pending_recovery.sql', import.meta.url), 'utf8');
 const safetyMigration = fs.readFileSync(new URL('../supabase/migrations/20260902000000_teacher_reminder_daily_safety.sql', import.meta.url), 'utf8');
+const completionCorrection = fs.readFileSync(new URL('../supabase/migrations/20260903010000_correct_reminder_any_valid_mission.sql', import.meta.url), 'utf8');
 const scheduleDocumentation = fs.readFileSync(new URL('../docs/teacher-reminder-schedule.md', import.meta.url), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 const dailyRoute = fs.readFileSync(new URL('./teacher-daily-prompt.js', import.meta.url), 'utf8');
@@ -122,16 +123,22 @@ assert.equal(daily.from, sharedEmail.SENDER);
 // retains participant-specific reminder-time configuration.
 assert.doesNotMatch(safetyMigration + scheduleDocumentation + JSON.stringify(vercel), /preferred_reminder_time/i);
 
-// Exact daily completion is case-, version-, mission-, mode-, QA-, status-,
-// participant-, and Denver-date-specific and uses gameplay's YYYYMMDD rotation.
+// The corrective migration accepts each study-valid mode, validates its mission
+// against the matching current published pool, and retains every isolation gate.
 for (const condition of [
+  /create or replace function public\.has_completed_mission_on_study_date/,
   /gs\.participant_id = target_participant_id/, /gs\.case_id = target_case_id/,
-  /gs\.status = 'completed'/, /gs\.qa_mode = false/, /gs\.mode = 'daily'/,
-  /gs\.game_content_version = content\.version/, /gs\.mission_id = content\.daily_missions/,
-  /replace\(target_study_date::text, '-', ''\)/,
-  /gs\.ended_at at time zone study_timezone/
-]) assert.match(safetyMigration, condition);
-for (const unrelated of ["wild", "wildcard", "crisis"]) assert.doesNotMatch(safetyMigration, new RegExp(`gs\\.mode = '${unrelated}'`));
+  /gs\.status = 'completed'/, /gs\.qa_mode = false/,
+  /gs\.mode in \('daily', 'mystery', 'crisis'\)/,
+  /gs\.game_content_version = content\.version/,
+  /when 'daily' then content\.daily_missions/,
+  /when 'mystery' then content\.wildcard_missions/,
+  /when 'crisis' then content\.crisis_missions/,
+  /published_mission ->> 'id' = gs\.mission_id/,
+  /gs\.ended_at at time zone 'America\/Denver'/
+]) assert.match(completionCorrection, condition);
+for (const forbidden of [/YYYYMMDD/i, /replace\(target_study_date/, /gs\.mode = 'daily'/])
+  assert.doesNotMatch(completionCorrection, forbidden);
 assert.match(safetyMigration, /where not retry_reclamation/);
 assert.match(safetyMigration, /where retry_reclamation[\s\S]*existing\.status = 'failed'[\s\S]*existing\.status = 'pending'/);
 
@@ -210,6 +217,13 @@ assert.equal(response.body.skipped, 1);
 assert.equal(mock.calls.some(call => call.url.includes('resend.com')), false);
 const completionCall = mock.calls.find(call => call.url.includes('/rpc/has_completed_mission_on_study_date'));
 assert.deepEqual(JSON.parse(completionCall.options.body), { target_participant_id: participant.participant_id, target_case_id: participant.case_id, target_study_date: '2026-08-14', study_timezone: 'America/Denver' });
+
+// Retry uses the same completion RPC and suppresses before reclaiming or sending.
+mock = mockFetch({ completed: true, eventStatus: 'failed' });
+response = await invoke(service.createHandler(service.TYPES.DAILY, { fetch: mock.fetch, now, retry: true }));
+assert.equal(response.body.skipped, 1);
+assert.equal(mock.calls.some(call => call.url.includes('/rpc/claim_teacher_reminder_event')), false);
+assert.equal(mock.calls.some(call => call.url.includes('resend.com')), false);
 
 mock = mockFetch({ completed: false });
 response = await invoke(service.createHandler(service.TYPES.FOLLOWUP, { fetch: mock.fetch, now }));

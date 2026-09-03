@@ -5,10 +5,11 @@ import { renderParticipantReadiness } from './participant-readiness.mjs';
 
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260902010000_participant_setup_readiness.sql',import.meta.url),'utf8');
 const simulationMigration=fs.readFileSync(new URL('../supabase/migrations/20260903000000_test_reminder_simulation_readiness.sql',import.meta.url),'utf8');
+const completionCorrection=fs.readFileSync(new URL('../supabase/migrations/20260903010000_correct_reminder_any_valid_mission.sql',import.meta.url),'utf8');
 const setterFix=fs.readFileSync(new URL('../supabase/migrations/20260902020000_fix_test_participant_setter.sql',import.meta.url),'utf8');
 
 test('participant readiness reports every researcher setup gate and operational history',()=>{
-  const html=renderParticipantReadiness({study_id:'MR-101',teacher_name:'Teacher One',teacher_email:'teacher@example.org',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:false,reminders_enabled:false,eligible:false,reason_not_eligible:'Participant or case is inactive',last_reminder:{study_date:'2026-09-01',status:'sent'},last_daily_completion:{ended_at:'2026-09-01T20:00:00Z',mission_id:'daily-1',qa_mode:false}},x=>String(x));
+  const html=renderParticipantReadiness({study_id:'MR-101',teacher_name:'Teacher One',teacher_email:'teacher@example.org',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:false,reminders_enabled:false,eligible:false,reason_not_eligible:'Participant or case is inactive',last_reminder:{study_date:'2026-09-01',status:'sent'},last_mission_completion:{ended_at:'2026-09-01T20:00:00Z',mission_id:'daily-1',qa_mode:false}},x=>String(x));
   for(const label of ['Auth linked','Case assigned','Participant active','Production email delivery','Participant daily reminders','Production reminder eligibility','Participant or case is inactive','2026-09-01 · sent','daily-1']) assert.match(html,new RegExp(label));
 });
 
@@ -35,11 +36,11 @@ test('readiness controls add no API route, RPC, schema, or reminder implementati
 });
 
 test('fake participants are unmistakable and document the safe end-to-end path',()=>{
-  const html=renderParticipantReadiness({study_id:'MR-998',teacher_email:'fake@testemail.com',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:false,eligible:false,is_test:true,simulation_available:false,simulation_reason:"Today's required Daily mission is complete",completed_required_today:true,last_daily_completion:{ended_at:'today',mission_id:'required-daily',qa_mode:false}},x=>String(x));
+  const html=renderParticipantReadiness({study_id:'MR-998',teacher_email:'fake@testemail.com',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:false,eligible:false,is_test:true,simulation_available:false,simulation_reason:"Today's mission is complete",completed_required_today:true,last_mission_completion:{ended_at:'today',mission_id:'required-daily',qa_mode:false}},x=>String(x));
   assert.match(html,/TEST PARTICIPANT/);
   assert.match(html,/excluded from production reminder recipients and dissertation counts\/outcomes/);
-  assert.match(html,/Today(?:'|’)s required Daily mission is complete/i);
-  assert.match(html,/QA preview sessions still do not suppress Daily reminders/);
+  assert.match(html,/Today(?:'|’)s mission is complete/i);
+  assert.match(html,/QA preview sessions still do not suppress mission reminders/);
   assert.match(html,/Return to Real Participant/);
   assert.match(html,/Simulate Today’s Reminder/);
 });
@@ -76,12 +77,23 @@ test('schema reuses assignments and exact completion',()=>{
   assert.match(migration,/public\.has_completed_mission_on_study_date\(p\.id,c\.id,target_study_date,'America\/Denver'\)/);
 });
 
-test('production completion suppression remains qa_mode false and exact Daily mission',()=>{
-  const safety=fs.readFileSync(new URL('../supabase/migrations/20260902000000_teacher_reminder_daily_safety.sql',import.meta.url),'utf8');
-  assert.match(safety,/gs\.qa_mode = false/);
-  assert.match(safety,/gs\.mode = 'daily'/);
-  assert.match(safety,/gs\.mission_id = content\.daily_missions/);
-  assert.match(safety,/gs\.game_content_version = content\.version/);
+test('completion correction covers valid modes and rejects invalid sessions',()=>{
+  for(const mode of ['daily','mystery','crisis']) assert.match(completionCorrection,new RegExp(`'${mode}'`));
+  for(const gate of [/gs\.qa_mode = false/,/gs\.status = 'completed'/,/gs\.participant_id = target_participant_id/,/gs\.case_id = target_case_id/,/gs\.game_content_version = content\.version/,/published_mission ->> 'id' = gs\.mission_id/]) assert.match(completionCorrection,gate);
+  assert.match(completionCorrection,/gs\.mode in \('daily', 'mystery', 'crisis'\)/);
+  assert.doesNotMatch(completionCorrection,/replace\(target_study_date|gs\.mode = 'daily'/);
+});
+
+test('readiness and test simulation share broader completion and researcher wording',()=>{
+  assert.match(completionCorrection,/'simulation_available'[\s\S]*has_completed_mission_on_study_date/);
+  assert.match(completionCorrection,/'eligible'[\s\S]*has_completed_mission_on_study_date/);
+  assert.match(completionCorrection,/'last_mission_completion'/);
+  assert.match(completionCorrection,/Today''s mission is complete/);
+  assert.doesNotMatch(completionCorrection,/required Daily mission is complete|last_daily_completion/i);
+  const ui=fs.readFileSync(new URL('./participant-readiness.mjs',import.meta.url),'utf8');
+  assert.match(ui,/Last mission completion:/);
+  assert.match(ui,/today’s mission is complete/);
+  assert.doesNotMatch(ui,/required Daily mission is complete|Last Daily completion/i);
 });
 
 test('study-wide operations and dissertation observation summaries exclude tests but direct inspection remains',()=>{
