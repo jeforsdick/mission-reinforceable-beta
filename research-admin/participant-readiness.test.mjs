@@ -4,11 +4,12 @@ import fs from 'node:fs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';
 
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260902010000_participant_setup_readiness.sql',import.meta.url),'utf8');
+const simulationMigration=fs.readFileSync(new URL('../supabase/migrations/20260903000000_test_reminder_simulation_readiness.sql',import.meta.url),'utf8');
 const setterFix=fs.readFileSync(new URL('../supabase/migrations/20260902020000_fix_test_participant_setter.sql',import.meta.url),'utf8');
 
 test('participant readiness reports every researcher setup gate and operational history',()=>{
   const html=renderParticipantReadiness({study_id:'MR-101',teacher_name:'Teacher One',teacher_email:'teacher@example.org',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:false,reminders_enabled:false,eligible:false,reason_not_eligible:'Participant or case is inactive',last_reminder:{study_date:'2026-09-01',status:'sent'},last_daily_completion:{ended_at:'2026-09-01T20:00:00Z',mission_id:'daily-1',qa_mode:false}},x=>String(x));
-  for(const label of ['Auth linked','Case assigned','Participant active','Reminder system enabled','Eligible for reminder','Participant or case is inactive','2026-09-01 · sent','daily-1']) assert.match(html,new RegExp(label));
+  for(const label of ['Auth linked','Case assigned','Participant active','Production email delivery','Participant daily reminders','Production reminder eligibility','Participant or case is inactive','2026-09-01 · sent','daily-1']) assert.match(html,new RegExp(label));
 });
 
 test('disabled and enabled participants render the appropriate nearby reminder action',()=>{
@@ -34,10 +35,10 @@ test('readiness controls add no API route, RPC, schema, or reminder implementati
 });
 
 test('fake participants are unmistakable and document the safe end-to-end path',()=>{
-  const html=renderParticipantReadiness({study_id:'MR-998',teacher_email:'fake@testemail.com',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:true,eligible:true,is_test:true,completed_required_today:true,last_daily_completion:{ended_at:'today',mission_id:'required-daily',qa_mode:false}},x=>String(x));
+  const html=renderParticipantReadiness({study_id:'MR-998',teacher_email:'fake@testemail.com',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:false,eligible:false,is_test:true,simulation_available:false,simulation_reason:"Today's required Daily mission is complete",completed_required_today:true,last_daily_completion:{ended_at:'today',mission_id:'required-daily',qa_mode:false}},x=>String(x));
   assert.match(html,/TEST PARTICIPANT/);
   assert.match(html,/excluded from production reminder recipients and dissertation counts\/outcomes/);
-  assert.match(html,/today’s required Daily mission is complete/);
+  assert.match(html,/Today(?:'|’)s required Daily mission is complete/i);
   assert.match(html,/QA preview sessions still do not suppress Daily reminders/);
   assert.match(html,/Return to Real Participant/);
   assert.match(html,/Simulate Today’s Reminder/);
@@ -112,4 +113,41 @@ test('case-specific PDF report labels test data as excluded from dissertation re
   const admin=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
   assert.match(report,/TEST PARTICIPANT — EXCLUDED FROM DISSERTATION REPORTING/);
   assert.match(admin,/is_test: state\.participantReadiness\?\.is_test === true/);
+});
+
+
+test('readiness separates production delivery, participant settings, and safe test simulation',()=>{
+  const testHtml=renderParticipantReadiness({study_id:'MR-998',study_date:'2026-09-03',is_test:true,auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:false,simulation_available:true},x=>String(x),{productionEmailDelivery:false});
+  assert.match(testHtml,/Production email delivery[\s\S]*Off/);
+  assert.match(testHtml,/Participant daily reminders[\s\S]*Disabled/);
+  assert.match(testHtml,/Test simulation[\s\S]*Available/);
+  assert.match(testHtml,/Test simulations do not send email and can be used while production delivery is off/);
+  assert.doesNotMatch(testHtml,/Enable Daily Reminders/);
+  assert.match(testHtml,/id="simulate-test-reminder"[^>]*>Simulate Today’s Reminder/);
+
+  const realHtml=renderParticipantReadiness({study_id:'MR-101',study_date:'2026-09-03',is_test:false,reminders_enabled:false,eligible:false},x=>String(x),{productionEmailDelivery:false});
+  assert.match(realHtml,/Production email delivery[\s\S]*Off/);
+  assert.match(realHtml,/Participant daily reminders[\s\S]*Disabled/);
+  assert.match(realHtml,/Enable Daily Reminders/);
+  assert.doesNotMatch(realHtml,/Test simulation/);
+  assert.doesNotMatch(testHtml,/Reminder system enabled/);
+});
+
+test('test simulation gates setup but not production delivery or live reminder settings',()=>{
+  const simulation=simulationMigration.slice(simulationMigration.indexOf('create or replace function public.research_admin_simulate_test_reminder'));
+  assert.match(simulationMigration,/'simulation_available',p\.is_test[\s\S]*auth_user_id=pr\.id[\s\S]*p\.active and c\.active[\s\S]*pr\.active and pr\.role='teacher'[\s\S]*has_completed_mission_on_study_date/);
+  assert.match(simulation,/r->>'simulation_available'/);
+  assert.doesNotMatch(simulation,/r->>'eligible'|reminders_enabled|teacher_reminder_settings|TEACHER_REMINDER_SYSTEM_ENABLED|resend/i);
+  assert.match(simulation,/suppressed_completed/);
+  assert.match(simulation,/suppressed_not_ready/);
+  assert.match(simulation,/provider_message_id[\s\S]*'simulated-test'/);
+});
+
+test('production eligibility and schedules remain unchanged',()=>{
+  const vercel=fs.readFileSync(new URL('../vercel.json',import.meta.url),'utf8');
+  const service=fs.readFileSync(new URL('../server/teacher-reminder-service.js',import.meta.url),'utf8');
+  assert.match(migration,/where trs\.enabled and not p\.is_test/);
+  assert.match(service,/rpc\/eligible_teacher_reminders/);
+  assert.match(vercel,/"schedule": "0 14 \* \* 1-5"/);
+  assert.match(vercel,/"schedule": "0 16 \* \* 1-5"/);
 });
