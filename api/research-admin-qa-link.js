@@ -1,5 +1,6 @@
 'use strict';
 const server = require('./research-admin-server');
+const { httpsUrl } = require('../server/game-login-email');
 async function handler(request, response) {
   if (server.methodGuard(request, response)) return;
   try {
@@ -11,7 +12,9 @@ async function handler(request, response) {
     if (profiles.length !== 1 || profiles[0].role !== 'teacher' || profiles[0].active !== true) return server.json(response, 409, { error: 'Teacher account is not ready' });
     const authUsers = await server.authUsersForEmail(email);
     if (authUsers.length !== 1 || authUsers[0].id !== profiles[0].id) return server.json(response, 409, { error: 'Teacher account is not ready' });
-    const linkResponse = await server.supabaseFetch('/auth/v1/admin/generate_link', { method: 'POST', body: JSON.stringify({ type: 'magiclink', email }) });
+    const redirectUrl = httpsUrl(process.env.TEACHER_GAME_URL, '/game/');
+    if (!redirectUrl) throw new Error('Teacher game URL is not configured');
+    const linkResponse = await server.supabaseFetch('/auth/v1/admin/generate_link', { method: 'POST', body: JSON.stringify({ type: 'magiclink', email, redirect_to: redirectUrl.toString() }) });
     if (!linkResponse.ok) throw new Error('Test sign-in link could not be generated');
     const generated = await linkResponse.json();
     const actionLink = generated.action_link || generated.properties?.action_link;
