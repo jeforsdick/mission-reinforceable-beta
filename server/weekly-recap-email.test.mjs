@@ -41,9 +41,13 @@ test('zero-mission email is neutral, complete, and hides mission mix', () => {
     assert.match(body, /Every mission makes a difference\./);
     assert.match(body, /Mission: Reinforceable is a research project/);
   }
-  for (const asset of ['mission-reinforceable-title.png', 'wizard-success.png', 'keep-going-sign.png', 'heart-icon.png', 'sparkle-icon.png', 'hat-icon.png']) {
+  for (const asset of ['email-header-banner.png', 'wizard-success.png', 'keep-going-sign.png', 'heart-icon.png', 'sparkle-icon.png', 'hat-icon.png']) {
     assert.ok(email.html.includes(asset), `${asset} should appear in a zero-mission recap`);
   }
+  assert.match(email.html, /email-header-banner\.png[^>]+width="600" alt="Mission: Reinforceable" style="display:block;width:100%;max-width:600px;height:auto;border:0;"/);
+  assert.doesNotMatch(email.html, /mission-reinforceable-title\.png/);
+  assert.match(email.html, /YOUR WEEKLY QUEST RECAP/);
+  assert.match(email.html, /wizard-success\.png[^>]+width="105"[^>]+max-width:105px/);
   assert.match(email.html, /<!doctype html>/i);
   assert.match(email.html, /<\/html>$/);
   assert.match(email.text, /MISSION: REINFORCEABLE[\s\S]*COMPLETE WEEKLY CHECK-IN:[\s\S]*Every mission makes a difference\./);
@@ -62,7 +66,7 @@ test('active email shows mission mix, positive neutral copy, eligible-day denomi
     assert.match(body, /Another week of practice in the books!/);
     assert.match(body, /Every mission is another chance to practice your student(?:'|&#39;)s behavior support plan\./);
   }
-  for (const asset of ['mission-reinforceable-title.png', 'wizard-success.png', 'keep-going-sign.png', 'heart-icon.png', 'sparkle-icon.png', 'hat-icon.png', 'daily-mission-icon.png', 'mystery-mission-icon.png', 'crisis-mission-icon.png']) assert.ok(email.html.includes(asset));
+  for (const asset of ['email-header-banner.png', 'wizard-success.png', 'keep-going-sign.png', 'heart-icon.png', 'sparkle-icon.png', 'hat-icon.png', 'daily-mission-icon.png', 'mystery-mission-icon.png', 'crisis-mission-icon.png']) assert.ok(email.html.includes(asset));
 });
 
 test('HTML and plain text preserve the stored Qualtrics URL unchanged', () => {
@@ -78,10 +82,12 @@ test('missing link prevents weekly email construction', () => {
   assert.throws(() => buildWeeklyRecapEmail({ summary: zeroSummary, weeklyQualtricsUrl: null, teacherName: 'Pat', assetOrigin: 'https://missionreinforceable.com' }), /required/);
 });
 
-test('approved Daily email builder remains untouched by this polish', () => {
+test('approved Daily email content remains intact alongside the shared header', () => {
   const { buildMissionReminderEmail } = require('./mission-reminder-email');
   const daily = buildMissionReminderEmail('https://missionreinforceable.com/game/', 'Pat Example');
   assert.match(daily.html, /YOUR DAILY MISSION AWAITS/);
   assert.match(daily.html, /Good morning, Pat!/);
+  assert.match(daily.html, /email-header-banner\.png/);
+  assert.doesNotMatch(daily.html, /mission-reinforceable-title\.png/);
   assert.match(daily.text, /START TODAY'S MISSION: https:\/\/missionreinforceable\.com\/game\//);
 });

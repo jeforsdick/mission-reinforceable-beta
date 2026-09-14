@@ -330,12 +330,14 @@ for (const body of [pathTestSend.html, pathTestSend.text]) {
 }
 assert.match(pathTestSend.html, /alt="A magical Mission: Reinforceable classroom ready for today's mission"/);
 const requiredEmailAssets = [
-  'mission-reinforceable-title.png', 'landing-page-classroom.png', 'heart-icon.png',
+  'email-header-banner.png', 'landing-page-classroom.png', 'heart-icon.png',
   'behavior-xp-icon.png', 'hat-icon.png', 'potion-icon.png', 'sparkle-icon.png'
 ];
 for (const asset of requiredEmailAssets) {
   assert.ok(pathTestSend.html.includes(`https://mission.example.org/assets/game/skin-v2/${asset}`));
 }
+assert.doesNotMatch(pathTestSend.html, /mission-reinforceable-title\.png/);
+assert.match(pathTestSend.html, /email-header-banner\.png[^>]+alt="Mission: Reinforceable"/);
 assert.doesNotMatch(pathTestSend.html, /sword[^"'<> ]*\.png/i);
 for (const altText of ['Heart', 'Behavior XP encouragement', 'Support potion', 'Research scholar hat', 'Magical sparkle']) {
   assert.match(pathTestSend.html, new RegExp(`alt="${altText}"`));

@@ -4,6 +4,7 @@ const SUBJECT = 'Your Mission: Reinforceable mission is ready';
 const SENDER = 'Mission: Reinforceable <missions@mail.missionreinforceable.com>';
 const ASSET_ROOT = '/assets/game/skin-v2/';
 const ASSET_FILES = Object.freeze({
+  emailHeader: 'email-header-banner.png',
   title: 'mission-reinforceable-title.png',
   classroom: 'landing-page-classroom.png',
   heart: 'heart-icon.png',
@@ -73,13 +74,7 @@ Mission: Reinforceable is a research project designed to support educators in im
 <div role="article" aria-roledescription="email" aria-label="${escapeHtml(subject)}" lang="en" style="background-color:#f4f1f7;">
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background-color:#f4f1f7;"><tr><td align="center" style="padding:20px 10px;">
 <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #ded7e3;">
-<tr><td align="center" style="padding:18px 18px 10px;background-color:#ffffff;">
-<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr>
-<td width="36" align="center" valign="middle"><img src="${assets.sparkle}" width="20" alt="Magical sparkle" style="display:block;width:20px;height:auto;border:0;"></td>
-<td align="center"><img src="${assets.title}" width="440" alt="Mission: Reinforceable" style="display:block;width:100%;max-width:440px;height:auto;border:0;outline:none;text-decoration:none;color:#552f79;font-size:22px;font-weight:bold;"></td>
-<td width="36" align="center" valign="middle"><img src="${assets.sparkle}" width="20" alt="Magical sparkle" style="display:block;width:20px;height:auto;border:0;"></td>
-</tr></table>
-</td></tr>
+<tr><td align="center" style="padding:0;background-color:#ffffff;"><img src="${assets.emailHeader}" width="600" alt="Mission: Reinforceable" style="display:block;width:100%;max-width:600px;height:auto;border:0;"></td></tr>
 <tr><td align="center" bgcolor="#60388c" style="padding:8px 16px;background-color:#60388c;color:#ffffff;font-family:'Courier New',Courier,monospace;font-size:14px;line-height:18px;font-weight:bold;letter-spacing:1px;">YOUR DAILY MISSION AWAITS</td></tr>
 <tr><td align="center" style="padding:0;background-color:#ffffff;"><img src="${assets.classroom}" width="598" alt="A magical Mission: Reinforceable classroom ready for today's mission" style="display:block;width:100%;max-width:598px;height:auto;border:0;outline:none;text-decoration:none;background-color:#f8f2e5;color:#553d34;font-size:16px;line-height:24px;text-align:center;"></td></tr>
 <tr><td align="center" style="padding:18px 20px 20px;background-color:#ffffff;">
