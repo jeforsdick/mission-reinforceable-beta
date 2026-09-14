@@ -3,13 +3,13 @@
 const { authorize, json, supabaseFetch, UUID_PATTERN } = require('./research-admin-server');
 const { configuration } = require('../server/game-login-email');
 const sendGameLogin = require('../server/research-admin-send-game-login');
-const { qualtricsConfiguration } = require('../server/weekly-checkin-service');
+const weeklyCheckin = require('../server/weekly-checkin-service');
 const { measureConfiguration } = require('../server/qualtrics-measures');
-const { validateWeeklyQualtricsUrl, loadWeeklySummary } = require('../server/weekly-recap-service');
+const { denverDate, loadWeeklySummary } = require('../server/weekly-recap-service');
 const { buildWeeklyRecapEmail } = require('../server/weekly-recap-email');
 
 async function weeklyParticipant(caseId) {
-  const lookup = await supabaseFetch(`/rest/v1/participants?case_id=eq.${encodeURIComponent(caseId)}&select=id,participant_code,is_test,weekly_qualtrics_url,auth_user_id&limit=2`);
+  const lookup = await supabaseFetch(`/rest/v1/participants?case_id=eq.${encodeURIComponent(caseId)}&select=id,case_id,participant_code,is_test,auth_user_id&limit=2`);
   if (!lookup.ok) throw Object.assign(new Error('Weekly email participant lookup failed'), { status: 502 });
   const rows = await lookup.json();
   if (rows.length !== 1) throw Object.assign(new Error('Case participant not found'), { status: 404 });
@@ -19,6 +19,26 @@ async function weeklyParticipant(caseId) {
   return participant;
 }
 
+async function weeklyContext(participant) {
+  const phasesResponse = await supabaseFetch(`/rest/v1/research_case_phase_events?case_id=eq.${encodeURIComponent(participant.case_id)}&select=id,phase,effective_date,recorded_at&order=effective_date.asc,recorded_at.asc,id.asc`);
+  if (!phasesResponse.ok) throw Object.assign(new Error('Intervention week could not be loaded'), { status: 502 });
+  const current = weeklyCheckin.interventionWeekContext(await phasesResponse.json(), denverDate());
+  const checkinsResponse = await supabaseFetch('/rest/v1/rpc/research_admin_weekly_checkins', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id }) });
+  if (!checkinsResponse.ok) throw Object.assign(new Error('Weekly administration status could not be loaded'), { status: 502 });
+  const checkins = await checkinsResponse.json();
+  return { current, checkins, administration: current ? checkins.find(row => row.week_start === current.week_start) || null : null };
+}
+
+async function issueSecureWeeklyUrl(participant, context) {
+  if (!context.current) throw Object.assign(new Error('There is no eligible current intervention week.'), { status: 409 });
+  if (!weeklyCheckin.qualtricsConfiguration().configured) throw Object.assign(new Error('Weekly Qualtrics survey is not configured.'), { status: 503 });
+  const rawToken = weeklyCheckin.createRawToken();
+  const generated = await supabaseFetch('/rest/v1/rpc/research_admin_generate_weekly_checkin', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id, target_week_start: context.current.week_start, target_token_hash: weeklyCheckin.hashToken(rawToken) }) });
+  if (!generated.ok) throw Object.assign(new Error('Weekly check-in could not be generated'), { status: 409 });
+  const url = weeklyCheckin.buildQualtricsUrl(rawToken, participant.participant_code, context.current.week_number);
+  return url;
+}
+
 module.exports = async function handler(request, response) {
   if (request.method === 'POST' && request.body?.action === 'send_game_login') return sendGameLogin(request, response);
   if (request.method === 'POST') {
@@ -26,20 +46,16 @@ module.exports = async function handler(request, response) {
       await authorize(request);
       const body = request.body || {};
       if (!UUID_PATTERN.test(body.case_id || '')) return json(response, 400, { error: 'Invalid case.' });
-      if (body.action === 'save_weekly_qualtrics_url') {
-        const checked = validateWeeklyQualtricsUrl(body.weekly_qualtrics_url);
-        if (!checked.valid) return json(response, 400, { error: 'Weekly Qualtrics link must be an HTTPS educationutah.co1.qualtrics.com URL.' });
-        const saved = await supabaseFetch('/rest/v1/rpc/research_admin_set_weekly_qualtrics_url', { method: 'POST', body: JSON.stringify({ target_case_id: body.case_id, target_url: checked.url }) });
-        if (!saved.ok) throw Object.assign(new Error('Weekly Qualtrics link could not be saved'), { status: 502 });
-        return json(response, 200, await saved.json());
-      }
       if (body.action === 'preview_weekly_email' || body.action === 'send_weekly_test') {
         const participant = await weeklyParticipant(body.case_id);
         if (!participant.is_test) return json(response, 403, { error: 'Weekly test email is restricted to explicitly marked test participants.' });
         if (!process.env.TEACHER_GAME_URL) return json(response, 503, { error: 'Test email configuration is incomplete.' });
-        const summary = await loadWeeklySummary(body.case_id, supabaseFetch);
-        const email = buildWeeklyRecapEmail({ summary, weeklyQualtricsUrl: participant.weekly_qualtrics_url, teacherName: participant.teacher_name, assetOrigin: process.env.TEACHER_GAME_URL });
-        if (body.action === 'preview_weekly_email') return json(response, 200, { subject: email.subject, html: email.html, text: email.text, summary });
+        const context = await weeklyContext(participant);
+        if (!context.current) return json(response, 409, { error: 'There is no eligible current intervention week.' });
+        const summary = await loadWeeklySummary(body.case_id, supabaseFetch, new Date(`${context.current.week_end}T18:00:00Z`));
+        const secureUrl = await issueSecureWeeklyUrl(participant, context);
+        const email = buildWeeklyRecapEmail({ summary, weeklyQualtricsUrl: secureUrl, teacherName: participant.teacher_name, assetOrigin: process.env.TEACHER_GAME_URL });
+        if (body.action === 'preview_weekly_email') return json(response, 200, { subject: email.subject, html: email.html, text: email.text, summary, week: context.current });
         if (!process.env.TEST_EMAIL_RECIPIENT || !process.env.RESEND_API_KEY) return json(response, 503, { error: 'Test email configuration is incomplete.' });
         const sent = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: email.from, to: [process.env.TEST_EMAIL_RECIPIENT], subject: `[TEST] ${email.subject}`, html: email.html, text: email.text }) });
         if (!sent.ok) return json(response, 502, { error: 'Weekly test email could not be sent.' });
@@ -70,21 +86,23 @@ module.exports = async function handler(request, response) {
       const participant = await weeklyParticipant(caseId);
       let summary = null, summaryReason = null;
       try { summary = await loadWeeklySummary(caseId, supabaseFetch); } catch (error) { summaryReason = error.message; }
-      const link = validateWeeklyQualtricsUrl(participant.weekly_qualtrics_url);
+      const context = await weeklyContext(participant);
+      const surveyConfigured = weeklyCheckin.qualtricsConfiguration().configured;
       weeklyEmail = {
-        qualtrics_configured: link.configured,
-        weekly_qualtrics_url: link.configured ? link.url : null,
+        qualtrics_configured: surveyConfigured,
+        current_week: context.current,
+        administration: context.administration,
         summary,
         summary_available: Boolean(summary),
         summary_reason: summaryReason,
-        test_email_available: participant.is_test && link.configured && Boolean(summary) && Boolean(process.env.TEST_EMAIL_RECIPIENT && process.env.RESEND_API_KEY && process.env.TEACHER_GAME_URL),
-        test_email_reason: !participant.is_test ? 'Participant is not explicitly marked as test' : !link.configured ? 'Weekly Qualtrics link is missing' : summaryReason
+        test_email_available: participant.is_test && surveyConfigured && Boolean(context.current) && Boolean(summary) && Boolean(process.env.TEST_EMAIL_RECIPIENT && process.env.RESEND_API_KEY && process.env.TEACHER_GAME_URL),
+        test_email_reason: !participant.is_test ? 'Participant is not explicitly marked as test' : !surveyConfigured ? 'Weekly Qualtrics survey is not configured' : !context.current ? 'No eligible current intervention week' : summaryReason
       };
     }
     const result = {
       teacher_reminder_system_enabled: process.env.TEACHER_REMINDER_SYSTEM_ENABLED === 'true',
       game_login_email_enabled: configuration().enabled,
-      weekly_qualtrics_configured: qualtricsConfiguration().configured,
+      weekly_qualtrics_configured: weeklyCheckin.qualtricsConfiguration().configured,
       qualtrics_measures: measureConfiguration(participantCode)
     };
     if (weeklyEmail) result.weekly_email = weeklyEmail;

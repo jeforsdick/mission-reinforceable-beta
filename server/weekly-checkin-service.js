@@ -1,5 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
+const { isEligibleStudyDay } = require('./granite-study-calendar');
 const TOKEN_PARAMETER = 'mr_weekly_token';
 const EMAIL_SUBJECT = 'Quick Mission: Reinforceable weekly check-in';
 function createRawToken() { return crypto.randomBytes(32).toString('base64url'); }
@@ -43,4 +44,32 @@ function interventionWeeks(start, end) {
   }
   return weeks;
 }
-module.exports={TOKEN_PARAMETER,EMAIL_SUBJECT,createRawToken,hashToken,qualtricsConfiguration,buildQualtricsUrl,completionUrl,weeklyEmail,interventionWeeks};
+function resolvedInterventionPeriod(history = [], today) {
+  const corrected = new Map([...history].sort((a,b) => String(a.effective_date).localeCompare(String(b.effective_date)) || String(a.recorded_at).localeCompare(String(b.recorded_at)) || String(a.id).localeCompare(String(b.id))).map(row => [row.effective_date, row]));
+  const phases = [...corrected.values()].sort((a,b) => a.effective_date.localeCompare(b.effective_date));
+  const intervention = phases.find(row => row.phase === 'intervention');
+  if (!intervention) return null;
+  const next = phases.find(row => row.effective_date > intervention.effective_date && row.phase !== 'intervention');
+  return { start: intervention.effective_date, end: next ? previousDate(next.effective_date) : today };
+}
+function previousDate(dateKey) { const date=new Date(`${dateKey}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-1);return date.toISOString().slice(0,10); }
+function eligibleInterventionWeeks(start, end) {
+  return interventionWeeks(start,end).filter(week => {
+    for(let date=week.week_start;date<=week.week_end;){ if(isEligibleStudyDay(date))return true; const next=new Date(`${date}T12:00:00Z`);next.setUTCDate(next.getUTCDate()+1);date=next.toISOString().slice(0,10); }
+    return false;
+  });
+}
+function interventionWeekContext(history, today) {
+  const period=resolvedInterventionPeriod(history,today);
+  if(!period || today<period.start || today>period.end)return null;
+  const weeks=eligibleInterventionWeeks(period.start,period.end);
+  const date=new Date(`${today}T12:00:00Z`),weekday=date.getUTCDay();date.setUTCDate(date.getUTCDate()-(weekday===0?6:weekday-1));
+  const currentMonday=date.toISOString().slice(0,10);
+  const index=weeks.findIndex(week=>week.week_start===currentMonday);
+  return index<0?null:{...weeks[index],week_number:index+1};
+}
+function interventionWeekNumber(weeklyRows, weekStart) {
+  const index=(weeklyRows||[]).findIndex(row=>row.week_start===weekStart);
+  return index<0?null:index+1;
+}
+module.exports={TOKEN_PARAMETER,EMAIL_SUBJECT,createRawToken,hashToken,qualtricsConfiguration,buildQualtricsUrl,completionUrl,weeklyEmail,interventionWeeks,resolvedInterventionPeriod,eligibleInterventionWeeks,interventionWeekContext,interventionWeekNumber};

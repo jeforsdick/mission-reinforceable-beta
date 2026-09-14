@@ -44,12 +44,15 @@ test('test send is restricted to explicit tests and only TEST_EMAIL_RECIPIENT',(
 test('weekly test delivery sends only to TEST_EMAIL_RECIPIENT',async()=>{
   const originalFetch=global.fetch, originalEnv={...process.env};
   const sent=[];
-  process.env.SUPABASE_URL='https://db.example';process.env.SUPABASE_SERVICE_ROLE_KEY='service';process.env.RESEND_API_KEY='resend';process.env.TEST_EMAIL_RECIPIENT='researcher@example.org';process.env.TEACHER_GAME_URL='https://missionreinforceable.com/game/';
+  process.env.SUPABASE_URL='https://db.example';process.env.SUPABASE_SERVICE_ROLE_KEY='service';process.env.RESEND_API_KEY='resend';process.env.TEST_EMAIL_RECIPIENT='researcher@example.org';process.env.TEACHER_GAME_URL='https://missionreinforceable.com/game/';process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL='https://educationutah.co1.qualtrics.com/jfe/form/SV_9MsIT9TZXCdeIWa';
   global.fetch=async(url,options={})=>{
     if(url==='https://db.example/auth/v1/user')return {ok:true,json:async()=>({id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'})};
     if(String(url).includes('/profiles?id=eq.aaaaaaaa'))return {ok:true,json:async()=>[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',role:'research_admin',active:true}]};
-    if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',participant_code:'MR-998',is_test:true,weekly_qualtrics_url:'https://educationutah.co1.qualtrics.com/jfe/form/SV_9MsIT9TZXCdeIWa?StudyID=MR-998',auth_user_id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'}]};
+    if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',case_id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',participant_code:'MR-998',is_test:true,auth_user_id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'}]};
     if(String(url).includes('/profiles?id=eq.cccccccc'))return {ok:true,json:async()=>[{display_name:'Pat Example'}]};
+    if(String(url).includes('/research_case_phase_events?'))return {ok:true,json:async()=>[{id:'phase-1',phase:'intervention',effective_date:'2026-09-07',recorded_at:'2026-09-01T00:00:00Z'}]};
+    if(String(url).includes('/rpc/research_admin_weekly_checkins'))return {ok:true,json:async()=>[{week_start:'2026-09-07',week_end:'2026-09-11',link_issued_at:null,completed_at:null}]};
+    if(String(url).includes('/rpc/research_admin_generate_weekly_checkin'))return {ok:true,json:async()=>null};
     if(String(url).includes('/rpc/research_admin_weekly_game_summary'))return {ok:true,json:async()=>({missions_completed:1,days_practiced:1,mission_mix:{daily:1,mystery:0,crisis:0},xp_available:false})};
     if(url==='https://api.resend.com/emails'){sent.push(JSON.parse(options.body));return {ok:true,json:async()=>({id:'msg-1'})};}
     throw new Error(`Unexpected fetch ${url}`);
@@ -59,7 +62,10 @@ test('weekly test delivery sends only to TEST_EMAIL_RECIPIENT',async()=>{
   let statusCode,body;const response={status(code){statusCode=code;return this;},json(value){body=value;return value;}};
   try{await handler(request,response);}finally{global.fetch=originalFetch;process.env=originalEnv;}
   assert.equal(statusCode,200);assert.equal(body.success,true);assert.equal(sent.length,1);assert.deepEqual(sent[0].to,['researcher@example.org']);assert.ok(!JSON.stringify(sent[0].to).includes('teacher'));
+  const cta=new URL(sent[0].html.match(/href="(https:\/\/educationutah[^\"]+)/)[1].replaceAll('&amp;','&'));assert.deepEqual([...cta.searchParams.keys()],['mr_weekly_token','participant_code','week_number']);assert.equal(cta.searchParams.get('participant_code'),'MR-998');assert.equal(cta.searchParams.get('week_number'),'1');
 });
+
+test('secure weekly workflow deprecates the participant URL and persists only a token hash',()=>{assert.doesNotMatch(api,/participant\.weekly_qualtrics_url|select=[^\n`]*weekly_qualtrics_url/);assert.match(api,/weeklyCheckin\.createRawToken\(\)/);assert.match(api,/target_token_hash: weeklyCheckin\.hashToken\(rawToken\)/);assert.doesNotMatch(api,/target_(?:raw_)?token:\s*rawToken/);});
 
 test('weekly SQL applies finalized current-pool filters and omits unpersisted XP',()=>{
   for(const filter of ["gs.status='completed'","gs.qa_mode=false","gs.mode in ('daily','mystery','crisis')","gs.game_content_version=a.version","mission->>'id'=gs.mission_id",'public.is_mr_dissertation_study_day']) assert.ok(migration.includes(filter),filter);
