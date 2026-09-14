@@ -41,6 +41,12 @@ test('zero-mission email is neutral, complete, and hides mission mix', () => {
     assert.match(body, /Every mission makes a difference\./);
     assert.match(body, /Mission: Reinforceable is a research project/);
   }
+  for (const asset of ['mission-reinforceable-title.png', 'wizard-success.png', 'keep-going-sign.png', 'heart-icon.png', 'sparkle-icon.png', 'hat-icon.png']) {
+    assert.ok(email.html.includes(asset), `${asset} should appear in a zero-mission recap`);
+  }
+  assert.match(email.html, /<!doctype html>/i);
+  assert.match(email.html, /<\/html>$/);
+  assert.match(email.text, /MISSION: REINFORCEABLE[\s\S]*COMPLETE WEEKLY CHECK-IN:[\s\S]*Every mission makes a difference\./);
 });
 
 test('active email shows mission mix, positive neutral copy, eligible-day denominator, and game assets', () => {
@@ -56,7 +62,7 @@ test('active email shows mission mix, positive neutral copy, eligible-day denomi
     assert.match(body, /Another week of practice in the books!/);
     assert.match(body, /Every mission is another chance to practice your student(?:'|&#39;)s behavior support plan\./);
   }
-  for (const asset of ['heart-icon.png', 'sparkle-icon.png', 'daily-mission-icon.png', 'mystery-mission-icon.png', 'crisis-mission-icon.png']) assert.ok(email.html.includes(asset));
+  for (const asset of ['mission-reinforceable-title.png', 'wizard-success.png', 'keep-going-sign.png', 'heart-icon.png', 'sparkle-icon.png', 'hat-icon.png', 'daily-mission-icon.png', 'mystery-mission-icon.png', 'crisis-mission-icon.png']) assert.ok(email.html.includes(asset));
 });
 
 test('HTML and plain text preserve the stored Qualtrics URL unchanged', () => {
@@ -64,6 +70,8 @@ test('HTML and plain text preserve the stored Qualtrics URL unchanged', () => {
   assert.equal(email.ctaUrl, url);
   assert.ok(email.text.includes(url));
   assert.ok(email.html.includes(url.replaceAll('&', '&amp;')));
+  assert.match(email.html, /<!--\[if mso\]><v:roundrect/);
+  assert.match(email.html, /COMPLETE WEEKLY CHECK-IN &#8594;/);
 });
 
 test('missing link prevents weekly email construction', () => {
