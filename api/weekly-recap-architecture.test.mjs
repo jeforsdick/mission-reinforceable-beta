@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 const require=createRequire(import.meta.url);
 const api=fs.readFileSync(new URL('./research-admin-communication-readiness.js',import.meta.url),'utf8');
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260914000000_weekly_teacher_recap_foundation.sql',import.meta.url),'utf8');
+const assignmentScopeFix=fs.readFileSync(new URL('../supabase/migrations/20260914010000_fix_weekly_summary_assignment_scope.sql',import.meta.url),'utf8');
 const vercel=JSON.parse(fs.readFileSync(new URL('../vercel.json',import.meta.url),'utf8'));
 
 test('weekly readiness is separate from Daily reminder settings',()=>{
@@ -63,6 +64,30 @@ test('weekly test delivery sends only to TEST_EMAIL_RECIPIENT',async()=>{
 test('weekly SQL applies finalized current-pool filters and omits unpersisted XP',()=>{
   for(const filter of ["gs.status='completed'","gs.qa_mode=false","gs.mode in ('daily','mystery','crisis')","gs.game_content_version=a.version","mission->>'id'=gs.mission_id",'public.is_mr_dissertation_study_day']) assert.ok(migration.includes(filter),filter);
   assert.match(migration,/'behavior_plan_xp',null,'xp_available',false/);
+});
+
+test('corrective weekly summary keeps the current-content guard in SQL scope',()=>{
+  assert.match(assignmentScopeFix,/create or replace function public\.research_admin_weekly_game_summary\(target_case_id uuid, target_week_start date\)/);
+  assert.doesNotMatch(assignmentScopeFix,/if not exists\(select 1 from assignment\)/i);
+  assert.match(assignmentScopeFix,/if not exists\(\s*select 1\s*from public\.participants p\s*join public\.case_game_content gc on gc\.case_id=p\.case_id\s*where p\.case_id=target_case_id\s*\) then raise exception 'current published game content unavailable' using errcode='P0002'/);
+});
+
+test('corrective weekly summary preserves recap filters, authorization, and grants',()=>{
+  for(const behavior of [
+    "auth.role()='service_role' or public.is_research_admin()",
+    'extract(isodow from target_week_start) <> 1',
+    "at time zone 'America/Denver'",
+    "gs.status='completed'",
+    'gs.qa_mode=false',
+    "gs.mode in ('daily','mystery','crisis')",
+    'gs.game_content_version=a.version',
+    "mission->>'id'=gs.mission_id",
+    'public.is_mr_dissertation_study_day',
+    'count(distinct study_date)',
+    "'behavior_plan_xp',null,'xp_available',false"
+  ]) assert.ok(assignmentScopeFix.includes(behavior),behavior);
+  assert.match(assignmentScopeFix,/revoke all on function public\.research_admin_weekly_game_summary\(uuid,date\) from public;/);
+  assert.match(assignmentScopeFix,/grant execute on function public\.research_admin_weekly_game_summary\(uuid,date\) to authenticated, service_role;/);
 });
 
 test('no production weekly cron is added and Daily schedules stay fixed',()=>{
