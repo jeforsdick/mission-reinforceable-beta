@@ -163,3 +163,9 @@ test('production eligibility and schedules remain unchanged',()=>{
   assert.match(vercel,/"schedule": "0 14 \* \* 1-5"/);
   assert.match(vercel,/"schedule": "0 16 \* \* 1-5"/);
 });
+
+test('secure weekly test readiness shows intervention administration and completion state without a pasted URL',()=>{
+  const html=renderParticipantReadiness({study_id:'MR-998',study_date:'2026-09-17',is_test:true},x=>String(x),{weeklyEmail:{qualtrics_configured:true,current_week:{week_number:2,week_start:'2026-09-14',week_end:'2026-09-18'},administration:{link_issued_at:'2026-09-17T18:00:00Z',completed_at:'2026-09-17T18:05:00Z'},summary_available:true,test_email_available:true,summary:{missions_completed:2,days_practiced:2,mission_mix:{daily:2,mystery:0,crisis:0},week_start:'2026-09-14',week_end:'2026-09-18'}}});
+  for(const text of ['Intervention Week 2','2026-09-14 through 2026-09-18','Weekly administration','Exists','Weekly link','Issued','Weekly check-in','Completed','Preview Weekly Email','Send Test Weekly Email','TEST_EMAIL_RECIPIENT'])assert.match(html,new RegExp(text));
+  assert.doesNotMatch(html,/weekly_qualtrics_url|Save Link|personalized/i);
+});

@@ -49,7 +49,7 @@ module.exports = async function handler(request, response) {
       if (!rpc.ok) return server.json(response, 409, { error: 'Weekly check-in could not be generated' });
       const weeklyRows = await rows('/rest/v1/rpc/research_admin_weekly_checkins', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id }) });
       const origin = requestOrigin(request);
-      const weekNumber = weeklyRows.findIndex(row => row.week_start === body.week_start) + 1;
+      const weekNumber = weekly.interventionWeekNumber(weeklyRows, body.week_start);
       if (!weekNumber) return server.json(response, 409, { error: 'Intervention week could not be resolved' });
       return server.json(response, 200, { qualtrics_url: weekly.buildQualtricsUrl(raw, participant.participant_code, weekNumber), completion_test_url: weekly.completionUrl(raw, origin), qualtrics_configured: weekly.qualtricsConfiguration().configured, email_sent: false, message: 'No email sent.' });
     }
