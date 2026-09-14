@@ -13,6 +13,27 @@ test('weekly readiness is separate from Daily reminder settings',()=>{
   assert.match(api,/test_email_available: participant\.is_test/);
 });
 
+test('participant URL setter uses only existing participant columns',()=>{
+  const setter=migration.slice(migration.indexOf('create function public.research_admin_set_weekly_qualtrics_url'),migration.indexOf('create function public.research_admin_weekly_game_summary'));
+  assert.match(setter,/update public\.participants set weekly_qualtrics_url=clean_url\s+where case_id=target_case_id/);
+  assert.doesNotMatch(setter,/updated_at\s*=\s*now\(\)|participants\.updated_at/i);
+});
+
+test('weekly RPCs explicitly grant authenticated and service-role execution',()=>{
+  assert.match(migration,/grant execute on function public\.research_admin_set_weekly_qualtrics_url\(uuid,text\), public\.research_admin_weekly_game_summary\(uuid,date\) to authenticated, service_role;/);
+  assert.match(migration,/auth\.role\(\)='service_role' or public\.is_research_admin\(\)/);
+});
+
+test('summary uses the single current case_game_content row and its version',()=>{
+  const bootstrap=fs.readFileSync(new URL('../supabase/migrations/20260812000000_legacy_schema_bootstrap.sql',import.meta.url),'utf8');
+  const publishing=fs.readFileSync(new URL('../supabase/migrations/20260824000000_protected_game_publishing.sql',import.meta.url),'utf8');
+  assert.match(bootstrap,/case_id uuid primary key references public\.cases/);
+  assert.match(publishing,/insert into public\.case_game_content\([\s\S]*?on conflict\(case_id\) do update/);
+  assert.match(migration,/join public\.case_game_content gc on gc\.case_id=p\.case_id/);
+  assert.match(migration,/gs\.game_content_version=a\.version/);
+  assert.doesNotMatch(migration,/case_game_content_versions/);
+});
+
 test('test send is restricted to explicit tests and only TEST_EMAIL_RECIPIENT',()=>{
   assert.match(api,/if \(!participant\.is_test\)/);
   assert.match(api,/to: \[process\.env\.TEST_EMAIL_RECIPIENT\]/);

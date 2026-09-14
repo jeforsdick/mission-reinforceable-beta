@@ -24,7 +24,7 @@ begin
   if clean_url is not null and (clean_url !~ '^https://educationutah\.co1\.qualtrics\.com/' or clean_url ~ '[[:space:]]') then
     raise exception 'Weekly Qualtrics link must be an HTTPS educationutah.co1.qualtrics.com URL.' using errcode='22023';
   end if;
-  update public.participants set weekly_qualtrics_url=clean_url,updated_at=now()
+  update public.participants set weekly_qualtrics_url=clean_url
   where case_id=target_case_id
   returning jsonb_build_object('participant_id',id,'configured',weekly_qualtrics_url is not null) into result;
   if result is null then raise exception 'case participant not found' using errcode='P0002'; end if;
@@ -64,7 +64,7 @@ begin
 end $$;
 
 revoke all on function public.research_admin_set_weekly_qualtrics_url(uuid,text), public.research_admin_weekly_game_summary(uuid,date) from public;
-grant execute on function public.research_admin_set_weekly_qualtrics_url(uuid,text), public.research_admin_weekly_game_summary(uuid,date) to authenticated;
+grant execute on function public.research_admin_set_weekly_qualtrics_url(uuid,text), public.research_admin_weekly_game_summary(uuid,date) to authenticated, service_role;
 
 comment on function public.research_admin_weekly_game_summary(uuid,date) is
 'Research-admin-only Monday-Friday America/Denver recap. XP is omitted because game_sessions persists choice score/max_score, not the computed Behavior Plan XP displayed by the client.';
