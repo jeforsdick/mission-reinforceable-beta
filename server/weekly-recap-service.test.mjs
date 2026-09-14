@@ -29,7 +29,19 @@ test('valid Daily Mystery and Crisis sessions aggregate while invalid sessions a
   const result=recap.summarizeSessions(sessions,content,{week_start:'2026-09-14',week_end:'2026-09-18'});
   assert.equal(result.missions_completed,3);
   assert.equal(result.days_practiced,2);
+  assert.equal(result.eligible_study_days,4);
   assert.deepEqual(result.mission_mix,{daily:1,mystery:1,crisis:1});
   assert.equal(result.xp_available,false);
   assert.equal(result.behavior_plan_xp,null);
+});
+
+test('eligible study-day denominator reuses the study calendar holidays',()=>{
+  assert.equal(recap.eligibleStudyDays({week_start:'2026-09-14',week_end:'2026-09-18'}),4);
+  assert.equal(recap.eligibleStudyDays({week_start:'2026-11-23',week_end:'2026-11-27'}),2);
+});
+
+test('loaded RPC summary gains only the calendar-derived eligible-day denominator',async()=>{
+  const rpcSummary={missions_completed:2,days_practiced:1,mission_mix:{daily:2,mystery:0,crisis:0},xp_available:false};
+  const result=await recap.loadWeeklySummary('case',async()=>({ok:true,json:async()=>rpcSummary}),new Date('2026-09-14T18:00:00Z'));
+  assert.deepEqual(result,{...rpcSummary,eligible_study_days:4});
 });
