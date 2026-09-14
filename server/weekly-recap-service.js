@@ -34,6 +34,16 @@ function currentStudyWeek(now = new Date()) {
   return { week_start: monday, week_end: shiftDate(monday, 4), timezone: TIMEZONE };
 }
 
+function eligibleStudyDays(window) {
+  let date = window.week_start;
+  let count = 0;
+  while (date <= window.week_end) {
+    if (isEligibleStudyDay(date)) count++;
+    date = shiftDate(date, 1);
+  }
+  return count;
+}
+
 function summarizeSessions(sessions, content, window) {
   const pools = {
     daily: new Set((content.daily_missions || []).map(item => item.id)),
@@ -49,6 +59,7 @@ function summarizeSessions(sessions, content, window) {
     timezone: TIMEZONE,
     missions_completed: valid.length,
     days_practiced: new Set(valid.map(row => row.study_date)).size,
+    eligible_study_days: eligibleStudyDays(window),
     mission_mix: mix,
     behavior_plan_xp: null,
     xp_available: false
@@ -59,7 +70,8 @@ async function loadWeeklySummary(caseId, supabaseFetch, now = new Date()) {
   const period = currentStudyWeek(now);
   const response = await supabaseFetch('/rest/v1/rpc/research_admin_weekly_game_summary', { method: 'POST', body: JSON.stringify({ target_case_id: caseId, target_week_start: period.week_start }) });
   if (!response.ok) throw new Error('Weekly summary could not be calculated');
-  return response.json();
+  const summary = await response.json();
+  return { ...summary, eligible_study_days: eligibleStudyDays(period) };
 }
 
-module.exports = { TIMEZONE, QUALTRICS_HOST, validateWeeklyQualtricsUrl, denverDate, currentStudyWeek, summarizeSessions, loadWeeklySummary };
+module.exports = { TIMEZONE, QUALTRICS_HOST, validateWeeklyQualtricsUrl, denverDate, currentStudyWeek, eligibleStudyDays, summarizeSessions, loadWeeklySummary };
