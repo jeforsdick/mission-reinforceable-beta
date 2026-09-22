@@ -42,8 +42,14 @@ test('test send is restricted to explicit tests and only TEST_EMAIL_RECIPIENT',(
 });
 
 test('weekly test delivery sends only to TEST_EMAIL_RECIPIENT',async()=>{
-  const originalFetch=global.fetch, originalEnv={...process.env};
+  const originalFetch=global.fetch, originalDate=global.Date, originalEnv={...process.env};
   const sent=[];
+  // Keep this fixture in its first intervention week. The production path uses
+  // the current Denver date to calculate the intervention-week ordinal.
+  global.Date=class extends originalDate {
+    constructor(...args){super(...(args.length?args:['2026-09-10T18:00:00Z']));}
+    static now(){return new originalDate('2026-09-10T18:00:00Z').getTime();}
+  };
   process.env.SUPABASE_URL='https://db.example';process.env.SUPABASE_SERVICE_ROLE_KEY='service';process.env.RESEND_API_KEY='resend';process.env.TEST_EMAIL_RECIPIENT='researcher@example.org';process.env.TEACHER_GAME_URL='https://missionreinforceable.com/game/';process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL='https://educationutah.co1.qualtrics.com/jfe/form/SV_9MsIT9TZXCdeIWa';
   global.fetch=async(url,options={})=>{
     if(url==='https://db.example/auth/v1/user')return {ok:true,json:async()=>({id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'})};
@@ -60,7 +66,7 @@ test('weekly test delivery sends only to TEST_EMAIL_RECIPIENT',async()=>{
   const handler=require('./research-admin-communication-readiness.js');
   const request={method:'POST',headers:{authorization:'Bearer admin'},body:{action:'send_weekly_test',case_id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd'}};
   let statusCode,body;const response={status(code){statusCode=code;return this;},json(value){body=value;return value;}};
-  try{await handler(request,response);}finally{global.fetch=originalFetch;process.env=originalEnv;}
+  try{await handler(request,response);}finally{global.fetch=originalFetch;global.Date=originalDate;process.env=originalEnv;}
   assert.equal(statusCode,200);assert.equal(body.success,true);assert.equal(sent.length,1);assert.deepEqual(sent[0].to,['researcher@example.org']);assert.ok(!JSON.stringify(sent[0].to).includes('teacher'));
   const cta=new URL(sent[0].html.match(/href="(https:\/\/educationutah[^\"]+)/)[1].replaceAll('&amp;','&'));assert.deepEqual([...cta.searchParams.keys()],['mr_weekly_token','participant_code','week_number']);assert.equal(cta.searchParams.get('participant_code'),'MR-998');assert.equal(cta.searchParams.get('week_number'),'1');
 });
