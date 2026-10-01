@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Observer Portal Preview | Mission: Reinforceable</title>
+  <title>Observer Training Preview | Mission: Reinforceable</title>
   <link rel="icon" href="../favicon.png">
   <link rel="stylesheet" href="../assets/site/site.css">
   <link rel="stylesheet" href="observe.css">
@@ -17,20 +17,20 @@
           <img class="brand-icon" src="../favicon.png" alt="">
           <img class="brand-logo" src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable">
         </a>
-        <span class="private-badge">Observer Portal · Preview</span>
+        <span class="private-badge">Observer Training · Preview</span>
       </div>
     </header>
 
     <main class="observer-main">
       <aside class="preview-banner" role="note">
-        <strong>Fictional-data preview.</strong>
-        Nothing entered here is study data or written to Supabase. Add <code>?test=1</code> to the URL for a 60-second timer test.
+        <strong>Training preview only.</strong>
+        Nora and Kai are staged IRIS training cases. The BIPs below are fictional practice plans built for observer training; no study data are written to Supabase.
       </aside>
 
       <section id="login-view" class="state-card observer-state">
         <p class="eyebrow">Secure observer access</p>
         <h1>Observer Sign In</h1>
-        <p>The production version will authenticate each trained observer before showing assigned observations.</p>
+        <p>The production version will use each observer’s authenticated account. For now, enter a preview name and role.</p>
         <form id="preview-login-form" class="login-form">
           <label>Preview observer
             <input name="observer" value="Test Observer" required>
@@ -41,86 +41,81 @@
               <option value="secondary">IOA observer</option>
             </select>
           </label>
-          <button class="primary-button" type="submit">Enter Fictional Preview</button>
+          <button class="primary-button" type="submit">Enter Training Preview</button>
         </form>
       </section>
 
       <section id="assignment-view" hidden>
         <div class="page-heading">
           <div>
-            <p class="eyebrow">Assigned observation</p>
-            <h1>Today's Observation</h1>
+            <p class="eyebrow">Observer training</p>
+            <h1>Choose a Practice Case</h1>
+            <p>Both cases use the same 15-second partial-interval student measure and individualized teacher-fidelity scoring planned for the dissertation.</p>
           </div>
           <button class="text-button" id="preview-sign-out" type="button">Leave preview</button>
         </div>
-
-        <article class="assignment-card">
-          <div class="assignment-top">
-            <div>
-              <span class="status-pill">Ready</span>
-              <h2>MR-TEST-01</h2>
-              <p>Fictional dyad · Independent math</p>
-            </div>
-            <div class="assignment-time">
-              <strong>30:00</strong>
-              <span>planned observation</span>
-            </div>
-          </div>
-          <dl class="assignment-details">
-            <div><dt>Observer</dt><dd id="assignment-observer">Test Observer</dd></div>
-            <div><dt>Role</dt><dd id="assignment-role">Primary observer</dd></div>
-            <div><dt>Date</dt><dd id="assignment-date"></dd></div>
-            <div><dt>Method</dt><dd>15-s partial interval + fidelity checklist</dd></div>
-          </dl>
-          <button id="open-ready" class="primary-button wide-button" type="button">Open Observation</button>
-        </article>
+        <div id="training-case-list" class="training-case-list"></div>
       </section>
 
       <section id="ready-view" hidden>
-        <button class="back-button" id="back-assignment" type="button">← Today's observation</button>
-        <div class="page-heading compact-heading">
+        <button class="back-button" id="back-assignment" type="button">← Training cases</button>
+
+        <div class="ready-heading">
           <div>
             <p class="eyebrow">Before you begin</p>
-            <h1>Know What You’re Watching For</h1>
-            <p>Review the student definition and all teacher-fidelity targets before starting. During the observation, score a teacher target when you see the opportunity. For student behavior, tap the red button if the target occurs at any point in the current 15-second interval.</p>
+            <h1 id="ready-case-title">Know What You’re Watching For</h1>
+            <p id="ready-case-source" class="source-line"></p>
+          </div>
+          <div class="training-duration">
+            <strong id="ready-duration">4:25</strong>
+            <span>training clip</span>
           </div>
         </div>
 
         <div class="ready-context">
           <article class="ready-card">
             <span class="card-label">Target routine</span>
-            <h2>Independent math</h2>
+            <h2 id="ready-routine"></h2>
           </article>
           <article class="ready-card">
             <span class="card-label">Student target behavior</span>
-            <h2>Work refusal</h2>
-            <p>Pushing materials away, laying head down, or saying “I’m not doing this” following presentation of independent math tasks.</p>
+            <h2 id="ready-behavior-name"></h2>
+            <p id="ready-behavior-definition"></p>
+          </article>
+          <article class="ready-card">
+            <span class="card-label">Replacement behavior</span>
+            <h2 id="ready-replacement"></h2>
           </article>
         </div>
+
+        <article class="bip-card">
+          <div class="bip-heading">
+            <div>
+              <p class="eyebrow">Fictional training BIP</p>
+              <h2>Plan Summary</h2>
+            </div>
+            <p id="ready-hypothesis"></p>
+          </div>
+          <div class="bip-grid">
+            <div><strong>Prevent</strong><p id="bip-prevent"></p></div>
+            <div><strong>Teach</strong><p id="bip-teach"></p></div>
+            <div><strong>Reinforce</strong><p id="bip-reinforce"></p></div>
+            <div><strong>Respond</strong><p id="bip-respond"></p></div>
+          </div>
+        </article>
 
         <article class="watch-list-card">
           <div class="watch-list-heading">
             <div>
               <p class="eyebrow">Teacher fidelity</p>
-              <h2>Review these 9 targets</h2>
+              <h2>Review these 5 targets before you press play</h2>
             </div>
-            <span>Implemented as Written · Not Implemented as Written · No Opportunity</span>
+            <span>During the clip: select Implemented or Not Implemented when you see the opportunity. Leave it blank if you are unsure; resolve No Opportunity at the end.</span>
           </div>
           <div id="preflight-fidelity-list" class="preflight-fidelity-list"></div>
         </article>
 
-        <article class="protocol-card">
-          <h2>During the 30 minutes</h2>
-          <div class="protocol-steps">
-            <div><strong>Watch both</strong><span>teacher-student interaction</span></div>
-            <div><strong>Red button</strong><span>tap if student target occurs</span></div>
-            <div><strong>15-sec cue</strong><span>beep = a new interval began</span></div>
-            <div><strong>Quick fidelity</strong><span>score the teacher opportunity</span></div>
-          </div>
-          <p class="small-note">No student-behavior tap means the target did not occur in that interval. If behavior continues across intervals, use <strong>Behavior continuing</strong>. If the student cannot be observed, use <strong>Not observable</strong>.</p>
-        </article>
-
-        <button id="start-observation" class="primary-button start-button" type="button">Start 30-Minute Observation</button>
+        <button id="start-observation" class="primary-button start-button" type="button">Open Training Observation</button>
       </section>
 
       <section id="active-view" class="active-view" hidden>
@@ -129,39 +124,41 @@
             <div class="student-panel-head">
               <div>
                 <p class="eyebrow">Student behavior</p>
-                <h2>Work refusal</h2>
+                <h2 id="active-behavior-name"></h2>
               </div>
-              <button id="pause-observation" class="quiet-button compact-pause" type="button">Pause</button>
+              <span id="active-case-chip" class="case-chip"></span>
+            </div>
+
+            <div class="video-shell">
+              <div id="training-player"></div>
+              <div id="video-loading" class="video-loading">Loading training video…</div>
             </div>
 
             <div class="timer-grid">
-              <div class="timer-primary"><span>Elapsed</span><strong id="elapsed-clock">00:00</strong></div>
-              <div class="timer-mini"><span>Interval</span><strong><span id="interval-number">1</span>/<span id="interval-total">120</span></strong></div>
-              <div class="timer-mini"><span>Next</span><strong id="interval-clock">00:15</strong></div>
-              <div class="timer-mini remaining-mini"><span>Remaining</span><strong id="remaining-clock">30:00</strong></div>
+              <div class="timer-primary"><span>Video time</span><strong id="elapsed-clock">00:00</strong></div>
+              <div class="timer-mini"><span>Interval</span><strong><span id="interval-number">1</span>/<span id="interval-total">18</span></strong></div>
+              <div class="timer-mini"><span>Next boundary</span><strong id="interval-clock">00:15</strong></div>
             </div>
 
-            <div id="test-mode-badge" class="test-mode-badge" hidden>TEST TIMER MODE</div>
+            <p id="active-behavior-definition" class="student-definition"></p>
 
-            <p class="student-definition">Pushing materials away, laying head down, or saying “I’m not doing this.”</p>
-
-            <button id="target-occurred" class="target-occurred-button" type="button">
+            <button id="target-occurred" class="target-occurred-button" type="button" disabled>
               <span class="target-button-label">TARGET BEHAVIOR OCCURRED</span>
-              <span class="target-button-help">Tap once if it happens at any point in this interval</span>
+              <span class="target-button-help">Tap once if it happens at any point in this 15-second interval</span>
             </button>
 
             <div class="quick-mode-row">
-              <button id="continuing-toggle" class="mode-button" type="button" aria-pressed="false">
+              <button id="continuing-toggle" class="mode-button" type="button" aria-pressed="false" disabled>
                 <strong>↔ Behavior continuing</strong>
                 <small>Auto-mark across new intervals</small>
               </button>
-              <button id="observable-toggle" class="mode-button" type="button" aria-pressed="false">
+              <button id="observable-toggle" class="mode-button" type="button" aria-pressed="false" disabled>
                 <strong>👁 Not observable</strong>
                 <small>Exclude intervals until visible again</small>
               </button>
             </div>
 
-            <p id="current-interval-status" class="interval-status">No target behavior marked. No action needed if it does not occur.</p>
+            <p id="current-interval-status" class="interval-status">Press play. The observation clock follows the video.</p>
 
             <div class="student-mini-stats">
               <span><strong id="occurred-count">0</strong> occurrence intervals</span>
@@ -180,16 +177,18 @@
                 <p class="eyebrow">Teacher implementation</p>
                 <h1>Fidelity</h1>
               </div>
-              <div class="fidelity-completion"><strong id="fidelity-progress">0/9</strong><span>scored</span></div>
+              <div class="fidelity-completion"><strong id="fidelity-progress">0/5</strong><span>scored</span></div>
             </div>
 
-            <p class="fidelity-instruction">Score a row when the opportunity occurs. Unscored rows stay unresolved until the end of the session.</p>
-            <div id="fidelity-list" class="compact-fidelity-list"></div>
+            <p class="fidelity-instruction">Keep your eyes on the interaction. When one of these opportunities happens, make one quick fidelity selection.</p>
+
+            <div id="fidelity-list" class="training-fidelity-list"></div>
 
             <div id="outcome-prompt" class="outcome-prompt" hidden>
               <div>
-                <strong id="outcome-prompt-label">Did it have the desired outcome on behavior?</strong>
+                <strong>Did it have the desired outcome on behavior?</strong>
                 <small id="outcome-prompt-item"></small>
+                <span id="outcome-prompt-definition"></span>
               </div>
               <div class="outcome-actions">
                 <button type="button" data-outcome-choice="yes">Yes</button>
@@ -198,8 +197,8 @@
               </div>
             </div>
 
-            <label class="session-note-label" for="observation-notes">Session note <span>optional</span></label>
-            <textarea id="observation-notes" class="session-note" rows="2" placeholder="Context or interruption…"></textarea>
+            <label class="session-note-label" for="observation-notes">Training note <span>optional</span></label>
+            <textarea id="observation-notes" class="session-note" rows="2" placeholder="Anything that affected your scoring…"></textarea>
           </section>
         </div>
       </section>
@@ -207,9 +206,9 @@
       <section id="review-view" hidden>
         <div class="page-heading compact-heading">
           <div>
-            <p class="eyebrow">30-minute observation complete</p>
+            <p class="eyebrow">Training clip complete</p>
             <h1>Finish & Review</h1>
-            <p>Student interval recording is locked. Resolve any fidelity items that were not scored during the observation.</p>
+            <p>The student interval record is locked. Resolve any teacher-fidelity items that were not scored while watching.</p>
           </div>
         </div>
 
@@ -217,12 +216,12 @@
           <article class="summary-card"><span>Teacher fidelity</span><strong id="summary-fidelity">—</strong><small id="summary-fidelity-detail"></small></article>
           <article class="summary-card"><span>Student target behavior</span><strong id="summary-student">—</strong><small id="summary-student-detail"></small></article>
           <article class="summary-card"><span>Observed intervals</span><strong id="summary-observed">—</strong><small id="summary-not-observed"></small></article>
-          <article class="summary-card"><span>Session duration</span><strong id="summary-duration">30:00</strong><small>fixed observation session</small></article>
+          <article class="summary-card"><span>Training clip</span><strong id="summary-duration">—</strong><small id="summary-case-name"></small></article>
         </div>
 
         <div id="review-warning" class="review-warning" hidden>
           <div>
-            <strong id="review-warning-title">Unresolved fidelity items</strong>
+            <strong>Unresolved fidelity items</strong>
             <p id="review-warning-text"></p>
           </div>
           <button id="mark-remaining-no-opportunity" class="secondary-button" type="button">Mark Remaining as No Opportunity</button>
@@ -234,40 +233,37 @@
         </article>
 
         <div class="review-actions">
-          <button id="return-fidelity" class="secondary-button" type="button">Review Fidelity</button>
-          <button id="submit-preview" class="primary-button" type="button">Submit & Lock Preview</button>
+          <button id="submit-preview" class="primary-button" type="button">Submit Training Attempt</button>
         </div>
       </section>
 
-      <section id="submitted-view" class="state-card observer-state" hidden>
-        <p class="eyebrow">Preview complete</p>
-        <h1>Observation Submitted</h1>
-        <p>This fictional preview was saved only in this browser. No research data were sent anywhere.</p>
-        <button id="reset-preview" class="primary-button" type="button">Start New Preview</button>
+      <section id="submitted-view" class="state-card observer-state submitted-state" hidden>
+        <p class="eyebrow">Training attempt complete</p>
+        <h1 id="submitted-title">Nora Training Complete</h1>
+        <p>This attempt is still local to this browser. The production training system will store each trained observer’s attempts securely and calculate agreement.</p>
+
+        <div class="training-score-card">
+          <div>
+            <span>Fidelity agreement to training key</span>
+            <strong id="training-fidelity-agreement">—</strong>
+            <small id="training-fidelity-agreement-detail"></small>
+          </div>
+          <div>
+            <span>Student interval agreement</span>
+            <strong id="training-interval-agreement">Key pending</strong>
+            <small>The interval-by-interval master key will be calibrated before this becomes a qualification score.</small>
+          </div>
+        </div>
+
+        <p class="training-note">This is the structure we can use for observer qualification: compare each practice attempt to a master-coded fidelity and interval record, then require your ≥85% criterion before independent collection.</p>
+
+        <div class="submitted-actions">
+          <button id="another-case" class="secondary-button" type="button">Choose Another Training Case</button>
+          <button id="reset-preview" class="primary-button" type="button">Repeat This Case</button>
+        </div>
       </section>
     </main>
   </div>
-
-  <dialog id="pause-dialog" class="pause-dialog">
-    <form method="dialog" id="pause-form">
-      <p class="eyebrow">Observation paused</p>
-      <h2>Why was the observation paused?</h2>
-      <label>Reason
-        <select id="pause-reason" required>
-          <option value="">Select a reason</option>
-          <option>Classroom routine paused</option>
-          <option>Student left the observation area</option>
-          <option>Observer interruption</option>
-          <option>Technical issue</option>
-          <option>Other</option>
-        </select>
-      </label>
-      <div class="dialog-actions">
-        <button id="cancel-pause" class="secondary-button" type="button">Resume without pause note</button>
-        <button class="primary-button" value="confirm" type="submit">Save Reason & Resume</button>
-      </div>
-    </form>
-  </dialog>
 
   <script type="module" src="observe.js"></script>
 </body>
