@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Observer Portal Preview | Mission: Reinforceable</title>
+  <link rel="icon" href="../favicon.png">
+  <link rel="stylesheet" href="../assets/site/site.css">
+  <link rel="stylesheet" href="observe.css">
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="nav-wrap observer-nav">
+        <a class="brand" href="../" aria-label="Mission: Reinforceable home">
+          <img class="brand-icon" src="../favicon.png" alt="">
+          <img class="brand-logo" src="../assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable">
+        </a>
+        <span class="private-badge">Observer Portal · Preview</span>
+      </div>
+    </header>
+
+    <main class="observer-main">
+      <aside class="preview-banner" role="note">
+        <strong>Fictional-data preview.</strong>
+        Nothing entered here is study data or written to Supabase. Add <code>?test=1</code> to the URL for a 60-second timer test.
+      </aside>
+
+      <section id="login-view" class="state-card observer-state">
+        <p class="eyebrow">Secure observer access</p>
+        <h1>Observer Sign In</h1>
+        <p>The production version will authenticate each trained observer before showing assigned observations.</p>
+        <form id="preview-login-form" class="login-form">
+          <label>Preview observer
+            <input name="observer" value="Test Observer" required>
+          </label>
+          <label>Preview role
+            <select name="role">
+              <option value="primary">Primary observer</option>
+              <option value="secondary">IOA observer</option>
+            </select>
+          </label>
+          <button class="primary-button" type="submit">Enter Fictional Preview</button>
+        </form>
+      </section>
+
+      <section id="assignment-view" hidden>
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Assigned observation</p>
+            <h1>Today's Observation</h1>
+          </div>
+          <button class="text-button" id="preview-sign-out" type="button">Leave preview</button>
+        </div>
+
+        <article class="assignment-card">
+          <div class="assignment-top">
+            <div>
+              <span class="status-pill">Ready</span>
+              <h2>MR-TEST-01</h2>
+              <p>Fictional dyad · Independent math</p>
+            </div>
+            <div class="assignment-time">
+              <strong>30:00</strong>
+              <span>planned observation</span>
+            </div>
+          </div>
+          <dl class="assignment-details">
+            <div><dt>Observer</dt><dd id="assignment-observer">Test Observer</dd></div>
+            <div><dt>Role</dt><dd id="assignment-role">Primary observer</dd></div>
+            <div><dt>Date</dt><dd id="assignment-date"></dd></div>
+            <div><dt>Method</dt><dd>15-s partial interval + fidelity checklist</dd></div>
+          </dl>
+          <button id="open-ready" class="primary-button wide-button" type="button">Open Observation</button>
+        </article>
+      </section>
+
+      <section id="ready-view" hidden>
+        <button class="back-button" id="back-assignment" type="button">← Today's observation</button>
+        <div class="page-heading compact-heading">
+          <div>
+            <p class="eyebrow">Get ready</p>
+            <h1>MR-TEST-01</h1>
+            <p>Review the definitions before starting the 30-minute observation.</p>
+          </div>
+        </div>
+
+        <div class="ready-grid">
+          <article class="panel ready-card">
+            <span class="card-label">Target routine</span>
+            <h2>Independent math</h2>
+            <p>Observe the naturally occurring independent-math routine for the full session.</p>
+          </article>
+          <article class="panel ready-card">
+            <span class="card-label">Student target behavior</span>
+            <h2>Work refusal</h2>
+            <p>Pushing materials away, laying head down, or saying “I’m not doing this” following presentation of independent math tasks.</p>
+          </article>
+          <article class="panel ready-card full-card">
+            <span class="card-label">Replacement behavior</span>
+            <h2>Request a break or help</h2>
+            <p>The student requests a break or help using the predetermined signal.</p>
+          </article>
+        </div>
+
+        <article class="protocol-card">
+          <h2>Observation procedure</h2>
+          <div class="protocol-steps">
+            <div><strong>30 minutes</strong><span>fixed session length</span></div>
+            <div><strong>15 seconds</strong><span>partial-interval student recording</span></div>
+            <div><strong>120</strong><span>student-behavior intervals</span></div>
+            <div><strong>3 choices</strong><span>per fidelity item</span></div>
+          </div>
+          <p class="small-note">The interval timer will prompt automatically. If no student-behavior choice is made during an observed interval, the preview records “Did not occur.” Mark “Not observed” whenever you could not observe the student for that interval.</p>
+        </article>
+
+        <button id="start-observation" class="primary-button start-button" type="button">Start 30-Minute Observation</button>
+      </section>
+
+      <section id="active-view" hidden>
+        <div class="timer-shell">
+          <div class="timer-primary">
+            <span>Elapsed</span>
+            <strong id="elapsed-clock">00:00</strong>
+          </div>
+          <div class="timer-secondary">
+            <div><span>Remaining</span><strong id="remaining-clock">30:00</strong></div>
+            <div><span>Interval</span><strong><span id="interval-number">1</span> / <span id="interval-total">120</span></strong></div>
+            <div><span>Next prompt</span><strong id="interval-clock">00:15</strong></div>
+          </div>
+          <button id="pause-observation" class="quiet-button" type="button">Pause</button>
+        </div>
+
+        <div id="test-mode-badge" class="test-mode-badge" hidden>TEST TIMER MODE</div>
+
+        <div class="observation-tabs" role="tablist" aria-label="Observation data">
+          <button class="tab-button active" id="behavior-tab" data-panel="behavior-panel" role="tab" aria-selected="true">Student Behavior</button>
+          <button class="tab-button" id="fidelity-tab" data-panel="fidelity-panel" role="tab" aria-selected="false">Teacher Fidelity <span id="fidelity-progress">0/9</span></button>
+        </div>
+
+        <section id="behavior-panel" class="observation-panel" role="tabpanel">
+          <article class="behavior-card">
+            <div>
+              <p class="eyebrow">Current interval</p>
+              <h2>Did the target behavior occur at any point?</h2>
+              <p class="target-definition"><strong>Work refusal:</strong> pushing materials away, laying head down, or saying “I’m not doing this.”</p>
+            </div>
+            <div class="behavior-actions" role="group" aria-label="Student behavior interval score">
+              <button class="behavior-button occurred" data-interval-score="occurred" type="button">Target Occurred</button>
+              <button class="behavior-button no-occurrence" data-interval-score="did_not_occur" type="button">Did Not Occur</button>
+              <button class="behavior-button not-observed" data-interval-score="not_observed" type="button">Not Observed</button>
+            </div>
+            <p id="current-interval-status" class="interval-status">No mark yet — this interval will default to Did Not Occur.</p>
+          </article>
+
+          <article class="interval-progress-card">
+            <div class="section-line">
+              <div><p class="eyebrow">Interval record</p><h2>Session Progress</h2></div>
+              <div class="live-counts"><span><strong id="occurred-count">0</strong> occurred</span><span><strong id="not-observed-count">0</strong> not observed</span></div>
+            </div>
+            <div id="interval-grid" class="interval-grid" aria-label="Interval progress"></div>
+          </article>
+        </section>
+
+        <section id="fidelity-panel" class="observation-panel" role="tabpanel" hidden>
+          <div class="section-line">
+            <div><p class="eyebrow">Teacher implementation</p><h2>Individualized Fidelity Checklist</h2></div>
+            <p class="panel-helper">Score each item across the full routine.</p>
+          </div>
+          <div id="fidelity-list" class="fidelity-list"></div>
+        </section>
+
+        <article class="notes-card">
+          <label for="observation-notes"><strong>Observation notes</strong> <span>optional</span></label>
+          <textarea id="observation-notes" rows="3" placeholder="Context, interruptions, schedule changes, or other relevant notes…"></textarea>
+        </article>
+      </section>
+
+      <section id="review-view" hidden>
+        <div class="page-heading compact-heading">
+          <div><p class="eyebrow">Observation complete</p><h1>Review Before Submit</h1><p>Check the session summary before locking the fictional record.</p></div>
+        </div>
+
+        <div class="summary-grid">
+          <article class="summary-card"><span>Teacher fidelity</span><strong id="summary-fidelity">—</strong><small id="summary-fidelity-detail"></small></article>
+          <article class="summary-card"><span>Student target behavior</span><strong id="summary-student">—</strong><small id="summary-student-detail"></small></article>
+          <article class="summary-card"><span>Observed intervals</span><strong id="summary-observed">—</strong><small id="summary-not-observed"></small></article>
+          <article class="summary-card"><span>Session duration</span><strong id="summary-duration">30:00</strong><small>fixed observation session</small></article>
+        </div>
+
+        <div id="review-warning" class="review-warning" hidden></div>
+
+        <article class="review-card">
+          <h2>Fidelity responses</h2>
+          <div id="review-fidelity"></div>
+        </article>
+
+        <div class="review-actions">
+          <button id="return-fidelity" class="secondary-button" type="button">Review Fidelity Items</button>
+          <button id="submit-preview" class="primary-button" type="button">Submit & Lock Preview</button>
+        </div>
+      </section>
+
+      <section id="submitted-view" class="state-card observer-state" hidden>
+        <p class="eyebrow">Preview complete</p>
+        <h1>Observation Submitted</h1>
+        <p>This fictional preview was saved only in this browser. No research data were sent anywhere.</p>
+        <button id="reset-preview" class="primary-button" type="button">Start New Preview</button>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="pause-dialog" class="pause-dialog">
+    <form method="dialog" id="pause-form">
+      <p class="eyebrow">Observation paused</p>
+      <h2>Why was the observation paused?</h2>
+      <label>Reason
+        <select id="pause-reason" required>
+          <option value="">Select a reason</option>
+          <option>Student left the observation area</option>
+          <option>Classroom interruption</option>
+          <option>Observer interruption</option>
+          <option>Technical issue</option>
+          <option>Other</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button id="cancel-pause" class="secondary-button" type="button">Resume without pause note</button>
+        <button class="primary-button" value="confirm" type="submit">Save Reason & Resume</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="observe.js"></script>
+</body>
+</html>
