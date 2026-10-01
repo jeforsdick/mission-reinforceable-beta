@@ -1,140 +1,72 @@
 import {
-  REAL_SESSION,
-  TEST_SESSION,
   calculateFidelity,
   calculateStudentBehavior,
   formatClock
 } from "./observation-model.mjs";
+import {
+  TRAINING_CASES,
+  getTrainingCase,
+  intervalCountForDuration
+} from "./training-cases.mjs";
 
-const params = new URLSearchParams(window.location.search);
-const TEST_MODE = params.get("test") === "1";
-const SESSION = TEST_MODE ? TEST_SESSION : REAL_SESSION;
-const STORAGE_KEY = "mr-observe-preview-v3";
-
-const FIDELITY_GROUPS = [
-  {
-    label: "Prevent Strategies",
-    items: [
-      {
-        id: "prevent_01",
-        short: "Pre-correct before math",
-        detail: "State expectations and available support options before independent math.",
-        full: "Prior to independent math, pre-correct the student by verbally stating task expectations and available support options (for example, remind the student that a break card or help request is available)."
-      },
-      {
-        id: "prevent_02",
-        short: "Modified task provided",
-        detail: "Match task amount/difficulty to current skill level.",
-        full: "Provide a modified task or reduce the number of problems presented during independent work to match the student’s current skill level."
-      },
-      {
-        id: "prevent_03",
-        short: "Attention within first 2 min",
-        detail: "Brief positive interaction before problem behavior.",
-        full: "Deliver noncontingent attention or a brief positive interaction within the first 2 minutes of the independent-work period before problem behavior can occur."
-      }
-    ]
-  },
-  {
-    label: "Teach Strategies",
-    items: [
-      {
-        id: "teach_01",
-        short: "Prompt break request",
-        detail: "Prompt card/use when early frustration appears.",
-        full: "When the student begins to show early signs of frustration, prompt the student to use the break request card by pointing to it or verbally cueing its use."
-      },
-      {
-        id: "teach_02",
-        short: "Model/practice break request",
-        detail: "At least one brief practice trial before independent work.",
-        full: "Explicitly model and practice the break-request procedure at the start of the observation session, with at least one brief practice trial before independent work begins."
-      },
-      {
-        id: "teach_03",
-        short: "Acknowledge appropriate request",
-        detail: "Specific acknowledgment within 5 seconds.",
-        full: "Provide specific behavior-contingent acknowledgment within 5 seconds when the student uses the replacement behavior."
-      }
-    ]
-  },
-  {
-    label: "Reinforce Strategies",
-    items: [
-      {
-        id: "reinforce_01",
-        short: "Honor break/help request",
-        detail: "Within 5 seconds; 2-minute break before return.",
-        full: "Honor appropriate break or help requests within 5 seconds and provide a 2-minute break before returning the student to the task."
-      },
-      {
-        id: "reinforce_02",
-        short: "Respond to refusal as written",
-        detail: "Neutral redirect; no extended engagement/removal.",
-        full: "Following work refusal, withhold escape from the task and redirect the student using a neutral tone without extended verbal engagement or removal of materials."
-      },
-      {
-        id: "reinforce_03",
-        short: "Specific praise ≥3 times",
-        detail: "Praise contingent on engagement/task completion.",
-        full: "Deliver specific praise contingent on task engagement or task completion at least 3 times during the 30-minute observation."
-      }
-    ]
-  }
-];
-
-const ALL_FIDELITY_ITEMS = FIDELITY_GROUPS.flatMap((group) => group.items);
-const ITEM_BY_ID = Object.fromEntries(ALL_FIDELITY_ITEMS.map((item) => [item.id, item]));
+const INTERVAL_SECONDS = 15;
+const STORAGE_KEY = "mr-observe-training-preview-v4";
 
 const ids = [
   "login-view","assignment-view","ready-view","active-view","review-view","submitted-view",
-  "preview-login-form","preview-sign-out","assignment-observer","assignment-role","assignment-date",
-  "open-ready","back-assignment","start-observation","preflight-fidelity-list",
-  "elapsed-clock","remaining-clock","interval-number","interval-total","interval-clock",
-  "pause-observation","test-mode-badge","target-occurred","continuing-toggle","observable-toggle",
-  "current-interval-status","fidelity-progress","occurred-count","not-observed-count","interval-grid",
-  "fidelity-list","outcome-prompt","outcome-prompt-label","outcome-prompt-item","observation-notes",
-  "summary-fidelity","summary-fidelity-detail","summary-student","summary-student-detail","summary-observed",
-  "summary-not-observed","summary-duration","review-warning","review-warning-title","review-warning-text",
-  "mark-remaining-no-opportunity","review-fidelity","return-fidelity","submit-preview","reset-preview",
-  "pause-dialog","pause-form","pause-reason","cancel-pause"
+  "preview-login-form","preview-sign-out","training-case-list","back-assignment","start-observation",
+  "ready-case-title","ready-case-source","ready-duration","ready-routine","ready-behavior-name",
+  "ready-behavior-definition","ready-replacement","ready-hypothesis","bip-prevent","bip-teach",
+  "bip-reinforce","bip-respond","preflight-fidelity-list","active-behavior-name","active-behavior-definition",
+  "active-case-chip","video-loading","elapsed-clock","interval-number","interval-total","interval-clock",
+  "target-occurred","continuing-toggle","observable-toggle","current-interval-status",
+  "occurred-count","not-observed-count","interval-grid","fidelity-progress","fidelity-list",
+  "outcome-prompt","outcome-prompt-item","outcome-prompt-definition","observation-notes",
+  "summary-fidelity","summary-fidelity-detail","summary-student","summary-student-detail",
+  "summary-observed","summary-not-observed","summary-duration","summary-case-name",
+  "review-warning","review-warning-text","mark-remaining-no-opportunity","review-fidelity",
+  "submit-preview","submitted-title","training-fidelity-agreement","training-fidelity-agreement-detail",
+  "training-interval-agreement","another-case","reset-preview"
 ];
 const els = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
 let state = loadState();
+let player = null;
+let playerReady = false;
+let playerCaseId = null;
+let youtubeApiPromise = null;
 let timerHandle = null;
 let lastPromptedInterval = -1;
-let audioContext = null;
 let pendingOutcomeItemId = null;
+let audioContext = null;
+let videoIsPlaying = false;
 
 function newBaseState(observer, role) {
   return {
-    version: 3,
+    version: 4,
     observer: observer.trim() || "Test Observer",
     role,
     status: "assignment",
-    caseCode: "MR-TEST-01",
-    sessionMode: TEST_MODE ? "test" : "real",
+    caseId: null,
     intervals: [],
     fidelityScores: {},
     fidelityOutcomes: {},
     notes: "",
-    startedAt: null,
-    completedAt: null,
-    pausedTotalMs: 0,
-    pauseStartedAt: null,
-    pauses: [],
+    videoTime: 0,
     continuingBehavior: false,
-    studentUnobservable: false
+    studentUnobservable: false,
+    submittedAt: null
   };
 }
 
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (!parsed || parsed.version !== 3) return null;
-    if ((parsed.sessionMode === "test") !== TEST_MODE) return null;
+    if (!parsed || parsed.version !== 4) return null;
+    parsed.fidelityScores ||= {};
     parsed.fidelityOutcomes ||= {};
+    parsed.intervals ||= [];
+    parsed.videoTime ||= 0;
     parsed.continuingBehavior ||= false;
     parsed.studentUnobservable ||= false;
     return parsed;
@@ -152,61 +84,193 @@ function clearState() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+function currentCase() {
+  return state?.caseId ? getTrainingCase(state.caseId) : null;
+}
+
+function caseIntervalCount(caseData = currentCase()) {
+  return caseData ? intervalCountForDuration(caseData.videoDurationSeconds, INTERVAL_SECONDS) : 0;
+}
+
+function allViews() {
+  return ["login-view","assignment-view","ready-view","active-view","review-view","submitted-view"];
+}
+
 function hideAllViews() {
-  ["login-view","assignment-view","ready-view","active-view","review-view","submitted-view"]
-    .forEach((id) => { els[id].hidden = true; });
-}
-
-function roleLabel(role) {
-  return role === "secondary" ? "IOA observer" : "Primary observer";
-}
-
-function todayLabel() {
-  return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "long", day: "numeric" }).format(new Date());
+  allViews().forEach((id) => { els[id].hidden = true; });
 }
 
 function showLogin() {
   stopTimer();
+  pausePlayer();
   hideAllViews();
   els["login-view"].hidden = false;
 }
 
-function showAssignment() {
-  stopTimer();
-  hideAllViews();
-  els["assignment-view"].hidden = false;
-  els["assignment-observer"].textContent = state.observer;
-  els["assignment-role"].textContent = roleLabel(state.role);
-  els["assignment-date"].textContent = todayLabel();
+function caseCard(caseData) {
+  return `
+    <article class="training-case-card">
+      <div class="case-top">
+        <div>
+          <p class="eyebrow">IRIS staged practice</p>
+          <h2>${caseData.title}</h2>
+          <p>${caseData.routine}</p>
+        </div>
+        <span class="case-duration">${formatClock(caseData.videoDurationSeconds)}</span>
+      </div>
+      <div class="case-meta">
+        <div><strong>Student behavior</strong><span>${caseData.behaviorName}</span></div>
+        <div><strong>Teacher fidelity</strong><span>${caseData.fidelityTargets.length} individualized targets</span></div>
+        <div><strong>Replacement</strong><span>${caseData.replacement}</span></div>
+      </div>
+      <button class="case-select-button" type="button" data-case-id="${caseData.id}">Use ${caseData.name} Training Case</button>
+    </article>
+  `;
 }
 
-function renderPreflight() {
-  els["preflight-fidelity-list"].innerHTML = FIDELITY_GROUPS.map((group) =>
-    group.items.map((item) =>
-      `<div class="preflight-item"><strong>${group.label.replace(" Strategies","")}</strong>${item.full}</div>`
-    ).join("")
-  ).join("");
+function renderTrainingCases() {
+  els["training-case-list"].innerHTML = Object.values(TRAINING_CASES).map(caseCard).join("");
+}
+
+function showAssignment() {
+  stopTimer();
+  pausePlayer();
+  hideAllViews();
+  renderTrainingCases();
+  els["assignment-view"].hidden = false;
+}
+
+function renderReady(caseData) {
+  els["ready-case-title"].textContent = `${caseData.name}: Know What You’re Watching For`;
+  els["ready-case-source"].innerHTML = `${caseData.sourceLabel} · <a href="${caseData.sourceUrl}" target="_blank" rel="noopener">view source context</a>`;
+  els["ready-duration"].textContent = formatClock(caseData.videoDurationSeconds);
+  els["ready-routine"].textContent = caseData.routine;
+  els["ready-behavior-name"].textContent = caseData.behaviorName;
+  els["ready-behavior-definition"].textContent = caseData.behaviorDefinition;
+  els["ready-replacement"].textContent = caseData.replacement;
+  els["ready-hypothesis"].textContent = caseData.hypothesis;
+  els["bip-prevent"].textContent = caseData.bip.prevent;
+  els["bip-teach"].textContent = caseData.bip.teach;
+  els["bip-reinforce"].textContent = caseData.bip.reinforce;
+  els["bip-respond"].textContent = caseData.bip.respond;
+  els["preflight-fidelity-list"].innerHTML = caseData.fidelityTargets.map((item, index) => `
+    <div class="preflight-item">
+      <span>${item.area}</span>
+      <strong>${index + 1}. ${item.short}</strong>
+      ${item.detail}
+    </div>
+  `).join("");
 }
 
 function showReady() {
+  const caseData = currentCase();
+  if (!caseData) return showAssignment();
   stopTimer();
+  pausePlayer();
   hideAllViews();
+  renderReady(caseData);
   els["ready-view"].hidden = false;
-  renderPreflight();
-  els["start-observation"].textContent = TEST_MODE ? "Start 60-Second Timer Test" : "Start 30-Minute Observation";
 }
 
-function elapsedMs() {
-  if (!state?.startedAt) return 0;
-  const end = state.status === "paused" && state.pauseStartedAt ? state.pauseStartedAt : Date.now();
-  return Math.max(0, end - state.startedAt - (state.pausedTotalMs || 0));
+function loadYouTubeApi() {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (youtubeApiPromise) return youtubeApiPromise;
+
+  youtubeApiPromise = new Promise((resolve, reject) => {
+    const previous = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      if (typeof previous === "function") previous();
+      resolve(window.YT);
+    };
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.onerror = () => reject(new Error("Could not load YouTube player."));
+    document.head.appendChild(script);
+  });
+  return youtubeApiPromise;
+}
+
+async function mountPlayer(caseData) {
+  els["video-loading"].hidden = false;
+  try {
+    await loadYouTubeApi();
+
+    if (player && playerReady) {
+      if (playerCaseId !== caseData.id) {
+        player.cueVideoById(caseData.videoId);
+        playerCaseId = caseData.id;
+      }
+      if (state.videoTime > 0) player.seekTo(state.videoTime, true);
+      els["video-loading"].hidden = true;
+      return;
+    }
+
+    playerCaseId = caseData.id;
+    player = new window.YT.Player("training-player", {
+      width: "100%",
+      height: "100%",
+      videoId: caseData.videoId,
+      playerVars: {
+        playsinline: 1,
+        rel: 0,
+        modestbranding: 1
+      },
+      events: {
+        onReady(event) {
+          playerReady = true;
+          els["video-loading"].hidden = true;
+          if (state.videoTime > 0) event.target.seekTo(state.videoTime, true);
+          renderTimer();
+        },
+        onStateChange(event) {
+          if (!window.YT) return;
+          if (event.data === window.YT.PlayerState.PLAYING) {
+            videoIsPlaying = true;
+            if (state.status === "armed") state.status = "running";
+            saveState();
+            startTimer();
+          } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.BUFFERING) {
+            videoIsPlaying = false;
+            stopTimer();
+            renderTimer();
+          } else if (event.data === window.YT.PlayerState.ENDED) {
+            videoIsPlaying = false;
+            completeObservation();
+          }
+        }
+      }
+    });
+  } catch {
+    els["video-loading"].textContent = "Could not load the embedded video. Open the source video in another tab and retry.";
+  }
+}
+
+function pausePlayer() {
+  try {
+    if (playerReady && player?.pauseVideo) player.pauseVideo();
+  } catch {}
+  videoIsPlaying = false;
+}
+
+function getVideoTime() {
+  try {
+    if (playerReady && player?.getCurrentTime) {
+      const time = Number(player.getCurrentTime());
+      if (Number.isFinite(time)) return time;
+    }
+  } catch {}
+  return Number(state?.videoTime || 0);
 }
 
 function currentIntervalIndex() {
-  return Math.min(SESSION.intervalCount - 1, Math.floor(elapsedMs() / (SESSION.intervalSeconds * 1000)));
+  const caseData = currentCase();
+  const count = caseIntervalCount(caseData);
+  if (!count) return 0;
+  const time = Math.min(getVideoTime(), caseData.videoDurationSeconds);
+  return Math.min(count - 1, Math.floor(time / INTERVAL_SECONDS));
 }
 
-function automaticScoreForCurrentMode() {
+function automaticScoreForMode() {
   if (state.studentUnobservable) return "not_observed";
   if (state.continuingBehavior) return "occurred";
   return "did_not_occur";
@@ -221,21 +285,20 @@ function advanceIntervalsTo(activeIndex) {
   }
   if (activeIndex <= lastPromptedInterval) return;
 
-  const fallback = automaticScoreForCurrentMode();
   for (let index = lastPromptedInterval; index < activeIndex; index += 1) {
-    if (!state.intervals[index]) state.intervals[index] = fallback;
+    if (!state.intervals[index]) state.intervals[index] = automaticScoreForMode();
   }
   if (state.studentUnobservable) state.intervals[activeIndex] = "not_observed";
   else if (state.continuingBehavior) state.intervals[activeIndex] = "occurred";
 
-  beep();
   lastPromptedInterval = activeIndex;
+  beep();
   saveState();
 }
 
 function finalizeIntervals() {
-  for (let index = 0; index < SESSION.intervalCount; index += 1) {
-    if (!state.intervals[index]) state.intervals[index] = automaticScoreForCurrentMode();
+  for (let index = 0; index < state.intervals.length; index += 1) {
+    if (!state.intervals[index]) state.intervals[index] = automaticScoreForMode();
   }
 }
 
@@ -254,7 +317,7 @@ function beep() {
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
     oscillator.frequency.value = 740;
-    gain.gain.setValueAtTime(0.04, audioContext.currentTime);
+    gain.gain.setValueAtTime(0.038, audioContext.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.07);
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
@@ -267,63 +330,67 @@ function beep() {
 function renderIntervalGrid(activeIndex) {
   els["interval-grid"].innerHTML = "";
   const fragment = document.createDocumentFragment();
-  for (let index = 0; index < SESSION.intervalCount; index += 1) {
-    const value = state.intervals[index];
+  state.intervals.forEach((value, index) => {
     const cell = document.createElement("span");
     cell.className = "interval-cell";
     if (value) cell.classList.add(value);
     else if (index > activeIndex) cell.classList.add("future");
     if (index === activeIndex && state.status === "running") cell.classList.add("current");
-    cell.title = `Interval ${index + 1}: ${value ? value.replaceAll("_", " ") : index === activeIndex ? "current" : "not yet scored"}`;
+    cell.title = `Interval ${index + 1}: ${value ? value.replaceAll("_"," ") : index === activeIndex ? "current" : "not yet scored"}`;
     fragment.appendChild(cell);
-  }
+  });
   els["interval-grid"].appendChild(fragment);
 }
 
 function renderModeButtons() {
-  const continuing = Boolean(state.continuingBehavior);
-  const unobservable = Boolean(state.studentUnobservable);
-  els["continuing-toggle"].setAttribute("aria-pressed", String(continuing));
-  els["observable-toggle"].setAttribute("aria-pressed", String(unobservable));
-  els["continuing-toggle"].querySelector("strong").textContent = continuing ? "↔ Continuing — tap when stopped" : "↔ Behavior continuing";
-  els["observable-toggle"].querySelector("strong").textContent = unobservable ? "👁 Student observable again" : "👁 Not observable";
+  els["continuing-toggle"].setAttribute("aria-pressed", String(Boolean(state.continuingBehavior)));
+  els["observable-toggle"].setAttribute("aria-pressed", String(Boolean(state.studentUnobservable)));
+  els["continuing-toggle"].querySelector("strong").textContent = state.continuingBehavior ? "↔ Continuing — tap when stopped" : "↔ Behavior continuing";
+  els["observable-toggle"].querySelector("strong").textContent = state.studentUnobservable ? "👁 Student observable again" : "👁 Not observable";
 }
 
 function intervalStatusText(index) {
-  const value = state.intervals[index];
+  if (state.status === "armed") return "Press play. The observation clock follows the training video.";
+  if (!videoIsPlaying && state.status === "running") return "Video paused. Scoring controls are paused with it.";
   if (state.studentUnobservable) return "Not observable is ON. Current/new intervals are excluded until you turn it off.";
   if (state.continuingBehavior) return "Behavior continuing is ON. New intervals are automatically marked as occurrences.";
-  if (value === "occurred") return "Target behavior marked for this interval. Keep watching.";
+  if (state.intervals[index] === "occurred") return "Target behavior marked for this interval. Keep watching.";
   return "No target behavior marked. No action needed if it does not occur.";
 }
 
 function renderTimer() {
-  const elapsedSeconds = Math.min(SESSION.durationSeconds, elapsedMs() / 1000);
-  const remainingSeconds = Math.max(0, SESSION.durationSeconds - elapsedSeconds);
-  const index = currentIntervalIndex();
-  const intervalElapsed = elapsedSeconds % SESSION.intervalSeconds;
-  const intervalRemaining = remainingSeconds <= 0 ? 0 : Math.max(0, SESSION.intervalSeconds - intervalElapsed);
+  const caseData = currentCase();
+  if (!caseData) return;
+  const duration = caseData.videoDurationSeconds;
+  const time = Math.max(0, Math.min(getVideoTime(), duration));
+  state.videoTime = time;
 
-  els["elapsed-clock"].textContent = formatClock(elapsedSeconds);
-  els["remaining-clock"].textContent = formatClock(remainingSeconds);
-  els["interval-number"].textContent = String(Math.min(index + 1, SESSION.intervalCount));
-  els["interval-total"].textContent = String(SESSION.intervalCount);
-  els["interval-clock"].textContent = formatClock(Math.ceil(intervalRemaining));
-  els["summary-duration"].textContent = formatClock(SESSION.durationSeconds);
+  const count = caseIntervalCount(caseData);
+  const index = currentIntervalIndex();
+  const withinInterval = time % INTERVAL_SECONDS;
+  const nextBoundary = Math.min(INTERVAL_SECONDS - withinInterval, Math.max(0, duration - time));
 
   if (state.status === "running") advanceIntervalsTo(index);
 
-  const value = state.intervals[index];
-  els["target-occurred"].classList.toggle("marked", value === "occurred");
+  els["elapsed-clock"].textContent = formatClock(time);
+  els["interval-number"].textContent = String(index + 1);
+  els["interval-total"].textContent = String(count);
+  els["interval-clock"].textContent = formatClock(Math.ceil(nextBoundary));
+
+  els["target-occurred"].classList.toggle("marked", state.intervals[index] === "occurred");
   els["current-interval-status"].textContent = intervalStatusText(index);
   renderModeButtons();
 
-  const behaviorSummary = calculateStudentBehavior(state.intervals);
-  els["occurred-count"].textContent = String(behaviorSummary.occurred);
-  els["not-observed-count"].textContent = String(behaviorSummary.notObserved);
-  renderIntervalGrid(index);
+  const canScoreStudent = state.status === "running" && videoIsPlaying;
+  els["target-occurred"].disabled = !canScoreStudent || state.studentUnobservable;
+  els["continuing-toggle"].disabled = !canScoreStudent || state.studentUnobservable;
+  els["observable-toggle"].disabled = !canScoreStudent;
 
-  if (elapsedSeconds >= SESSION.durationSeconds && state.status === "running") completeObservation();
+  const summary = calculateStudentBehavior(state.intervals);
+  els["occurred-count"].textContent = String(summary.occurred);
+  els["not-observed-count"].textContent = String(summary.notObserved);
+  renderIntervalGrid(index);
+  saveState();
 }
 
 function startTimer() {
@@ -337,40 +404,32 @@ function stopTimer() {
   timerHandle = null;
 }
 
+function fidelityTargets() {
+  return currentCase()?.fidelityTargets || [];
+}
+
 function renderFidelity() {
-  els["fidelity-list"].innerHTML = FIDELITY_GROUPS.map((group) => {
-    const rows = group.items.map((item) => {
-      const score = state.fidelityScores[item.id] || "";
-      const outcome = state.fidelityOutcomes[item.id] || "";
-      const outcomeLabel = outcome === "yes" ? "Outcome: Yes" : outcome === "no" ? "Outcome: No" : outcome === "unclear" ? "Outcome: Not clear" : "";
-      return `
-        <div class="compact-row" data-fidelity-row="${item.id}">
-          <div class="compact-label" title="${item.full.replaceAll('"',"&quot;")}">
-            <strong>${item.short}</strong>
-            <small>${item.detail}</small>
-            ${outcomeLabel ? `<button type="button" class="outcome-badge" data-outcome-edit="${item.id}">${outcomeLabel}</button>` : ""}
-          </div>
-          <button type="button" class="fidelity-choice ${score === "implemented" ? "selected" : ""}" data-fidelity-choice="${item.id}" data-score="implemented">Implemented as Written</button>
-          <button type="button" class="fidelity-choice not-implemented ${score === "not_implemented" ? "selected" : ""}" data-fidelity-choice="${item.id}" data-score="not_implemented">Not Implemented as Written</button>
+  const targets = fidelityTargets();
+  els["fidelity-list"].innerHTML = targets.map((item, index) => {
+    const score = state.fidelityScores[item.id] || "";
+    const outcome = state.fidelityOutcomes[item.id] || "";
+    const outcomeLabel = outcome === "yes" ? "Outcome: Yes" : outcome === "no" ? "Outcome: No" : outcome === "unclear" ? "Outcome: Not clear" : "";
+    return `
+      <div class="training-fidelity-row">
+        <div class="training-fidelity-copy" title="${item.full.replaceAll('"',"&quot;")}">
+          <span class="target-area">${item.area}</span>
+          <strong>${index + 1}. ${item.short}</strong>
+          <small>${item.detail}</small>
+          ${outcomeLabel ? `<button class="outcome-badge" type="button" data-outcome-edit="${item.id}">${outcomeLabel}</button>` : ""}
         </div>
-      `;
-    }).join("");
-    return `<section class="compact-group"><h3>${group.label}</h3>${rows}</section>`;
+        <button type="button" class="fidelity-choice ${score === "implemented" ? "selected" : ""}" data-fidelity-choice="${item.id}" data-score="implemented">Implemented<br>as Written</button>
+        <button type="button" class="fidelity-choice not-implemented ${score === "not_implemented" ? "selected" : ""}" data-fidelity-choice="${item.id}" data-score="not_implemented">Not Implemented<br>as Written</button>
+      </div>
+    `;
   }).join("");
-  renderFidelityProgress();
-}
 
-function renderFidelityProgress() {
-  const scored = ALL_FIDELITY_ITEMS.filter((item) => Boolean(state.fidelityScores[item.id])).length;
-  els["fidelity-progress"].textContent = `${scored}/${ALL_FIDELITY_ITEMS.length}`;
-}
-
-function showOutcomePrompt(itemId) {
-  const item = ITEM_BY_ID[itemId];
-  if (!item) return;
-  pendingOutcomeItemId = itemId;
-  els["outcome-prompt-item"].textContent = item.short;
-  els["outcome-prompt"].hidden = false;
+  const scored = targets.filter((item) => Boolean(state.fidelityScores[item.id])).length;
+  els["fidelity-progress"].textContent = `${scored}/${targets.length}`;
 }
 
 function hideOutcomePrompt() {
@@ -378,150 +437,18 @@ function hideOutcomePrompt() {
   els["outcome-prompt"].hidden = true;
 }
 
-function showActive() {
-  hideAllViews();
-  els["active-view"].hidden = false;
-  els["test-mode-badge"].hidden = !TEST_MODE;
-  els["observation-notes"].value = state.notes || "";
-  renderFidelity();
-  hideOutcomePrompt();
-
-  const editingCompleted = state.status === "review_edit";
-  els["pause-observation"].textContent = editingCompleted ? "Back to Review" : state.status === "paused" ? "Paused" : "Pause";
-  els["pause-observation"].disabled = state.status === "paused";
-
-  [els["target-occurred"], els["continuing-toggle"], els["observable-toggle"]].forEach((button) => {
-    button.disabled = editingCompleted || state.status === "paused";
-  });
-
-  if (editingCompleted) {
-    renderTimer();
-    els["current-interval-status"].textContent = "Student interval recording is complete and locked. Finish fidelity scoring.";
-    stopTimer();
-  } else if (state.status === "running") {
-    lastPromptedInterval = currentIntervalIndex();
-    if (state.studentUnobservable) state.intervals[lastPromptedInterval] = "not_observed";
-    else if (state.continuingBehavior) state.intervals[lastPromptedInterval] = "occurred";
-    saveState();
-    startTimer();
-  } else if (state.status === "paused") {
-    renderTimer();
-    stopTimer();
-    setTimeout(() => {
-      if (!els["pause-dialog"].open) els["pause-dialog"].showModal();
-    }, 0);
-  }
-}
-
-function completeObservation() {
-  stopTimer();
-  finalizeIntervals();
-  state.continuingBehavior = false;
-  state.studentUnobservable = false;
-  state.status = "review";
-  state.completedAt = Date.now();
-  saveState();
-  beep();
-  showReview();
-}
-
-function percentLabel(value) {
-  if (value == null || Number.isNaN(value)) return "—";
-  const rounded = Math.round(value * 10) / 10;
-  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
-}
-
-function missingFidelityItems() {
-  return ALL_FIDELITY_ITEMS.filter((item) => !state.fidelityScores[item.id]);
-}
-
-function showReview() {
-  stopTimer();
-  hideAllViews();
-  els["review-view"].hidden = false;
-
-  const fidelity = calculateFidelity(state.fidelityScores);
-  const student = calculateStudentBehavior(state.intervals);
-  const missing = missingFidelityItems();
-
-  els["summary-fidelity"].textContent = percentLabel(fidelity.percent);
-  els["summary-fidelity-detail"].textContent = `${fidelity.implemented} implemented / ${fidelity.scoreable} scoreable; ${fidelity.noOpportunity} no opportunity`;
-  els["summary-student"].textContent = percentLabel(student.percent);
-  els["summary-student-detail"].textContent = `${student.occurred} occurrence intervals / ${student.observed} observed`;
-  els["summary-observed"].textContent = String(student.observed);
-  els["summary-not-observed"].textContent = `${student.notObserved} not observed`;
-  els["summary-duration"].textContent = formatClock(SESSION.durationSeconds);
-
-  els["review-warning"].hidden = missing.length === 0;
-  els["review-warning-text"].textContent = missing.length
-    ? `${missing.length} item${missing.length === 1 ? " was" : "s were"} not scored during the observation. Confirm they had no opportunity, or review the fidelity checklist individually.`
-    : "";
-  els["submit-preview"].disabled = missing.length > 0;
-
-  els["review-fidelity"].innerHTML = ALL_FIDELITY_ITEMS.map((item) => {
-    const score = state.fidelityScores[item.id];
-    const label = score === "implemented" ? "Implemented as Written" : score === "not_implemented" ? "Not Implemented as Written" : score === "no_opportunity" ? "No Opportunity" : "Unresolved";
-    const outcome = state.fidelityOutcomes[item.id];
-    const outcomeLabel = outcome ? `Desired outcome: ${outcome === "yes" ? "Yes" : outcome === "no" ? "No" : "Not clear"}` : "";
-    return `<div class="review-fidelity-row"><div><span>${item.short}</span>${outcomeLabel ? `<small>${outcomeLabel}</small>` : ""}</div><strong>${label}</strong></div>`;
-  }).join("");
-}
-
-function showSubmitted() {
-  stopTimer();
-  hideAllViews();
-  els["submitted-view"].hidden = false;
-}
-
-function beginObservation() {
-  ensureAudio();
-  state.intervals = Array(SESSION.intervalCount).fill(null);
-  state.fidelityScores = {};
-  state.fidelityOutcomes = {};
-  state.notes = "";
-  state.startedAt = Date.now();
-  state.completedAt = null;
-  state.pausedTotalMs = 0;
-  state.pauseStartedAt = null;
-  state.pauses = [];
-  state.continuingBehavior = false;
-  state.studentUnobservable = false;
-  state.status = "running";
-  lastPromptedInterval = 0;
-  saveState();
-  showActive();
-  beep();
-}
-
-function markTargetOccurred() {
-  if (state.status !== "running" || state.studentUnobservable) return;
-  const index = currentIntervalIndex();
-  state.intervals[index] = "occurred";
-  saveState();
-  renderTimer();
-}
-
-function toggleContinuing() {
-  if (state.status !== "running" || state.studentUnobservable) return;
-  state.continuingBehavior = !state.continuingBehavior;
-  if (state.continuingBehavior) state.intervals[currentIntervalIndex()] = "occurred";
-  saveState();
-  renderTimer();
-}
-
-function toggleObservable() {
-  if (state.status !== "running") return;
-  state.studentUnobservable = !state.studentUnobservable;
-  if (state.studentUnobservable) {
-    state.continuingBehavior = false;
-    state.intervals[currentIntervalIndex()] = "not_observed";
-  }
-  saveState();
-  renderTimer();
+function showOutcomePrompt(itemId) {
+  const item = fidelityTargets().find((target) => target.id === itemId);
+  if (!item) return;
+  pendingOutcomeItemId = itemId;
+  els["outcome-prompt-item"].textContent = item.short;
+  els["outcome-prompt-definition"].textContent = `Desired outcome: ${item.desiredOutcome}`;
+  els["outcome-prompt"].hidden = false;
 }
 
 function scoreFidelity(itemId, score) {
-  if (!ITEM_BY_ID[itemId]) return;
+  const item = fidelityTargets().find((target) => target.id === itemId);
+  if (!item) return;
   state.fidelityScores[itemId] = score;
   if (score !== "implemented") delete state.fidelityOutcomes[itemId];
   saveState();
@@ -538,37 +465,233 @@ function saveOutcome(choice) {
   renderFidelity();
 }
 
+function showActive() {
+  const caseData = currentCase();
+  if (!caseData) return showAssignment();
+
+  hideAllViews();
+  els["active-view"].hidden = false;
+  els["active-behavior-name"].textContent = caseData.behaviorName;
+  els["active-behavior-definition"].textContent = caseData.behaviorDefinition;
+  els["active-case-chip"].textContent = caseData.name;
+  els["observation-notes"].value = state.notes || "";
+  renderFidelity();
+  hideOutcomePrompt();
+  renderTimer();
+  mountPlayer(caseData);
+}
+
+function initializeAttempt() {
+  const caseData = currentCase();
+  if (!caseData) return;
+  ensureAudio();
+  state.status = "armed";
+  state.intervals = Array(caseIntervalCount(caseData)).fill(null);
+  state.fidelityScores = {};
+  state.fidelityOutcomes = {};
+  state.notes = "";
+  state.videoTime = 0;
+  state.continuingBehavior = false;
+  state.studentUnobservable = false;
+  state.submittedAt = null;
+  lastPromptedInterval = 0;
+  saveState();
+  showActive();
+}
+
+function markTargetOccurred() {
+  if (state.status !== "running" || !videoIsPlaying || state.studentUnobservable) return;
+  state.intervals[currentIntervalIndex()] = "occurred";
+  saveState();
+  renderTimer();
+}
+
+function toggleContinuing() {
+  if (state.status !== "running" || !videoIsPlaying || state.studentUnobservable) return;
+  state.continuingBehavior = !state.continuingBehavior;
+  if (state.continuingBehavior) state.intervals[currentIntervalIndex()] = "occurred";
+  saveState();
+  renderTimer();
+}
+
+function toggleObservable() {
+  if (state.status !== "running" || !videoIsPlaying) return;
+  state.studentUnobservable = !state.studentUnobservable;
+  if (state.studentUnobservable) {
+    state.continuingBehavior = false;
+    state.intervals[currentIntervalIndex()] = "not_observed";
+  }
+  saveState();
+  renderTimer();
+}
+
+function completeObservation() {
+  if (state.status === "review" || state.status === "submitted") return;
+  stopTimer();
+  finalizeIntervals();
+  state.videoTime = currentCase()?.videoDurationSeconds || state.videoTime;
+  state.continuingBehavior = false;
+  state.studentUnobservable = false;
+  state.status = "review";
+  saveState();
+  beep();
+  showReview();
+}
+
+function percentLabel(value) {
+  if (value == null || Number.isNaN(value)) return "—";
+  const rounded = Math.round(value * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
+}
+
+function missingFidelityItems() {
+  return fidelityTargets().filter((item) => !state.fidelityScores[item.id]);
+}
+
+function missingOutcomeItems() {
+  return fidelityTargets().filter((item) => state.fidelityScores[item.id] === "implemented" && !state.fidelityOutcomes[item.id]);
+}
+
+function reviewRow(item, index) {
+  const score = state.fidelityScores[item.id] || "";
+  const outcome = state.fidelityOutcomes[item.id] || "";
+  const scoreButton = (value, label) => `<button class="review-score-button ${score === value ? "selected" : ""}" type="button" data-review-score="${item.id}" data-score="${value}">${label}</button>`;
+  const outcomeControls = score === "implemented" ? `
+    <div class="review-outcome">
+      <small>Desired outcome:</small>
+      <div class="review-score-actions">
+        <button class="review-score-button ${outcome === "yes" ? "selected" : ""}" type="button" data-review-outcome="${item.id}" data-outcome="yes">Yes</button>
+        <button class="review-score-button ${outcome === "no" ? "selected" : ""}" type="button" data-review-outcome="${item.id}" data-outcome="no">No</button>
+        <button class="review-score-button ${outcome === "unclear" ? "selected" : ""}" type="button" data-review-outcome="${item.id}" data-outcome="unclear">Not clear</button>
+      </div>
+    </div>
+  ` : "";
+  return `
+    <div class="review-fidelity-row">
+      <div>
+        <strong>${index + 1}. ${item.short}</strong>
+        <small>${item.detail}</small>
+        ${outcomeControls}
+      </div>
+      <div class="review-score-actions">
+        ${scoreButton("implemented","Implemented")}
+        ${scoreButton("not_implemented","Not Implemented")}
+        ${scoreButton("no_opportunity","No Opportunity")}
+      </div>
+    </div>
+  `;
+}
+
+function renderReviewWarning() {
+  const missingScores = missingFidelityItems();
+  const missingOutcomes = missingOutcomeItems();
+  const parts = [];
+  if (missingScores.length) parts.push(`${missingScores.length} fidelity item${missingScores.length === 1 ? "" : "s"} still need a score`);
+  if (missingOutcomes.length) parts.push(`${missingOutcomes.length} implemented item${missingOutcomes.length === 1 ? "" : "s"} still need an outcome rating`);
+
+  els["review-warning"].hidden = parts.length === 0;
+  els["review-warning-text"].textContent = parts.length ? parts.join(" and ") + "." : "";
+  els["mark-remaining-no-opportunity"].hidden = missingScores.length === 0;
+  els["submit-preview"].disabled = parts.length > 0;
+}
+
+function showReview() {
+  const caseData = currentCase();
+  if (!caseData) return showAssignment();
+  stopTimer();
+  pausePlayer();
+  hideAllViews();
+  els["review-view"].hidden = false;
+
+  const fidelity = calculateFidelity(state.fidelityScores);
+  const student = calculateStudentBehavior(state.intervals);
+
+  els["summary-fidelity"].textContent = percentLabel(fidelity.percent);
+  els["summary-fidelity-detail"].textContent = `${fidelity.implemented} implemented / ${fidelity.scoreable} scoreable; ${fidelity.noOpportunity} no opportunity`;
+  els["summary-student"].textContent = percentLabel(student.percent);
+  els["summary-student-detail"].textContent = `${student.occurred} occurrence intervals / ${student.observed} observed`;
+  els["summary-observed"].textContent = String(student.observed);
+  els["summary-not-observed"].textContent = `${student.notObserved} not observed`;
+  els["summary-duration"].textContent = formatClock(caseData.videoDurationSeconds);
+  els["summary-case-name"].textContent = caseData.title;
+  els["review-fidelity"].innerHTML = fidelityTargets().map(reviewRow).join("");
+  renderReviewWarning();
+}
+
 function markRemainingNoOpportunity() {
   for (const item of missingFidelityItems()) state.fidelityScores[item.id] = "no_opportunity";
   saveState();
   showReview();
 }
 
-function pauseObservation() {
-  if (state.status === "review_edit") {
-    state.status = "review";
-    saveState();
-    showReview();
-    return;
-  }
-  if (state.status !== "running") return;
-  state.status = "paused";
-  state.pauseStartedAt = Date.now();
-  saveState();
-  showActive();
+function calculateTrainingFidelityAgreement() {
+  const targets = fidelityTargets();
+  const agreements = targets.filter((item) => state.fidelityScores[item.id] === item.trainingKey).length;
+  const scorePercent = targets.length ? (agreements / targets.length) * 100 : null;
+
+  const keyedOutcomes = targets.filter((item) => item.trainingOutcomeKey);
+  const outcomeAgreements = keyedOutcomes.filter((item) => state.fidelityOutcomes[item.id] === item.trainingOutcomeKey).length;
+  const outcomePercent = keyedOutcomes.length ? (outcomeAgreements / keyedOutcomes.length) * 100 : null;
+
+  return { agreements, total: targets.length, scorePercent, outcomeAgreements, outcomeTotal: keyedOutcomes.length, outcomePercent };
 }
 
-function resumeObservation(reason = null) {
-  if (state.status !== "paused" || !state.pauseStartedAt) return;
-  const now = Date.now();
-  const durationMs = now - state.pauseStartedAt;
-  state.pausedTotalMs = (state.pausedTotalMs || 0) + durationMs;
-  if (reason) state.pauses.push({ reason, startedAt: state.pauseStartedAt, durationMs });
-  state.pauseStartedAt = null;
-  state.status = "running";
+function showSubmitted() {
+  const caseData = currentCase();
+  if (!caseData) return showAssignment();
+  stopTimer();
+  pausePlayer();
+  hideAllViews();
+  els["submitted-view"].hidden = false;
+  els["submitted-title"].textContent = `${caseData.name} Training Complete`;
+
+  const agreement = calculateTrainingFidelityAgreement();
+  els["training-fidelity-agreement"].textContent = percentLabel(agreement.scorePercent);
+  const outcomeText = agreement.outcomeTotal
+    ? ` Desired-outcome agreement: ${agreement.outcomeAgreements}/${agreement.outcomeTotal} (${percentLabel(agreement.outcomePercent)}).`
+    : "";
+  els["training-fidelity-agreement-detail"].textContent = `${agreement.agreements}/${agreement.total} fidelity items matched the training key.${outcomeText}`;
+
+  els["training-interval-agreement"].textContent = caseData.masterIntervals ? "Ready" : "Key pending";
+}
+
+function chooseCase(caseId) {
+  if (!TRAINING_CASES[caseId]) return;
+  state.caseId = caseId;
+  state.status = "ready";
+  state.intervals = [];
+  state.fidelityScores = {};
+  state.fidelityOutcomes = {};
+  state.notes = "";
+  state.videoTime = 0;
+  state.continuingBehavior = false;
+  state.studentUnobservable = false;
   saveState();
-  if (els["pause-dialog"].open) els["pause-dialog"].close();
-  showActive();
+  showReady();
+}
+
+function repeatCase() {
+  state.status = "ready";
+  state.intervals = [];
+  state.fidelityScores = {};
+  state.fidelityOutcomes = {};
+  state.notes = "";
+  state.videoTime = 0;
+  state.continuingBehavior = false;
+  state.studentUnobservable = false;
+  saveState();
+  showReady();
+}
+
+function anotherCase() {
+  state.status = "assignment";
+  state.caseId = null;
+  state.intervals = [];
+  state.fidelityScores = {};
+  state.fidelityOutcomes = {};
+  state.videoTime = 0;
+  saveState();
+  showAssignment();
 }
 
 function restore() {
@@ -576,13 +699,9 @@ function restore() {
   switch (state.status) {
     case "assignment": showAssignment(); break;
     case "ready": showReady(); break;
-    case "running":
-      if (elapsedMs() >= SESSION.durationSeconds * 1000) completeObservation();
-      else showActive();
-      break;
-    case "paused": showActive(); break;
+    case "armed":
+    case "running": showActive(); break;
     case "review": showReview(); break;
-    case "review_edit": showActive(); break;
     case "submitted": showSubmitted(); break;
     default: showLogin();
   }
@@ -595,10 +714,19 @@ els["preview-login-form"].addEventListener("submit", (event) => {
   saveState();
   showAssignment();
 });
-els["preview-sign-out"].addEventListener("click", () => { clearState(); showLogin(); });
-els["open-ready"].addEventListener("click", () => { state.status = "ready"; saveState(); showReady(); });
-els["back-assignment"].addEventListener("click", () => { state.status = "assignment"; saveState(); showAssignment(); });
-els["start-observation"].addEventListener("click", beginObservation);
+
+els["preview-sign-out"].addEventListener("click", () => {
+  clearState();
+  showLogin();
+});
+
+els["training-case-list"].addEventListener("click", (event) => {
+  const button = event.target.closest("[data-case-id]");
+  if (button) chooseCase(button.dataset.caseId);
+});
+
+els["back-assignment"].addEventListener("click", anotherCase);
+els["start-observation"].addEventListener("click", initializeAttempt);
 els["target-occurred"].addEventListener("click", markTargetOccurred);
 els["continuing-toggle"].addEventListener("click", toggleContinuing);
 els["observable-toggle"].addEventListener("click", toggleObservable);
@@ -623,27 +751,37 @@ els["observation-notes"].addEventListener("input", (event) => {
   saveState();
 });
 
-els["pause-observation"].addEventListener("click", pauseObservation);
-els["pause-form"].addEventListener("submit", (event) => {
-  event.preventDefault();
-  const reason = els["pause-reason"].value;
-  if (!reason) return;
-  els["pause-reason"].value = "";
-  resumeObservation(reason);
-});
-els["cancel-pause"].addEventListener("click", () => { els["pause-reason"].value = ""; resumeObservation(null); });
-els["pause-dialog"].addEventListener("cancel", (event) => { event.preventDefault(); resumeObservation(null); });
-
 els["mark-remaining-no-opportunity"].addEventListener("click", markRemainingNoOpportunity);
-els["return-fidelity"].addEventListener("click", () => { state.status = "review_edit"; saveState(); showActive(); });
+
+els["review-fidelity"].addEventListener("click", (event) => {
+  const scoreButton = event.target.closest("[data-review-score]");
+  if (scoreButton) {
+    const itemId = scoreButton.dataset.reviewScore;
+    const score = scoreButton.dataset.score;
+    state.fidelityScores[itemId] = score;
+    if (score !== "implemented") delete state.fidelityOutcomes[itemId];
+    saveState();
+    showReview();
+    return;
+  }
+  const outcomeButton = event.target.closest("[data-review-outcome]");
+  if (outcomeButton) {
+    state.fidelityOutcomes[outcomeButton.dataset.reviewOutcome] = outcomeButton.dataset.outcome;
+    saveState();
+    showReview();
+  }
+});
+
 els["submit-preview"].addEventListener("click", () => {
-  if (missingFidelityItems().length) return;
+  if (missingFidelityItems().length || missingOutcomeItems().length) return;
   state.status = "submitted";
   state.submittedAt = Date.now();
   saveState();
   showSubmitted();
 });
-els["reset-preview"].addEventListener("click", () => { clearState(); window.location.reload(); });
+
+els["another-case"].addEventListener("click", anotherCase);
+els["reset-preview"].addEventListener("click", repeatCase);
 window.addEventListener("beforeunload", saveState);
 
 restore();
