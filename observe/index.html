@@ -105,81 +105,101 @@
         </div>
 
         <article class="protocol-card">
-          <h2>Observation procedure</h2>
+          <h2>Low-look observation mode</h2>
           <div class="protocol-steps">
             <div><strong>30 minutes</strong><span>fixed session length</span></div>
-            <div><strong>15 seconds</strong><span>partial-interval student recording</span></div>
-            <div><strong>120</strong><span>student-behavior intervals</span></div>
-            <div><strong>3 choices</strong><span>per fidelity item</span></div>
+            <div><strong>15 seconds</strong><span>automatic interval boundaries</span></div>
+            <div><strong>No tap</strong><span>= target did not occur</span></div>
+            <div><strong>Tap once</strong><span>when target behavior occurs</span></div>
           </div>
-          <p class="small-note">The interval timer will prompt automatically. If no student-behavior choice is made during an observed interval, the preview records “Did not occur.” Mark “Not observed” whenever you could not observe the student for that interval.</p>
+          <p class="small-note"><strong>You do not respond every 15 seconds.</strong> Watch the classroom. Tap the target-behavior button only when the behavior occurs. Use “Behavior continuing” for sustained behavior and “Student not observable” when visibility is lost. Fidelity can be scored whenever there is a natural moment.</p>
         </article>
 
         <button id="start-observation" class="primary-button start-button" type="button">Start 30-Minute Observation</button>
       </section>
 
       <section id="active-view" hidden>
-        <div class="timer-shell">
-          <div class="timer-primary">
-            <span>Elapsed</span>
-            <strong id="elapsed-clock">00:00</strong>
+        <div id="observation-dock" class="observation-dock">
+          <div class="dock-status-row">
+            <div class="timer-primary">
+              <span>Elapsed</span>
+              <strong id="elapsed-clock">00:00</strong>
+            </div>
+            <div class="timer-mini">
+              <span>Interval</span>
+              <strong><span id="interval-number">1</span>/<span id="interval-total">120</span></strong>
+            </div>
+            <div class="timer-mini">
+              <span>Next boundary</span>
+              <strong id="interval-clock">00:15</strong>
+            </div>
+            <div class="timer-mini remaining-mini">
+              <span>Remaining</span>
+              <strong id="remaining-clock">30:00</strong>
+            </div>
+            <button id="pause-observation" class="quiet-button" type="button">Pause</button>
           </div>
-          <div class="timer-secondary">
-            <div><span>Remaining</span><strong id="remaining-clock">30:00</strong></div>
-            <div><span>Interval</span><strong><span id="interval-number">1</span> / <span id="interval-total">120</span></strong></div>
-            <div><span>Next prompt</span><strong id="interval-clock">00:15</strong></div>
+
+          <div id="test-mode-badge" class="test-mode-badge" hidden>TEST TIMER MODE</div>
+
+          <button id="target-occurred" class="target-occurred-button" type="button">
+            <span class="target-button-label">TARGET BEHAVIOR OCCURRED</span>
+            <span class="target-button-help">Tap once if it happens at any point in this interval</span>
+          </button>
+
+          <div class="quick-mode-row">
+            <button id="continuing-toggle" class="mode-button" type="button" aria-pressed="false">
+              <span>↔</span>
+              <strong>Behavior continuing</strong>
+              <small>Auto-mark each new interval until stopped</small>
+            </button>
+            <button id="observable-toggle" class="mode-button" type="button" aria-pressed="false">
+              <span>👁</span>
+              <strong>Student not observable</strong>
+              <small>Exclude intervals until observable again</small>
+            </button>
           </div>
-          <button id="pause-observation" class="quiet-button" type="button">Pause</button>
+
+          <p id="current-interval-status" class="interval-status">No target behavior marked. No action needed if it does not occur.</p>
         </div>
 
-        <div id="test-mode-badge" class="test-mode-badge" hidden>TEST TIMER MODE</div>
-
-        <div class="observation-tabs" role="tablist" aria-label="Observation data">
-          <button class="tab-button active" id="behavior-tab" data-panel="behavior-panel" role="tab" aria-selected="true">Student Behavior</button>
-          <button class="tab-button" id="fidelity-tab" data-panel="fidelity-panel" role="tab" aria-selected="false">Teacher Fidelity <span id="fidelity-progress">0/9</span></button>
-        </div>
-
-        <section id="behavior-panel" class="observation-panel" role="tabpanel">
-          <article class="behavior-card">
-            <div>
-              <p class="eyebrow">Current interval</p>
-              <h2>Did the target behavior occur at any point?</h2>
-              <p class="target-definition"><strong>Work refusal:</strong> pushing materials away, laying head down, or saying “I’m not doing this.”</p>
-            </div>
-            <div class="behavior-actions" role="group" aria-label="Student behavior interval score">
-              <button class="behavior-button occurred" data-interval-score="occurred" type="button">Target Occurred</button>
-              <button class="behavior-button no-occurrence" data-interval-score="did_not_occur" type="button">Did Not Occur</button>
-              <button class="behavior-button not-observed" data-interval-score="not_observed" type="button">Not Observed</button>
-            </div>
-            <p id="current-interval-status" class="interval-status">No mark yet — this interval will default to Did Not Occur.</p>
-          </article>
-
-          <article class="interval-progress-card">
-            <div class="section-line">
-              <div><p class="eyebrow">Interval record</p><h2>Session Progress</h2></div>
-              <div class="live-counts"><span><strong id="occurred-count">0</strong> occurred</span><span><strong id="not-observed-count">0</strong> not observed</span></div>
-            </div>
-            <div id="interval-grid" class="interval-grid" aria-label="Interval progress"></div>
-          </article>
-        </section>
-
-        <section id="fidelity-panel" class="observation-panel" role="tabpanel" hidden>
+        <section class="fidelity-workspace">
           <div class="section-line">
-            <div><p class="eyebrow">Teacher implementation</p><h2>Individualized Fidelity Checklist</h2></div>
-            <p class="panel-helper">Score each item across the full routine.</p>
+            <div>
+              <p class="eyebrow">Teacher implementation</p>
+              <h1 class="workspace-title">Fidelity Checklist</h1>
+              <p>Score items when you have a natural moment. The behavior recorder stays available above.</p>
+            </div>
+            <div class="fidelity-completion"><strong id="fidelity-progress">0/9</strong><span>scored</span></div>
           </div>
-          <div id="fidelity-list" class="fidelity-list"></div>
-        </section>
 
-        <article class="notes-card">
-          <label for="observation-notes"><strong>Observation notes</strong> <span>optional</span></label>
-          <textarea id="observation-notes" rows="3" placeholder="Context, interruptions, schedule changes, or other relevant notes…"></textarea>
-        </article>
+          <div id="fidelity-list" class="fidelity-list"></div>
+
+          <article class="notes-card">
+            <label for="observation-notes"><strong>Observation notes</strong> <span>optional</span></label>
+            <textarea id="observation-notes" rows="3" placeholder="Context, interruptions, schedule changes, or other relevant notes…"></textarea>
+          </article>
+
+          <details class="interval-details">
+            <summary>View interval record</summary>
+            <article class="interval-progress-card">
+              <div class="section-line">
+                <div><p class="eyebrow">Student behavior</p><h2>Interval Record</h2></div>
+                <div class="live-counts"><span><strong id="occurred-count">0</strong> occurred</span><span><strong id="not-observed-count">0</strong> not observed</span></div>
+              </div>
+              <div id="interval-grid" class="interval-grid" aria-label="Interval progress"></div>
+            </article>
+          </details>
+        </section>
       </section>
 
       <section id="review-view" hidden>
         <div class="page-heading compact-heading">
-          <div><p class="eyebrow">Observation complete</p><h1>Review Before Submit</h1><p>Check the session summary before locking the fictional record.</p></div>
+          <div>
+            <p class="eyebrow">30-minute observation complete</p>
+            <h1>Finish & Review</h1>
+            <p>Student interval recording is locked. Finish any remaining fidelity items, then review the session summary.</p>
+          </div>
         </div>
 
         <div class="summary-grid">
@@ -197,7 +217,7 @@
         </article>
 
         <div class="review-actions">
-          <button id="return-fidelity" class="secondary-button" type="button">Review Fidelity Items</button>
+          <button id="return-fidelity" class="secondary-button" type="button">Finish / Edit Fidelity</button>
           <button id="submit-preview" class="primary-button" type="button">Submit & Lock Preview</button>
         </div>
       </section>
@@ -218,8 +238,8 @@
       <label>Reason
         <select id="pause-reason" required>
           <option value="">Select a reason</option>
+          <option>Classroom routine paused</option>
           <option>Student left the observation area</option>
-          <option>Classroom interruption</option>
           <option>Observer interruption</option>
           <option>Technical issue</option>
           <option>Other</option>
