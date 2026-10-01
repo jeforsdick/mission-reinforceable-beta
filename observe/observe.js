@@ -9,7 +9,7 @@ import {
 const params = new URLSearchParams(window.location.search);
 const TEST_MODE = params.get("test") === "1";
 const SESSION = TEST_MODE ? TEST_SESSION : REAL_SESSION;
-const STORAGE_KEY = "mr-observe-preview-v1";
+const STORAGE_KEY = "mr-observe-preview-v2";
 
 const FIDELITY_GROUPS = [
   {
@@ -59,27 +59,27 @@ const FIDELITY_GROUPS = [
       },
       {
         id: "reinforce_03",
-        text: "Deliver specific praise contingent on task engagement or task completion at least 3 times during the 30-minute observation."
+        text: "Deliver specific praise contingent on task engagement or task completion at least 3 times during the 30-minute observation.",
+        counter: { label: "Specific praise count", threshold: 3 }
       }
     ]
   }
 ];
 
 const ALL_FIDELITY_ITEMS = FIDELITY_GROUPS.flatMap((group) => group.items);
-const els = Object.fromEntries(
-  [
-    "login-view","assignment-view","ready-view","active-view","review-view","submitted-view",
-    "preview-login-form","preview-sign-out","assignment-observer","assignment-role","assignment-date",
-    "open-ready","back-assignment","start-observation","elapsed-clock","remaining-clock",
-    "interval-number","interval-total","interval-clock","pause-observation","test-mode-badge",
-    "behavior-tab","fidelity-tab","fidelity-progress","behavior-panel","fidelity-panel",
-    "current-interval-status","occurred-count","not-observed-count","interval-grid","fidelity-list",
-    "observation-notes","summary-fidelity","summary-fidelity-detail","summary-student",
-    "summary-student-detail","summary-observed","summary-not-observed","summary-duration",
-    "review-warning","review-fidelity","return-fidelity","submit-preview","reset-preview",
-    "pause-dialog","pause-form","pause-reason","cancel-pause"
-  ].map((id) => [id, document.getElementById(id)])
-);
+const ids = [
+  "login-view","assignment-view","ready-view","active-view","review-view","submitted-view",
+  "preview-login-form","preview-sign-out","assignment-observer","assignment-role","assignment-date",
+  "open-ready","back-assignment","start-observation","elapsed-clock","remaining-clock",
+  "interval-number","interval-total","interval-clock","pause-observation","test-mode-badge",
+  "target-occurred","continuing-toggle","observable-toggle","current-interval-status",
+  "fidelity-progress","occurred-count","not-observed-count","interval-grid","fidelity-list",
+  "observation-notes","summary-fidelity","summary-fidelity-detail","summary-student",
+  "summary-student-detail","summary-observed","summary-not-observed","summary-duration",
+  "review-warning","review-fidelity","return-fidelity","submit-preview","reset-preview",
+  "pause-dialog","pause-form","pause-reason","cancel-pause"
+];
+const els = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
 let state = loadState();
 let timerHandle = null;
@@ -88,7 +88,7 @@ let audioContext = null;
 
 function newBaseState(observer, role) {
   return {
-    version: 1,
+    version: 2,
     observer: observer.trim() || "Test Observer",
     role,
     status: "assignment",
@@ -97,20 +97,26 @@ function newBaseState(observer, role) {
     intervals: [],
     fidelityScores: {},
     fidelityNotes: {},
+    counters: { reinforce_03: 0 },
     notes: "",
     startedAt: null,
     completedAt: null,
     pausedTotalMs: 0,
     pauseStartedAt: null,
-    pauses: []
+    pauses: [],
+    continuingBehavior: false,
+    studentUnobservable: false
   };
 }
 
 function loadState() {
   try {
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    if (!parsed || parsed.version !== 1) return null;
+    if (!parsed || parsed.version !== 2) return null;
     if ((parsed.sessionMode === "test") !== TEST_MODE) return null;
+    parsed.counters ||= { reinforce_03: 0 };
+    parsed.continuingBehavior ||= false;
+    parsed.studentUnobservable ||= false;
     return parsed;
   } catch {
     return null;
@@ -158,8 +164,7 @@ function showReady() {
   stopTimer();
   hideAllViews();
   els["ready-view"].hidden = false;
-  const button = els["start-observation"];
-  button.textContent = TEST_MODE ? "Start 60-Second Timer Test" : "Start 30-Minute Observation";
+  els["start-observation"].textContent = TEST_MODE ? "Start 60-Second Timer Test" : "Start 30-Minute Observation";
 }
 
 function elapsedMs() {
@@ -175,11 +180,24 @@ function currentIntervalIndex() {
   );
 }
 
+function automaticScore() {
+  if (state.studentUnobservable) return "not_observed";
+  if (state.continuingBehavior) return "occurred";
+  return "did_not_occur";
+}
+
+function applyActiveMode(index) {
+  if (index < 0 || index >= SESSION.intervalCount) return;
+  if (state.studentUnobservable) state.intervals[index] = "not_observed";
+  else if (state.continuingBehavior) state.intervals[index] = "occurred";
+}
+
 function ensurePassedIntervalsScored(activeIndex) {
   let changed = false;
+  const fallback = automaticScore();
   for (let index = 0; index < activeIndex; index += 1) {
     if (!state.intervals[index]) {
-      state.intervals[index] = "did_not_occur";
+      state.intervals[index] = fallback;
       changed = true;
     }
   }
@@ -187,8 +205,9 @@ function ensurePassedIntervalsScored(activeIndex) {
 }
 
 function finalizeIntervals() {
+  const fallback = automaticScore();
   for (let index = 0; index < SESSION.intervalCount; index += 1) {
-    if (!state.intervals[index]) state.intervals[index] = "did_not_occur";
+    if (!state.intervals[index]) state.intervals[index] = fallback;
   }
 }
 
@@ -207,22 +226,23 @@ function beep() {
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
     oscillator.frequency.value = 740;
-    gain.gain.setValueAtTime(0.045, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.04, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.07);
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.08);
-    if (navigator.vibrate) navigator.vibrate(40);
+    oscillator.stop(audioContext.currentTime + 0.07);
+    if (navigator.vibrate) navigator.vibrate(35);
   } catch {
-    // Audio/vibration is a convenience cue only.
+    // Timing cue only; observation data do not depend on audio support.
   }
 }
 
 function renderIntervalGrid(activeIndex) {
   els["interval-grid"].innerHTML = "";
   const fragment = document.createDocumentFragment();
-  state.intervals.forEach((value, index) => {
+  for (let index = 0; index < SESSION.intervalCount; index += 1) {
+    const value = state.intervals[index];
     const cell = document.createElement("span");
     cell.className = "interval-cell";
     if (value) cell.classList.add(value);
@@ -230,14 +250,28 @@ function renderIntervalGrid(activeIndex) {
     if (index === activeIndex && state.status === "running") cell.classList.add("current");
     cell.title = `Interval ${index + 1}: ${value ? value.replaceAll("_", " ") : index === activeIndex ? "current" : "not yet scored"}`;
     fragment.appendChild(cell);
-  });
+  }
   els["interval-grid"].appendChild(fragment);
 }
 
-function setSelectedBehavior(score) {
-  document.querySelectorAll("[data-interval-score]").forEach((button) => {
-    button.classList.toggle("selected", button.dataset.intervalScore === score);
-  });
+function renderModeButtons() {
+  const continuing = Boolean(state.continuingBehavior);
+  const unobservable = Boolean(state.studentUnobservable);
+  els["continuing-toggle"].setAttribute("aria-pressed", String(continuing));
+  els["observable-toggle"].setAttribute("aria-pressed", String(unobservable));
+  els["continuing-toggle"].querySelector("strong").textContent = continuing ? "Behavior continuing — tap when stopped" : "Behavior continuing";
+  els["continuing-toggle"].querySelector("small").textContent = continuing ? "New intervals are being marked occurred" : "Auto-mark each new interval until stopped";
+  els["observable-toggle"].querySelector("strong").textContent = unobservable ? "Student observable again" : "Student not observable";
+  els["observable-toggle"].querySelector("small").textContent = unobservable ? "Tap when you can observe again" : "Exclude intervals until observable again";
+}
+
+function intervalStatusText(index) {
+  const value = state.intervals[index];
+  if (state.studentUnobservable) return "Student is marked not observable. Current and new intervals are excluded until you turn this off.";
+  if (state.continuingBehavior) return "Behavior continuing is ON. Each new interval is automatically marked as an occurrence.";
+  if (value === "occurred") return "Target behavior marked for this interval. Keep watching; no other response is required.";
+  if (value === "not_observed") return "This interval remains Not Observed. Normal scoring resumes with the next fully observable interval.";
+  return "No target behavior marked. No action needed if it does not occur.";
 }
 
 function renderTimer() {
@@ -257,16 +291,17 @@ function renderTimer() {
   if (state.status === "running") {
     ensurePassedIntervalsScored(index);
     if (index > lastPromptedInterval) {
+      applyActiveMode(index);
       if (lastPromptedInterval >= 0) beep();
       lastPromptedInterval = index;
+      saveState();
     }
   }
 
-  const behavior = state.intervals[index];
-  setSelectedBehavior(behavior);
-  els["current-interval-status"].textContent = behavior
-    ? `Current interval: ${behavior === "occurred" ? "Target occurred" : behavior === "not_observed" ? "Not observed" : "Did not occur"}.`
-    : "No mark yet — this interval will default to Did Not Occur.";
+  const value = state.intervals[index];
+  els["target-occurred"].classList.toggle("marked", value === "occurred");
+  els["current-interval-status"].textContent = intervalStatusText(index);
+  renderModeButtons();
 
   const behaviorSummary = calculateStudentBehavior(state.intervals);
   els["occurred-count"].textContent = String(behaviorSummary.occurred);
@@ -289,6 +324,29 @@ function stopTimer() {
   timerHandle = null;
 }
 
+function escapeAttribute(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function counterHtml(item) {
+  if (!item.counter) return "";
+  const count = Number(state.counters[item.id] || 0);
+  const met = count >= item.counter.threshold;
+  return `
+    <div class="counter-panel" data-counter-panel="${item.id}">
+      <strong>${item.counter.label}</strong>
+      <button class="counter-button" type="button" data-counter-id="${item.id}" data-counter-change="-1" aria-label="Decrease ${item.counter.label}">−</button>
+      <span class="counter-value" data-counter-value="${item.id}">${count}</span>
+      <button class="counter-button" type="button" data-counter-id="${item.id}" data-counter-change="1" aria-label="Increase ${item.counter.label}">+</button>
+      <span class="counter-suggestion" data-counter-suggestion="${item.id}">${met ? "Criterion met (≥3)" : "Criterion: ≥3"}</span>
+    </div>
+  `;
+}
+
 function renderFidelity() {
   els["fidelity-list"].innerHTML = "";
   for (const group of FIDELITY_GROUPS) {
@@ -303,6 +361,7 @@ function renderFidelity() {
       const note = state.fidelityNotes[item.id] || "";
       card.innerHTML = `
         <p>${item.text}</p>
+        ${counterHtml(item)}
         <div class="score-options" role="radiogroup" aria-label="${group.label}: ${item.text}">
           <label class="score-option"><input type="radio" name="fidelity-${item.id}" value="implemented" data-fidelity-id="${item.id}" ${current === "implemented" ? "checked" : ""}><span>Implemented as Written</span></label>
           <label class="score-option"><input type="radio" name="fidelity-${item.id}" value="not_implemented" data-fidelity-id="${item.id}" ${current === "not_implemented" ? "checked" : ""}><span>Not Implemented as Written</span></label>
@@ -320,49 +379,45 @@ function renderFidelity() {
   renderFidelityProgress();
 }
 
-function escapeAttribute(value) {
-  return String(value || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
 function renderFidelityProgress() {
   const scored = ALL_FIDELITY_ITEMS.filter((item) => Boolean(state.fidelityScores[item.id])).length;
   els["fidelity-progress"].textContent = `${scored}/${ALL_FIDELITY_ITEMS.length}`;
 }
 
-function selectTab(panelId) {
-  const fidelity = panelId === "fidelity-panel";
-  els["behavior-panel"].hidden = fidelity;
-  els["fidelity-panel"].hidden = !fidelity;
-  els["behavior-tab"].classList.toggle("active", !fidelity);
-  els["fidelity-tab"].classList.toggle("active", fidelity);
-  els["behavior-tab"].setAttribute("aria-selected", String(!fidelity));
-  els["fidelity-tab"].setAttribute("aria-selected", String(fidelity));
+function updateCounterDisplay(itemId) {
+  const item = ALL_FIDELITY_ITEMS.find((candidate) => candidate.id === itemId);
+  if (!item?.counter) return;
+  const count = Number(state.counters[itemId] || 0);
+  const value = document.querySelector(`[data-counter-value="${itemId}"]`);
+  const suggestion = document.querySelector(`[data-counter-suggestion="${itemId}"]`);
+  if (value) value.textContent = String(count);
+  if (suggestion) suggestion.textContent = count >= item.counter.threshold ? "Criterion met (≥3)" : "Criterion: ≥3";
 }
 
-function showActive(preferredPanel = "behavior-panel") {
+function showActive() {
   hideAllViews();
   els["active-view"].hidden = false;
   els["test-mode-badge"].hidden = !TEST_MODE;
   els["observation-notes"].value = state.notes || "";
   renderFidelity();
-  selectTab(preferredPanel);
 
   const editingCompleted = state.status === "review_edit";
   els["pause-observation"].textContent = editingCompleted ? "Back to Review" : state.status === "paused" ? "Paused" : "Pause";
   els["pause-observation"].disabled = state.status === "paused";
-  document.querySelectorAll("[data-interval-score]").forEach((button) => {
-    button.disabled = editingCompleted;
+
+  [els["target-occurred"], els["continuing-toggle"], els["observable-toggle"]].forEach((button) => {
+    button.disabled = editingCompleted || state.status === "paused";
   });
 
   if (editingCompleted) {
     renderTimer();
+    els["current-interval-status"].textContent = "Student interval recording is complete and locked. Finish or edit fidelity items below.";
     stopTimer();
   } else if (state.status === "running") {
-    lastPromptedInterval = currentIntervalIndex();
+    const index = currentIntervalIndex();
+    applyActiveMode(index);
+    lastPromptedInterval = index;
+    saveState();
     startTimer();
   } else if (state.status === "paused") {
     renderTimer();
@@ -376,9 +431,12 @@ function showActive(preferredPanel = "behavior-panel") {
 function completeObservation() {
   stopTimer();
   finalizeIntervals();
+  state.continuingBehavior = false;
+  state.studentUnobservable = false;
   state.status = "review";
   state.completedAt = Date.now();
   saveState();
+  beep();
   showReview();
 }
 
@@ -407,7 +465,7 @@ function showReview() {
 
   els["review-warning"].hidden = missing.length === 0;
   els["review-warning"].textContent = missing.length
-    ? `Complete ${missing.length} remaining fidelity item${missing.length === 1 ? "" : "s"} before submitting.`
+    ? `Student interval recording is complete. Finish ${missing.length} remaining fidelity item${missing.length === 1 ? "" : "s"} before submitting.`
     : "";
   els["submit-preview"].disabled = missing.length > 0;
 
@@ -420,7 +478,8 @@ function showReview() {
         : score === "no_opportunity"
           ? "No Opportunity"
           : "Not scored";
-    return `<div class="review-fidelity-row"><span>${item.text}</span><strong>${label}</strong></div>`;
+    const count = item.counter ? ` · count: ${Number(state.counters[item.id] || 0)}` : "";
+    return `<div class="review-fidelity-row"><span>${item.text}${count}</span><strong>${label}</strong></div>`;
   }).join("");
 }
 
@@ -435,16 +494,49 @@ function beginObservation() {
   state.intervals = Array(SESSION.intervalCount).fill(null);
   state.fidelityScores = {};
   state.fidelityNotes = {};
+  state.counters = { reinforce_03: 0 };
   state.notes = "";
   state.startedAt = Date.now();
   state.completedAt = null;
   state.pausedTotalMs = 0;
   state.pauseStartedAt = null;
   state.pauses = [];
+  state.continuingBehavior = false;
+  state.studentUnobservable = false;
   state.status = "running";
   saveState();
-  showActive("behavior-panel");
+  showActive();
   beep();
+}
+
+function markTargetOccurred() {
+  if (state.status !== "running" || state.studentUnobservable) return;
+  const index = currentIntervalIndex();
+  state.intervals[index] = "occurred";
+  saveState();
+  renderTimer();
+}
+
+function toggleContinuing() {
+  if (state.status !== "running" || state.studentUnobservable) return;
+  state.continuingBehavior = !state.continuingBehavior;
+  if (state.continuingBehavior) {
+    const index = currentIntervalIndex();
+    state.intervals[index] = "occurred";
+  }
+  saveState();
+  renderTimer();
+}
+
+function toggleObservable() {
+  if (state.status !== "running") return;
+  state.studentUnobservable = !state.studentUnobservable;
+  if (state.studentUnobservable) {
+    state.continuingBehavior = false;
+    state.intervals[currentIntervalIndex()] = "not_observed";
+  }
+  saveState();
+  renderTimer();
 }
 
 function pauseObservation() {
@@ -458,7 +550,7 @@ function pauseObservation() {
   state.status = "paused";
   state.pauseStartedAt = Date.now();
   saveState();
-  showActive(document.querySelector("#fidelity-tab.active") ? "fidelity-panel" : "behavior-panel");
+  showActive();
 }
 
 function resumeObservation(reason = null) {
@@ -466,14 +558,12 @@ function resumeObservation(reason = null) {
   const now = Date.now();
   const durationMs = now - state.pauseStartedAt;
   state.pausedTotalMs = (state.pausedTotalMs || 0) + durationMs;
-  if (reason) {
-    state.pauses.push({ reason, startedAt: state.pauseStartedAt, durationMs });
-  }
+  if (reason) state.pauses.push({ reason, startedAt: state.pauseStartedAt, durationMs });
   state.pauseStartedAt = null;
   state.status = "running";
   saveState();
   if (els["pause-dialog"].open) els["pause-dialog"].close();
-  showActive(document.querySelector("#fidelity-tab.active") ? "fidelity-panel" : "behavior-panel");
+  showActive();
 }
 
 function restore() {
@@ -486,11 +576,11 @@ function restore() {
     case "ready": showReady(); break;
     case "running":
       if (elapsedMs() >= SESSION.durationSeconds * 1000) completeObservation();
-      else showActive("behavior-panel");
+      else showActive();
       break;
-    case "paused": showActive("behavior-panel"); break;
+    case "paused": showActive(); break;
     case "review": showReview(); break;
-    case "review_edit": showActive("fidelity-panel"); break;
+    case "review_edit": showActive(); break;
     case "submitted": showSubmitted(); break;
     default: showLogin();
   }
@@ -522,20 +612,9 @@ els["back-assignment"].addEventListener("click", () => {
 });
 
 els["start-observation"].addEventListener("click", beginObservation);
-
-document.querySelectorAll(".tab-button").forEach((button) => {
-  button.addEventListener("click", () => selectTab(button.dataset.panel));
-});
-
-document.querySelectorAll("[data-interval-score]").forEach((button) => {
-  button.addEventListener("click", () => {
-    if (state.status !== "running") return;
-    const index = currentIntervalIndex();
-    state.intervals[index] = button.dataset.intervalScore;
-    saveState();
-    renderTimer();
-  });
-});
+els["target-occurred"].addEventListener("click", markTargetOccurred);
+els["continuing-toggle"].addEventListener("click", toggleContinuing);
+els["observable-toggle"].addEventListener("click", toggleObservable);
 
 els["fidelity-list"].addEventListener("change", (event) => {
   const target = event.target;
@@ -552,6 +631,16 @@ els["fidelity-list"].addEventListener("input", (event) => {
     state.fidelityNotes[target.dataset.fidelityNote] = target.value;
     saveState();
   }
+});
+
+els["fidelity-list"].addEventListener("click", (event) => {
+  const button = event.target.closest("[data-counter-id]");
+  if (!button) return;
+  const itemId = button.dataset.counterId;
+  const change = Number(button.dataset.counterChange || 0);
+  state.counters[itemId] = Math.max(0, Number(state.counters[itemId] || 0) + change);
+  saveState();
+  updateCounterDisplay(itemId);
 });
 
 els["observation-notes"].addEventListener("input", (event) => {
@@ -582,7 +671,7 @@ els["pause-dialog"].addEventListener("cancel", (event) => {
 els["return-fidelity"].addEventListener("click", () => {
   state.status = "review_edit";
   saveState();
-  showActive("fidelity-panel");
+  showActive();
 });
 
 els["submit-preview"].addEventListener("click", () => {
