@@ -196,11 +196,12 @@ async function mountPlayer(caseData) {
     await loadYouTubeApi();
 
     if (player && playerReady) {
-      if (playerCaseId !== caseData.id) {
+      if (playerCaseId !== caseData.id || state.videoTime <= 0) {
         player.cueVideoById(caseData.videoId);
         playerCaseId = caseData.id;
+      } else {
+        player.seekTo(state.videoTime, true);
       }
-      if (state.videoTime > 0) player.seekTo(state.videoTime, true);
       els["video-loading"].hidden = true;
       return;
     }
@@ -390,7 +391,6 @@ function renderTimer() {
   els["occurred-count"].textContent = String(summary.occurred);
   els["not-observed-count"].textContent = String(summary.notObserved);
   renderIntervalGrid(index);
-  saveState();
 }
 
 function startTimer() {
