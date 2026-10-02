@@ -31,7 +31,7 @@ const ids = [
   "summary-case-name","review-warning","review-warning-text","mark-remaining-no-opportunity","review-fidelity",
   "submit-attempt","results-eyebrow","results-title","results-copy","training-fidelity-agreement",
   "training-fidelity-agreement-detail","training-interval-agreement","practice-feedback-key","answer-key-list",
-  "continue-after-results","feedback-form","questions-form","complete-title","completion-summary","test-sound",
+  "continue-after-results","repeat-case","feedback-form","questions-form","complete-title","completion-summary","test-sound",
   "attempt-storage-message","feedback-storage-message","questions-storage-message"
 ];
 const els = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
@@ -985,8 +985,10 @@ function showResults(caseId = state.currentCaseId) {
   if (isNora) {
     els["answer-key-list"].innerHTML = caseData.fidelityTargets.map((item) => answerKeyRow(item, attempt)).join("");
     els["continue-after-results"].textContent = state.module.noraFeedbackComplete ? "Return to Module" : "Give Feedback on the Form";
+    els["repeat-case"].textContent = "Practice Nora Again";
   } else {
     els["continue-after-results"].textContent = state.module.questionsComplete ? "Return to Module" : "Submit Questions for the Team Meeting";
+    els["repeat-case"].textContent = "Repeat Kai Attempt";
   }
   resetScrollPosition();
 }
@@ -1264,6 +1266,10 @@ els["review-fidelity"].addEventListener("click", (event) => {
 });
 
 els["submit-attempt"].addEventListener("click", submitAttempt);
+
+els["repeat-case"].addEventListener("click", () => {
+  openCaseReady(state.currentCaseId);
+});
 
 els["continue-after-results"].addEventListener("click", () => {
   if (state.currentCaseId === "nora") {
