@@ -116,6 +116,45 @@ async function insertTrainingRecord(table, payload) {
   if (error && error.code !== "23505") throw error;
 }
 
+async function syncCachedAttempts() {
+  if (!state?.attempts) return;
+  for (const caseId of ["nora", "kai"]) {
+    const attempt = state.attempts[caseId];
+    const caseData = TRAINING_CASES[caseId];
+    if (!attempt || attempt.remoteSaved || attempt.status !== "submitted") continue;
+    try {
+      attempt.clientSubmissionId = submissionId(attempt.clientSubmissionId);
+      attempt.submittedAt ||= new Date().toISOString();
+      const agreement = fidelityAgreementFor(attempt, caseData);
+      await insertTrainingRecord("observer_training_attempts", {
+        client_submission_id: attempt.clientSubmissionId,
+        observer_name: state.observer,
+        case_id: caseId,
+        attempt_type: attempt.attemptType || (caseId === "nora" ? "practice" : "qualification"),
+        module_version: "v5",
+        case_version: 1,
+        started_at: attempt.startedAt || null,
+        submitted_at: attempt.submittedAt,
+        video_duration_seconds: caseData.videoDurationSeconds,
+        interval_seconds: INTERVAL_SECONDS,
+        intervals: attempt.intervals || [],
+        fidelity_scores: attempt.fidelityScores || {},
+        fidelity_outcomes: attempt.fidelityOutcomes || {},
+        notes: attempt.notes || null,
+        teacher_fidelity_agreement: roundedPercent(agreement?.percent),
+        desired_outcome_agreement: roundedPercent(agreement?.outcomePercent),
+        student_behavior_agreement: null,
+        qualified: null,
+        source_environment: SOURCE_ENVIRONMENT
+      });
+      attempt.remoteSaved = true;
+      saveState();
+    } catch {
+      // Keep the local recovery copy and try again the next time the module opens.
+    }
+  }
+}
+
 function setStorageMessage(id, message, isError = false) {
   const el = els[id];
   if (!el) return;
@@ -279,6 +318,7 @@ function showModule() {
   els["module-view"].hidden = false;
   els["module-welcome"].textContent = `Hi ${state.observer}. You can stop and come back; in-progress work is cached in this browser, and completed submissions are saved to the training database.`;
   renderModuleSteps();
+  syncCachedAttempts().then(() => renderModuleSteps());
   resetScrollPosition();
 }
 
