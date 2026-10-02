@@ -291,3 +291,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--obs-purple);outline:3
   .walkthrough-actions{flex-direction:column-reverse}
   .walkthrough-fidelity-row{grid-template-columns:minmax(0,1fr) 84px 84px}
 }
+
+
+/* Audible cue confirmation */
+.walkthrough-timer,.timer-grid{transition:background-color .15s ease,box-shadow .15s ease,transform .15s ease}
+.cue-flash{background:#fff3b8!important;box-shadow:0 0 0 4px rgba(240,201,90,.28)!important;transform:scale(1.01)}
