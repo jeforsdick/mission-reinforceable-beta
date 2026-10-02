@@ -5,12 +5,23 @@ const dateLabel=value=>{const date=new Date(`${value}T12:00:00Z`);return Number.
 const timeLabel=value=>{if(!value)return '';const [hour,minute]=value.slice(0,5).split(':').map(Number);return `${hour%12||12}:${String(minute).padStart(2,'0')} ${hour<12?'AM':'PM'}`;};
 
 export function renderObserverTeam(data,e){
- const observers=data.observers||[];
+ const plannedRole = observer => {
+   const name = String(observer.display_name || "").toLowerCase();
+   if (name.startsWith("austen") || name.startsWith("casey") || name.startsWith("melissa")) return {label:"Main collector",order:1};
+   if (name.startsWith("jess")) return {label:"IOA lead",order:2};
+   if (name.startsWith("kathleen") || name.startsWith("jakob")) return {label:"Back-up observer",order:3};
+   return {label:"Observer",order:4};
+ };
+ const observers=[...(data.observers||[])].sort((a,b)=>{
+   const roleDiff=plannedRole(a).order-plannedRole(b).order;
+   return roleDiff || String(a.display_name||"").localeCompare(String(b.display_name||""));
+ });
  const rows=observers.map(observer=>`
    <article class="observer-roster-card">
      <div class="observer-roster-head">
        <div>
          <strong>${e(observer.display_name)}</strong>
+         <span class="planned-role">${e(plannedRole(observer).label)}</span>
          <span>${e(observer.observer_code)} · ${e(observer.observer_type.replaceAll('_',' '))}</span>
        </div>
        <div class="roster-status-group">
