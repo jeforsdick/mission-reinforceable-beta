@@ -87,5 +87,90 @@ module.exports = async function handler(request, response) {
     return response.status(200).json({ enabled: true, study_date: today, sent: 0, skipped: 0, failed: 0, reason: 'not_friday' });
   }
 
-  return response.status(200).json({ enabled: true, study_date: today, sent: 0, skipped: 0, failed: 0 });
+  const summary = { enabled: true, study_date: today, sent: 0, skipped: 0, failed: 0, details: [] };
+
+  try {
+    const candidates = await db('/rest/v1/rpc/eligible_weekly_teacher_recaps', {
+      method: 'POST',
+      body: '{}'
+    });
+
+    for (const candidate of candidates || []) {
+      const detail = { participant_code: candidate.participant_code, outcome: null };
+      try {
+        const history = await phaseHistory(candidate.case_id);
+        const context = weeklyCheckin.interventionWeekContext(history, today);
+
+        if (!context) {
+          summary.skipped++;
+          detail.outcome = 'not_intervention_week';
+          summary.details.push(detail);
+          continue;
+        }
+        if (!candidate.qualtrics_personalization_ready) {
+          summary.failed++;
+          detail.outcome = 'qualtrics_personalization_not_ready';
+          summary.details.push(detail);
+          continue;
+        }
+
+        const event = await claim(candidate, context.week_end);
+        if (!event?.claimed) {
+          summary.skipped++;
+          detail.outcome = 'already_sent_or_claimed';
+          summary.details.push(detail);
+          continue;
+        }
+
+        const weeklyQualtricsUrl = await issueUrl(candidate, context);
+        const recap = await loadWeeklySummary(
+          candidate.case_id,
+          supabaseFetch,
+          new Date(context.week_end + 'T18:00:00Z')
+        );
+        const email = buildWeeklyRecapEmail({
+          summary: recap,
+          weeklyQualtricsUrl,
+          teacherName: candidate.teacher_name,
+          assetOrigin: process.env.TEACHER_GAME_URL
+        });
+
+        const sent = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + process.env.RESEND_API_KEY,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': 'weekly-recap/' + candidate.participant_id + '/' + context.week_start
+          },
+          body: JSON.stringify({
+            from: email.from,
+            to: [candidate.teacher_email],
+            subject: email.subject,
+            html: email.html,
+            text: email.text
+          })
+        });
+        const provider = await parseJson(sent);
+        if (!sent.ok || !provider?.id) throw new Error('Weekly recap provider send failed');
+
+        await patchEvent(event.event_id, { status: 'sent', provider_message_id: provider.id });
+        summary.sent++;
+        detail.outcome = 'sent';
+        summary.details.push(detail);
+      } catch (error) {
+        summary.failed++;
+        detail.outcome = detail.outcome || 'failed';
+        summary.details.push(detail);
+        console.error('Weekly recap participant failed.', {
+          participantCode: candidate.participant_code,
+          error: error.message
+        });
+      }
+    }
+
+    return response.status(summary.failed ? 502 : 200).json(summary);
+  } catch (error) {
+    console.error('Weekly recap job failed.', { error: error.message });
+    return response.status(502).json({ error: 'Weekly recap job failed' });
+  }
 };
