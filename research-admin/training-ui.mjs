@@ -146,7 +146,7 @@ function attemptHistory(rows, observer, caseId, reference, escapeHtml, {hideAgre
   }).join("");
 }
 
-function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, escapeHtml) {
+function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, rosterRows, clearanceRows, escapeHtml) {
   const nora=latest(attempts,observer,"nora");
   const kai=latest(attempts,observer,"kai");
   const fb=latestFor(feedbackRows,observer);
@@ -154,6 +154,11 @@ function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, 
   const noraInfo=noraSummary(nora,jessNora);
   const pieces=[Boolean(nora),Boolean(kai),Boolean(fb),Boolean(q)];
   const complete=pieces.every(Boolean);
+  const rosterRecord=(rosterRows||[]).find((row)=>String(row.display_name||"").toLowerCase().startsWith(observer.toLowerCase()));
+  const clearance=(clearanceRows||[]).find((row)=>row.observer_id===rosterRecord?.id)?.clearance_status || "pending";
+  const clearanceControl = clearance === "cleared"
+    ? '<div class="training-clearance cleared"><strong>Cleared for live observations</strong><span>Manual clearance recorded.</span></div>'
+    : `<div class="training-clearance pending"><div><strong>Not cleared for live observations</strong><span>${complete ? "Review training + Q&A/calibration, then clear manually." : "Complete all training pieces before clearance."}</span></div>${rosterRecord ? `<button type="button" class="clear-observer-button" data-clear-observer-id="${rosterRecord.id}" data-clear-observer-name="${escapeHtml(observer)}" ${complete ? "" : "disabled"}>Clear for Live Observations</button>` : ""}</div>`;
 
   return `
     <article class="training-observer-card">
@@ -169,6 +174,7 @@ function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, 
         <div><span>Form feedback</span><strong>${fb ? `Submitted · Manageability ${escapeHtml(fb.manageability ?? "—")}/5` : "Not submitted"}</strong></div>
         <div><span>Q&A</span><strong>${q ? "Submitted" : "Not submitted"}</strong></div>
       </div>
+      ${clearanceControl}
       <details class="training-observer-details" data-training-details-panel="${escapeHtml(observer)}">
         <summary>View training details</summary>
         <div class="training-detail-grid">
@@ -211,6 +217,8 @@ export function renderObserverTrainingDashboard(data={},escapeHtml=(value)=>Stri
   const attempts=data.attempts||[];
   const feedback=data.feedback||[];
   const questions=data.questions||[];
+  const rosterRows=data.roster||[];
+  const clearanceRows=data.clearances||[];
   const jessNora=latest(attempts,REFERENCE_OBSERVER,"nora");
   const jessKai=latest(attempts,REFERENCE_OBSERVER,"kai");
 
@@ -258,7 +266,7 @@ export function renderObserverTrainingDashboard(data={},escapeHtml=(value)=>Stri
       </div>
 
       <div class="training-observer-grid">
-        ${TEAM_OBSERVERS.map(observer=>observerCard(observer,attempts,feedback,questions,jessNora,escapeHtml)).join("")}
+        ${TEAM_OBSERVERS.map(observer=>observerCard(observer,attempts,feedback,questions,jessNora,rosterRows,clearanceRows,escapeHtml)).join("")}
       </div>
     </section>`;
 }
