@@ -1045,7 +1045,7 @@ function showResults(caseId = state.currentCaseId) {
   els["training-fidelity-agreement-detail"].textContent =
     `${agreement.agreements}/${agreement.total} fidelity scores matched the training key.${outcomeDetail}`;
 
-  els["training-interval-agreement"].textContent = caseData.masterIntervals ? "Ready to calculate" : "Master key pending";
+  els["training-interval-agreement"].textContent = caseData.masterIntervals ? "Ready to calculate" : "Not scored yet";
   els["practice-feedback-key"].hidden = !isNora;
   if (isNora) {
     els["answer-key-list"].innerHTML = caseData.fidelityTargets.map((item) => answerKeyRow(item, attempt)).join("");
@@ -1201,7 +1201,7 @@ function showComplete() {
   els["completion-summary"].innerHTML = `
     <div><span>Nora fidelity agreement</span><strong>${percentLabel(nora?.percent)}</strong></div>
     <div><span>Kai fidelity agreement</span><strong>${percentLabel(kai?.percent)}</strong></div>
-    <div><span>Student interval agreement</span><strong>Pending master keys</strong></div>
+    <div><span>Student interval agreement</span><strong>Reference score not yet available</strong></div>
     <div><span>Feedback + questions</span><strong>Submitted</strong></div>
   `;
   resetScrollPosition();
