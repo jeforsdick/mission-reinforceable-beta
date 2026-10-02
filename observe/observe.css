@@ -202,3 +202,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--obs-purple);outline:3
   .instruction-card-scoring{grid-column:auto}
   .inline-scoring-definitions{grid-template-columns:1fr}
 }
+
+
+.preflight-actions{display:flex;gap:12px;align-items:center;justify-content:flex-start;margin-top:14px}
+.preflight-actions span{color:var(--obs-muted);font-size:.78rem;line-height:1.4}
+.storage-message{min-height:1.25rem;margin:12px 0 0;color:var(--obs-green);font-size:.82rem;font-weight:750}
+.storage-message.error{color:#9d332e}
+@media(max-width:760px){.preflight-actions{align-items:stretch;flex-direction:column}}
