@@ -75,3 +75,8 @@
   .training-history-item{grid-template-columns:1fr 1fr}
   .history-pending{grid-column:span 1}
 }
+
+.training-head-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.training-details-trigger{border:0;border-radius:8px;padding:6px 9px;background:#eee7f6;color:#6c4298;font:inherit;font-size:.67rem;font-weight:900;cursor:pointer}
+.training-details-trigger:hover{background:#e2d7ee;color:#152446}
+@media(max-width:600px){.training-head-actions{justify-content:flex-start}}
