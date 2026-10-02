@@ -1,8 +1,9 @@
 const OBSERVERS = ["Austen","Casey","Melissa","Kathleen","Jess"];
 
 function latest(rows, observer, caseId) {
-  return rows
-    .filter((row) => row.observer_name === observer && row.case_id === caseId)
+  const matches = rows.filter((row) => row.observer_name === observer && row.case_id === caseId);
+  const production = matches.filter((row) => row.source_environment === "production");
+  return (production.length ? production : matches)
     .sort((a,b) => new Date(b.submitted_at) - new Date(a.submitted_at))[0] || null;
 }
 
@@ -78,26 +79,26 @@ function caseCell(attempt, reference) {
       <span>${reference && reference.client_submission_id !== attempt.client_submission_id
         ? `vs Jess — student ${pct(student?.percent)} · fidelity ${pct(fidelity?.percent)}`
         : "Jess/reference attempt"}</span>
-      <small>${new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(attempt.submitted_at))}</small>
+      <small>${new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(attempt.submitted_at))} · ${attempt.source_environment === "production" ? "production" : "preview"}</small>
     </div>
   `;
 }
 
-function feedbackCell(feedback) {
+function feedbackCell(feedback, escapeHtml) {
   if (!feedback) return '<span class="training-empty">Not submitted</span>';
   return `
     <div class="training-feedback-summary">
-      <strong>Manageability ${feedback.manageability ?? "—"}/5</strong>
-      <span>Fidelity ease ${feedback.fidelity_ease ?? "—"}/5 · Behavior ease ${feedback.behavior_ease ?? "—"}/5</span>
-      ${feedback.first_change ? `<small>First change: ${feedback.first_change}</small>` : ""}
+      <strong>Manageability ${escapeHtml(feedback.manageability ?? "—")}/5</strong>
+      <span>Fidelity ease ${escapeHtml(feedback.fidelity_ease ?? "—")}/5 · Behavior ease ${escapeHtml(feedback.behavior_ease ?? "—")}/5</span>
+      ${feedback.first_change ? `<small>First change: ${escapeHtml(feedback.first_change)}</small>` : ""}
     </div>
   `;
 }
 
-function questionsCell(row) {
+function questionsCell(row, escapeHtml) {
   if (!row) return '<span class="training-empty">Not submitted</span>';
   const text = row.scoring_questions || row.practice_requests || row.other_notes || "No questions submitted.";
-  return `<span class="training-question-preview">${text}</span>`;
+  return `<span class="training-question-preview">${escapeHtml(text)}</span>`;
 }
 
 function attemptDetail(attempt, title, escapeHtml) {
@@ -138,8 +139,8 @@ export function renderObserverTrainingDashboard(data = {}, escapeHtml = (value) 
         <td><strong>${escapeHtml(observer)}</strong><small>${totalAttempts} saved attempt${totalAttempts === 1 ? "" : "s"}</small></td>
         <td>${caseCell(nora, jessNora)}</td>
         <td>${caseCell(kai, jessKai)}</td>
-        <td>${feedbackCell(fb)}</td>
-        <td>${questionsCell(q)}</td>
+        <td>${feedbackCell(fb, escapeHtml)}</td>
+        <td>${questionsCell(q, escapeHtml)}</td>
       </tr>
       <tr class="training-detail-row">
         <td colspan="5">
