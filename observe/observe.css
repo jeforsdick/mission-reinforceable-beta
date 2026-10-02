@@ -296,3 +296,24 @@ input:focus,select:focus,textarea:focus{border-color:var(--obs-purple);outline:3
 /* Audible cue confirmation */
 .walkthrough-timer,.timer-grid{transition:background-color .15s ease,box-shadow .15s ease,transform .15s ease}
 .cue-flash{background:#fff3b8!important;box-shadow:0 0 0 4px rgba(240,201,90,.28)!important;transform:scale(1.01)}
+
+
+/* Mobile BIP plan summary fix */
+@media(max-width:760px){
+  .bip-heading{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:8px;
+    align-items:start;
+  }
+  .bip-heading>p{
+    width:100%;
+    margin:0;
+    padding:10px 11px;
+    border-radius:9px;
+    background:#f8f9fb;
+    color:#435163;
+    font-size:.78rem;
+    line-height:1.45;
+  }
+}
