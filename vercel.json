@@ -9,7 +9,7 @@
       "schedule": "0 16 * * 1-5"
     },
     {
-      "path": "/api/weekly-teacher-recap",
+      "path": "/api/teacher-daily-prompt-retry",
       "schedule": "0 23 * * 5"
     }
   ]
