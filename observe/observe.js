@@ -555,12 +555,21 @@ function finalizeIntervals() {
   }
 }
 
+function configurePlaybackAudioSession() {
+  try {
+    if (navigator.audioSession && navigator.audioSession.type !== "playback") {
+      navigator.audioSession.type = "playback";
+    }
+  } catch {}
+}
+
 async function ensureAudio() {
+  configurePlaybackAudioSession();
   if (!audioContext) {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (AudioCtx) audioContext = new AudioCtx();
   }
-  if (audioContext?.state === "suspended") {
+  if (audioContext && audioContext.state !== "running") {
     try { await audioContext.resume(); } catch {}
   }
   return audioContext;
@@ -602,7 +611,7 @@ async function beep() {
     second.start(now + 0.11);
     second.stop(now + 0.22);
 
-    if (navigator.vibrate) navigator.vibrate(60);
+      if (typeof navigator.vibrate === "function") navigator.vibrate(60);
     return true;
   } catch {
     return false;
