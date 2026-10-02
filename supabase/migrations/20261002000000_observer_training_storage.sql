@@ -1,7 +1,7 @@
 create table if not exists public.observer_training_attempts (
   id uuid primary key default gen_random_uuid(),
   client_submission_id uuid not null unique,
-  observer_name text not null check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jess')),
+  observer_name text not null check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jakob','Jess')),
   case_id text not null check (case_id in ('nora','kai')),
   attempt_type text not null check (attempt_type in ('practice','qualification')),
   module_version text not null default 'v5',
@@ -26,7 +26,7 @@ create table if not exists public.observer_training_attempts (
 create table if not exists public.observer_training_feedback (
   id uuid primary key default gen_random_uuid(),
   client_submission_id uuid not null unique,
-  observer_name text not null check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jess')),
+  observer_name text not null check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jakob','Jess')),
   case_id text not null default 'nora' check (case_id in ('nora','kai')),
   manageability smallint check (manageability between 1 and 5),
   fidelity_ease smallint check (fidelity_ease between 1 and 5),
@@ -45,7 +45,7 @@ create table if not exists public.observer_training_feedback (
 create table if not exists public.observer_training_questions (
   id uuid primary key default gen_random_uuid(),
   client_submission_id uuid not null unique,
-  observer_name text not null check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jess')),
+  observer_name text not null check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jakob','Jess')),
   scoring_questions text,
   practice_requests text,
   other_notes text,
@@ -76,7 +76,7 @@ on public.observer_training_attempts
 for insert
 to anon, authenticated
 with check (
-  observer_name in ('Austen','Casey','Melissa','Kathleen','Jess')
+  observer_name in ('Austen','Casey','Melissa','Kathleen','Jakob','Jess')
   and case_id in ('nora','kai')
   and attempt_type in ('practice','qualification')
   and interval_seconds = 15
@@ -96,7 +96,7 @@ on public.observer_training_feedback
 for insert
 to anon, authenticated
 with check (
-  observer_name in ('Austen','Casey','Melissa','Kathleen','Jess')
+  observer_name in ('Austen','Casey','Melissa','Kathleen','Jakob','Jess')
   and case_id in ('nora','kai')
 );
 
@@ -112,7 +112,7 @@ create policy "Training module inserts questions"
 on public.observer_training_questions
 for insert
 to anon, authenticated
-with check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jess'));
+with check (observer_name in ('Austen','Casey','Melissa','Kathleen','Jakob','Jess'));
 
 drop policy if exists "Research admins read training questions" on public.observer_training_questions;
 create policy "Research admins read training questions"
