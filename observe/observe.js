@@ -1,6 +1,7 @@
 import {
   calculateFidelity,
   calculateStudentBehavior,
+  calculateIntervalIOA,
   formatClock
 } from "./observation-model.mjs";
 import {
@@ -233,6 +234,18 @@ function fidelityAgreementFor(attempt, caseData) {
   return { agreements, total, percent, outcomeAgreements, outcomeTotal: outcomeTargets.length, outcomePercent };
 }
 
+function studentAgreementFor(attempt, caseData) {
+  if (!attempt || !caseData?.masterIntervals) return null;
+  return calculateIntervalIOA(caseData.masterIntervals, attempt.intervals || []);
+}
+
+function trainingQualified(attempt, caseData) {
+  const fidelity = fidelityAgreementFor(attempt, caseData);
+  const student = studentAgreementFor(attempt, caseData);
+  if (!fidelity || !student || fidelity.percent == null || student.percent == null) return null;
+  return fidelity.percent >= 85 && student.percent >= 85;
+}
+
 function stepCard({number,title,description,done,locked,buttonLabel,action,detail}) {
   return `
     <article class="module-step ${done ? "is-complete" : ""} ${locked ? "is-locked" : ""}">
@@ -250,13 +263,15 @@ function stepCard({number,title,description,done,locked,buttonLabel,action,detai
 function renderModuleSteps() {
   const m = state.module;
   const noraAgreement = fidelityAgreementFor(state.attempts.nora, TRAINING_CASES.nora);
+  const noraStudentAgreement = studentAgreementFor(state.attempts.nora, TRAINING_CASES.nora);
   const kaiAgreement = fidelityAgreementFor(state.attempts.kai, TRAINING_CASES.kai);
+  const kaiStudentAgreement = studentAgreementFor(state.attempts.kai, TRAINING_CASES.kai);
 
-  const noraDetail = m.noraCompleted
-    ? `Fidelity agreement: <strong>${percentLabel(noraAgreement?.percent)}</strong> · Student interval agreement: <strong>not scored yet</strong>`
+  const noraDetail = state.attempts.nora
+    ? `Fidelity agreement: <strong>${percentLabel(noraAgreement?.percent)}</strong> · Student interval agreement: <strong>${percentLabel(noraStudentAgreement?.percent)}</strong>`
     : "";
-  const kaiDetail = m.kaiCompleted
-    ? `Fidelity agreement: <strong>${percentLabel(kaiAgreement?.percent)}</strong> · Student interval agreement: <strong>not scored yet</strong>`
+  const kaiDetail = state.attempts.kai
+    ? `Fidelity agreement: <strong>${percentLabel(kaiAgreement?.percent)}</strong> · Student interval agreement: <strong>${kaiStudentAgreement ? percentLabel(kaiStudentAgreement.percent) : "reference pending"}</strong>`
     : "";
 
   els["module-steps"].innerHTML = [
@@ -964,6 +979,8 @@ async function submitAttempt() {
     attempt.submittedAt ||= new Date().toISOString();
 
     const agreement = fidelityAgreementFor(attempt, caseData);
+    const studentAgreement = studentAgreementFor(attempt, caseData);
+    const qualified = trainingQualified(attempt, caseData);
     await insertTrainingRecord("observer_training_attempts", {
       client_submission_id: attempt.clientSubmissionId,
       observer_name: state.observer,
@@ -981,16 +998,16 @@ async function submitAttempt() {
       notes: attempt.notes || null,
       teacher_fidelity_agreement: roundedPercent(agreement?.percent),
       desired_outcome_agreement: roundedPercent(agreement?.outcomePercent),
-      student_behavior_agreement: null,
-      qualified: null,
+      student_behavior_agreement: roundedPercent(studentAgreement?.percent),
+      qualified,
       source_environment: SOURCE_ENVIRONMENT
     });
 
     attempt.remoteSaved = true;
     attempt.status = "submitted";
     state.attempts[caseData.id] = JSON.parse(JSON.stringify(attempt));
-    if (caseData.id === "nora") state.module.noraCompleted = true;
-    if (caseData.id === "kai") state.module.kaiCompleted = true;
+    if (caseData.id === "nora") state.module.noraCompleted = qualified === true;
+    if (caseData.id === "kai") state.module.kaiCompleted = qualified === true || qualified === null;
     state.screen = "results";
     saveState();
     showResults(caseData.id);
@@ -1033,13 +1050,17 @@ function showResults(caseId = state.currentCaseId) {
   els["results-view"].hidden = false;
 
   const agreement = fidelityAgreementFor(attempt, caseData);
+  const studentAgreement = studentAgreementFor(attempt, caseData);
+  const qualified = trainingQualified(attempt, caseData);
   const isNora = caseId === "nora";
 
   els["results-eyebrow"].textContent = isNora ? "Nora guided practice" : "Kai independent qualification";
   els["results-title"].textContent = `${caseData.name} Results`;
   els["results-copy"].textContent = isNora
-    ? "Use the item-level comparison below as practice feedback. Then tell Jess what the form was like to use."
-    : "This attempt is retained as your independent qualification record. Student interval agreement will be calculated from the final master-coded interval key.";
+    ? (qualified
+        ? "Nora practice passed. Your student intervals were compared with Jess’s reference coding, and your fidelity scoring was compared with the training key."
+        : "Nora practice needs another attempt. Reach at least 85% agreement on both student intervals and fidelity scoring before moving on.")
+    : "This attempt is retained as your independent qualification record. Student interval agreement will be calculated when the Kai reference coding is finalized.";
   els["training-fidelity-agreement"].textContent = percentLabel(agreement.percent);
 
   const outcomeDetail = agreement.outcomeTotal
@@ -1048,12 +1069,14 @@ function showResults(caseId = state.currentCaseId) {
   els["training-fidelity-agreement-detail"].textContent =
     `${agreement.agreements}/${agreement.total} fidelity scores matched the training key.${outcomeDetail}`;
 
-  els["training-interval-agreement"].textContent = caseData.masterIntervals ? "Ready to calculate" : "Not scored yet";
+  els["training-interval-agreement"].textContent = studentAgreement ? percentLabel(studentAgreement.percent) : "Not scored yet";
   els["practice-feedback-key"].hidden = !isNora;
   if (isNora) {
     els["answer-key-list"].innerHTML = caseData.fidelityTargets.map((item) => answerKeyRow(item, attempt)).join("");
-    els["continue-after-results"].textContent = state.module.noraFeedbackComplete ? "Return to Module" : "Give Feedback on the Form";
-    els["repeat-case"].textContent = "Practice Nora Again";
+    els["continue-after-results"].textContent = qualified
+      ? (state.module.noraFeedbackComplete ? "Return to Module" : "Give Feedback on the Form")
+      : "Return to Module";
+    els["repeat-case"].textContent = qualified ? "Practice Nora Again" : "Repeat Nora Practice";
   } else {
     els["continue-after-results"].textContent = state.module.questionsComplete ? "Return to Module" : "Submit Questions for the Team Meeting";
     els["repeat-case"].textContent = "Repeat Kai Attempt";
