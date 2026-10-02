@@ -41,7 +41,7 @@ test('test send is restricted to explicit tests and only TEST_EMAIL_RECIPIENT',(
   assert.doesNotMatch(api,/to: \[participant\.teacher/);
 });
 
-test('weekly test delivery sends only to TEST_EMAIL_RECIPIENT',async()=>{
+test('weekly test delivery sends only to the signed-in research admin',async()=>{
   const originalFetch=global.fetch, originalDate=global.Date, originalEnv={...process.env};
   const sent=[];
   // Keep this fixture in its first intervention week. The production path uses
@@ -50,9 +50,9 @@ test('weekly test delivery sends only to TEST_EMAIL_RECIPIENT',async()=>{
     constructor(...args){super(...(args.length?args:['2026-09-10T18:00:00Z']));}
     static now(){return new originalDate('2026-09-10T18:00:00Z').getTime();}
   };
-  process.env.SUPABASE_URL='https://db.example';process.env.SUPABASE_SERVICE_ROLE_KEY='service';process.env.RESEND_API_KEY='resend';process.env.TEST_EMAIL_RECIPIENT='researcher@example.org';process.env.TEACHER_GAME_URL='https://missionreinforceable.com/game/';process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL='https://educationutah.co1.qualtrics.com/jfe/form/SV_9MsIT9TZXCdeIWa';
+  process.env.SUPABASE_URL='https://db.example';process.env.SUPABASE_SERVICE_ROLE_KEY='service';process.env.RESEND_API_KEY='resend';process.env.TEACHER_GAME_URL='https://missionreinforceable.com/game/';process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL='https://educationutah.co1.qualtrics.com/jfe/form/SV_9MsIT9TZXCdeIWa';
   global.fetch=async(url,options={})=>{
-    if(url==='https://db.example/auth/v1/user')return {ok:true,json:async()=>({id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'})};
+    if(url==='https://db.example/auth/v1/user')return {ok:true,json:async()=>({id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',email:'researcher@example.org'})};
     if(String(url).includes('/profiles?id=eq.aaaaaaaa'))return {ok:true,json:async()=>[{id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',role:'research_admin',active:true}]};
     if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',case_id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',participant_code:'MR-998',is_test:true,auth_user_id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'}]};
     if(String(url).includes('/profiles?id=eq.cccccccc'))return {ok:true,json:async()=>[{display_name:'Pat Example'}]};
