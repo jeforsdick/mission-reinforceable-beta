@@ -102,7 +102,14 @@ test('corrective weekly summary preserves recap filters, authorization, and gran
   assert.match(assignmentScopeFix,/grant execute on function public\.research_admin_weekly_game_summary\(uuid,date\) to authenticated, service_role;/);
 });
 
-test('no production weekly cron is added and Daily schedules stay fixed',()=>{
-  assert.deepEqual(vercel.crons,[{path:'/api/teacher-daily-prompt',schedule:'0 14 * * 1-5'},{path:'/api/teacher-daily-prompt-retry',schedule:'0 16 * * 1-5'}]);
+test('production weekly recap shares the existing retry endpoint and stays within the function limit',()=>{
+  assert.deepEqual(vercel.crons,[
+    {path:'/api/teacher-daily-prompt',schedule:'0 14 * * 1-5'},
+    {path:'/api/teacher-daily-prompt-retry',schedule:'0 16 * * 1-5'},
+    {path:'/api/teacher-daily-prompt-retry',schedule:'0 23 * * 5'}
+  ]);
+  const retry=fs.readFileSync(new URL('./teacher-daily-prompt-retry.js',import.meta.url),'utf8');
+  assert.match(retry,/0 23 \* \* 5/);
+  assert.match(retry,/weekly-recap-delivery/);
   assert.ok(fs.readdirSync(new URL('.',import.meta.url)).filter(name=>name.endsWith('.js')).length<=12);
 });
