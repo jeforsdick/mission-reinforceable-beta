@@ -14,3 +14,10 @@
 .training-detail-case p{margin:6px 0;font-size:.78rem;line-height:1.45}
 .training-interval-code{display:block;margin-top:5px;padding:8px;border-radius:8px;background:#fff;white-space:normal;word-break:break-all;letter-spacing:.08em;color:#152446}
 @media(max-width:900px){.training-detail-grid{grid-template-columns:1fr}.training-admin-table{min-width:980px}}
+.training-history-list{display:grid;gap:7px}
+.training-history-item{display:grid;grid-template-columns:minmax(120px,1.4fr) repeat(3,minmax(90px,1fr));gap:8px;align-items:center;padding:8px 0;border-top:1px solid #e6dfd2}
+.training-history-item:first-child{border-top:0}
+.training-history-item>div{display:grid;gap:2px}
+.training-history-item span,.training-history-item small{color:#667085;font-size:.67rem}
+.training-history-item strong{color:#152446;font-size:.74rem}
+@media(max-width:760px){.training-history-item{grid-template-columns:1fr 1fr}}
