@@ -36,13 +36,15 @@ async function loadDashboard(client) {
 
   showMessage("Loading asynchronous training submissions…");
 
-  const [attempts, feedback, questions] = await Promise.all([
+  const [attempts, feedback, questions, roster, clearances] = await Promise.all([
     client.from("observer_training_attempts").select("*").order("submitted_at", { ascending: false }),
     client.from("observer_training_feedback").select("*").order("submitted_at", { ascending: false }),
-    client.from("observer_training_questions").select("*").order("submitted_at", { ascending: false })
+    client.from("observer_training_questions").select("*").order("submitted_at", { ascending: false }),
+    client.from("research_observers").select("id,observer_code,display_name,active"),
+    client.from("research_observer_clearance").select("observer_id,clearance_status,cleared_at")
   ]);
 
-  const error = attempts.error || feedback.error || questions.error;
+  const error = attempts.error || feedback.error || questions.error || roster.error || clearances.error;
   if (error) {
     showMessage("Training submissions could not be loaded. Refresh Research Admin and try again.");
     return;
@@ -51,7 +53,9 @@ async function loadDashboard(client) {
   target.innerHTML = renderObserverTrainingDashboard({
     attempts: attempts.data || [],
     feedback: feedback.data || [],
-    questions: questions.data || []
+    questions: questions.data || [],
+    roster: roster.data || [],
+    clearances: clearances.data || []
   }, escapeHtml);
 }
 
@@ -67,7 +71,32 @@ function start() {
   loadDashboard(client);
 }
 
-target?.addEventListener("click", (event) => {
+target?.addEventListener("click", async (event) => {
+  const clearButton = event.target.closest("[data-clear-observer-id]");
+  if (clearButton) {
+    const observerName = clearButton.dataset.clearObserverName || "this observer";
+    if (!window.confirm(`Clear ${observerName} for live observations?\n\nUse this only after you have reviewed training and completed the Q&A/calibration you require.`)) return;
+    clearButton.disabled = true;
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const { data: { session } } = await client.auth.getSession();
+    const { error } = await client.from("research_observer_clearance")
+      .update({
+        clearance_status: "cleared",
+        cleared_at: new Date().toISOString(),
+        cleared_by: session?.user?.id || null,
+        updated_at: new Date().toISOString()
+      })
+      .eq("observer_id", clearButton.dataset.clearObserverId);
+    if (error) {
+      window.alert(error.message);
+      clearButton.disabled = false;
+      return;
+    }
+    await loadDashboard(client);
+    window.dispatchEvent(new CustomEvent("mr-research-admin-ready"));
+    return;
+  }
+
   const trigger = event.target.closest("[data-training-details]");
   if (!trigger) return;
   const observer = trigger.dataset.trainingDetails;
