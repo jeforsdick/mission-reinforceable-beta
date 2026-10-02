@@ -432,7 +432,7 @@ async function loadReadiness(requestId) {
   const { data: publishedVersion, error: versionError } = await state.client.rpc('research_admin_game_publish_status', { target_case_id: data.case.id });
   if (versionError) throw versionError;
   state.publishedSource = publishedVersion || null;
-  try { state.communications = await communicationReadiness(data.case.id); } catch { state.communications = { teacher_reminder_system_enabled: false, game_login_email_enabled: false, weekly_qualtrics_configured: false }; }
+  try { state.communications = await communicationReadiness(data.case.id); } catch { state.communications = { teacher_reminder_system_enabled: false, game_login_email_enabled: false, weekly_qualtrics_configured: false, weekly_recap_system_enabled: false }; }
   let studyDayStatus={history:[],current:[]};try{studyDayStatus=await adminApi('/api/research-admin-study-day-status',{action:'history',case_id:data.case.id});}catch{}
   state.caseOperations=operations.cases?.[0];state.caseOperations.weekly_checkins=weeklyCheckins||[];state.caseOperations.weekly_qualtrics_configured=state.communications.weekly_qualtrics_configured===true;state.caseOperations.fidelity_targets=state.authoringWorkspace?.fidelity_targets||[];state.caseOperations.observation_data=observationData;state.caseOperations.study_day_status=studyDayStatus; return data;
 }
@@ -440,7 +440,7 @@ function readinessPanel(data) {
   const manifest=state.authoringWorkspace&&draftRevisionManifest(state.authoringWorkspace),source=state.publishedSource;
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged=Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
-  return renderParticipantReadiness(state.participantReadiness,escapeHtml,{productionEmailDelivery:state.communications.teacher_reminder_system_enabled===true,weeklyEmail:state.communications.weekly_email})+renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,gameLoginEmailEnabled:state.communications.game_login_email_enabled===true,gameLoginEmailStatus:state.communications.game_login_email_status,unpublishedDraftChanges:draftChanged,qualtricsMeasures:state.communications.qualtrics_measures})
+  return renderParticipantReadiness(state.participantReadiness,escapeHtml,{productionEmailDelivery:state.communications.teacher_reminder_system_enabled===true,weeklyEmail:state.communications.weekly_email})+renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,gameLoginEmailEnabled:state.communications.game_login_email_enabled===true,gameLoginEmailStatus:state.communications.game_login_email_status,weeklyRecapSystemEnabled:state.communications.weekly_recap_system_enabled===true,unpublishedDraftChanges:draftChanged,qualtricsMeasures:state.communications.qualtrics_measures})
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
 }
 function gameCreationPanel(data) {
