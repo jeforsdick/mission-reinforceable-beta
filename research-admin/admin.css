@@ -415,3 +415,9 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
   .observer-add-form button{grid-column:auto}
   .ioa-case-list>div{flex-direction:column;gap:2px}
 }
+
+.roster-status-group{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.roster-status.roster{background:#f1f2f4;color:#667085}
+.roster-status.pending{background:#fff6df;color:#7a5b12}
+.roster-status.qualified{background:#e2f3eb;color:var(--green)}
+.roster-status.needs{background:#fff0ed;color:#9d342d}
