@@ -159,7 +159,7 @@ function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, 
     <article class="training-observer-card">
       <header class="training-observer-head">
         <div><h3>${escapeHtml(observer)}</h3><span>${pieces.filter(Boolean).length}/4 training pieces submitted</span></div>
-        ${statusBadge(complete ? "Ready for review" : "In progress",complete?"pass":"neutral")}
+        <div class="training-head-actions">${statusBadge(complete ? "Ready for review" : "In progress",complete?"pass":"neutral")}<button class="training-details-trigger" type="button" data-training-details="${escapeHtml(observer)}">View details</button></div>
       </header>
       <div class="training-observer-cases">
         ${noraInfo.html}
@@ -169,7 +169,7 @@ function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, 
         <div><span>Form feedback</span><strong>${fb ? `Submitted · Manageability ${escapeHtml(fb.manageability ?? "—")}/5` : "Not submitted"}</strong></div>
         <div><span>Q&A</span><strong>${q ? "Submitted" : "Not submitted"}</strong></div>
       </div>
-      <details class="training-observer-details">
+      <details class="training-observer-details" data-training-details-panel="${escapeHtml(observer)}">
         <summary>View training details</summary>
         <div class="training-detail-grid">
           <section class="training-detail-case">
