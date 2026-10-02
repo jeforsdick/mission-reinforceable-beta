@@ -179,23 +179,23 @@
         <div class="walkthrough-shell">
           <div class="walkthrough-mockup">
             <section class="walkthrough-student">
-              <div class="walkthrough-video">
+              <div class="walkthrough-video tour-target active" data-tour-target="0">
                 <span>Training video</span>
                 <small>Watch the teacher-student interaction here.</small>
               </div>
 
-              <div class="walkthrough-timer">
+              <div class="walkthrough-timer tour-target" data-tour-target="3">
                 <div><span>Video time</span><strong>01:30</strong></div>
                 <div><span>Interval</span><strong>7 / 18</strong></div>
                 <div><span>Next boundary</span><strong>00:15</strong></div>
               </div>
 
-              <div class="walkthrough-definition">
+              <div class="walkthrough-definition tour-target" data-tour-target="1">
                 <strong>Student target behavior</strong>
                 <span>The operational definition stays visible while you collect.</span>
               </div>
 
-              <button class="walkthrough-red" type="button" tabindex="-1">
+              <button class="walkthrough-red tour-target" data-tour-target="2" type="button" tabindex="-1">
                 TARGET BEHAVIOR OCCURRED
                 <small>Tap once if it happens anywhere in the current 15-second interval.</small>
               </button>
@@ -206,7 +206,7 @@
               </div>
             </section>
 
-            <section class="walkthrough-fidelity">
+            <section class="walkthrough-fidelity tour-target" data-tour-target="4">
               <div class="walkthrough-fidelity-head">
                 <div><span>Teacher implementation</span><strong>Fidelity</strong></div>
                 <b>2/5 scored</b>
@@ -228,9 +228,13 @@
                 <button type="button" tabindex="-1">Not Implemented<br>as Written</button>
               </div>
 
-              <div class="walkthrough-outcome">
+              <div class="walkthrough-outcome tour-target" data-tour-target="5">
                 <strong>Did it have the desired outcome?</strong>
                 <span>Yes · No · Not clear</span>
+              </div>
+              <div class="walkthrough-end-review tour-target" data-tour-target="6">
+                <strong>At the end:</strong>
+                <span>Review any blank fidelity items and confirm No Opportunity only when the needed event never occurred.</span>
               </div>
             </section>
           </div>
