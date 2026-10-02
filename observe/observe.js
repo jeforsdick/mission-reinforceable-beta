@@ -12,7 +12,7 @@ import {
 const INTERVAL_SECONDS = 15;
 const STORAGE_KEY = "mr-observer-training-module-v5";
 const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYXNlIiwicmVmIjoidnlpd3d3bWNvYWh3a2dpaWN0bWMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4NjMwMTQ3MywiZXhwIjoyMTAxODc3NDczfQ.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W";
 const SOURCE_ENVIRONMENT = location.hostname === "missionreinforceable.com" || location.hostname === "www.missionreinforceable.com" ? "production" : "preview";
 let trainingDb = null;
 
@@ -328,7 +328,7 @@ function showModule() {
   els["module-view"].hidden = false;
   els["module-welcome"].textContent = `Hi ${state.observer}. Complete the training at your own pace—you can stop and come back later.`;
   renderModuleSteps();
-  syncCachedAttempts().then(() => renderModuleSteps());
+  renderModuleSteps();
   resetScrollPosition();
 }
 
@@ -875,7 +875,7 @@ function reviewRow(item, index) {
 
   const outcomeControls = score === "implemented" ? `
     <div class="review-outcome">
-      <small>Desired outcome:</small>
+      <small>Did it have the desired outcome?</small>
       <div class="review-score-actions">
         <button class="review-score-button ${outcome === "yes" ? "selected" : ""}" type="button" data-review-outcome="${item.id}" data-outcome="yes">Yes</button>
         <button class="review-score-button ${outcome === "no" ? "selected" : ""}" type="button" data-review-outcome="${item.id}" data-outcome="no">No</button>
@@ -884,11 +884,13 @@ function reviewRow(item, index) {
     </div>
   ` : "";
 
+  const needsOutcome = score === "implemented" && !outcome;
   return `
-    <div class="review-fidelity-row">
+    <div class="review-fidelity-row ${needsOutcome ? "needs-outcome" : ""}">
       <div>
         <strong>${index + 1}. ${item.short}</strong>
         <small>${item.detail}</small>
+        ${needsOutcome ? '<span class="review-needs-outcome">Finish desired-outcome rating</span>' : ""}
         ${outcomeControls}
       </div>
       <div class="review-score-actions">
@@ -993,6 +995,7 @@ async function submitAttempt() {
     saveState();
     showResults(caseData.id);
   } catch (error) {
+    console.error("Training attempt save failed", error);
     setStorageMessage("attempt-storage-message", "We couldn’t save this submission. Your work is still saved on this device—please try Submit again.", true);
     button.disabled = false;
   }
