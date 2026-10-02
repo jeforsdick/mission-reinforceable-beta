@@ -11,6 +11,10 @@ import {
 
 const INTERVAL_SECONDS = 15;
 const STORAGE_KEY = "mr-observer-training-module-v5";
+const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYXNlIiwicmVmIjoidnlpd3d3bWNvYWh3a2dpaWN0bWMiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTc4NjMwMTQ3MywiZXhwIjoyMTAxODc3NDczfQ.Ut7eLLdmNJfE3MFQ7q1osS3WOGJ9fPSf9Hm7e-_3ckQ";
+const SOURCE_ENVIRONMENT = location.hostname === "missionreinforceable.com" || location.hostname === "www.missionreinforceable.com" ? "production" : "preview";
+let trainingDb = null;
 
 const ids = [
   "login-view","module-view","instruction-view","ready-view","active-view","review-view","results-view",
@@ -27,7 +31,8 @@ const ids = [
   "summary-case-name","review-warning","review-warning-text","mark-remaining-no-opportunity","review-fidelity",
   "submit-attempt","results-eyebrow","results-title","results-copy","training-fidelity-agreement",
   "training-fidelity-agreement-detail","training-interval-agreement","practice-feedback-key","answer-key-list",
-  "continue-after-results","feedback-form","questions-form","complete-title","completion-summary"
+  "continue-after-results","feedback-form","questions-form","complete-title","completion-summary","test-sound",
+  "attempt-storage-message","feedback-storage-message","questions-storage-message"
 ];
 const els = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
@@ -83,6 +88,37 @@ function loadState() {
 
 function saveState() {
   if (state) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function submissionId(existing) {
+  return existing || (crypto.randomUUID ? crypto.randomUUID() : `training-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+}
+
+function getTrainingDb() {
+  if (trainingDb) return trainingDb;
+  if (!window.supabase) throw new Error("The secure training database did not load.");
+  trainingDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+  });
+  return trainingDb;
+}
+
+async function insertTrainingRecord(table, payload) {
+  const client = getTrainingDb();
+  const { error } = await client.from(table).insert(payload);
+  if (error && error.code !== "23505") throw error;
+}
+
+function setStorageMessage(id, message, isError = false) {
+  const el = els[id];
+  if (!el) return;
+  el.textContent = message || "";
+  el.classList.toggle("error", Boolean(isError));
+}
+
+function roundedPercent(value) {
+  if (value == null || Number.isNaN(value)) return null;
+  return Math.round(value * 100) / 100;
 }
 
 function clearState() {
@@ -234,7 +270,7 @@ function showModule() {
   state.screen = "module";
   saveState();
   els["module-view"].hidden = false;
-  els["module-welcome"].textContent = `Hi ${state.observer}. You can stop and come back; this preview saves your progress in this browser.`;
+  els["module-welcome"].textContent = `Hi ${state.observer}. You can stop and come back; in-progress work is cached in this browser, and completed submissions are saved to the training database.`;
   renderModuleSteps();
   resetScrollPosition();
 }
@@ -800,19 +836,54 @@ function markRemainingNoOpportunity() {
   showReview();
 }
 
-function submitAttempt() {
+async function submitAttempt() {
   const attempt = currentAttempt();
   const caseData = currentCase();
   if (!attempt || !caseData || missingFidelityItems().length || missingOutcomeItems().length) return;
 
-  attempt.status = "submitted";
-  attempt.submittedAt = new Date().toISOString();
-  state.attempts[caseData.id] = JSON.parse(JSON.stringify(attempt));
-  if (caseData.id === "nora") state.module.noraCompleted = true;
-  if (caseData.id === "kai") state.module.kaiCompleted = true;
-  state.screen = "results";
-  saveState();
-  showResults(caseData.id);
+  const button = els["submit-attempt"];
+  button.disabled = true;
+  setStorageMessage("attempt-storage-message", "Saving training attempt…");
+
+  try {
+    attempt.clientSubmissionId = submissionId(attempt.clientSubmissionId);
+    attempt.submittedAt ||= new Date().toISOString();
+
+    const agreement = fidelityAgreementFor(attempt, caseData);
+    await insertTrainingRecord("observer_training_attempts", {
+      client_submission_id: attempt.clientSubmissionId,
+      observer_name: state.observer,
+      case_id: caseData.id,
+      attempt_type: attempt.attemptType,
+      module_version: "v5",
+      case_version: 1,
+      started_at: attempt.startedAt,
+      submitted_at: attempt.submittedAt,
+      video_duration_seconds: caseData.videoDurationSeconds,
+      interval_seconds: INTERVAL_SECONDS,
+      intervals: attempt.intervals,
+      fidelity_scores: attempt.fidelityScores,
+      fidelity_outcomes: attempt.fidelityOutcomes,
+      notes: attempt.notes || null,
+      teacher_fidelity_agreement: roundedPercent(agreement?.percent),
+      desired_outcome_agreement: roundedPercent(agreement?.outcomePercent),
+      student_behavior_agreement: null,
+      qualified: null,
+      source_environment: SOURCE_ENVIRONMENT
+    });
+
+    attempt.remoteSaved = true;
+    attempt.status = "submitted";
+    state.attempts[caseData.id] = JSON.parse(JSON.stringify(attempt));
+    if (caseData.id === "nora") state.module.noraCompleted = true;
+    if (caseData.id === "kai") state.module.kaiCompleted = true;
+    state.screen = "results";
+    saveState();
+    showResults(caseData.id);
+  } catch (error) {
+    setStorageMessage("attempt-storage-message", "Could not save to the training database. Your work is still saved in this browser; try Submit again.", true);
+    button.disabled = false;
+  }
 }
 
 function answerKeyRow(item, attempt) {
@@ -902,24 +973,53 @@ function showFeedback() {
   resetScrollPosition();
 }
 
-function submitFeedback(event) {
+async function submitFeedback(event) {
   event.preventDefault();
-  const data = new FormData(event.currentTarget);
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const data = new FormData(form);
   const feedback = {
-    manageability: data.get("manageability"),
-    fidelity_ease: data.get("fidelity_ease"),
-    behavior_ease: data.get("behavior_ease"),
-    cue_helpfulness: data.get("cue_helpfulness"),
-    could_not_enter: data.get("could_not_enter"),
+    clientSubmissionId: submissionId(state.feedback.nora?.clientSubmissionId),
+    manageability: Number(data.get("manageability")),
+    fidelity_ease: Number(data.get("fidelity_ease")),
+    behavior_ease: Number(data.get("behavior_ease")),
+    cue_helpfulness: Number(data.get("cue_helpfulness")),
+    could_not_enter: data.get("could_not_enter") === "yes",
     hard_definitions: String(data.get("hard_definitions") || "").trim(),
     first_change: String(data.get("first_change") || "").trim(),
     questions: String(data.get("questions") || "").trim(),
     submittedAt: new Date().toISOString()
   };
+
+  button.disabled = true;
+  setStorageMessage("feedback-storage-message", "Saving feedback…");
   state.feedback.nora = feedback;
-  state.module.noraFeedbackComplete = true;
   saveState();
-  openCaseReady("kai");
+
+  try {
+    await insertTrainingRecord("observer_training_feedback", {
+      client_submission_id: feedback.clientSubmissionId,
+      observer_name: state.observer,
+      case_id: "nora",
+      manageability: feedback.manageability,
+      fidelity_ease: feedback.fidelity_ease,
+      behavior_ease: feedback.behavior_ease,
+      cue_helpfulness: feedback.cue_helpfulness,
+      could_not_enter: feedback.could_not_enter,
+      hard_definitions: feedback.hard_definitions || null,
+      first_change: feedback.first_change || null,
+      questions: feedback.questions || null,
+      submitted_at: feedback.submittedAt,
+      source_environment: SOURCE_ENVIRONMENT
+    });
+    feedback.remoteSaved = true;
+    state.module.noraFeedbackComplete = true;
+    saveState();
+    openCaseReady("kai");
+  } catch (error) {
+    setStorageMessage("feedback-storage-message", "Could not save feedback to the training database. Your answers are still saved in this browser; try again.", true);
+    button.disabled = false;
+  }
 }
 
 function showQuestions() {
@@ -936,19 +1036,43 @@ function showQuestions() {
   resetScrollPosition();
 }
 
-function submitQuestions(event) {
+async function submitQuestions(event) {
   event.preventDefault();
-  const data = new FormData(event.currentTarget);
-  state.questions = {
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"]');
+  const data = new FormData(form);
+  const questions = {
+    clientSubmissionId: submissionId(state.questions?.clientSubmissionId),
     scoring_questions: String(data.get("scoring_questions") || "").trim(),
     practice_requests: String(data.get("practice_requests") || "").trim(),
     other_notes: String(data.get("other_notes") || "").trim(),
     submittedAt: new Date().toISOString()
   };
-  state.module.questionsComplete = true;
-  state.module.completedAt = new Date().toISOString();
+
+  button.disabled = true;
+  setStorageMessage("questions-storage-message", "Saving questions…");
+  state.questions = questions;
   saveState();
-  showComplete();
+
+  try {
+    await insertTrainingRecord("observer_training_questions", {
+      client_submission_id: questions.clientSubmissionId,
+      observer_name: state.observer,
+      scoring_questions: questions.scoring_questions || null,
+      practice_requests: questions.practice_requests || null,
+      other_notes: questions.other_notes || null,
+      submitted_at: questions.submittedAt,
+      source_environment: SOURCE_ENVIRONMENT
+    });
+    questions.remoteSaved = true;
+    state.module.questionsComplete = true;
+    state.module.completedAt = new Date().toISOString();
+    saveState();
+    showComplete();
+  } catch (error) {
+    setStorageMessage("questions-storage-message", "Could not save questions to the training database. Your answers are still saved in this browser; try again.", true);
+    button.disabled = false;
+  }
 }
 
 function showComplete() {
@@ -1039,6 +1163,10 @@ els["complete-instruction"].addEventListener("click", () => {
   openCaseReady("nora");
 });
 
+els["test-sound"].addEventListener("click", () => {
+  ensureAudio();
+  beep();
+});
 els["start-observation"].addEventListener("click", initializeAttempt);
 els["target-occurred"].addEventListener("click", markTargetOccurred);
 els["continuing-toggle"].addEventListener("click", toggleContinuing);
