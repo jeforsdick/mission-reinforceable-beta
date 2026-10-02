@@ -5,11 +5,68 @@ const dateLabel=value=>{const date=new Date(`${value}T12:00:00Z`);return Number.
 const timeLabel=value=>{if(!value)return '';const [hour,minute]=value.slice(0,5).split(':').map(Number);return `${hour%12||12}:${String(minute).padStart(2,'0')} ${hour<12?'AM':'PM'}`;};
 
 export function renderObserverTeam(data,e){
- const rows=(data.observers||[]).map(observer=>`<li><form class="observer-edit-form compact-form" data-id="${observer.id}"><label>Code<input name="code" maxlength="16" value="${e(observer.observer_code)}" required></label><label>Display name<input name="name" maxlength="160" value="${e(observer.display_name)}" required></label><input type="hidden" name="type" value="${observer.observer_type}"><label class="check-option"><input type="checkbox" name="active"${checked(observer.active)}> Active</label><span><strong>${e(observer.observer_type.replaceAll('_',' '))}</strong> · <span class="${observer.status==='qualified'?'ready':'needs'}">${e(observer.status.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase()))}</span></span><button class="quiet">Save observer</button></form>${observer.latest_training?`<p>Teacher fidelity practice agreement: ${pct(observer.latest_training.teacher_fidelity_agreement)} · Student behavior practice agreement: ${pct(observer.latest_training.student_behavior_agreement)}</p>`:''}${observer.status==='recalibration_required'?'<p class="attention">Recalibration required before further independent observation.</p>':''}<details><summary>Training history</summary><ol>${(observer.training_history||[]).map(x=>`<li>${e(x.event_date)} · ${e(x.event_type)} · Teacher ${pct(x.teacher_fidelity_agreement)} · Student ${pct(x.student_behavior_agreement)}</li>`).join('')||'<li>No events.</li>'}</ol></details></li>`).join('')||'<li>No observers registered.</li>';
- return `<section class="panel observer-team"><p class="eyebrow">Observers</p><h2>Observer Team</h2><p>Inactive observers stay in the record so old data keeps the correct observer.</p><p id="observer-message" class="success-message" role="status" aria-live="polite"></p><form id="observer-form" class="compact-form"><label>Observer code<input name="code" maxlength="16" required></label><label>Display name<input name="name" maxlength="160" required></label><label>Observer type<select name="type"><option value="trained_observer">Trained observer</option><option value="primary_researcher">Primary researcher</option></select></label><button class="primary">Add observer</button></form><form id="training-form" class="compact-form"><h3>Observer Training</h3><p class="neutral-note">To collect IOA independently, an observer needs ≥85% on both teacher fidelity and student behavior during Practice, Recalibration, or Retraining.</p><label>Observer<select name="observer_id" required><option value="">Select</option>${(data.observers||[]).filter(x=>x.observer_type==='trained_observer').map(x=>`<option value="${x.id}">${e(x.observer_code)}</option>`).join('')}</select></label><label>Event<select name="event_type">${['training','practice','recalibration','retraining'].map(x=>`<option>${x}</option>`).join('')}</select></label><label>Date<input type="date" name="event_date" required></label><label>Teacher fidelity agreement %<input type="number" name="teacher" min="0" max="100" step="any" required></label><label>Student behavior agreement %<input type="number" name="student" min="0" max="100" step="any" required></label><label>Note — optional<textarea name="note" maxlength="1000"></textarea></label><button class="primary">Save Training Record</button></form><ul>${rows}</ul></section>`;
+ const observers=data.observers||[];
+ const rows=observers.map(observer=>`
+   <article class="observer-roster-card">
+     <div class="observer-roster-head">
+       <div>
+         <strong>${e(observer.display_name)}</strong>
+         <span>${e(observer.observer_code)} · ${e(observer.observer_type.replaceAll('_',' '))}</span>
+       </div>
+       <span class="roster-status ${observer.active?'active':'inactive'}">${observer.active?'Active':'Inactive'}</span>
+     </div>
+     <details class="observer-edit-details">
+       <summary>Edit observer</summary>
+       <form class="observer-edit-form compact-form" data-id="${observer.id}">
+         <label>Code<input name="code" maxlength="16" value="${e(observer.observer_code)}" required></label>
+         <label>Display name<input name="name" maxlength="160" value="${e(observer.display_name)}" required></label>
+         <input type="hidden" name="type" value="${observer.observer_type}">
+         <label class="check-option"><input type="checkbox" name="active"${checked(observer.active)}> Active</label>
+         <button class="quiet">Save observer</button>
+       </form>
+       ${observer.training_history?.length?`<details class="legacy-training-details"><summary>Legacy training history</summary><ol>${observer.training_history.map(x=>`<li>${e(x.event_date)} · ${e(x.event_type)} · Teacher ${pct(x.teacher_fidelity_agreement)} · Student ${pct(x.student_behavior_agreement)}</li>`).join('')}</ol></details>`:''}
+     </details>
+   </article>
+ `).join('')||'<p class="empty-admin-state">No live observers registered yet.</p>';
+
+ return `
+   <section class="panel observer-team observer-roster-panel">
+     <div class="section-heading">
+       <div><p class="eyebrow">Observers</p><h2>Live Observation Roster</h2></div>
+       <p>Observer IDs used for classroom observations and IOA.</p>
+     </div>
+     <p id="observer-message" class="success-message" role="status" aria-live="polite"></p>
+     <div class="observer-roster-grid">${rows}</div>
+     <details class="observer-roster-manager">
+       <summary>Manage observer roster</summary>
+       <form id="observer-form" class="compact-form observer-add-form">
+         <label>Observer code<input name="code" maxlength="16" required></label>
+         <label>Display name<input name="name" maxlength="160" required></label>
+         <label>Observer type<select name="type"><option value="trained_observer">Trained observer</option><option value="primary_researcher">Primary researcher</option></select></label>
+         <button class="primary">Add observer</button>
+       </form>
+     </details>
+   </section>`;
 }
 
-export function renderStudyIoaSummary(data,e){const c=data.coverage||{};return `<section class="panel study-ioa-summary"><p class="eyebrow">IOA</p><h2>Study IOA</h2><div class="observation-stats"><div><span>Completed observations</span><strong>${c.completed||0}</strong></div><div><span>IOA Coverage</span><strong>${pct(c.percent||0)}</strong></div></div><ul>${(data.by_dyad||[]).map(x=>`<li>${e(x.study_id)}: ${x.ioa} / ${x.completed}, ${pct(x.percent)}</li>`).join('')||'<li>No finalized observations.</li>'}</ul></section>`;}
+export function renderStudyIoaSummary(data,e,allowedStudyIds=null){
+ const rows=(data.by_dyad||[]).filter(row=>!allowedStudyIds||allowedStudyIds.has(row.study_id));
+ const completed=rows.reduce((sum,row)=>sum+Number(row.completed||0),0);
+ const ioa=rows.reduce((sum,row)=>sum+Number(row.ioa||0),0);
+ const percent=completed?(ioa/completed)*100:0;
+ return `
+   <section class="panel study-ioa-summary">
+     <div class="section-heading">
+       <div><p class="eyebrow">IOA</p><h2>Study IOA</h2></div>
+       <p>Finalized dissertation observations only. Test-case data are excluded.</p>
+     </div>
+     <div class="observation-stats">
+       <div><span>Completed observations</span><strong>${completed}</strong></div>
+       <div><span>IOA coverage</span><strong>${pct(percent)}</strong></div>
+     </div>
+     ${rows.length?`<div class="ioa-case-list">${rows.map(x=>`<div><strong>${e(x.study_id)}</strong><span>${x.ioa} of ${x.completed} with IOA · ${pct(x.percent)}</span></div>`).join('')}</div>`:'<p class="empty-admin-state">No finalized dissertation observations yet.</p>'}
+   </section>`;
+}
 
 export function newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id,heading}){
  return `<form id="${id}" class="observation-summary-form record-observation-form"><h3>${e(heading)}</h3>${setup?'':'<p class="attention">Save Observation Setup before recording an observation.</p>'}<h4>Observation Details</h4><div class="summary-form-grid"><label>Date<input name="date" type="date" required></label><label>Primary observer<select name="primary" required><option value="">Select</option>${primaryOptions.map(x=>`<option value="${x.id}">${e(x.observer_code)}</option>`).join('')}</select></label><label>Start time — optional<input name="start" type="time"></label><label>End time — optional<input name="end" type="time"></label><p class="phase-helper">Phase: <strong>Choose a date</strong></p><label class="wide">Observation note — optional<textarea name="note" maxlength="1000"></textarea></label></div><h4>Observation Results</h4><div class="summary-form-grid"><label>Teacher fidelity %<input name="teacher_fidelity_percent" type="number" min="0" max="100" step="any" required></label><label>Student target behavior %<input name="student_target_behavior_percent" type="number" min="0" max="100" step="any" required></label></div><h4>IOA</h4><fieldset class="ioa-choice"><legend>Was IOA collected?</legend><label><input type="radio" name="ioa_collected" value="no" checked> No</label><label><input type="radio" name="ioa_collected" value="yes"> Yes</label></fieldset><div class="summary-form-grid ioa-fields" hidden><label>IOA observer<select name="secondary"><option value="">Select</option>${secondaryOptions.map(x=>`<option value="${x.id}">${e(x.observer_code)}</option>`).join('')}</select></label><label>Teacher fidelity IOA %<input name="teacher_fidelity_ioa_percent" type="number" min="0" max="100" step="any"></label><label>Student behavior IOA %<input name="student_behavior_ioa_percent" type="number" min="0" max="100" step="any"></label><label>IOA note — optional<textarea name="ioa_note" maxlength="1000"></textarea></label></div><button class="primary"${setup?'':' disabled'}>Save Observation</button></form>`;
