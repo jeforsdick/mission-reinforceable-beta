@@ -47,6 +47,7 @@ let lastPromptedInterval = -1;
 let pendingOutcomeItemId = null;
 let audioContext = null;
 let videoIsPlaying = false;
+let ignoreEndedUntilPlaying = false;
 
 function blankModuleState(observer) {
   return {
@@ -343,7 +344,6 @@ function showModule() {
   els["module-view"].hidden = false;
   els["module-welcome"].textContent = `Hi ${state.observer}. Complete the training at your own pace—you can stop and come back later.`;
   renderModuleSteps();
-  renderModuleSteps();
   resetScrollPosition();
 }
 
@@ -458,12 +458,16 @@ async function mountPlayer(caseData) {
 
     if (player && playerReady) {
       if (playerCaseId !== caseData.id || Number(attempt?.videoTime || 0) <= 0) {
-        player.cueVideoById(caseData.videoId);
+        try { player.stopVideo(); } catch {}
+        player.cueVideoById({ videoId: caseData.videoId, startSeconds: 0 });
+        try { player.seekTo(0, true); } catch {}
         playerCaseId = caseData.id;
       } else {
         player.seekTo(attempt.videoTime, true);
       }
+      videoIsPlaying = false;
       els["video-loading"].hidden = true;
+      renderTimer();
       return;
     }
 
@@ -485,6 +489,7 @@ async function mountPlayer(caseData) {
           if (!window.YT || !state?.currentAttempt) return;
           if (event.data === window.YT.PlayerState.PLAYING) {
             videoIsPlaying = true;
+            ignoreEndedUntilPlaying = false;
             if (state.currentAttempt.status === "armed") state.currentAttempt.status = "running";
             saveState();
             startTimer();
@@ -497,7 +502,9 @@ async function mountPlayer(caseData) {
             renderTimer();
           } else if (event.data === window.YT.PlayerState.ENDED) {
             videoIsPlaying = false;
-            completeObservation();
+            if (!ignoreEndedUntilPlaying && state.currentAttempt.status === "running") {
+              completeObservation();
+            }
           }
         }
       }
@@ -782,6 +789,17 @@ function initializeAttempt() {
   const caseData = currentCase();
   if (!caseData) return;
   ensureAudio();
+  ignoreEndedUntilPlaying = true;
+  videoIsPlaying = false;
+  stopTimer();
+  try {
+    if (playerReady && player) {
+      player.stopVideo();
+      player.cueVideoById({ videoId: caseData.videoId, startSeconds: 0 });
+      player.seekTo(0, true);
+      playerCaseId = caseData.id;
+    }
+  } catch {}
   state.currentAttempt = {
     caseId: caseData.id,
     attemptType: caseData.id === "nora" ? "practice" : "qualification",
