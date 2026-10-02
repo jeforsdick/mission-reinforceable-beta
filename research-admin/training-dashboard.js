@@ -67,6 +67,17 @@ function start() {
   loadDashboard(client);
 }
 
+target?.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-training-details]");
+  if (!trigger) return;
+  const observer = trigger.dataset.trainingDetails;
+  const panel = [...target.querySelectorAll("[data-training-details-panel]")]
+    .find((item) => item.dataset.trainingDetailsPanel === observer);
+  if (!panel) return;
+  panel.open = !panel.open;
+  if (panel.open) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", start, { once: true });
 } else {
