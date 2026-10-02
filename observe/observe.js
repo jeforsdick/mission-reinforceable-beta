@@ -243,7 +243,7 @@ function trainingQualified(attempt, caseData) {
   const fidelity = fidelityAgreementFor(attempt, caseData);
   const student = studentAgreementFor(attempt, caseData);
   if (!fidelity || !student || fidelity.percent == null || student.percent == null) return null;
-  return fidelity.percent >= 85 && student.percent >= 85;
+  return fidelity.percent >= 90 && student.percent >= 90;
 }
 
 function stepCard({number,title,description,done,locked,buttonLabel,action,detail}) {
@@ -1059,7 +1059,7 @@ function showResults(caseId = state.currentCaseId) {
   els["results-copy"].textContent = isNora
     ? (qualified
         ? "Nora practice passed. Your student intervals were compared with Jess’s reference coding, and your fidelity scoring was compared with the training key."
-        : "Nora practice needs another attempt. Reach at least 85% agreement on both student intervals and fidelity scoring before moving on.")
+        : "Nora practice needs another attempt. Reach at least 90% agreement on both student intervals and fidelity scoring before moving on. The goal is 100%.")
     : "This attempt is retained as your independent qualification record. Student interval agreement will be calculated when the Kai reference coding is finalized.";
   els["training-fidelity-agreement"].textContent = percentLabel(agreement.percent);
 
