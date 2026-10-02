@@ -13,7 +13,10 @@ export function renderObserverTeam(data,e){
          <strong>${e(observer.display_name)}</strong>
          <span>${e(observer.observer_code)} · ${e(observer.observer_type.replaceAll('_',' '))}</span>
        </div>
-       <span class="roster-status ${observer.active?'active':'inactive'}">${observer.active?'Active':'Inactive'}</span>
+       <div class="roster-status-group">
+         <span class="roster-status roster">${observer.active?'On roster':'Inactive'}</span>
+         <span class="roster-status ${observer.status==='qualified'?'qualified':observer.status==='recalibration_required'?'needs':'pending'}">${observer.status==='qualified'?'Cleared for live observations':observer.status==='recalibration_required'?'Recalibration required':'Training pending'}</span>
+       </div>
      </div>
      <details class="observer-edit-details">
        <summary>Edit observer</summary>
@@ -86,7 +89,7 @@ export function renderPhaseObservationWorkspace(item,phase,e){
  const rows=(data.observations||[]).filter(x=>x.phase===phase),completed=rows.filter(x=>x.summary_revision_id),latest=completed[0],ioa=completed.filter(x=>x.ioa).length;
  const title=phase[0].toUpperCase()+phase.slice(1);
  const history=rows.map(x=>{const note=x.summary_observation_note||x.context_note;const time=x.start_time||x.end_time?`${timeLabel(x.start_time)||'—'}–${timeLabel(x.end_time)||'—'} · `:'';const alerts=[];if(x.ioa?.teacher_fidelity_ioa_percent!=null&&Number(x.ioa.teacher_fidelity_ioa_percent)<=80)alerts.push(`Needs review — Teacher fidelity IOA is ${pct(x.ioa.teacher_fidelity_ioa_percent)}. Recalibration required.`);if(x.ioa?.student_behavior_ioa_percent!=null&&Number(x.ioa.student_behavior_ioa_percent)<=80)alerts.push(`Needs review — Student behavior IOA is ${Number(x.ioa.student_behavior_ioa_percent)===80?'80%':'below criterion'}. Recalibration required.`);return `<li id="observation-${x.id}"><strong>${e(dateLabel(x.observation_date))} · ${e(title)} · Observation #${x.session_number}</strong><p>${time}${e(x.primary_observer_code)}</p><p>Teacher fidelity: <strong>${pct(x.teacher_fidelity_percent)}</strong><br>Student target behavior: <strong>${pct(x.student_target_behavior_percent)}</strong></p>${x.ioa?`<p>IOA: ${e(x.secondary_observer_code)}<br>Teacher fidelity IOA: ${pct(x.ioa?.teacher_fidelity_ioa_percent)}<br>Student behavior IOA: ${pct(x.ioa?.student_behavior_ioa_percent)}</p>`:'<p>IOA: Not collected</p>'}${alerts.map(a=>`<p class="attention">${a}</p>`).join('')}${note?`<p>Notes: ${e(note)}</p>`:''}<button type="button" class="quiet edit-summary-toggle" data-observation="${x.id}">Edit Summary</button>${editSummaryForm(x,e)}</li>`;}).join('')||`<li>No ${e(title.toLowerCase())} classroom observations.</li>`;
- const primaryOptions=observers.filter(x=>x.active&&(x.observer_type==='primary_researcher'||(x.observer_type==='trained_observer'&&x.status==='qualified'))),secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified'),secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
  const extra=phase==='baseline'?`<div><span>Planned minimum</span><strong>${item.protocol?.planned_baseline_observations||'Not assigned'}</strong></div>`:phase==='maintenance'?'<div><span>Target</span><strong>2–3 probes</strong></div>':'';
  const stats=`<div class="observation-stats phase-observation-summary"><div><span>Completed observations in this phase</span><strong>${completed.length}</strong></div><div><span>Latest teacher fidelity in this phase</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong></div><div><span>Latest student target behavior in this phase</span><strong>${pct(latest?.student_target_behavior_percent)}</strong></div><div><span>IOA collected in this phase</span><strong>${ioa} / ${completed.length}</strong></div>${extra}</div>`;
  const form=item.current_phase===phase?newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:`record-${phase}-observation-form`,heading:`Record ${title} Observation`}):'';
