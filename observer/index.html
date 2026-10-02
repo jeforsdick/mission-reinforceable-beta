@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Observer Portal | Mission: Reinforceable</title>
+  <link rel="icon" href="/favicon.png">
+  <link rel="stylesheet" href="/assets/site/site.css">
+  <link rel="stylesheet" href="/observer/observer.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script type="module" src="/observer/observer.js"></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="nav-wrap observer-nav">
+        <a class="brand" href="/" aria-label="Mission: Reinforceable home">
+          <img class="brand-icon" src="/favicon.png" alt="">
+          <img class="brand-logo" src="/assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable">
+        </a>
+        <span class="private-badge">Observer Portal</span>
+      </div>
+    </header>
+
+    <main class="observer-main">
+      <section id="loading-view" class="observer-card"><h1>Checking secure access…</h1></section>
+
+      <section id="login-view" class="observer-card" hidden>
+        <p class="eyebrow">Observer Portal</p>
+        <h1>Sign in</h1>
+        <p>Use your observer account to view only your assigned observation sessions.</p>
+        <form id="login-form">
+          <label>Email<input name="email" type="email" autocomplete="username" required></label>
+          <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="primary-button" type="submit">Sign in</button>
+          <p id="login-error" class="message" role="alert"></p>
+        </form>
+      </section>
+
+      <section id="unauthorized-view" class="observer-card" hidden>
+        <p class="eyebrow">Observer Portal</p>
+        <h1>Observer access not connected</h1>
+        <p>Your account is signed in, but it is not currently linked to an active observer record.</p>
+        <button id="unauthorized-signout" class="secondary-button" type="button">Sign out</button>
+      </section>
+
+      <section id="portal-view" hidden>
+        <div class="portal-heading">
+          <div>
+            <p class="eyebrow">My Schedule</p>
+            <h1 id="observer-name">Observer</h1>
+            <p>Only sessions assigned to you appear here.</p>
+          </div>
+          <button id="sign-out" class="secondary-button" type="button">Sign out</button>
+        </div>
+
+        <section class="observer-card readiness-card">
+          <div><span>Live observation status</span><strong id="readiness-status">Training pending</strong></div>
+          <p id="readiness-help">Jess will clear you for live observations after training and calibration are complete.</p>
+        </section>
+
+        <section class="observer-card">
+          <div class="section-heading">
+            <div><p class="eyebrow">Upcoming</p><h2>My assigned observations</h2></div>
+            <p>Case code and routine only; school/teacher logistics will come from Jess.</p>
+          </div>
+          <div id="assignment-list" class="assignment-list"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
