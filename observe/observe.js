@@ -575,17 +575,7 @@ async function ensureAudio() {
   return audioContext;
 }
 
-function flashCue() {
-  document.querySelectorAll(".walkthrough-timer, .timer-grid").forEach((el) => {
-    el.classList.remove("cue-flash");
-    void el.offsetWidth;
-    el.classList.add("cue-flash");
-    window.setTimeout(() => el.classList.remove("cue-flash"), 450);
-  });
-}
-
 async function beep() {
-  flashCue();
   try {
     const ctx = await ensureAudio();
     if (!ctx || ctx.state !== "running") return false;
@@ -621,7 +611,7 @@ async function beep() {
 async function testCue(button) {
   const original = button.textContent;
   const played = await beep();
-  button.textContent = played ? "✓ Cue played" : "✓ Visual cue shown";
+  button.textContent = played ? "✓ Cue played" : "Audio unavailable";
   window.setTimeout(() => { button.textContent = original; }, 1400);
 }
 
