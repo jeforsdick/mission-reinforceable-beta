@@ -1,10 +1,16 @@
 const OBSERVERS = ["Austen","Casey","Melissa","Kathleen","Jess"];
 
+function attemptsFor(rows, observer, caseId) {
+  return rows
+    .filter((row) => row.observer_name === observer && row.case_id === caseId)
+    .sort((a,b) => new Date(a.submitted_at) - new Date(b.submitted_at));
+}
+
 function latest(rows, observer, caseId) {
-  const matches = rows.filter((row) => row.observer_name === observer && row.case_id === caseId);
+  const matches = attemptsFor(rows, observer, caseId);
   const production = matches.filter((row) => row.source_environment === "production");
-  return (production.length ? production : matches)
-    .sort((a,b) => new Date(b.submitted_at) - new Date(a.submitted_at))[0] || null;
+  const source = production.length ? production : matches;
+  return source[source.length - 1] || null;
 }
 
 function pct(value) {
@@ -120,6 +126,30 @@ function attemptDetail(attempt, title, escapeHtml) {
   `;
 }
 
+function attemptHistory(rows, observer, caseId, reference, escapeHtml) {
+  const matches = attemptsFor(rows, observer, caseId);
+  if (!matches.length) return "<p>No attempts submitted.</p>";
+  return matches.map((attempt, index) => {
+    const student = reference && reference.client_submission_id !== attempt.client_submission_id
+      ? intervalAgreement(attempt.intervals || [], reference.intervals || [])
+      : null;
+    const fidelity = reference && reference.client_submission_id !== attempt.client_submission_id
+      ? fidelityAgreement(attempt.fidelity_scores || {}, reference.fidelity_scores || {})
+      : null;
+    return `
+      <article class="training-history-item">
+        <div>
+          <strong>Attempt ${index + 1}</strong>
+          <small>${escapeHtml(new Intl.DateTimeFormat(undefined,{dateStyle:"medium",timeStyle:"short"}).format(new Date(attempt.submitted_at)))}</small>
+        </div>
+        <div><span>Training key</span><strong>${escapeHtml(pct(attempt.teacher_fidelity_agreement))}</strong></div>
+        <div><span>vs Jess student</span><strong>${escapeHtml(reference && reference.client_submission_id !== attempt.client_submission_id ? pct(student?.percent) : "—")}</strong></div>
+        <div><span>vs Jess fidelity</span><strong>${escapeHtml(reference && reference.client_submission_id !== attempt.client_submission_id ? pct(fidelity?.percent) : "—")}</strong></div>
+      </article>
+    `;
+  }).join("");
+}
+
 export function renderObserverTrainingDashboard(data = {}, escapeHtml = (value) => String(value ?? "")) {
   const attempts = data.attempts || [];
   const feedback = data.feedback || [];
@@ -147,8 +177,16 @@ export function renderObserverTrainingDashboard(data = {}, escapeHtml = (value) 
           <details>
             <summary>View ${escapeHtml(observer)} raw training data</summary>
             <div class="training-detail-grid">
-              ${attemptDetail(nora, "Nora", escapeHtml)}
-              ${attemptDetail(kai, "Kai", escapeHtml)}
+              <section class="training-detail-case">
+                <h4>Nora attempt history</h4>
+                <div class="training-history-list">${attemptHistory(attempts, observer, "nora", jessNora, escapeHtml)}</div>
+              </section>
+              <section class="training-detail-case">
+                <h4>Kai attempt history</h4>
+                <div class="training-history-list">${attemptHistory(attempts, observer, "kai", jessKai, escapeHtml)}</div>
+              </section>
+              ${attemptDetail(nora, "Latest Nora raw data", escapeHtml)}
+              ${attemptDetail(kai, "Latest Kai raw data", escapeHtml)}
               <section class="training-detail-case">
                 <h4>Usability feedback</h4>
                 ${fb ? `
