@@ -29,7 +29,7 @@ const ids = [
   "occurred-count","not-observed-count","interval-grid","fidelity-progress","fidelity-list","outcome-prompt",
   "outcome-prompt-item","outcome-prompt-definition","observation-notes","summary-fidelity","summary-fidelity-detail",
   "summary-student","summary-student-detail","summary-observed","summary-not-observed","summary-duration",
-  "summary-case-name","review-warning","review-warning-text","mark-remaining-no-opportunity","review-fidelity",
+  "summary-case-name","review-warning","review-warning-text","mark-remaining-no-opportunity","review-fidelity","review-back-home",
   "submit-attempt","results-eyebrow","results-title","results-copy","training-fidelity-agreement",
   "training-fidelity-agreement-detail","training-interval-agreement","practice-feedback-key","answer-key-list",
   "continue-after-results","repeat-case","feedback-form","questions-form","complete-title","completion-summary","test-sound",
@@ -261,6 +261,23 @@ function stepCard({number,title,description,done,locked,buttonLabel,action,detai
   `;
 }
 
+function resumableAttempt(caseId) {
+  const attempt = state?.currentAttempt;
+  return Boolean(
+    attempt &&
+    attempt.caseId === caseId &&
+    ["armed","running","review"].includes(attempt.status)
+  );
+}
+
+function resumeAttempt(caseId) {
+  const attempt = state?.currentAttempt;
+  if (!attempt || attempt.caseId !== caseId) return openCaseReady(caseId);
+  state.currentCaseId = caseId;
+  if (attempt.status === "review") showReview();
+  else showActive();
+}
+
 function renderModuleSteps() {
   const m = state.module;
   const noraAgreement = fidelityAgreementFor(state.attempts.nora, TRAINING_CASES.nora);
@@ -300,8 +317,8 @@ function renderModuleSteps() {
       description:"Review a fictional BIP, collect both measures during the Nora clip, then compare your fidelity scoring with the training key.",
       done:Boolean(m.noraCompleted),
       locked:!m.walkthroughComplete,
-      buttonLabel:m.noraCompleted ? "Review Results" : "Practice with Nora",
-      action:m.noraCompleted ? "nora-results" : "nora-ready",
+      buttonLabel:m.noraCompleted ? "Review Results" : (resumableAttempt("nora") ? (state.currentAttempt.status === "review" ? "Resume Review" : "Resume Nora") : "Practice with Nora"),
+      action:m.noraCompleted ? "nora-results" : (resumableAttempt("nora") ? "nora-resume" : "nora-ready"),
       detail:noraDetail
     }),
     stepCard({
@@ -319,8 +336,8 @@ function renderModuleSteps() {
       description:"Complete the second case independently. No answer-key coaching is shown while you collect.",
       done:Boolean(m.kaiCompleted),
       locked:!m.noraFeedbackComplete,
-      buttonLabel:m.kaiCompleted ? "Review Results" : "Start Qualification",
-      action:m.kaiCompleted ? "kai-results" : "kai-ready",
+      buttonLabel:m.kaiCompleted ? "Review Results" : (resumableAttempt("kai") ? (state.currentAttempt.status === "review" ? "Resume Review" : "Resume Kai") : "Start Qualification"),
+      action:m.kaiCompleted ? "kai-results" : (resumableAttempt("kai") ? "kai-resume" : "kai-ready"),
       detail:kaiDetail
     }),
     stepCard({
@@ -1256,9 +1273,11 @@ function moduleAction(action) {
     case "instruction": showInstruction(); break;
     case "walkthrough": showWalkthrough(); break;
     case "nora-ready": openCaseReady("nora"); break;
+    case "nora-resume": resumeAttempt("nora"); break;
     case "nora-results": showResults("nora"); break;
     case "feedback": showFeedback(); break;
     case "kai-ready": openCaseReady("kai"); break;
+    case "kai-resume": resumeAttempt("kai"); break;
     case "kai-results": showResults("kai"); break;
     case "questions": showQuestions(); break;
   }
@@ -1369,6 +1388,7 @@ els["observation-notes"].addEventListener("input", (event) => {
 });
 
 els["mark-remaining-no-opportunity"].addEventListener("click", markRemainingNoOpportunity);
+els["review-back-home"].addEventListener("click", showModule);
 
 els["review-fidelity"].addEventListener("click", (event) => {
   const attempt = currentAttempt();
