@@ -103,6 +103,7 @@ module.exports = async function handler(request, response) {
       teacher_reminder_system_enabled: process.env.TEACHER_REMINDER_SYSTEM_ENABLED === 'true',
       game_login_email_enabled: configuration().enabled,
       weekly_qualtrics_configured: weeklyCheckin.qualtricsConfiguration().configured,
+      weekly_recap_system_enabled: process.env.WEEKLY_RECAP_SYSTEM_ENABLED === 'true',
       qualtrics_measures: measureConfiguration(participantCode)
     };
     if (weeklyEmail) result.weekly_email = weeklyEmail;
