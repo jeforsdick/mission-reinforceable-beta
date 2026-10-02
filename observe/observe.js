@@ -555,29 +555,65 @@ function finalizeIntervals() {
   }
 }
 
-function ensureAudio() {
+async function ensureAudio() {
   if (!audioContext) {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (AudioCtx) audioContext = new AudioCtx();
   }
-  if (audioContext?.state === "suspended") audioContext.resume().catch(() => {});
+  if (audioContext?.state === "suspended") {
+    try { await audioContext.resume(); } catch {}
+  }
+  return audioContext;
 }
 
-function beep() {
+function flashCue() {
+  document.querySelectorAll(".walkthrough-timer, .timer-grid").forEach((el) => {
+    el.classList.remove("cue-flash");
+    void el.offsetWidth;
+    el.classList.add("cue-flash");
+    window.setTimeout(() => el.classList.remove("cue-flash"), 450);
+  });
+}
+
+async function beep() {
+  flashCue();
   try {
-    ensureAudio();
-    if (!audioContext) return;
-    const oscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    oscillator.frequency.value = 740;
-    gain.gain.setValueAtTime(0.038, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.07);
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.07);
-    if (navigator.vibrate) navigator.vibrate(35);
-  } catch {}
+    const ctx = await ensureAudio();
+    if (!ctx || ctx.state !== "running") return false;
+
+    const now = ctx.currentTime;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.11, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    gain.connect(ctx.destination);
+
+    const first = ctx.createOscillator();
+    first.type = "sine";
+    first.frequency.setValueAtTime(740, now);
+    first.connect(gain);
+    first.start(now);
+    first.stop(now + 0.10);
+
+    const second = ctx.createOscillator();
+    second.type = "sine";
+    second.frequency.setValueAtTime(880, now + 0.11);
+    second.connect(gain);
+    second.start(now + 0.11);
+    second.stop(now + 0.22);
+
+    if (navigator.vibrate) navigator.vibrate(60);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function testCue(button) {
+  const original = button.textContent;
+  const played = await beep();
+  button.textContent = played ? "✓ Cue played" : "✓ Visual cue shown";
+  window.setTimeout(() => { button.textContent = original; }, 1400);
 }
 
 function renderIntervalGrid(activeIndex) {
@@ -1249,9 +1285,8 @@ els["walkthrough-cards"].addEventListener("click", (event) => {
   if (button) activateTourStep(button.dataset.tourStep);
 });
 
-els["walkthrough-test-sound"].addEventListener("click", () => {
-  ensureAudio();
-  beep();
+els["walkthrough-test-sound"].addEventListener("click", async () => {
+  await testCue(els["walkthrough-test-sound"]);
 });
 
 els["complete-walkthrough"].addEventListener("click", () => {
@@ -1260,9 +1295,8 @@ els["complete-walkthrough"].addEventListener("click", () => {
   openCaseReady("nora");
 });
 
-els["test-sound"].addEventListener("click", () => {
-  ensureAudio();
-  beep();
+els["test-sound"].addEventListener("click", async () => {
+  await testCue(els["test-sound"]);
 });
 els["start-observation"].addEventListener("click", initializeAttempt);
 els["target-occurred"].addEventListener("click", markTargetOccurred);
