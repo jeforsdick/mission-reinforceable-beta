@@ -17,6 +17,7 @@ const ids = [
   "feedback-view","questions-view","complete-view","preview-login-form","preview-sign-out","module-welcome",
   "module-steps","complete-instruction","ready-part-label","ready-case-title","ready-case-source","ready-duration",
   "case-purpose","ready-routine","ready-behavior-name","ready-behavior-definition","ready-replacement","ready-hypothesis",
+  "behavior-examples-list","behavior-nonexamples-list",
   "bip-prevent","bip-teach","bip-reinforce","bip-respond","preflight-fidelity-list","start-observation",
   "active-behavior-name","active-behavior-definition","active-case-chip","video-loading","elapsed-clock","interval-number",
   "interval-total","interval-clock","target-occurred","continuing-toggle","observable-toggle","current-interval-status",
@@ -254,6 +255,12 @@ function renderReady(caseData) {
   els["ready-behavior-definition"].textContent = caseData.behaviorDefinition;
   els["ready-replacement"].textContent = caseData.replacement;
   els["ready-hypothesis"].textContent = caseData.hypothesis;
+  els["behavior-examples-list"].innerHTML = caseData.behaviorExamples
+    .map((example) => `<li>${example}</li>`)
+    .join("");
+  els["behavior-nonexamples-list"].innerHTML = caseData.behaviorNonExamples
+    .map((example) => `<li>${example}</li>`)
+    .join("");
   els["bip-prevent"].textContent = caseData.bip.prevent;
   els["bip-teach"].textContent = caseData.bip.teach;
   els["bip-reinforce"].textContent = caseData.bip.reinforce;
@@ -262,7 +269,15 @@ function renderReady(caseData) {
     <div class="preflight-item">
       <span>${item.area}</span>
       <strong>${index + 1}. ${item.short}</strong>
-      ${item.detail}
+      <p class="preflight-definition">${item.detail}</p>
+      <div class="preflight-example counts">
+        <b>✓ Counts</b>
+        <span>${item.example}</span>
+      </div>
+      <div class="preflight-example does-not-count">
+        <b>✕ Does not count</b>
+        <span>${item.nonExample}</span>
+      </div>
     </div>
   `).join("");
 }
