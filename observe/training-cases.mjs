@@ -177,7 +177,7 @@ export const TRAINING_CASES = {
         desiredOutcome: "Kai remains in the activity without escalating.",
         example: "Kai appropriately asks for help or to pass, and the teacher promptly honors the request and acknowledges the appropriate asking.",
         nonExample: "The teacher independently skips Kai without him using the replacement request, or allows escape only after escalation.",
-        trainingKey: "no_opportunity"
+        trainingKey: "not_implemented"
       },
       {
         id: "kai_05",
@@ -192,7 +192,14 @@ export const TRAINING_CASES = {
         trainingOutcomeKey: "yes"
       }
     ],
-    masterIntervals: null
+    // Reference coding from Jess's official Kai training attempt (2026-10-02).
+    masterIntervals: [
+      "did_not_occur","did_not_occur","did_not_occur",
+      "occurred","occurred","occurred","occurred",
+      "did_not_occur","did_not_occur","did_not_occur","did_not_occur","did_not_occur",
+      "did_not_occur","did_not_occur","did_not_occur","did_not_occur","did_not_occur",
+      "did_not_occur","did_not_occur","did_not_occur"
+    ]
   }
 };
 
