@@ -80,3 +80,7 @@
 .training-details-trigger{border:0;border-radius:8px;padding:6px 9px;background:#eee7f6;color:#6c4298;font:inherit;font-size:.67rem;font-weight:900;cursor:pointer}
 .training-details-trigger:hover{background:#e2d7ee;color:#152446}
 @media(max-width:600px){.training-head-actions{justify-content:flex-start}}
+
+.training-reference-details{grid-column:1/-1;margin-top:4px;padding-top:10px;border-top:1px solid #d7caeb}
+.training-reference-details>summary{width:max-content;padding:6px 9px;border-radius:8px;background:#eee7f6;color:#6c4298;font-size:.7rem;font-weight:900;cursor:pointer}
+.training-reference-details[open]>summary{margin-bottom:10px}
