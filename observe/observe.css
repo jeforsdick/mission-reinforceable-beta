@@ -189,3 +189,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--obs-purple);outline:3
   .definition-example-grid{grid-template-columns:1fr}
   .preflight-example{grid-template-columns:1fr}
 }
+
+
+/* Fidelity scoring definitions live inside instruction step 5 */
+.instruction-card-scoring{grid-column:span 2}
+.inline-scoring-definitions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+.inline-scoring-definitions>div{padding:10px;border:1px solid var(--obs-border);border-radius:9px;background:#f8f9fb}
+.inline-scoring-definitions strong{display:block;color:var(--obs-navy);font-size:.75rem;line-height:1.25}
+.inline-scoring-definitions p{margin:4px 0 0!important;color:var(--obs-muted);font-size:.7rem!important;line-height:1.35!important}
+.desired-outcome-note{margin-top:10px!important;padding-top:9px;border-top:1px solid var(--obs-border)}
+@media(max-width:900px){
+  .instruction-card-scoring{grid-column:auto}
+  .inline-scoring-definitions{grid-template-columns:1fr}
+}
