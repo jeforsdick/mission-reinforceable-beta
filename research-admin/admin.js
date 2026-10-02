@@ -646,12 +646,16 @@ async function start() {
   try {
     if (!window.supabase) throw new Error('The secure sign-in service did not load.');
     state.client ||= window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    window.__mrResearchAdminClient = state.client;
     const { data: { session }, error } = await state.client.auth.getSession(); if (error) throw error;
     if (!session) { show('login-view'); return; }
     const { data: profile, error: profileError } = await state.client.from('profiles').select('role,active').eq('id', session.user.id).maybeSingle();
     if (profileError) throw profileError;
     if (!profile || profile.role !== 'research_admin' || profile.active !== true) { show('unauthorized-view'); return; }
-    await loadIntakes(); renderHome();
+    await loadIntakes();
+    window.__mrResearchAdminState = state;
+    renderHome();
+    window.dispatchEvent(new CustomEvent("mr-research-admin-ready"));
   } catch (error) { $('#error-message').textContent = error.message || 'Please try again.'; show('error-view'); }
 }
 $('#login-form').addEventListener('submit', async event => { event.preventDefault(); const form = new FormData(event.currentTarget); const { error } = await state.client.auth.signInWithPassword({ email: String(form.get('email')).trim(), password: String(form.get('password')) }); if (error) $('#login-error').textContent = 'Sign-in failed. Check your email and password.'; else start(); });
