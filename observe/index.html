@@ -24,53 +24,128 @@
     <main class="observer-main">
       <aside class="preview-banner" role="note">
         <strong>Training preview only.</strong>
-        Nora and Kai are staged IRIS training cases. The BIPs below are fictional practice plans built for observer training; no study data are written to Supabase.
+        Nora and Kai are staged IRIS training cases. The practice BIPs are fictional and built only for observer training. This branch still stores attempts in this browser—not in the dissertation database.
       </aside>
 
       <section id="login-view" class="state-card observer-state">
-        <p class="eyebrow">Secure observer access</p>
-        <h1>Observer Sign In</h1>
-        <p>The production version will use each observer’s authenticated account. For now, enter a preview name and role.</p>
+        <p class="eyebrow">Observer training</p>
+        <h1>Welcome</h1>
+        <p>Choose your name to preview the asynchronous module. The live version will identify you automatically after secure sign-in.</p>
         <form id="preview-login-form" class="login-form">
-          <label>Preview observer
-            <input name="observer" value="Test Observer" required>
-          </label>
-          <label>Preview role
-            <select name="role">
-              <option value="primary">Primary observer</option>
-              <option value="secondary">IOA observer</option>
+          <label>Observer
+            <select name="observer" required>
+              <option value="">Choose your name</option>
+              <option>Austen</option>
+              <option>Casey</option>
+              <option>Melissa</option>
+              <option>Jess</option>
             </select>
           </label>
-          <button class="primary-button" type="submit">Enter Training Preview</button>
+          <button class="primary-button" type="submit">Open Training Module</button>
         </form>
       </section>
 
-      <section id="assignment-view" hidden>
+      <section id="module-view" hidden>
         <div class="page-heading">
           <div>
-            <p class="eyebrow">Observer training</p>
-            <h1>Choose a Practice Case</h1>
-            <p>Both cases use the same 15-second partial-interval student measure and individualized teacher-fidelity scoring planned for the dissertation.</p>
+            <p class="eyebrow">Asynchronous observer training</p>
+            <h1>Training Module</h1>
+            <p id="module-welcome"></p>
           </div>
           <button class="text-button" id="preview-sign-out" type="button">Leave preview</button>
         </div>
-        <div id="training-case-list" class="training-case-list"></div>
+
+        <article class="module-intro-card">
+          <div>
+            <p class="eyebrow">What happens here</p>
+            <h2>Learn it → practice it → tell Jess what needs fixing → qualify</h2>
+            <p>Complete the pieces on your own schedule. After everyone finishes, the team will meet for about 30 minutes to answer questions and review anything that was hard to score. When live data collection begins, Jess will attend the first several observations with each observer for field calibration.</p>
+          </div>
+          <div class="module-standard">
+            <strong>≥85%</strong>
+            <span>training agreement criterion before independent collection</span>
+          </div>
+        </article>
+
+        <div id="module-steps" class="module-steps"></div>
+
+        <article class="module-after-card">
+          <p class="eyebrow">After asynchronous training</p>
+          <div class="after-grid">
+            <div><strong>30-minute Q&A</strong><span>Use the submitted questions and disagreement patterns to focus the meeting.</span></div>
+            <div><strong>Revise the form</strong><span>Use Austen, Casey, and Melissa’s usability feedback before freezing the live version.</span></div>
+            <div><strong>Field calibration</strong><span>Jess attends the first ~5–6 observations with each observer, or longer if useful.</span></div>
+          </div>
+        </article>
+      </section>
+
+      <section id="instruction-view" hidden>
+        <button class="back-button back-module" type="button">← Training module</button>
+        <div class="page-heading compact-heading">
+          <div>
+            <p class="eyebrow">Part 1 · Learn</p>
+            <h1>How to Collect Both Measures</h1>
+            <p>The goal is to keep your eyes on the teacher-student interaction and make the electronic form require as little attention as possible.</p>
+          </div>
+        </div>
+
+        <div class="instruction-grid">
+          <article class="instruction-card">
+            <span>1</span>
+            <h2>Review first</h2>
+            <p>Before every observation, read the student behavior definition and the individualized teacher-fidelity targets. Know what you are looking for before the timer begins.</p>
+          </article>
+          <article class="instruction-card">
+            <span>2</span>
+            <h2>Student behavior</h2>
+            <p>Student behavior uses <strong>15-second partial-interval recording</strong>. If the target occurs at any point in the current interval, tap the red button once. No tap means it did not occur.</p>
+          </article>
+          <article class="instruction-card">
+            <span>3</span>
+            <h2>Teacher fidelity</h2>
+            <p>When a fidelity opportunity occurs, make one quick selection: <strong>Implemented as Written</strong> or <strong>Not Implemented as Written</strong>. Items with no opportunity are resolved after the session.</p>
+          </article>
+          <article class="instruction-card">
+            <span>4</span>
+            <h2>15-second cue</h2>
+            <p>The cue only means a new interval began. It is not momentary time sampling. Keep watching continuously for student behavior across the interval.</p>
+          </article>
+          <article class="instruction-card">
+            <span>5</span>
+            <h2>Implemented?</h2>
+            <p>If you select Implemented as Written, also record whether the strategy had the desired outcome on behavior: Yes, No, or Not clear.</p>
+          </article>
+          <article class="instruction-card">
+            <span>6</span>
+            <h2>Independent scoring</h2>
+            <p>When two observers are present, collect independently. Do not compare or discuss scores until both records are submitted.</p>
+          </article>
+        </div>
+
+        <article class="scoring-key-card">
+          <div><strong>Implemented as Written</strong><span>The observable plan component occurred as operationally defined.</span></div>
+          <div><strong>Not Implemented as Written</strong><span>An opportunity occurred, but the plan component was absent or did not meet its definition.</span></div>
+          <div><strong>No Opportunity</strong><span>The event needed to score the component never occurred during the observation.</span></div>
+        </article>
+
+        <button id="complete-instruction" class="primary-button start-button" type="button">I’m Ready for Nora Practice</button>
       </section>
 
       <section id="ready-view" hidden>
-        <button class="back-button" id="back-assignment" type="button">← Training cases</button>
-
+        <button class="back-button back-module" type="button">← Training module</button>
         <div class="ready-heading">
           <div>
-            <p class="eyebrow">Before you begin</p>
+            <p id="ready-part-label" class="eyebrow">Practice case</p>
             <h1 id="ready-case-title">Know What You’re Watching For</h1>
             <p id="ready-case-source" class="source-line"></p>
           </div>
           <div class="training-duration">
-            <strong id="ready-duration">4:25</strong>
+            <strong id="ready-duration">—</strong>
             <span>training clip</span>
           </div>
         </div>
+
+        <div id="case-purpose" class="case-purpose"></div>
 
         <div class="ready-context">
           <article class="ready-card">
@@ -110,12 +185,12 @@
               <p class="eyebrow">Teacher fidelity</p>
               <h2>Review these 5 targets before you press play</h2>
             </div>
-            <span>During the clip: select Implemented or Not Implemented when you see the opportunity. Leave it blank if you are unsure; resolve No Opportunity at the end.</span>
+            <span>Score the opportunity while watching. Do not worry about No Opportunity until the end.</span>
           </div>
           <div id="preflight-fidelity-list" class="preflight-fidelity-list"></div>
         </article>
 
-        <button id="start-observation" class="primary-button start-button" type="button">Open Training Observation</button>
+        <button id="start-observation" class="primary-button start-button" type="button">Open Observation Screen</button>
       </section>
 
       <section id="active-view" class="active-view" hidden>
@@ -136,7 +211,7 @@
 
             <div class="timer-grid">
               <div class="timer-primary"><span>Video time</span><strong id="elapsed-clock">00:00</strong></div>
-              <div class="timer-mini"><span>Interval</span><strong><span id="interval-number">1</span>/<span id="interval-total">18</span></strong></div>
+              <div class="timer-mini"><span>Interval</span><strong><span id="interval-number">1</span>/<span id="interval-total">—</span></strong></div>
               <div class="timer-mini"><span>Next boundary</span><strong id="interval-clock">00:15</strong></div>
             </div>
 
@@ -159,12 +234,10 @@
             </div>
 
             <p id="current-interval-status" class="interval-status">Press play. The observation clock follows the video.</p>
-
             <div class="student-mini-stats">
               <span><strong id="occurred-count">0</strong> occurrence intervals</span>
               <span><strong id="not-observed-count">0</strong> not observed</span>
             </div>
-
             <details class="interval-details">
               <summary>View interval record</summary>
               <div id="interval-grid" class="interval-grid" aria-label="Interval progress"></div>
@@ -181,7 +254,6 @@
             </div>
 
             <p class="fidelity-instruction">Keep your eyes on the interaction. When one of these opportunities happens, make one quick fidelity selection.</p>
-
             <div id="fidelity-list" class="training-fidelity-list"></div>
 
             <div id="outcome-prompt" class="outcome-prompt" hidden>
@@ -206,9 +278,9 @@
       <section id="review-view" hidden>
         <div class="page-heading compact-heading">
           <div>
-            <p class="eyebrow">Training clip complete</p>
-            <h1>Finish & Review</h1>
-            <p>The student interval record is locked. Resolve any teacher-fidelity items that were not scored while watching.</p>
+            <p class="eyebrow">Clip complete</p>
+            <h1>Resolve & Submit</h1>
+            <p>Student interval recording is locked. Resolve any teacher-fidelity items that were not scored while watching.</p>
           </div>
         </div>
 
@@ -221,7 +293,7 @@
 
         <div id="review-warning" class="review-warning" hidden>
           <div>
-            <strong>Unresolved fidelity items</strong>
+            <strong>Still needs attention</strong>
             <p id="review-warning-text"></p>
           </div>
           <button id="mark-remaining-no-opportunity" class="secondary-button" type="button">Mark Remaining as No Opportunity</button>
@@ -233,34 +305,130 @@
         </article>
 
         <div class="review-actions">
-          <button id="submit-preview" class="primary-button" type="button">Submit Training Attempt</button>
+          <button id="submit-attempt" class="primary-button" type="button">Submit Attempt</button>
         </div>
       </section>
 
-      <section id="submitted-view" class="state-card observer-state submitted-state" hidden>
-        <p class="eyebrow">Training attempt complete</p>
-        <h1 id="submitted-title">Nora Training Complete</h1>
-        <p>This attempt is still local to this browser. The production training system will store each trained observer’s attempts securely and calculate agreement.</p>
+      <section id="results-view" hidden>
+        <button class="back-button back-module" type="button">← Training module</button>
+        <div class="page-heading compact-heading">
+          <div>
+            <p id="results-eyebrow" class="eyebrow">Practice results</p>
+            <h1 id="results-title"></h1>
+            <p id="results-copy"></p>
+          </div>
+        </div>
 
         <div class="training-score-card">
           <div>
-            <span>Fidelity agreement to training key</span>
+            <span>Teacher fidelity agreement</span>
             <strong id="training-fidelity-agreement">—</strong>
             <small id="training-fidelity-agreement-detail"></small>
           </div>
           <div>
             <span>Student interval agreement</span>
-            <strong id="training-interval-agreement">Key pending</strong>
-            <small>The interval-by-interval master key will be calibrated before this becomes a qualification score.</small>
+            <strong id="training-interval-agreement">Master key pending</strong>
+            <small>All interval selections are being retained in the preview structure so this score can be calculated once the final master interval key is entered.</small>
           </div>
         </div>
 
-        <p class="training-note">This is the structure we can use for observer qualification: compare each practice attempt to a master-coded fidelity and interval record, then require your ≥85% criterion before independent collection.</p>
+        <article id="practice-feedback-key" class="answer-key-card" hidden>
+          <p class="eyebrow">Nora guided feedback</p>
+          <h2>Compare your fidelity scoring</h2>
+          <div id="answer-key-list"></div>
+        </article>
 
-        <div class="submitted-actions">
-          <button id="another-case" class="secondary-button" type="button">Choose Another Training Case</button>
-          <button id="reset-preview" class="primary-button" type="button">Repeat This Case</button>
+        <button id="continue-after-results" class="primary-button start-button" type="button">Continue</button>
+      </section>
+
+      <section id="feedback-view" hidden>
+        <button class="back-button back-module" type="button">← Training module</button>
+        <div class="page-heading compact-heading">
+          <div>
+            <p class="eyebrow">Help us improve the live form</p>
+            <h1>Nora Practice Feedback</h1>
+            <p>You just tried collecting both measures at once. Tell Jess what made that easier or harder before the live observation form is finalized.</p>
+          </div>
         </div>
+
+        <form id="feedback-form" class="feedback-form">
+          <div class="rating-grid">
+            <fieldset class="rating-card">
+              <legend>How manageable was collecting student behavior and teacher fidelity at the same time?</legend>
+              <div class="rating-options" data-rating-name="manageability"></div>
+            </fieldset>
+            <fieldset class="rating-card">
+              <legend>How easy was it to find and score a fidelity target quickly enough?</legend>
+              <div class="rating-options" data-rating-name="fidelity_ease"></div>
+            </fieldset>
+            <fieldset class="rating-card">
+              <legend>How easy was the student behavior button to use without losing track of the video?</legend>
+              <div class="rating-options" data-rating-name="behavior_ease"></div>
+            </fieldset>
+            <fieldset class="rating-card">
+              <legend>How helpful was the 15-second cue?</legend>
+              <div class="rating-options" data-rating-name="cue_helpfulness"></div>
+            </fieldset>
+          </div>
+
+          <label class="feedback-label">Did you ever know what you wanted to record but could not enter it fast enough?
+            <select name="could_not_enter" required>
+              <option value="">Choose</option>
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </label>
+
+          <label class="feedback-label">Were any fidelity definitions hard to understand or remember?
+            <textarea name="hard_definitions" rows="3" placeholder="Which ones, and what was confusing?"></textarea>
+          </label>
+
+          <label class="feedback-label">If you were using this tomorrow in a real classroom, what is the first thing you would change about the data-collection screen?
+            <textarea name="first_change" rows="3"></textarea>
+          </label>
+
+          <label class="feedback-label">What questions came up while you were collecting data?
+            <textarea name="questions" rows="3" placeholder="Anything you want to talk through at the 30-minute follow-up?"></textarea>
+          </label>
+
+          <button class="primary-button start-button" type="submit">Submit Feedback & Unlock Kai</button>
+        </form>
+      </section>
+
+      <section id="questions-view" hidden>
+        <button class="back-button back-module" type="button">← Training module</button>
+        <div class="page-heading compact-heading">
+          <div>
+            <p class="eyebrow">Final step</p>
+            <h1>Questions for the Team Meeting</h1>
+            <p>Submit anything you want Jess to prepare for the 30-minute Q&A. “No questions right now” is completely fine.</p>
+          </div>
+        </div>
+
+        <form id="questions-form" class="feedback-form questions-form">
+          <label class="feedback-label">What still feels ambiguous or difficult to score?
+            <textarea name="scoring_questions" rows="4"></textarea>
+          </label>
+          <label class="feedback-label">What would you like to practice together before the first classroom observation?
+            <textarea name="practice_requests" rows="4"></textarea>
+          </label>
+          <label class="feedback-label">Anything else Jess should know about the training or data-collection form?
+            <textarea name="other_notes" rows="4"></textarea>
+          </label>
+          <button class="primary-button start-button" type="submit">Submit Questions & Finish Module</button>
+        </form>
+      </section>
+
+      <section id="complete-view" class="state-card observer-state submitted-state" hidden>
+        <p class="eyebrow">Asynchronous training complete</p>
+        <h1 id="complete-title">You’re done for now</h1>
+        <p>Your preview responses are saved in this browser. In the live version, Jess will be able to see everyone's attempts, agreement scores, usability feedback, and submitted questions together.</p>
+        <div id="completion-summary" class="completion-summary"></div>
+        <div class="next-steps-box">
+          <strong>Next steps</strong>
+          <p>Jess will review the team’s questions and data-collection feedback, make any needed form changes, then schedule a short Q&A. Once a live teacher begins, Jess will attend the first several observations with you for field calibration.</p>
+        </div>
+        <button class="secondary-button back-module" type="button">Return to Module</button>
       </section>
     </main>
   </div>
