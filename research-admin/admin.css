@@ -421,3 +421,5 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .roster-status.pending{background:#fff6df;color:#7a5b12}
 .roster-status.qualified{background:#e2f3eb;color:var(--green)}
 .roster-status.needs{background:#fff0ed;color:#9d342d}
+
+.observer-roster-head .planned-role{margin-top:3px;color:var(--purple);font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
