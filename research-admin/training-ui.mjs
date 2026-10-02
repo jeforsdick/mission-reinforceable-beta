@@ -1,4 +1,4 @@
-const OBSERVERS = ["Austen","Casey","Melissa","Kathleen","Jess"];
+const OBSERVERS = ["Austen","Casey","Melissa","Kathleen","Jakob","Jess"];
 
 function attemptsFor(rows, observer, caseId) {
   return rows
