@@ -43,7 +43,7 @@ module.exports = async function handler(request, response) {
   if (request.method === 'POST' && request.body?.action === 'send_game_login') return sendGameLogin(request, response);
   if (request.method === 'POST') {
     try {
-      await authorize(request);
+      const actor = await authorize(request);
       const body = request.body || {};
       if (!UUID_PATTERN.test(body.case_id || '')) return json(response, 400, { error: 'Invalid case.' });
       if (body.action === 'preview_weekly_email' || body.action === 'send_weekly_test') {
@@ -56,11 +56,12 @@ module.exports = async function handler(request, response) {
         const secureUrl = await issueSecureWeeklyUrl(participant, context);
         const email = buildWeeklyRecapEmail({ summary, weeklyQualtricsUrl: secureUrl, teacherName: participant.teacher_name, assetOrigin: process.env.TEACHER_GAME_URL });
         if (body.action === 'preview_weekly_email') return json(response, 200, { subject: email.subject, html: email.html, text: email.text, summary, week: context.current });
-        if (!process.env.TEST_EMAIL_RECIPIENT || !process.env.RESEND_API_KEY) return json(response, 503, { error: 'Test email configuration is incomplete.' });
-        const sent = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: email.from, to: [process.env.TEST_EMAIL_RECIPIENT], subject: `[TEST] ${email.subject}`, html: email.html, text: email.text }) });
+        const testRecipient = String(actor.email || '').trim().toLowerCase();
+        if (!testRecipient || !process.env.RESEND_API_KEY) return json(response, 503, { error: 'Test email configuration is incomplete.' });
+        const sent = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: email.from, to: [testRecipient], subject: `[TEST] ${email.subject}`, html: email.html, text: email.text }) });
         if (!sent.ok) return json(response, 502, { error: 'Weekly test email could not be sent.' });
         const provider = await sent.json();
-        return json(response, 200, { success: true, recipient: process.env.TEST_EMAIL_RECIPIENT, message_id: provider.id || null });
+        return json(response, 200, { success: true, recipient: testRecipient, message_id: provider.id || null });
       }
       return json(response, 400, { error: 'Invalid action.' });
     } catch (error) { return json(response, error.status || 500, { error: error.message || 'Request failed' }); }
@@ -70,7 +71,7 @@ module.exports = async function handler(request, response) {
     return json(response, 405, { error: 'Method not allowed' });
   }
   try {
-    await authorize(request);
+    const actor = await authorize(request);
     const caseId = request.query?.case_id;
     if (caseId && !UUID_PATTERN.test(caseId)) return json(response, 400, { error: 'Invalid case.' });
     let latest = null, participantCode = null;
@@ -95,7 +96,7 @@ module.exports = async function handler(request, response) {
         summary,
         summary_available: Boolean(summary),
         summary_reason: summaryReason,
-        test_email_available: participant.is_test && surveyConfigured && Boolean(context.current) && Boolean(summary) && Boolean(process.env.TEST_EMAIL_RECIPIENT && process.env.RESEND_API_KEY && process.env.TEACHER_GAME_URL),
+        test_email_available: participant.is_test && surveyConfigured && Boolean(context.current) && Boolean(summary) && Boolean(actor.email && process.env.RESEND_API_KEY && process.env.TEACHER_GAME_URL),
         test_email_reason: !participant.is_test ? 'Participant is not explicitly marked as test' : !surveyConfigured ? 'Weekly Qualtrics survey is not configured' : !context.current ? 'No eligible current intervention week' : summaryReason
       };
     }
