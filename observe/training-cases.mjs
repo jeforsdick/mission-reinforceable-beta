@@ -91,7 +91,13 @@ export const TRAINING_CASES = {
         trainingOutcomeKey: "yes"
       }
     ],
-    masterIntervals: null
+    // Reference coding from Jess's official Nora training attempt (2026-10-02).
+    masterIntervals: [
+      "did_not_occur","did_not_occur",
+      "occurred","occurred","occurred","occurred","occurred","occurred",
+      "did_not_occur","did_not_occur","did_not_occur","did_not_occur","did_not_occur",
+      "did_not_occur","did_not_occur","did_not_occur","did_not_occur","did_not_occur"
+    ]
   },
 
   kai: {
