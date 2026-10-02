@@ -97,6 +97,7 @@ module.exports = async function handler(request, response) {
 
     for (const candidate of candidates || []) {
       const detail = { participant_code: candidate.participant_code, outcome: null };
+      let event = null;
       try {
         const history = await phaseHistory(candidate.case_id);
         const context = weeklyCheckin.interventionWeekContext(history, today);
@@ -114,7 +115,7 @@ module.exports = async function handler(request, response) {
           continue;
         }
 
-        const event = await claim(candidate, context.week_end);
+        event = await claim(candidate, context.week_end);
         if (!event?.claimed) {
           summary.skipped++;
           detail.outcome = 'already_sent_or_claimed';
@@ -158,6 +159,7 @@ module.exports = async function handler(request, response) {
         detail.outcome = 'sent';
         summary.details.push(detail);
       } catch (error) {
+        if (event?.event_id) await patchEvent(event.event_id, { status: 'failed' }).catch(() => {});
         summary.failed++;
         detail.outcome = detail.outcome || 'failed';
         summary.details.push(detail);
