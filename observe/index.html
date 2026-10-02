@@ -82,62 +82,88 @@
 
       <section id="instruction-view" hidden>
         <button class="back-button back-module" type="button">← Training module</button>
-        <div class="page-heading compact-heading">
+        <div class="page-heading compact-heading training-learn-heading">
           <div>
             <p class="eyebrow">Part 1 · Learn</p>
-            <h1>How to Collect Both Measures</h1>
-            <p>The goal is to keep your eyes on the teacher-student interaction and make the electronic form require as little attention as possible.</p>
+            <h1>One Observation, Two Things to Watch</h1>
+            <p>You are watching the teacher-student interaction. The form is designed so you can record both measures with as few taps as possible.</p>
           </div>
         </div>
 
-        <div class="instruction-grid">
-          <article class="instruction-card">
-            <span>1</span>
-            <h2>Review first</h2>
-            <p>Before every observation, read the student behavior definition and the individualized teacher-fidelity targets. Know what you are looking for before the timer begins.</p>
-          </article>
-          <article class="instruction-card">
-            <span>2</span>
-            <h2>Student behavior</h2>
-            <p>Student behavior uses <strong>15-second partial-interval recording</strong>. If the target occurs at any point in the current interval, tap the red button once. No tap means it did not occur.</p>
-          </article>
-          <article class="instruction-card">
-            <span>3</span>
-            <h2>Teacher fidelity</h2>
-            <p>When a fidelity opportunity occurs, make one quick selection: <strong>Implemented as Written</strong> or <strong>Not Implemented as Written</strong>. Items with no opportunity are resolved after the session.</p>
-          </article>
-          <article class="instruction-card">
-            <span>4</span>
-            <h2>15-second cue</h2>
-            <p>The cue only means a new interval began. It is not momentary time sampling. Keep watching continuously for student behavior across the interval.</p>
-          </article>
-          <article class="instruction-card instruction-card-scoring">
-            <span>5</span>
-            <h2>Implemented? Not implemented? No opportunity?</h2>
-            <div class="inline-scoring-definitions">
-              <div>
-                <strong>Implemented as Written</strong>
-                <p>The observable plan component occurred as operationally defined.</p>
-              </div>
-              <div>
-                <strong>Not Implemented as Written</strong>
-                <p>An opportunity occurred, but the plan component was absent or did not meet its definition.</p>
-              </div>
-              <div>
-                <strong>No Opportunity</strong>
-                <p>The event needed to score the component never occurred during the observation.</p>
-              </div>
+        <div class="observer-job-summary">
+          <div class="job-summary student-job">
+            <span class="job-icon">1</span>
+            <div>
+              <strong>Student behavior</strong>
+              <p>If the target behavior happens at any point during the current 15-second interval, tap the red button once.</p>
             </div>
-            <p class="desired-outcome-note"><strong>If you select Implemented as Written:</strong> also record whether the strategy had the desired outcome on behavior — Yes, No, or Not clear.</p>
+          </div>
+          <div class="job-summary teacher-job">
+            <span class="job-icon">2</span>
+            <div>
+              <strong>Teacher fidelity</strong>
+              <p>When a fidelity opportunity occurs, make one quick score for that teacher behavior.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="training-flow">
+          <article class="flow-step">
+            <div class="flow-step-label"><span>BEFORE</span><strong>Know exactly what you are watching for</strong></div>
+            <div class="flow-step-body">
+              <p>Review the student behavior definition, examples/non-examples, and the individualized teacher-fidelity targets <strong>before</strong> the observation begins.</p>
+              <p class="flow-tip">You should not be learning the definitions while you are trying to collect data.</p>
+            </div>
           </article>
-          <article class="instruction-card">
-            <span>6</span>
-            <h2>Independent scoring</h2>
-            <p>When two observers are present, collect independently. Do not compare or discuss scores until both records are submitted.</p>
+
+          <article class="flow-step flow-step-during">
+            <div class="flow-step-label"><span>DURING</span><strong>Watch the interaction and make quick marks</strong></div>
+            <div class="during-columns">
+              <section class="during-column behavior-column">
+                <h2>Student behavior</h2>
+                <p><strong>15-second partial interval:</strong> if the target occurs at any point in the interval, tap the red button once.</p>
+                <div class="mini-rule"><strong>No tap</strong><span>= behavior did not occur</span></div>
+                <div class="mini-rule"><strong>15-sec cue</strong><span>= a new interval started</span></div>
+                <p class="flow-tip">The cue is <strong>not</strong> telling you when to look at the student. Keep observing across the whole interval.</p>
+              </section>
+
+              <section class="during-column fidelity-column">
+                <h2>Teacher fidelity</h2>
+                <p>When the opportunity for a plan component occurs, score it right then:</p>
+                <div class="fidelity-definition-stack">
+                  <div>
+                    <strong>Implemented as Written</strong>
+                    <span>The observable plan component occurred as defined.</span>
+                  </div>
+                  <div>
+                    <strong>Not Implemented as Written</strong>
+                    <span>An opportunity occurred, but the component was absent or did not meet the definition.</span>
+                  </div>
+                </div>
+                <p class="flow-tip"><strong>If implemented:</strong> also indicate whether it had the desired outcome — Yes, No, or Not clear.</p>
+              </section>
+            </div>
+          </article>
+
+          <article class="flow-step">
+            <div class="flow-step-label"><span>AFTER</span><strong>Resolve anything left blank and submit</strong></div>
+            <div class="flow-step-body">
+              <div class="after-rules">
+                <div>
+                  <strong>No Opportunity</strong>
+                  <span>Use this only when the event needed to score that fidelity target never occurred during the observation.</span>
+                </div>
+                <div>
+                  <strong>Then submit</strong>
+                  <span>Once submitted, your training record is saved for agreement comparison.</span>
+                </div>
+              </div>
+              <p class="independent-note"><strong>When another observer is present:</strong> collect independently. Do not compare or discuss scores until both people have submitted.</p>
+            </div>
           </article>
         </div>
 
-        <button id="complete-instruction" class="primary-button start-button" type="button">I’m Ready for Nora Practice</button>
+        <button id="complete-instruction" class="primary-button start-button" type="button">I Understand — Take Me to Nora Practice</button>
       </section>
 
       <section id="ready-view" hidden>
