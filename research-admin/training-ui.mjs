@@ -255,7 +255,7 @@ export function renderObserverTrainingDashboard(data={},escapeHtml=(value)=>Stri
           <h3>Jess</h3>
         </div>
         <div><span>Nora reference</span><strong>${jessNora ? `Locked · ${jessNora.intervals?.length || 0} intervals` : "Not submitted"}</strong></div>
-        <div><span>Kai reference</span><strong>${jessKai ? "Submitted · finalize before team review" : "Not submitted"}</strong></div>
+        <div><span>Kai reference</span><strong>${jessKai ? `Locked · ${jessKai.intervals?.length || 0} intervals` : "Not submitted"}</strong></div>
         <details class="training-reference-details">
           <summary>View Jess reference data</summary>
           <div class="training-detail-grid">
