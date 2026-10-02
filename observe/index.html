@@ -24,7 +24,7 @@
     <main class="observer-main">
       <aside class="preview-banner" role="note">
         <strong>Training preview only.</strong>
-        Nora and Kai are staged IRIS training cases. The practice BIPs are fictional and built only for observer training. This branch still stores attempts in this browser—not in the dissertation database.
+        Nora and Kai are staged IRIS training cases. The practice BIPs are fictional and built only for observer training. Completed attempts, feedback, and questions are saved to a separate training-only database; this browser also keeps a recovery copy.
       </aside>
 
       <section id="login-view" class="state-card observer-state">
@@ -219,6 +219,10 @@
           <div id="preflight-fidelity-list" class="preflight-fidelity-list"></div>
         </article>
 
+        <div class="preflight-actions">
+          <button id="test-sound" class="secondary-button" type="button">🔊 Test 15-Second Cue</button>
+          <span>Test your device volume before you begin. Supported phones may also vibrate.</span>
+        </div>
         <button id="start-observation" class="primary-button start-button" type="button">Open Observation Screen</button>
       </section>
 
@@ -333,6 +337,7 @@
           <div id="review-fidelity"></div>
         </article>
 
+        <p id="attempt-storage-message" class="storage-message" role="status" aria-live="polite"></p>
         <div class="review-actions">
           <button id="submit-attempt" class="primary-button" type="button">Submit Attempt</button>
         </div>
@@ -420,6 +425,7 @@
             <textarea name="questions" rows="3" placeholder="Anything you want to talk through at the 30-minute follow-up?"></textarea>
           </label>
 
+          <p id="feedback-storage-message" class="storage-message" role="status" aria-live="polite"></p>
           <button class="primary-button start-button" type="submit">Submit Feedback & Unlock Kai</button>
         </form>
       </section>
@@ -444,6 +450,7 @@
           <label class="feedback-label">Anything else Jess should know about the training or data-collection form?
             <textarea name="other_notes" rows="4"></textarea>
           </label>
+          <p id="questions-storage-message" class="storage-message" role="status" aria-live="polite"></p>
           <button class="primary-button start-button" type="submit">Submit Questions & Finish Module</button>
         </form>
       </section>
@@ -451,7 +458,7 @@
       <section id="complete-view" class="state-card observer-state submitted-state" hidden>
         <p class="eyebrow">Asynchronous training complete</p>
         <h1 id="complete-title">You’re done for now</h1>
-        <p>Your preview responses are saved in this browser. In the live version, Jess will be able to see everyone's attempts, agreement scores, usability feedback, and submitted questions together.</p>
+        <p>Your completed training submissions are saved to the separate observer-training database, with a recovery copy kept in this browser. Jess can review attempts, agreement scores, usability feedback, and submitted questions from Research Admin.</p>
         <div id="completion-summary" class="completion-summary"></div>
         <div class="next-steps-box">
           <strong>Next steps</strong>
@@ -462,6 +469,7 @@
     </main>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module" src="observe.js"></script>
 </body>
 </html>
