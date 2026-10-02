@@ -326,7 +326,7 @@ function showModule() {
   state.screen = "module";
   saveState();
   els["module-view"].hidden = false;
-  els["module-welcome"].textContent = `Hi ${state.observer}. You can stop and come back; in-progress work is cached in this browser, and completed submissions are saved to the training database.`;
+  els["module-welcome"].textContent = `Hi ${state.observer}. Complete the training at your own pace—you can stop and come back later.`;
   renderModuleSteps();
   syncCachedAttempts().then(() => renderModuleSteps());
   resetScrollPosition();
@@ -993,7 +993,7 @@ async function submitAttempt() {
     saveState();
     showResults(caseData.id);
   } catch (error) {
-    setStorageMessage("attempt-storage-message", "Could not save to the training database. Your work is still saved in this browser; try Submit again.", true);
+    setStorageMessage("attempt-storage-message", "We couldn’t save this submission. Your work is still saved on this device—please try Submit again.", true);
     button.disabled = false;
   }
 }
@@ -1131,7 +1131,7 @@ async function submitFeedback(event) {
     saveState();
     openCaseReady("kai");
   } catch (error) {
-    setStorageMessage("feedback-storage-message", "Could not save feedback to the training database. Your answers are still saved in this browser; try again.", true);
+    setStorageMessage("feedback-storage-message", "We couldn’t save your feedback. Your answers are still saved on this device—please try again.", true);
     button.disabled = false;
   }
 }
@@ -1184,7 +1184,7 @@ async function submitQuestions(event) {
     saveState();
     showComplete();
   } catch (error) {
-    setStorageMessage("questions-storage-message", "Could not save questions to the training database. Your answers are still saved in this browser; try again.", true);
+    setStorageMessage("questions-storage-message", "We couldn’t save your questions. Your answers are still saved on this device—please try again.", true);
     button.disabled = false;
   }
 }
