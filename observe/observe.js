@@ -17,9 +17,9 @@ const SOURCE_ENVIRONMENT = location.hostname === "missionreinforceable.com" || l
 let trainingDb = null;
 
 const ids = [
-  "login-view","module-view","instruction-view","ready-view","active-view","review-view","results-view",
+  "login-view","module-view","instruction-view","walkthrough-view","ready-view","active-view","review-view","results-view",
   "feedback-view","questions-view","complete-view","preview-login-form","preview-sign-out","module-welcome",
-  "module-steps","complete-instruction","ready-part-label","ready-case-title","ready-case-source","ready-duration",
+  "module-steps","complete-instruction","walkthrough-cards","walkthrough-test-sound","complete-walkthrough","ready-part-label","ready-case-title","ready-case-source","ready-duration",
   "case-purpose","ready-routine","ready-behavior-name","ready-behavior-definition","ready-replacement","ready-hypothesis",
   "behavior-examples-list","behavior-nonexamples-list",
   "bip-prevent","bip-teach","bip-reinforce","bip-respond","preflight-fidelity-list","start-observation",
@@ -54,6 +54,7 @@ function blankModuleState(observer) {
     screen: "module",
     module: {
       instructionComplete: false,
+      walkthroughComplete: false,
       noraCompleted: false,
       noraFeedbackComplete: false,
       kaiCompleted: false,
@@ -174,7 +175,7 @@ function clearState() {
 
 function hideAllViews() {
   [
-    "login-view","module-view","instruction-view","ready-view","active-view","review-view",
+    "login-view","module-view","instruction-view","walkthrough-view","ready-view","active-view","review-view",
     "results-view","feedback-view","questions-view","complete-view"
   ].forEach((id) => { els[id].hidden = true; });
 }
@@ -270,16 +271,25 @@ function renderModuleSteps() {
     }),
     stepCard({
       number:2,
+      title:"Meet the data collection screen",
+      description:"Take a quick guided tour of the timer, student behavior button, fidelity controls, and end-of-session review.",
+      done:Boolean(m.walkthroughComplete),
+      locked:!m.instructionComplete,
+      buttonLabel:m.walkthroughComplete ? "Review Tour" : "Take Screen Tour",
+      action:"walkthrough"
+    }),
+    stepCard({
+      number:3,
       title:"Nora guided practice",
       description:"Review a fictional BIP, collect both measures during the Nora clip, then compare your fidelity scoring with the training key.",
       done:Boolean(m.noraCompleted),
-      locked:!m.instructionComplete,
+      locked:!m.walkthroughComplete,
       buttonLabel:m.noraCompleted ? "Review Results" : "Practice with Nora",
       action:m.noraCompleted ? "nora-results" : "nora-ready",
       detail:noraDetail
     }),
     stepCard({
-      number:3,
+      number:4,
       title:"Tell us what needs fixing",
       description:"Rate how manageable the form felt and tell Jess exactly what should change before live classroom observations.",
       done:Boolean(m.noraFeedbackComplete),
@@ -288,7 +298,7 @@ function renderModuleSteps() {
       action:"feedback"
     }),
     stepCard({
-      number:4,
+      number:5,
       title:"Kai independent qualification",
       description:"Complete the second case independently. No answer-key coaching is shown while you collect.",
       done:Boolean(m.kaiCompleted),
@@ -298,7 +308,7 @@ function renderModuleSteps() {
       detail:kaiDetail
     }),
     stepCard({
-      number:5,
+      number:6,
       title:"Submit questions for the 30-minute meeting",
       description:"Send anything that felt ambiguous, difficult to score, or worth practicing together before live data collection.",
       done:Boolean(m.questionsComplete),
@@ -329,6 +339,26 @@ function showInstruction() {
   state.screen = "instruction";
   saveState();
   els["instruction-view"].hidden = false;
+  resetScrollPosition();
+}
+
+function activateTourStep(step) {
+  document.querySelectorAll("[data-tour-step]").forEach((button) => {
+    button.classList.toggle("active", Number(button.dataset.tourStep) === Number(step));
+  });
+  document.querySelectorAll("[data-tour-target]").forEach((target) => {
+    target.classList.toggle("active", Number(target.dataset.tourTarget) === Number(step));
+  });
+}
+
+function showWalkthrough() {
+  stopTimer();
+  pausePlayer();
+  hideAllViews();
+  state.screen = "walkthrough";
+  saveState();
+  els["walkthrough-view"].hidden = false;
+  activateTourStep(0);
   resetScrollPosition();
 }
 
@@ -1145,6 +1175,7 @@ function showComplete() {
 function moduleAction(action) {
   switch (action) {
     case "instruction": showInstruction(); break;
+    case "walkthrough": showWalkthrough(); break;
     case "nora-ready": openCaseReady("nora"); break;
     case "nora-results": showResults("nora"); break;
     case "feedback": showFeedback(); break;
@@ -1159,6 +1190,7 @@ function restore() {
   switch (state.screen) {
     case "module": showModule(); break;
     case "instruction": showInstruction(); break;
+    case "walkthrough": showWalkthrough(); break;
     case "ready":
       if (state.currentCaseId) openCaseReady(state.currentCaseId);
       else showModule();
@@ -1208,6 +1240,22 @@ els["module-steps"].addEventListener("click", (event) => {
 
 els["complete-instruction"].addEventListener("click", () => {
   state.module.instructionComplete = true;
+  saveState();
+  showWalkthrough();
+});
+
+els["walkthrough-cards"].addEventListener("click", (event) => {
+  const button = event.target.closest("[data-tour-step]");
+  if (button) activateTourStep(button.dataset.tourStep);
+});
+
+els["walkthrough-test-sound"].addEventListener("click", () => {
+  ensureAudio();
+  beep();
+});
+
+els["complete-walkthrough"].addEventListener("click", () => {
+  state.module.walkthroughComplete = true;
   saveState();
   openCaseReady("nora");
 });
