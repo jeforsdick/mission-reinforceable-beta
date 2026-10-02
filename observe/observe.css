@@ -209,3 +209,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--obs-purple);outline:3
 .storage-message{min-height:1.25rem;margin:12px 0 0;color:var(--obs-green);font-size:.82rem;font-weight:750}
 .storage-message.error{color:#9d332e}
 @media(max-width:760px){.preflight-actions{align-items:stretch;flex-direction:column}}
+
+.result-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+@media(max-width:760px){.result-actions{flex-direction:column-reverse}}
