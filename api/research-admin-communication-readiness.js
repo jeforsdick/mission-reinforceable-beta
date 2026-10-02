@@ -8,6 +8,18 @@ const { measureConfiguration } = require('../server/qualtrics-measures');
 const { denverDate, loadWeeklySummary } = require('../server/weekly-recap-service');
 const { buildWeeklyRecapEmail } = require('../server/weekly-recap-email');
 
+async function researchAdminEmail(actor) {
+  const response = await supabaseFetch(`/rest/v1/profiles?id=eq.${encodeURIComponent(actor.id)}&select=email,role,active&limit=1`);
+  if (!response.ok) throw Object.assign(new Error('Research Admin email lookup failed'), { status: 502 });
+  const rows = await response.json();
+  const profile = rows[0];
+  const email = String(profile?.email || actor.email || '').trim().toLowerCase();
+  if (!profile || profile.role !== 'research_admin' || profile.active !== true || !email) {
+    throw Object.assign(new Error('Signed-in Research Admin email is unavailable.'), { status: 409 });
+  }
+  return email;
+}
+
 async function weeklyParticipant(caseId) {
   const lookup = await supabaseFetch(`/rest/v1/participants?case_id=eq.${encodeURIComponent(caseId)}&select=id,case_id,participant_code,is_test,auth_user_id&limit=2`);
   if (!lookup.ok) throw Object.assign(new Error('Weekly email participant lookup failed'), { status: 502 });
@@ -56,8 +68,8 @@ module.exports = async function handler(request, response) {
         const secureUrl = await issueSecureWeeklyUrl(participant, context);
         const email = buildWeeklyRecapEmail({ summary, weeklyQualtricsUrl: secureUrl, teacherName: participant.teacher_name, assetOrigin: process.env.TEACHER_GAME_URL });
         if (body.action === 'preview_weekly_email') return json(response, 200, { subject: email.subject, html: email.html, text: email.text, summary, week: context.current });
-        const testRecipient = String(actor.email || '').trim().toLowerCase();
-        if (!testRecipient || !process.env.RESEND_API_KEY) return json(response, 503, { error: 'Test email configuration is incomplete.' });
+        const testRecipient = await researchAdminEmail(actor);
+        if (!process.env.RESEND_API_KEY) return json(response, 503, { error: 'Resend email delivery is not configured in production.' });
         const sent = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: email.from, to: [testRecipient], subject: `[TEST] ${email.subject}`, html: email.html, text: email.text }) });
         if (!sent.ok) return json(response, 502, { error: 'Weekly test email could not be sent.' });
         const provider = await sent.json();
@@ -96,8 +108,10 @@ module.exports = async function handler(request, response) {
         summary,
         summary_available: Boolean(summary),
         summary_reason: summaryReason,
-        test_email_available: participant.is_test && surveyConfigured && Boolean(context.current) && Boolean(summary) && Boolean(actor.email && process.env.RESEND_API_KEY && process.env.TEACHER_GAME_URL),
-        test_email_reason: !participant.is_test ? 'Participant is not explicitly marked as test' : !surveyConfigured ? 'Weekly Qualtrics survey is not configured' : !context.current ? 'No eligible current intervention week' : summaryReason
+        test_email_available: participant.is_test && surveyConfigured && Boolean(context.current) && Boolean(summary),
+        test_email_reason: !participant.is_test ? 'Participant is not explicitly marked as test' : !surveyConfigured ? 'Weekly Qualtrics survey is not configured' : !context.current ? 'No eligible current intervention week' : summaryReason,
+        resend_configured: Boolean(process.env.RESEND_API_KEY),
+        teacher_game_url_configured: Boolean(process.env.TEACHER_GAME_URL)
       };
     }
     const result = {
