@@ -3,9 +3,10 @@ const crypto = require('node:crypto');
 const { isEligibleStudyDay } = require('./granite-study-calendar');
 const TOKEN_PARAMETER = 'mr_weekly_token';
 const EMAIL_SUBJECT = 'Quick Mission: Reinforceable weekly check-in';
+const DEFAULT_WEEKLY_QUALTRICS_URL = 'https://educationutah.co1.qualtrics.com/jfe/form/SV_9MsIT9TZXCdeIWa';
 function createRawToken() { return crypto.randomBytes(32).toString('base64url'); }
 function hashToken(token) { return crypto.createHash('sha256').update(String(token), 'utf8').digest('hex'); }
-function qualtricsConfiguration(configuredUrl = process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL) {
+function qualtricsConfiguration(configuredUrl = process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL || DEFAULT_WEEKLY_QUALTRICS_URL) {
   try {
     const url = new URL(configuredUrl);
     const surveyPath = /^\/jfe\/form\/SV_[A-Za-z0-9_-]+\/?$/i.test(url.pathname);
@@ -13,7 +14,7 @@ function qualtricsConfiguration(configuredUrl = process.env.WEEKLY_TEACHER_CHECK
     return { configured: url.protocol === 'https:' && !url.username && !url.password && qualtricsHost && surveyPath, url };
   } catch { return { configured: false, url: null }; }
 }
-function buildQualtricsUrl(rawToken, participantCode, weekNumber, configuredUrl = process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL) {
+function buildQualtricsUrl(rawToken, participantCode, weekNumber, configuredUrl = process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL || DEFAULT_WEEKLY_QUALTRICS_URL) {
   const config = qualtricsConfiguration(configuredUrl);
   if (!config.configured) return null;
   const url = new URL(config.url);
@@ -72,4 +73,4 @@ function interventionWeekNumber(weeklyRows, weekStart) {
   const index=(weeklyRows||[]).findIndex(row=>row.week_start===weekStart);
   return index<0?null:index+1;
 }
-module.exports={TOKEN_PARAMETER,EMAIL_SUBJECT,createRawToken,hashToken,qualtricsConfiguration,buildQualtricsUrl,completionUrl,weeklyEmail,interventionWeeks,resolvedInterventionPeriod,eligibleInterventionWeeks,interventionWeekContext,interventionWeekNumber};
+module.exports={TOKEN_PARAMETER,EMAIL_SUBJECT,DEFAULT_WEEKLY_QUALTRICS_URL,createRawToken,hashToken,qualtricsConfiguration,buildQualtricsUrl,completionUrl,weeklyEmail,interventionWeeks,resolvedInterventionPeriod,eligibleInterventionWeeks,interventionWeekContext,interventionWeekNumber};
