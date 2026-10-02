@@ -26,6 +26,47 @@ async function db(path, options = {}) {
   return value;
 }
 
+async function phaseHistory(caseId) {
+  return db('/rest/v1/research_case_phase_events?case_id=eq.' + encodeURIComponent(caseId) +
+    '&select=id,phase,effective_date,recorded_at&order=effective_date.asc,recorded_at.asc,id.asc');
+}
+
+async function claim(candidate, weekEnd) {
+  const result = await db('/rest/v1/rpc/claim_teacher_reminder_event', {
+    method: 'POST',
+    body: JSON.stringify({
+      target_participant_id: candidate.participant_id,
+      target_case_id: candidate.case_id,
+      target_reminder_type: 'weekly_recap',
+      target_study_date: weekEnd,
+      retry_reclamation: false
+    })
+  });
+  return result?.[0] || null;
+}
+
+async function issueUrl(candidate, context) {
+  const rawToken = weeklyCheckin.createRawToken();
+  await db('/rest/v1/rpc/research_admin_generate_weekly_checkin', {
+    method: 'POST',
+    body: JSON.stringify({
+      target_participant_id: candidate.participant_id,
+      target_case_id: candidate.case_id,
+      target_week_start: context.week_start,
+      target_token_hash: weeklyCheckin.hashToken(rawToken)
+    })
+  });
+  return weeklyCheckin.buildQualtricsUrl(rawToken, candidate.participant_code, context.week_number);
+}
+
+async function patchEvent(id, values) {
+  const response = await supabaseFetch('/rest/v1/teacher_reminder_events?id=eq.' + encodeURIComponent(id), {
+    method: 'PATCH',
+    body: JSON.stringify({ ...values, updated_at: new Date().toISOString() })
+  });
+  if (!response.ok) throw new Error('Weekly recap audit update failed');
+}
+
 function configurationReady() {
   return process.env.WEEKLY_RECAP_SYSTEM_ENABLED === 'true'
     && Boolean(process.env.RESEND_API_KEY)
