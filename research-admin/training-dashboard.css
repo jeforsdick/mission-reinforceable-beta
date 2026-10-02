@@ -1,0 +1,16 @@
+.observer-training-panel{margin:24px 0}
+.training-legend{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 16px;color:#667085;font-size:.8rem}
+.training-admin-table{font-size:.82rem}
+.training-admin-table td{vertical-align:top}
+.training-case-summary,.training-feedback-summary{display:grid;gap:3px}
+.training-case-summary span,.training-feedback-summary span{color:#667085}
+.training-empty{color:#98a2b3;font-style:italic}
+.training-question-preview{display:block;max-width:240px;white-space:normal;line-height:1.4;color:#465466}
+.training-detail-row td{padding-top:0!important}
+.training-detail-row summary{width:max-content;color:#6c4298;font-weight:800;cursor:pointer}
+.training-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.training-detail-case{padding:14px;border:1px solid #e6dfd2;border-radius:12px;background:#fbf7ed}
+.training-detail-case h4{margin:0 0 8px;color:#152446}
+.training-detail-case p{margin:6px 0;font-size:.78rem;line-height:1.45}
+.training-interval-code{display:block;margin-top:5px;padding:8px;border-radius:8px;background:#fff;white-space:normal;word-break:break-all;letter-spacing:.08em;color:#152446}
+@media(max-width:900px){.training-detail-grid{grid-template-columns:1fr}.training-admin-table{min-width:980px}}
