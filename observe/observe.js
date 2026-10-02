@@ -97,6 +97,11 @@ function hideAllViews() {
   ].forEach((id) => { els[id].hidden = true; });
 }
 
+function resetScrollPosition() {
+  window.scrollTo(0, 0);
+  requestAnimationFrame(() => window.scrollTo(0, 0));
+}
+
 function currentCase() {
   return state?.currentCaseId ? getTrainingCase(state.currentCaseId) : null;
 }
@@ -120,6 +125,7 @@ function showLogin() {
   pausePlayer();
   hideAllViews();
   els["login-view"].hidden = false;
+  resetScrollPosition();
 }
 
 function stepStatus(done, locked = false) {
@@ -230,6 +236,7 @@ function showModule() {
   els["module-view"].hidden = false;
   els["module-welcome"].textContent = `Hi ${state.observer}. You can stop and come back; this preview saves your progress in this browser.`;
   renderModuleSteps();
+  resetScrollPosition();
 }
 
 function showInstruction() {
@@ -239,6 +246,7 @@ function showInstruction() {
   state.screen = "instruction";
   saveState();
   els["instruction-view"].hidden = false;
+  resetScrollPosition();
 }
 
 function renderReady(caseData) {
@@ -293,6 +301,7 @@ function openCaseReady(caseId) {
   hideAllViews();
   renderReady(caseData);
   els["ready-view"].hidden = false;
+  resetScrollPosition();
 }
 
 function loadYouTubeApi() {
@@ -648,6 +657,7 @@ function showActive() {
   hideOutcomePrompt();
   renderTimer();
   mountPlayer(caseData);
+  resetScrollPosition();
 }
 
 function markTargetOccurred() {
@@ -780,6 +790,7 @@ function showReview() {
   els["summary-case-name"].textContent = caseData.title;
   els["review-fidelity"].innerHTML = fidelityTargets().map(reviewRow).join("");
   renderReviewWarning();
+  resetScrollPosition();
 }
 
 function markRemainingNoOpportunity() {
@@ -859,6 +870,7 @@ function showResults(caseId = state.currentCaseId) {
   } else {
     els["continue-after-results"].textContent = state.module.questionsComplete ? "Return to Module" : "Submit Questions for the Team Meeting";
   }
+  resetScrollPosition();
 }
 
 function ratingOptions(name, selected = "") {
@@ -887,6 +899,7 @@ function showFeedback() {
     const field = form.elements.namedItem(key);
     if (field && field instanceof HTMLElement && field.type !== "radio") field.value = value ?? "";
   }
+  resetScrollPosition();
 }
 
 function submitFeedback(event) {
@@ -920,6 +933,7 @@ function showQuestions() {
     const field = form.elements.namedItem(key);
     if (field && field instanceof HTMLElement) field.value = value ?? "";
   }
+  resetScrollPosition();
 }
 
 function submitQuestions(event) {
@@ -952,6 +966,7 @@ function showComplete() {
     <div><span>Student interval agreement</span><strong>Pending master keys</strong></div>
     <div><span>Feedback + questions</span><strong>Submitted</strong></div>
   `;
+  resetScrollPosition();
 }
 
 function moduleAction(action) {
