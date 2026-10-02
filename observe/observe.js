@@ -253,10 +253,10 @@ function renderModuleSteps() {
   const kaiAgreement = fidelityAgreementFor(state.attempts.kai, TRAINING_CASES.kai);
 
   const noraDetail = m.noraCompleted
-    ? `Fidelity agreement: <strong>${percentLabel(noraAgreement?.percent)}</strong> · Student interval agreement: <strong>master key pending</strong>`
+    ? `Fidelity agreement: <strong>${percentLabel(noraAgreement?.percent)}</strong> · Student interval agreement: <strong>not scored yet</strong>`
     : "";
   const kaiDetail = m.kaiCompleted
-    ? `Fidelity agreement: <strong>${percentLabel(kaiAgreement?.percent)}</strong> · Student interval agreement: <strong>master key pending</strong>`
+    ? `Fidelity agreement: <strong>${percentLabel(kaiAgreement?.percent)}</strong> · Student interval agreement: <strong>not scored yet</strong>`
     : "";
 
   els["module-steps"].innerHTML = [
