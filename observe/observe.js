@@ -282,14 +282,11 @@ function renderModuleSteps() {
   const m = state.module;
   const noraAgreement = fidelityAgreementFor(state.attempts.nora, TRAINING_CASES.nora);
   const noraStudentAgreement = studentAgreementFor(state.attempts.nora, TRAINING_CASES.nora);
-  const kaiAgreement = fidelityAgreementFor(state.attempts.kai, TRAINING_CASES.kai);
-  const kaiStudentAgreement = studentAgreementFor(state.attempts.kai, TRAINING_CASES.kai);
-
   const noraDetail = state.attempts.nora
     ? `Fidelity agreement: <strong>${percentLabel(noraAgreement?.percent)}</strong> · Student interval agreement: <strong>${percentLabel(noraStudentAgreement?.percent)}</strong>`
     : "";
   const kaiDetail = state.attempts.kai
-    ? `Fidelity agreement: <strong>${percentLabel(kaiAgreement?.percent)}</strong> · Student interval agreement: <strong>${kaiStudentAgreement ? percentLabel(kaiStudentAgreement.percent) : "reference pending"}</strong>`
+    ? "Qualification submitted. Agreement is held for team review."
     : "";
 
   els["module-steps"].innerHTML = [
