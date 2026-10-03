@@ -306,7 +306,7 @@ function bindOperationsStageNavigation(caseId){
  const stored=sessionStorage.getItem(storageKey);
  showStage(validStages.includes(stored)?stored:'overview');
 }
-function bindOperations(){bindOperationsStageNavigation(caseId);const caseId=state.readiness?.case?.id;if(!caseId)return;
+function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)return;bindOperationsStageNavigation(caseId);
  document.querySelectorAll('.copy-qualtrics-link').forEach(button=>button.addEventListener('click',async()=>{const feedback=button.parentElement.querySelector('.copy-qualtrics-feedback');try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText(button.dataset.url);feedback.textContent='Teacher link copied.';}catch{feedback.textContent='Clipboard access failed. Copy the link from the field shown.';window.prompt('Copy teacher link:',button.dataset.url);}}));
  bindObservationControls(caseId);
  $('#protocol-form')?.addEventListener('submit',event=>{event.preventDefault();operationRpc('research_admin_set_case_protocol',{target_case_id:caseId,target_stagger_position:Number(new FormData(event.currentTarget).get('position'))});});
