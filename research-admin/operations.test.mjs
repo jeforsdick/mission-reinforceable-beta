@@ -77,10 +77,10 @@ for (const label of ['Protected game content','Resource Map','Behavior Review','
 for (const forbidden of ['create-private-case-starter','Mission Authoring Standard','Supabase SQL Editor','preview-protected-game','signoff-action']) assert.doesNotMatch(gameReady,new RegExp(forbidden));
 assert.match(gameReady,/id="open-game-creation"/);
 const subnav=renderedOperations.slice(renderedOperations.indexOf('<nav class="operations-subnav"'),renderedOperations.indexOf('</nav>')+6);
-assert.deepEqual([...subnav.matchAll(/<a href="([^"]+)">([^<]+)<\/a>/g)].map(([,href,label])=>[label,href]),[['Overview','#operations-overview'],['Phase Decision','#operations-phase-decision'],['Enrollment','#operations-enrollment'],['Prebaseline','#operations-prebaseline'],['Baseline','#operations-baseline'],['Game Ready','#operations-game-ready'],['Intervention','#operations-intervention'],['Study-day Context','#operations-study-day-context'],['Maintenance','#operations-maintenance'],['End Measures','#operations-end-measures'],['Closeout','#operations-closeout'],['Events','#operations-events'],['History','#operations-history']]);
+assert.deepEqual([...subnav.matchAll(/data-operations-stage="([^"]+)"[^>]*>([^<]+)<\/button>/g)].map(([,id,label])=>[label,id]),[['Overview','overview'],['Setup','setup'],['Baseline','baseline'],['Intervention','intervention'],['Maintenance','maintenance'],['Closeout','closeout'],['History','history']]);
 assert.deepEqual(LIFECYCLE_STAGES,['Enrollment','Prebaseline','Baseline','Game Ready','Intervention','Maintenance','End Measures','Closeout']);
-let previous=-1; for(const stage of LIFECYCLE_STAGES){const at=renderedOperations.indexOf(`>${stage}</li>`);assert.ok(at>previous,stage);previous=at;}
-assert.match(renderedOperations,/lifecycle-current" aria-current="step"[^>]*><span>1<\/span>Enrollment/);
+for(const stage of ['Setup','Baseline','Intervention','Maintenance','Closeout']) assert.match(renderedOperations,new RegExp(`study-flow-step[^>]*>${stage}<`));
+assert.match(renderedOperations,/study-flow-step current">Setup</);
 const enrollment=renderedOperations.slice(renderedOperations.indexOf('id="operations-enrollment"'),renderedOperations.indexOf('id="operations-prebaseline"'));
 let permissionOrder=-1; for(const key of ['teacher_consent','parent_permission','student_assent']){const at=enrollment.indexOf(`data-key="${key}"`);assert.ok(at>permissionOrder,key);permissionOrder=at;}
 const tsesAt=enrollment.indexOf('data-key="tses_pre"');
@@ -95,8 +95,11 @@ assert.doesNotMatch(renderedOperations,/operations-observations|>Observations<|r
 assert.match(renderedOperations,/Baseline assignment is locked once baseline begins|Baseline assignment/);
 assert.ok(renderedOperations.indexOf('id="operations-maintenance"')<renderedOperations.indexOf('id="operations-end-measures"'));
 assert.ok(renderedOperations.indexOf('id="operations-phase-decision"')>renderedOperations.indexOf('id="operations-overview"'));assert.ok(renderedOperations.indexOf('id="operations-phase-decision"')<renderedOperations.indexOf('id="operations-enrollment"'));
-assert.doesNotMatch(renderedOperations,/Make a deliberate researcher decision|Research Admin never changes phases automatically\./);assert.match(renderedOperations,/Phase Decision[\s\S]*Record Phase Change[\s\S]*Phase History/);
+assert.doesNotMatch(renderedOperations,/Make a deliberate researcher decision|Research Admin never changes phases automatically\./);assert.match(renderedOperations,/Review \/ Change Phase[\s\S]*Record Phase Change[\s\S]*Phase History/);
 assert.match(renderedOperations,/Case History[\s\S]*append-only history/);
+for(const [id,stageKey] of [['operations-enrollment','setup'],['operations-prebaseline','setup'],['operations-game-ready','setup'],['operations-baseline','baseline'],['operations-intervention','intervention'],['operations-maintenance','maintenance'],['operations-end-measures','closeout'],['operations-closeout','closeout'],['operations-study-day-context','history'],['operations-events','history'],['operations-history','history']]) assert.match(renderedOperations,new RegExp(`id="${id}"[^>]*data-operations-stage-panel="${stageKey}"`));
+assert.match(js,/function bindOperationsStageNavigation/);
+assert.match(js,/sessionStorage\.setItem\(storageKey,selected\)/);
 assert.match(ui,/class="inline-record measure-form"/);assert.match(ui,/external_reference/);assert.match(js,/Completion date is required/);
 const prebaseline=renderedOperations.slice(renderedOperations.indexOf('id="operations-prebaseline"'),renderedOperations.indexOf('id="operations-baseline"'));
 assert.doesNotMatch(prebaseline,/TSES — Pre-Baseline|data-key="tses_pre"/,'Prebaseline does not duplicate the TSES record');
