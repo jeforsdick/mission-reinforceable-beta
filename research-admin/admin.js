@@ -283,7 +283,30 @@ function bindObservationControls(caseId){
  document.querySelectorAll('.edit-summary-toggle').forEach(button=>button.addEventListener('click',()=>{const form=document.querySelector(`.edit-summary-form[data-observation="${button.dataset.observation}"]`);form.hidden=!form.hidden;if(!form.hidden)form.querySelector('input')?.focus();}));
  document.querySelectorAll('.edit-summary-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form),payload=recordPayload(form);operationRpc('research_admin_revise_classroom_observation_summary',{target_observation_id:form.dataset.observation,target_observation_note:f.get('observation_note')||null,target_ioa_note:f.get('ioa_note')||null,target_correction_reason:f.get('correction_reason'),target_teacher_fidelity_percent:payload.teacher_fidelity_percent,target_student_target_behavior_percent:payload.student_target_behavior_percent,target_teacher_fidelity_ioa_percent:payload.teacher_fidelity_ioa_percent,target_student_behavior_ioa_percent:payload.student_behavior_ioa_percent});}));
 }
-function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)return;
+function bindOperationsStageNavigation(caseId){
+ const validStages=['overview','setup','baseline','intervention','maintenance','closeout','history'];
+ const storageKey=`mr-research-operations-stage:${caseId}`;
+ const showStage=stage=>{
+  const selected=validStages.includes(stage)?stage:'overview';
+  document.querySelectorAll('[data-operations-stage-panel]').forEach(panel=>{panel.hidden=panel.dataset.operationsStagePanel!==selected;});
+  document.querySelectorAll('[data-operations-stage]').forEach(button=>{
+    const active=button.dataset.operationsStage===selected;
+    button.setAttribute('aria-selected',String(active));
+    button.classList.toggle('active',active);
+  });
+  sessionStorage.setItem(storageKey,selected);
+  const workspace=document.querySelector('.operations-workspace');
+  if(workspace) workspace.dataset.activeOperationsStage=selected;
+ };
+ document.querySelectorAll('[data-operations-stage]').forEach(button=>button.addEventListener('click',()=>showStage(button.dataset.operationsStage)));
+ document.querySelectorAll('[data-operations-stage-target]').forEach(button=>button.addEventListener('click',()=>{
+  showStage(button.dataset.operationsStageTarget);
+  document.querySelector('.operations-subnav')?.scrollIntoView({behavior:'smooth',block:'start'});
+ }));
+ const stored=sessionStorage.getItem(storageKey);
+ showStage(validStages.includes(stored)?stored:'overview');
+}
+function bindOperations(){bindOperationsStageNavigation(caseId);const caseId=state.readiness?.case?.id;if(!caseId)return;
  document.querySelectorAll('.copy-qualtrics-link').forEach(button=>button.addEventListener('click',async()=>{const feedback=button.parentElement.querySelector('.copy-qualtrics-feedback');try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText(button.dataset.url);feedback.textContent='Teacher link copied.';}catch{feedback.textContent='Clipboard access failed. Copy the link from the field shown.';window.prompt('Copy teacher link:',button.dataset.url);}}));
  bindObservationControls(caseId);
  $('#protocol-form')?.addEventListener('submit',event=>{event.preventDefault();operationRpc('research_admin_set_case_protocol',{target_case_id:caseId,target_stagger_position:Number(new FormData(event.currentTarget).get('position'))});});
