@@ -35,14 +35,14 @@ test('readiness controls add no API route, RPC, schema, or reminder implementati
   assert.doesNotMatch(source,/\/api\/|\.rpc\(|teacher_reminder_settings|create (?:or replace )?function/i);
 });
 
-test('fake participants are unmistakable and document the safe end-to-end path',()=>{
-  const html=renderParticipantReadiness({study_id:'MR-998',teacher_email:'fake@testemail.com',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:false,eligible:false,is_test:true,simulation_available:false,simulation_reason:"Today's mission is complete",completed_required_today:true,last_mission_completion:{ended_at:'today',mission_id:'required-daily',qa_mode:false}},x=>String(x));
-  assert.match(html,/TEST PARTICIPANT/);
-  assert.match(html,/excluded from production reminder recipients and dissertation counts\/outcomes/);
-  assert.match(html,/Today(?:'|’)s mission is complete/i);
-  assert.match(html,/QA preview sessions still do not suppress mission reminders/);
-  assert.match(html,/Return to Real Participant/);
-  assert.match(html,/Simulate Today’s Reminder/);
+test('QA cases are clearly labeled while using the normal case workflow',()=>{
+  const html=renderParticipantReadiness({study_id:'MR-998',teacher_email:'fake@testemail.com',study_date:'2026-09-02',auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:false,eligible:false,is_test:true,simulation_available:false,last_mission_completion:{ended_at:'today',mission_id:'required-daily',qa_mode:false}},x=>String(x));
+  assert.match(html,/QA CASE/);
+  assert.match(html,/behaves like a normal study case for testing/);
+  assert.match(html,/excluded from dissertation counts and outcomes/);
+  assert.match(html,/Advanced QA tools/);
+  assert.match(html,/Simulate Today’s Daily Reminder/);
+  assert.doesNotMatch(html,/Return to Real Participant|Mark as Test Participant/);
 });
 
 test('test status is explicit and never inferred from identity or email',()=>{
@@ -61,13 +61,11 @@ test('real email domains do not affect candidates and only explicit test status 
   assert.match(candidates,/nullif\(btrim\(pr\.email\), ''\) is not null/);
 });
 
-test('researcher UI confirms both explicit test-state transitions',()=>{
+test('QA designation is retained in schema but hidden from the routine case UI',()=>{
   const real=renderParticipantReadiness({study_id:'MR-101',study_date:'2026-09-02',is_test:false},x=>String(x));
-  assert.match(real,/Mark as Test Participant/);
+  assert.doesNotMatch(real,/Mark as Test Participant|Return to Real Participant|QA CASE/);
   const admin=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
   assert.match(admin,/research_admin_set_test_participant/);
-  assert.match(admin,/window\.confirm/);
-  assert.match(admin,/target_is_test:next/);
 });
 
 test('schema reuses assignments and exact completion',()=>{
@@ -128,21 +126,19 @@ test('case-specific PDF report labels test data as excluded from dissertation re
 });
 
 
-test('readiness separates production delivery, participant settings, and safe test simulation',()=>{
+test('readiness separates normal participant controls from advanced QA tools',()=>{
   const testHtml=renderParticipantReadiness({study_id:'MR-998',study_date:'2026-09-03',is_test:true,auth_linked:true,case_assigned:true,participant_active:true,reminders_enabled:false,simulation_available:true},x=>String(x),{productionEmailDelivery:false});
   assert.match(testHtml,/Production email delivery[\s\S]*Off/);
   assert.match(testHtml,/Participant daily reminders[\s\S]*Disabled/);
-  assert.match(testHtml,/Test simulation[\s\S]*Available/);
-  assert.match(testHtml,/Test simulations do not send email and can be used while production delivery is off/);
-  assert.doesNotMatch(testHtml,/Enable Daily Reminders/);
-  assert.match(testHtml,/id="simulate-test-reminder"[^>]*>Simulate Today’s Reminder/);
+  assert.match(testHtml,/Advanced QA tools/);
+  assert.match(testHtml,/id="simulate-test-reminder"[^>]*>Simulate Today’s Daily Reminder/);
+  assert.doesNotMatch(testHtml,/Enable Daily Reminders|Return to Real Participant/);
 
   const realHtml=renderParticipantReadiness({study_id:'MR-101',study_date:'2026-09-03',is_test:false,reminders_enabled:false,eligible:false},x=>String(x),{productionEmailDelivery:false});
   assert.match(realHtml,/Production email delivery[\s\S]*Off/);
   assert.match(realHtml,/Participant daily reminders[\s\S]*Disabled/);
   assert.match(realHtml,/Enable Daily Reminders/);
-  assert.doesNotMatch(realHtml,/Test simulation/);
-  assert.doesNotMatch(testHtml,/Reminder system enabled/);
+  assert.doesNotMatch(realHtml,/Advanced QA tools|QA CASE/);
 });
 
 test('test simulation gates setup but not production delivery or live reminder settings',()=>{
@@ -164,8 +160,8 @@ test('production eligibility and schedules remain unchanged',()=>{
   assert.match(vercel,/"schedule": "0 16 \* \* 1-5"/);
 });
 
-test('secure weekly test readiness shows intervention administration and completion state without a pasted URL',()=>{
+test('secure weekly QA email is one clear action with completion state',()=>{
   const html=renderParticipantReadiness({study_id:'MR-998',study_date:'2026-09-17',is_test:true},x=>String(x),{weeklyEmail:{qualtrics_configured:true,current_week:{week_number:2,week_start:'2026-09-14',week_end:'2026-09-18'},administration:{link_issued_at:'2026-09-17T18:00:00Z',completed_at:'2026-09-17T18:05:00Z'},summary_available:true,test_email_available:true,summary:{missions_completed:2,days_practiced:2,mission_mix:{daily:2,mystery:0,crisis:0},week_start:'2026-09-14',week_end:'2026-09-18'}}});
-  for(const text of ['Intervention Week 2','2026-09-14 through 2026-09-18','Weekly administration','Exists','Weekly link','Issued','Weekly check-in','Completed','Preview Weekly Email','Send Test Weekly Email','TEST_EMAIL_RECIPIENT'])assert.match(html,new RegExp(text));
-  assert.doesNotMatch(html,/weekly_qualtrics_url|Save Link|personalized/i);
+  for(const text of ['Intervention Week 2','2026-09-14 through 2026-09-18','Weekly survey','Configured','Weekly summary','Ready','Weekly check-in','Completed','Send Weekly Email to Me'])assert.match(html,new RegExp(text));
+  assert.doesNotMatch(html,/Preview Weekly Email|Send Test Weekly Email|TEST_EMAIL_RECIPIENT|weekly_qualtrics_url|Save Link|personalized/i);
 });
