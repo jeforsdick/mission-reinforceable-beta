@@ -423,3 +423,40 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .roster-status.needs{background:#fff0ed;color:#9d342d}
 
 .observer-roster-head .planned-role{margin-top:3px;color:var(--purple);font-size:.7rem;font-weight:900;text-transform:uppercase;letter-spacing:.05em}
+
+/* Seven-stage Research Operations cleanup */
+.operations-subnav{gap:7px;padding:7px}
+.operations-stage-tab{flex:0 0 auto;min-height:38px;border:0;border-radius:8px;padding:8px 13px;background:transparent;color:var(--purple);font:inherit;font-size:.82rem;font-weight:850;white-space:nowrap;cursor:pointer}
+.operations-stage-tab:hover{background:var(--purple-pale);color:var(--navy)}
+.operations-stage-tab[aria-selected="true"],.operations-stage-tab.active{background:var(--navy);color:#fff;box-shadow:0 4px 10px rgba(21,36,70,.16)}
+.operations-stage-tab:focus-visible{outline:3px solid rgba(108,66,152,.35);outline-offset:2px}
+.operations-stage-panel[hidden]{display:none!important}
+.operations-overview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.phase-chip{display:inline-flex;align-items:center;padding:7px 11px;border-radius:999px;background:var(--purple-pale);color:var(--purple);font-size:.72rem;font-weight:900;text-transform:capitalize}
+.study-flow-bar{display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:6px;margin:18px 0 20px}
+.study-flow-step{padding:9px 10px;border-radius:9px;background:#f1efe9;color:#8a8d96;font-size:.73rem;font-weight:850;text-align:center}
+.study-flow-step.current{background:var(--navy);color:#fff;box-shadow:0 5px 12px rgba(21,36,70,.16)}
+.overview-focus-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.overview-focus-card{margin:0;padding:16px;border:1px solid var(--line);border-radius:13px;background:#fcfbf8}
+.overview-focus-card h3{margin:0 0 10px;color:var(--navy);font-size:.92rem}
+.overview-focus-card .eyebrow{margin-bottom:7px}
+.attention-card{border-left:5px solid var(--gold);background:#fffaf0}
+.overview-attention-list{margin:0;padding-left:1.15rem}
+.overview-attention-list li{margin:.4rem 0}
+.overview-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.overview-metric{padding:10px;border-radius:9px;background:#f4f2ed}
+.overview-metric span,.overview-metric strong{display:block}
+.overview-metric span{color:var(--muted);font-size:.66rem;font-weight:800}
+.overview-metric strong{margin-top:3px;color:var(--navy);font-size:1.05rem}
+.overview-status-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0}
+.overview-status-list>div{padding:10px;border-radius:9px;background:#f4f2ed}
+.overview-status-list dt{color:var(--muted);font-size:.66rem;font-weight:800}
+.overview-status-list dd{margin:3px 0 0;color:var(--navy);font-weight:850}
+.next-decision-card{display:flex;flex-direction:column;justify-content:center;border:2px solid var(--purple);background:var(--purple-pale)}
+.next-decision-card strong{color:var(--navy);font-size:1.05rem}
+.next-decision-card small{margin-top:7px;color:var(--muted)}
+.phase-decision-disclosure>summary{cursor:pointer;color:var(--purple);font-size:.9rem;font-weight:900}
+.phase-decision-disclosure[open]>summary{margin-bottom:14px}
+.operations-stage-panel+.operations-stage-panel{margin-top:14px}
+@media(max-width:760px){.overview-focus-grid{grid-template-columns:1fr}.study-flow-bar{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}.operations-overview-head{flex-direction:column}.overview-status-list{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.overview-metrics,.overview-status-list{grid-template-columns:1fr}}
