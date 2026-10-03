@@ -519,3 +519,15 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .admin-observation-fallback .record-observation-form{margin-top:12px;border:1px solid var(--line);background:#fff}
 @media(max-width:950px){.intervention-observation-kpis{grid-template-columns:repeat(3,1fr)}.latest-data-grid{grid-template-columns:repeat(2,1fr)}.case-observation-slot-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:650px){.intervention-observation-heading{flex-direction:column}.routine-strip,.case-observation-slot-grid,.latest-data-grid{grid-template-columns:1fr}.intervention-observation-kpis{grid-template-columns:repeat(2,1fr)}.compact-observation-main{grid-template-columns:1fr}.compact-observation-values{gap:8px}}
+
+.intervention-period-summary{margin:0 0 16px;padding:16px;border:1px solid var(--line);border-radius:13px;background:#fcfbf8}
+.intervention-period-summary .section-heading{align-items:flex-start;margin-bottom:10px}
+.intervention-period-summary h2{margin:.2rem 0 0}
+.intervention-period-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0 12px}
+.intervention-period-kpis>div{padding:10px;border-radius:9px;background:#f4f2ed}
+.intervention-period-kpis span,.intervention-period-kpis strong{display:block}
+.intervention-period-kpis span{color:var(--muted);font-size:.64rem;font-weight:850}
+.intervention-period-kpis strong{margin-top:3px;color:var(--navy);font-size:.88rem}
+.intervention-support-tracking{margin-top:16px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#fcfbf8}
+.intervention-support-tracking>h3{margin:0 0 10px}
+@media(max-width:700px){.intervention-period-kpis{grid-template-columns:repeat(2,1fr)}}
