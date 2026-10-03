@@ -460,3 +460,9 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .operations-stage-panel+.operations-stage-panel{margin-top:14px}
 @media(max-width:760px){.overview-focus-grid{grid-template-columns:1fr}.study-flow-bar{grid-template-columns:repeat(5,minmax(90px,1fr));overflow-x:auto}.operations-overview-head{flex-direction:column}.overview-status-list{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.overview-metrics,.overview-status-list{grid-template-columns:1fr}}
+
+.participant-setup-stage>.panel{margin:0 0 14px}
+.weekly-checkins{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fcfbf8}
+.weekly-checkins>summary{cursor:pointer;color:var(--purple);font-size:.78rem;font-weight:900}
+.weekly-checkins[open]>summary{margin-bottom:10px}
+.weekly-checkins ol{margin-bottom:0}
