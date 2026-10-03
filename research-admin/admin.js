@@ -631,25 +631,72 @@ function fidelityPanel() {
   const f=state.fidelity, s=f.summary || {}, enabled=f.case_active && f.participant_active;
   const stat=(label,yes,applicable)=>`<div><span>${label}</span><strong>${percentage(yes,applicable)}</strong><small>${yes} / ${applicable} applicable components</small></div>`;
   const history=(f.history||[]).map(r=>`<li><strong>${r.review_scope==='daily'?'Daily':'Weekly'} · ${escapeHtml(r.study_date||`${r.week_start}–${r.week_end}`)}</strong> · ${r.fidelity_percent===null?'Not applicable':`${r.fidelity_percent}%`} · ${r.yes_count} / ${r.applicable_count} · ${escapeHtml(r.reviewer)} · ${formatDate(r.reviewed_at)} · <span class="${r.is_current?'ready':'off'}">${r.is_current?'Current':'Superseded'}</span></li>`).join('');
-  return `<section class="panel procedural-fidelity no-print"><p id="operations-fidelity" class="eyebrow">MR Fidelity</p><h2>MR Procedural Fidelity</h2><p>Did Mission: Reinforceable run the way it was supposed to? This is separate from whether the teacher played or implemented the BIP/BSP correctly.</p><div class="fidelity-summary">${stat('Daily Fidelity',s.daily_yes||0,s.daily_applicable||0)}${stat('Weekly Fidelity',s.weekly_yes||0,s.weekly_applicable||0)}${stat('Overall Fidelity',s.overall_yes||0,s.overall_applicable||0)}</div><p><strong>Reviews completed:</strong> ${s.daily_dates||0} daily dates · ${s.study_weeks||0} study weeks. Missing periods are not scored.</p><p class="neutral-note">Mission completion is participation data—not a procedural-fidelity failure. Qualtrics owns the Weekly Teacher Report.</p>${enabled?`<label>Review<select id="fidelity-scope"><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label><div id="fidelity-form-wrap"></div>`:'<p class="off">Procedural fidelity logging begins when the participant enters the intervention phase.</p>'}<details class="review-history"><summary>Review history (${(f.history||[]).length})</summary>${history?`<ol>${history}</ol>`:'<p>No procedural-fidelity reviews recorded.</p>'}</details></section>`;
+  return `<section class="panel procedural-fidelity no-print"><p id="operations-fidelity" class="eyebrow">Intervention Delivery Fidelity</p><h2>MR Delivery Fidelity</h2><p>Did Mission: Reinforceable deliver the planned intervention components? Teacher mission completion and BSP implementation are separate outcomes.</p><div class="fidelity-summary">${stat('Daily Fidelity',s.daily_yes||0,s.daily_applicable||0)}${stat('Weekly Fidelity',s.weekly_yes||0,s.weekly_applicable||0)}${stat('Overall Fidelity',s.overall_yes||0,s.overall_applicable||0)}</div><p><strong>Reviews completed:</strong> ${s.daily_dates||0} daily dates · ${s.study_weeks||0} study weeks. Missing periods are not scored.</p><p class="neutral-note">Mission completion is participation data—not a procedural-fidelity failure. Qualtrics owns the Weekly Teacher Report.</p>${enabled?`<label>Review<select id="fidelity-scope"><option value="daily">Daily</option><option value="weekly">Weekly</option></select></label><div id="fidelity-form-wrap"></div>`:'<p class="off">Procedural fidelity logging begins when the participant enters the intervention phase.</p>'}<details class="review-history"><summary>Review history (${(f.history||[]).length})</summary>${history?`<ol>${history}</ol>`:'<p>No procedural-fidelity reviews recorded.</p>'}</details></section>`;
 }
 function renderFidelityForm(){
  const scope=$('#fidelity-scope')?.value||'daily', monday=scope==='weekly';
- $('#fidelity-form-wrap').innerHTML=`<form id="fidelity-form"><label>${monday?'Week beginning Monday':'Study date'}<input id="fidelity-date" type="date" min="${STUDY_START}" max="${STUDY_END}" required></label><div id="fidelity-evidence" class="system-evidence">Choose a date to see the system record.</div>${COMPONENTS[scope].map(([key,title,help])=>`<fieldset class="fidelity-component"><legend>${escapeHtml(title)}</legend><p>${escapeHtml(help)}</p><div data-evidence="${key}"></div><div class="criterion-options">${[['yes','Yes'],['no','No'],['na','N/A']].map(([v,l])=>`<label><input type="radio" name="fidelity-${key}" value="${v}" required> ${l}</label>`).join('')}</div><label>Note <textarea name="fidelity-note-${key}" maxlength="1000" rows="2"></textarea></label><small>Required for No and N/A. Keep notes brief. Do not include student names, diagnoses, or protected BIP/BSP content.</small></fieldset>`).join('')}<label>Optional overall review note<textarea id="fidelity-overall" maxlength="2000" rows="3"></textarea></label><button class="primary">Record ${monday?'Weekly':'Daily'} Fidelity Review</button><p id="fidelity-message" class="message" aria-live="polite"></p></form>`;
- $('#fidelity-date').addEventListener('change',loadFidelityEvidence); $('#fidelity-form').addEventListener('submit',submitFidelityReview);
+ const rows=COMPONENTS[scope].map(([key,title,help])=>`
+   <tr class="fidelity-review-row" data-component="${key}">
+     <td class="fidelity-review-component"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(help)}</small></td>
+     <td><div data-evidence="${key}" class="fidelity-evidence-compact"><span class="off">Waiting for system evidence</span></div></td>
+     <td>
+       <div class="fidelity-score-options">
+         ${[['yes','Yes'],['no','No'],['na','N/A']].map(([v,l])=>`<label><input type="radio" name="fidelity-${key}" value="${v}" required> ${l}</label>`).join('')}
+       </div>
+     </td>
+     <td><input class="fidelity-note-compact" name="fidelity-note-${key}" maxlength="1000" placeholder="Required for No / N/A"></td>
+   </tr>`).join('');
+ $('#fidelity-form-wrap').innerHTML=`
+   <form id="fidelity-form" class="compact-fidelity-review">
+     <div class="fidelity-review-top">
+       <label>${monday?'Week beginning Monday':'Study date'}<input id="fidelity-date" type="date" min="${STUDY_START}" max="${STUDY_END}" required></label>
+       <div id="fidelity-evidence" class="system-evidence compact-fidelity-evidence">Choose a date to load the system record.</div>
+     </div>
+     <div class="fidelity-review-table-wrap">
+       <table class="fidelity-review-table">
+         <thead><tr><th>Component</th><th>System evidence</th><th>Score</th><th>Note</th></tr></thead>
+         <tbody>${rows}</tbody>
+       </table>
+     </div>
+     <label class="fidelity-overall-note">Optional overall note<input id="fidelity-overall" maxlength="2000" placeholder="Only if something about this delivery period needs context"></label>
+     <button class="primary">Confirm ${monday?'Weekly':'Daily'} Delivery Fidelity</button>
+     <p id="fidelity-message" class="message" aria-live="polite"></p>
+   </form>`;
+ $('#fidelity-date').addEventListener('change',loadFidelityEvidence);
+ $('#fidelity-form').addEventListener('submit',submitFidelityReview);
 }
 async function loadFidelityEvidence(){
  const scope=$('#fidelity-scope').value,date=$('#fidelity-date').value;
- if (!date || (scope==='daily'?!isStudyDay(date):(new Date(`${date}T00:00:00Z`).getUTCDay()!==1 || !weekHasStudyDay(date)))) { $('#fidelity-evidence').textContent=scope==='daily'?'Choose a scheduled Granite study day.':'Choose a Monday whose week contains a Granite study day.'; return; }
+ if (!date || (scope==='daily'?!isStudyDay(date):(new Date(`${date}T00:00:00Z`).getUTCDay()!==1 || !weekHasStudyDay(date)))) {
+   $('#fidelity-evidence').textContent=scope==='daily'?'Choose a scheduled Granite study day.':'Choose a Monday whose week contains a Granite study day.';
+   return;
+ }
  const args={target_participant_id:state.fidelity.participant_id,target_case_id:state.readiness.case.id,target_scope:scope,target_study_date:scope==='daily'?date:null,target_week_start:scope==='weekly'?date:null};
- const {data,error}=await state.client.rpc('research_admin_procedural_fidelity_evidence',args); if(error){$('#fidelity-evidence').textContent=error.message;return;} state.fidelityEvidence=data;
- $('#fidelity-evidence').textContent=`System record — use this to score the item. It will not choose the answer for you.`;
+ const {data,error}=await state.client.rpc('research_admin_procedural_fidelity_evidence',args);
+ if(error){$('#fidelity-evidence').textContent=error.message;return;}
+ state.fidelityEvidence=data;
+ $('#fidelity-evidence').innerHTML='<strong>System evidence loaded.</strong> Suggested scores are selected below; confirm or override before saving.';
  const evidenceFor=scope==='daily'?[data.daily_prompt,data.mission_availability,data.functional_access]:[data.weekly_usage_summary,data.qualtrics_weekly_report];
- COMPONENTS[scope].forEach(([key],i)=>{document.querySelector(`[data-evidence="${key}"]`).innerHTML=`<small><strong>System record:</strong> ${escapeHtml(JSON.stringify(evidenceFor[i]))}</small>`;});
+ COMPONENTS[scope].forEach(([key],i)=>{
+   const evidence=evidenceFor[i]||{};
+   const suggested=evidence.suggested_status||null;
+   const basis=evidence.suggestion_basis||evidence.message||evidence.interpretation||'System evidence is incomplete.';
+   const evidenceBox=document.querySelector(`[data-evidence="${key}"]`);
+   if(evidenceBox){
+     const statusLabel=suggested==='yes'?'✓ Supports Yes':suggested==='no'?'! Exception':'? Review needed';
+     const statusClass=suggested==='yes'?'ready':suggested==='no'?'needs':'off';
+     evidenceBox.innerHTML=`<span class="${statusClass}">${statusLabel}</span><small>${escapeHtml(basis)}</small>`;
+   }
+   if(suggested){
+     const radio=document.querySelector(`[name="fidelity-${key}"][value="${suggested}"]`);
+     if(radio) radio.checked=true;
+   }
+ });
 }
 async function submitFidelityReview(event){
  event.preventDefault(); const scope=$('#fidelity-scope').value,date=$('#fidelity-date').value;
  const components=Object.fromEntries(COMPONENTS[scope].map(([key])=>[key,{status:document.querySelector(`[name="fidelity-${key}"]:checked`)?.value,note:document.querySelector(`[name="fidelity-note-${key}"]`).value.trim()||null}]));
+ const unscored=Object.entries(components).find(([,v])=>!v.status); if(unscored){$('#fidelity-message').textContent='Confirm each component before saving.';return;}
  const missing=Object.entries(components).find(([,v])=>['no','na'].includes(v.status)&&!v.note); if(missing){$('#fidelity-message').textContent='A brief note is required for every No and N/A.';return;}
  const {error}=await state.client.rpc('research_admin_submit_procedural_fidelity_review',{target_participant_id:state.fidelity.participant_id,target_case_id:state.readiness.case.id,target_review_scope:scope,target_study_date:scope==='daily'?date:null,target_week_start:scope==='weekly'?date:null,submitted_components:components,submitted_overall_notes:$('#fidelity-overall').value.trim()||null});
  if(error){$('#fidelity-message').textContent=error.message;return;} await openDetail(state.selected.request_id, state.selectedTab);
