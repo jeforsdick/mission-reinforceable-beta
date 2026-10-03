@@ -87,6 +87,106 @@ export function newObservationForm(item,setup,primaryOptions,secondaryOptions,e,
 }
 
 function editSummaryForm(x,e){return `<form class="edit-summary-form summary-form-grid" data-observation="${x.id}" hidden><label>Teacher fidelity %<input name="teacher_fidelity_percent" type="number" min="0" max="100" step="any" value="${x.teacher_fidelity_percent}" required></label><label>Student target behavior %<input name="student_target_behavior_percent" type="number" min="0" max="100" step="any" value="${x.student_target_behavior_percent}" required></label>${x.ioa?`<label>Teacher fidelity IOA %<input name="teacher_fidelity_ioa_percent" type="number" min="0" max="100" step="any" value="${x.ioa?.teacher_fidelity_ioa_percent??''}" required></label><label>Student behavior IOA %<input name="student_behavior_ioa_percent" type="number" min="0" max="100" step="any" value="${x.ioa?.student_behavior_ioa_percent??''}" required></label><label>IOA note — optional<textarea name="ioa_note" maxlength="1000">${e(x.ioa_note||'')}</textarea></label>`:''}<label class="wide">Observation note — optional<textarea name="observation_note" maxlength="1000">${e(x.summary_observation_note||x.context_note||'')}</textarea></label><label class="wide">Correction reason<input name="correction_reason" maxlength="1000" required></label><button class="primary">Save Correction</button></form>`;}
+function observerDisplay(observers,id){
+ const observer=(observers||[]).find(x=>x.id===id);
+ return observer?.display_name||observer?.observer_code||'Unassigned';
+}
+function scheduleStatusLabel(status){
+ return String(status||'scheduled').replaceAll('_',' ').replace(/\b\w/g,ch=>ch.toUpperCase());
+}
+function secondaryRoleLabel(role){
+ if(role==='formal_ioa')return 'Formal IOA';
+ if(role==='supported_calibration')return 'Supported calibration';
+ if(role==='calibration_and_ioa')return 'Calibration + IOA';
+ return role?String(role).replaceAll('_',' '):'';
+}
+function compactObservationHistory(rows,phase,e){
+ const title=phase[0].toUpperCase()+phase.slice(1);
+ const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)));
+ if(!completed.length)return `<p class="empty-admin-state">No completed ${e(title.toLowerCase())} observations yet.</p>`;
+ return `<div class="compact-observation-history">${completed.map(x=>{
+   const note=x.summary_observation_note||x.context_note;
+   const ioaAlert=x.ioa?.overall_ioa_attention===true;
+   return `<article class="compact-observation-record" id="observation-${x.id}">
+     <div class="compact-observation-main">
+       <div><strong>${e(dateLabel(x.observation_date))}</strong><span>Observation #${e(x.session_number)} · ${e(x.primary_observer_code||'Observer')}</span></div>
+       <div class="compact-observation-values"><span>Fidelity <strong>${pct(x.teacher_fidelity_percent)}</strong></span><span>Student behavior <strong>${pct(x.student_target_behavior_percent)}</strong></span></div>
+       <span class="compact-ioa-badge ${x.ioa?'has-ioa':'no-ioa'}">${x.ioa?'IOA collected':'No IOA'}</span>
+     </div>
+     ${ioaAlert?'<p class="attention">IOA needs researcher review / recalibration follow-up.</p>':''}
+     <details class="observation-record-details">
+       <summary>Details / correct record</summary>
+       ${x.start_time||x.end_time?`<p><strong>Time:</strong> ${e(timeLabel(x.start_time)||'—')}–${e(timeLabel(x.end_time)||'—')}</p>`:''}
+       ${x.ioa?`<p><strong>IOA observer:</strong> ${e(x.secondary_observer_code||'—')}<br>Teacher fidelity IOA: ${pct(x.ioa?.teacher_fidelity_ioa_percent)}<br>Student behavior IOA: ${pct(x.ioa?.student_behavior_ioa_percent)}</p>`:''}
+       ${note?`<p><strong>Notes:</strong> ${e(note)}</p>`:''}
+       <button type="button" class="quiet edit-summary-toggle" data-observation="${x.id}">Correct summary</button>
+       ${editSummaryForm(x,e)}
+     </details>
+   </article>`;
+ }).join('')}</div>`;
+}
+function renderInterventionObservationWorkspace(item,e){
+ const data=item.observation_data||{},setup=(data.setups||[])[0],schedule=data.schedule||null,observers=data.observers||[];
+ const rows=(data.observations||[]).filter(x=>x.phase==='intervention');
+ const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)));
+ const latest=completed[0];
+ const week=denverWeek();
+ const slots=(data.schedule_slots||[]).filter(slot=>slot.observation_date>=week.monday&&slot.observation_date<=week.sunday).sort((a,b)=>String(a.observation_date).localeCompare(String(b.observation_date)));
+ const target=Number(schedule?.weekly_target_days||3);
+ const assigned=slots.filter(slot=>slot.primary_observer_id&&!['cancelled','needs_reschedule'].includes(slot.status)).length;
+ const completeSlots=slots.filter(slot=>slot.status==='completed').length;
+ const completedThisWeek=completed.filter(x=>x.observation_date>=week.monday&&x.observation_date<=week.sunday).length;
+ const completedCount=Math.max(completeSlots,completedThisWeek);
+ const reschedules=slots.filter(slot=>slot.status==='needs_reschedule').length;
+ const plannedIoa=slots.filter(slot=>['formal_ioa','calibration_and_ioa'].includes(slot.secondary_role)&&slot.status!=='cancelled').length;
+ const ioaThisWeek=completed.filter(x=>x.observation_date>=week.monday&&x.observation_date<=week.sunday&&x.ioa).length;
+ let consecutive90=0;
+ for(const row of completed){if(Number(row.teacher_fidelity_percent)>=90)consecutive90++;else break;}
+ const scheduleRoutine=schedule?.routine_label||setup?.target_routine||'Routine not configured';
+ const scheduleTime=schedule?`${timeLabel(schedule.routine_start_time)}–${timeLabel(schedule.routine_end_time)}`:'Time not set';
+ const slotCards=slots.length?slots.map(slot=>{
+   const secondary=slot.secondary_observer_id?`<span>${e(secondaryRoleLabel(slot.secondary_role))}: <strong>${e(observerDisplay(observers,slot.secondary_observer_id))}</strong></span>`:'';
+   return `<article class="case-observation-slot ${e(slot.status)}">
+     <div><strong>${e(dateLabel(slot.observation_date))}</strong><span>${e(scheduleStatusLabel(slot.status))}</span></div>
+     <p>Primary: <strong>${e(observerDisplay(observers,slot.primary_observer_id))}</strong></p>
+     ${secondary}
+     ${slot.status==='needs_reschedule'?`<small>${e(slot.reschedule_reason||'Needs reschedule')}</small>`:''}
+   </article>`;
+ }).join(''):`<p class="empty-admin-state">No observation days are assigned for this week yet.</p>`;
+ const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
+ const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const manualForm=item.current_phase==='intervention'?newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:'record-intervention-observation-form',heading:'Administrative Manual Entry'}):'';
+ return `<section class="intervention-observation-hub">
+   <div class="intervention-observation-heading">
+     <div><p class="eyebrow">Classroom Observations</p><h3>Observation Status</h3><p>30-minute sessions in the identified routine · target approximately 3 different school days per week.</p></div>
+     <button id="open-weekly-observation-schedule" class="quiet" type="button">Manage Weekly Schedule</button>
+   </div>
+   <div class="routine-strip"><div><span>Routine</span><strong>${e(scheduleRoutine)}</strong></div><div><span>Observation time</span><strong>${e(scheduleTime)}</strong></div></div>
+   <div class="intervention-observation-kpis">
+     <div><span>This week</span><strong>${completedCount}/${target}</strong><small>completed</small></div>
+     <div><span>Assigned</span><strong>${assigned}/${target}</strong><small>different days</small></div>
+     <div><span>Reschedule</span><strong>${reschedules}</strong><small>owed this week</small></div>
+     <div><span>IOA planned</span><strong>${plannedIoa}</strong><small>${ioaThisWeek} completed this week</small></div>
+     <div><span>Cumulative IOA</span><strong>${pct(data.coverage?.percent||0)}</strong><small>${data.coverage?.ioa||0} of ${data.coverage?.completed||0}</small></div>
+   </div>
+   <div class="case-weekly-observation-schedule"><h4>This Week's Sessions</h4><div class="case-observation-slot-grid">${slotCards}</div></div>
+   <div class="intervention-latest-data">
+     <h4>Latest Data</h4>
+     <div class="latest-data-grid">
+       <div><span>Teacher fidelity</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong></div>
+       <div><span>Student target behavior</span><strong>${pct(latest?.student_target_behavior_percent)}</strong></div>
+       <div><span>Maintenance criterion progress</span><strong>${Math.min(consecutive90,3)}/3</strong><small>consecutive sessions ≥90%</small></div>
+       <div><span>Total intervention observations</span><strong>${completed.length}</strong></div>
+     </div>
+   </div>
+   <details class="intervention-observation-history">
+     <summary>Observation History (${completed.length})</summary>
+     ${compactObservationHistory(rows,'intervention',e)}
+   </details>
+   ${manualForm?`<details class="admin-observation-fallback"><summary>Administrative fallback: enter a completed observation manually</summary><p class="neutral-note">Use only if a completed observation cannot be submitted or linked through the observer workflow.</p>${manualForm}</details>`:''}
+ </section>`;
+}
+
 
 export function renderObservationSetup(item,e){
  const setup=(item.observation_data?.setups||[])[0];
@@ -96,6 +196,7 @@ export function renderObservationSetup(item,e){
 }
 
 export function renderPhaseObservationWorkspace(item,phase,e){
+ if(phase==='intervention')return renderInterventionObservationWorkspace(item,e);
  const data=item.observation_data||{},setup=(data.setups||[])[0],observers=data.observers||[];
  const rows=(data.observations||[]).filter(x=>x.phase===phase),completed=rows.filter(x=>x.summary_revision_id),latest=completed[0],ioa=completed.filter(x=>x.ioa).length;
  const title=phase[0].toUpperCase()+phase.slice(1);
