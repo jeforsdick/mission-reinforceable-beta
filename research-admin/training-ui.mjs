@@ -77,32 +77,33 @@ function statusBadge(label, tone="neutral") {
   return `<span class="training-status ${tone}">${label}</span>`;
 }
 
-function noraSummary(attempt, reference) {
+function noraSummary(attempt) {
   if (!attempt) return { html:'<span class="training-empty">Not submitted</span>', passed:false };
-  const student = reference && reference.client_submission_id !== attempt.client_submission_id
-    ? intervalAgreement(attempt.intervals || [], reference.intervals || [])
-    : { percent: 100 };
-  const fidelity = Number(attempt.teacher_fidelity_agreement);
-  const passed = fidelity >= PASS_CRITERION && Number(student.percent) >= PASS_CRITERION;
+  const fidelity=Number(attempt.teacher_fidelity_agreement);
+  const student=Number(attempt.student_behavior_agreement);
+  const passed=attempt.qualified===true || (fidelity>=PASS_CRITERION && student>=PASS_CRITERION);
   return {
     passed,
     html:`
       <div class="training-case-clean">
         <div class="training-case-title-row"><strong>Nora practice</strong>${statusBadge(passed ? "Passed" : "Repeat needed", passed ? "pass" : "needs")}</div>
-        <span>Fidelity ${pct(fidelity)} · Student ${pct(student.percent)}</span>
+        <span>Fidelity ${pct(fidelity)} · Student ${pct(student)}</span>
         <small>${dateTime(attempt.submitted_at)}</small>
       </div>`
   };
 }
 
 function kaiSummary(attempt) {
-  if (!attempt) return '<div class="training-case-clean"><strong>Kai qualification</strong><span class="training-empty">Not submitted</span></div>';
-  return `
+  if (!attempt) return {html:'<div class="training-case-clean"><strong>Kai qualification</strong><span class="training-empty">Not submitted</span></div>',passed:false};
+  const fidelity=Number(attempt.teacher_fidelity_agreement);
+  const student=Number(attempt.student_behavior_agreement);
+  const passed=attempt.qualified===true || (fidelity>=PASS_CRITERION && student>=PASS_CRITERION);
+  return {passed,html:`
     <div class="training-case-clean">
-      <div class="training-case-title-row"><strong>Kai qualification</strong>${statusBadge("Submitted","submitted")}</div>
-      <span>Agreement held for team review</span>
+      <div class="training-case-title-row"><strong>Kai qualification</strong>${statusBadge(passed?"Criterion met":"Needs review / repeat",passed?"pass":"needs")}</div>
+      <span>Fidelity ${pct(fidelity)} · Student ${pct(student)}</span>
       <small>${dateTime(attempt.submitted_at)}</small>
-    </div>`;
+    </div>`};
 }
 
 function attemptDetail(attempt, title, escapeHtml, {hideAgreement=false}={}) {
@@ -151,24 +152,26 @@ function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, 
   const kai=latest(attempts,observer,"kai");
   const fb=latestFor(feedbackRows,observer);
   const q=latestFor(questionRows,observer);
-  const noraInfo=noraSummary(nora,jessNora);
+  const noraInfo=noraSummary(nora);
+  const kaiInfo=kaiSummary(kai);
   const pieces=[Boolean(nora),Boolean(kai),Boolean(fb),Boolean(q)];
   const complete=pieces.every(Boolean);
+  const onlinePassed=complete&&noraInfo.passed&&kaiInfo.passed;
   const rosterRecord=(rosterRows||[]).find((row)=>String(row.display_name||"").toLowerCase().startsWith(observer.toLowerCase()));
   const clearance=(clearanceRows||[]).find((row)=>row.observer_id===rosterRecord?.id)?.clearance_status || "pending";
   const clearanceControl = clearance === "cleared"
-    ? '<div class="training-clearance cleared"><strong>Cleared for live observations</strong><span>Manual clearance recorded.</span></div>'
-    : `<div class="training-clearance pending"><div><strong>Not cleared for live observations</strong><span>${complete ? "Review training + Q&A/calibration, then clear manually." : "Complete all training pieces before clearance."}</span></div>${rosterRecord ? `<button type="button" class="clear-observer-button" data-clear-observer-id="${rosterRecord.id}" data-clear-observer-name="${escapeHtml(observer)}" ${complete ? "" : "disabled"}>Clear for Live Observations</button>` : ""}</div>`;
+    ? '<div class="training-clearance cleared"><strong>Cleared for independent observations</strong><span>Researcher clearance recorded after training/review/calibration.</span></div>'
+    : `<div class="training-clearance pending"><div><strong>${onlinePassed ? "Online qualification passed · calibration pending" : kai && !kaiInfo.passed ? "Qualification needs review / repeat" : "Not yet ready for clearance"}</strong><span>${onlinePassed ? "Complete the team review / field calibration, then clear for independent collection." : complete ? "Online criterion has not been met; review the Kai attempt before clearance." : "Complete all training pieces before clearance."}</span></div>${rosterRecord ? `<button type="button" class="clear-observer-button" data-clear-observer-id="${rosterRecord.id}" data-clear-observer-name="${escapeHtml(observer)}" ${onlinePassed ? "" : "disabled"}>Clear for Independent Observations</button>` : ""}</div>`;
 
   return `
     <article class="training-observer-card">
       <header class="training-observer-head">
         <div><h3>${escapeHtml(observer)}</h3><span>${pieces.filter(Boolean).length}/4 training pieces submitted</span></div>
-        <div class="training-head-actions">${statusBadge(complete ? "Ready for review" : "In progress",complete?"pass":"neutral")}<button class="training-details-trigger" type="button" data-training-details="${escapeHtml(observer)}">View details</button></div>
+        <div class="training-head-actions">${statusBadge(clearance==='cleared'?"Cleared":onlinePassed?"Calibration pending":kai&&!kaiInfo.passed?"Needs review":complete?"Training complete":"In progress",clearance==='cleared'||onlinePassed?"pass":kai&&!kaiInfo.passed?"needs":"neutral")}<button class="training-details-trigger" type="button" data-training-details="${escapeHtml(observer)}">View details</button></div>
       </header>
       <div class="training-observer-cases">
         ${noraInfo.html}
-        ${kaiSummary(kai)}
+        ${kaiInfo.html}
       </div>
       <div class="training-observer-meta">
         <div><span>Form feedback</span><strong>${fb ? `Submitted · Manageability ${escapeHtml(fb.manageability ?? "—")}/5` : "Not submitted"}</strong></div>
@@ -184,10 +187,10 @@ function observerCard(observer, attempts, feedbackRows, questionRows, jessNora, 
           </section>
           <section class="training-detail-case">
             <h4>Kai attempt history</h4>
-            <div class="training-history-list">${attemptHistory(attempts,observer,"kai",null,escapeHtml,{hideAgreement:true})}</div>
+            <div class="training-history-list">${attemptHistory(attempts,observer,"kai",null,escapeHtml)}</div>
           </section>
           ${attemptDetail(nora,"Latest Nora raw data",escapeHtml)}
-          ${attemptDetail(kai,"Latest Kai raw data",escapeHtml,{hideAgreement:true})}
+          ${attemptDetail(kai,"Latest Kai raw data",escapeHtml)}
           <section class="training-detail-case">
             <h4>Usability feedback</h4>
             ${fb ? `
@@ -228,7 +231,7 @@ export function renderObserverTrainingDashboard(data={},escapeHtml=(value)=>Stri
   const teamQuestions=TEAM_OBSERVERS.map(o=>latestFor(questions,o));
   const noraPasses=TEAM_OBSERVERS.filter((observer)=>{
     const a=latest(attempts,observer,"nora");
-    return a ? noraSummary(a,jessNora).passed : false;
+    return a ? noraSummary(a).passed : false;
   }).length;
 
   return `
