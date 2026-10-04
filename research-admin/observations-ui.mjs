@@ -239,6 +239,48 @@ function renderBaselineObservationWorkspace(item,e){
 }
 
 
+function renderMaintenanceObservationWorkspace(item,e){
+ const data=item.observation_data||{},setup=(data.setups||[])[0],observers=data.observers||[];
+ const rows=(data.observations||[]).filter(x=>x.phase==="maintenance");
+ const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)));
+ const latest=completed[0];
+ const ioaCount=completed.filter(x=>x.ioa).length;
+ const ioaPercent=completed.length?Math.round(1000*ioaCount/completed.length)/10:0;
+ const remainingToMinimum=Math.max(2-completed.length,0);
+ const nextText=completed.length===0
+   ? "Schedule the first maintenance probe."
+   : completed.length===1
+     ? "Schedule maintenance probe 2."
+     : completed.length===2
+       ? "Minimum maintenance target met. Decide whether a third probe is needed before closeout."
+       : "Maintenance probe target complete. Review the pattern and proceed to closeout when appropriate.";
+ const primaryOptions=observers.filter(x=>x.active&&x.status==="qualified");
+ const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==="trained_observer"&&x.status==="qualified");
+ const manualForm=item.current_phase==="maintenance"
+   ? newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:"record-maintenance-observation-form",heading:"Administrative Manual Entry"})
+   : "";
+ return `<section class="maintenance-observation-hub">
+   <div class="maintenance-observation-heading">
+     <div><p class="eyebrow">Maintenance Probes</p><h2>Maintenance Progress</h2><p>Follow-up observations after Mission: Reinforceable is withdrawn · target 2–3 probes across approximately 3–5 weeks.</p></div>
+     <span class="phase-chip">${completed.length}/2–3 probes</span>
+   </div>
+   <div class="maintenance-progress-grid">
+     <div><span>Completed probes</span><strong>${completed.length}</strong><small>${remainingToMinimum?`${remainingToMinimum} to minimum`:"Minimum met"}</small></div>
+     <div><span>Maintenance IOA</span><strong>${ioaPercent.toFixed(1)}%</strong><small>${ioaCount} of ${completed.length} probes</small></div>
+     <div><span>Latest fidelity</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong></div>
+     <div><span>Latest student behavior</span><strong>${pct(latest?.student_target_behavior_percent)}</strong></div>
+   </div>
+   <div class="maintenance-plan-card">
+     <div><span>Probe Plan</span><p>Use the same classroom routine from prior phases when feasible. Distribute 2–3 follow-up probes across approximately 3–5 weeks.</p></div>
+     <div class="maintenance-next-action"><span>Next</span><strong>${e(nextText)}</strong></div>
+   </div>
+   <details class="maintenance-observation-history">
+     <summary>Observation History (${completed.length})</summary>
+     ${compactObservationHistory(rows,"maintenance",e)}
+   </details>
+   ${manualForm?`<details class="admin-observation-fallback"><summary>Administrative fallback: enter a completed probe manually</summary><p class="neutral-note">Use only if a completed maintenance probe cannot be submitted or linked through the observer workflow.</p>${manualForm}</details>`:""}
+ </section>`;
+}
 export function renderObservationSetup(item,e){
  const setup=(item.observation_data?.setups||[])[0];
  const setupBanner=setup?`<div class="setup-banner"><p class="eyebrow">Observation Setup</p><p><strong>Routine:</strong> ${e(setup.target_routine)}<br><strong>Target behavior:</strong><br>${e(setup.target_behavior_definition)}</p><button type="button" id="edit-observation-setup" class="quiet">Edit</button></div>`:'';
@@ -249,6 +291,7 @@ export function renderObservationSetup(item,e){
 export function renderPhaseObservationWorkspace(item,phase,e){
  if(phase==='intervention')return renderInterventionObservationWorkspace(item,e);
  if(phase==='baseline')return renderBaselineObservationWorkspace(item,e);
+ if(phase==='maintenance')return renderMaintenanceObservationWorkspace(item,e);
  const data=item.observation_data||{},setup=(data.setups||[])[0],observers=data.observers||[];
  const rows=(data.observations||[]).filter(x=>x.phase===phase),completed=rows.filter(x=>x.summary_revision_id),latest=completed[0],ioa=completed.filter(x=>x.ioa).length;
  const title=phase[0].toUpperCase()+phase.slice(1);
