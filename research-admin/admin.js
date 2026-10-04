@@ -753,6 +753,14 @@ async function loadTestCases(){
   state.testCases=cases.filter(item=>item?.is_test===true);
 }
 async function loadIntakes() { const { data, error } = await state.client.rpc('research_admin_intakes'); if (error) throw error; state.intakes = data || []; await ensureWeeklyQualtricsStudyTask(); const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{}); if(operationsError) throw operationsError; const {data:observations,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{});if(observationError)throw observationError;state.observationData=observations;(operations.cases||[]).forEach(item=>attachCaseObservations(item,observations));state.operations=operations;await loadTestCases(); }
+async function waitForSupabase(ms=10000) {
+  const started=Date.now();
+  while(!window.supabase && Date.now()-started<ms) {
+    await new Promise(resolve=>setTimeout(resolve,100));
+  }
+  if(!window.supabase) throw new Error('Secure sign-in service could not load on this device. Check Safari content blockers or try again.');
+  return window.supabase;
+}
 function withTimeout(promise, ms, message) {
   return Promise.race([
     promise,
@@ -762,8 +770,8 @@ function withTimeout(promise, ms, message) {
 async function start() {
   show('loading-view');
   try {
-    if (!window.supabase) throw new Error('The secure sign-in service did not load.');
-    state.client ||= window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const supabaseLibrary = await waitForSupabase();
+    state.client ||= supabaseLibrary.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     window.__mrResearchAdminClient = state.client;
     const { data: { session }, error } = await withTimeout(state.client.auth.getSession(), 10000, 'Secure sign-in check timed out. Please refresh the page.'); if (error) throw error;
     if (!session) { show('login-view'); return; }
