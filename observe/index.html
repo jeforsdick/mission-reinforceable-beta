@@ -29,21 +29,14 @@
 
       <section id="login-view" class="state-card observer-state">
         <p class="eyebrow">Observer training</p>
-        <h1>Welcome</h1>
-        <p>Choose your name to begin the asynchronous observer-training module.</p>
+        <h1>Sign in to training</h1>
+        <p>Use the Utah email address Jess connected to your observer record. We’ll email you a one-time secure sign-in link.</p>
         <form id="preview-login-form" class="login-form">
-          <label>Observer
-            <select name="observer" required>
-              <option value="">Choose your name</option>
-              <option>Austen</option>
-              <option>Casey</option>
-              <option>Melissa</option>
-              <option>Kathleen</option>
-              <option>Jakob</option>
-              <option>Jess</option>
-            </select>
+          <label>Email
+            <input name="email" type="email" autocomplete="email" placeholder="name@utah.edu" required>
           </label>
-          <button class="primary-button" type="submit">Open Training Module</button>
+          <button class="primary-button" type="submit">Email Me a Sign-In Link</button>
+          <p id="login-status" class="storage-message" role="status" aria-live="polite"></p>
         </form>
       </section>
 
