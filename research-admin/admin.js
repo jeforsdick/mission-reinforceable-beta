@@ -177,10 +177,10 @@ function bindDetail() {
     selectCaseTab('operations');
     $('#operations-game-ready')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
-  $('.go-teacher-account')?.addEventListener('click', () => {
+  document.querySelectorAll('.go-teacher-account').forEach(button=>button.addEventListener('click', () => {
     selectCaseTab('intake');
     $('#intake-accounts')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+  }));
   document.querySelectorAll('.go-case-information').forEach(button => button.addEventListener('click', () => {
     selectCaseTab('intake');
     $('#intake-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -480,7 +480,7 @@ function readinessPanel(data) {
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged=Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
   const participantSetupInner=renderParticipantReadiness(state.participantReadiness,escapeHtml,{productionEmailDelivery:state.communications.teacher_reminder_system_enabled===true,weeklyEmail:state.communications.weekly_email}).replace('class="panel operations-section"','class="operations-section participant-readiness-inner"');
-  const participantSetup=`<details id="participant-setup-details" class="panel setup-detail-panel"><summary><span>Teacher Account &amp; Communications</span><small>Account linkage, game access readiness, daily reminders, and weekly teacher email</small></summary><div class="setup-detail-body">${participantSetupInner}</div></details>`;
+  const participantSetup=`<details id="participant-setup-details" class="panel setup-detail-panel"><summary><span>Teacher Account &amp; Communications</span><small>Account linkage, game access readiness, daily reminders, and weekly teacher email</small></summary><div class="setup-detail-body"><button type="button" class="quiet go-teacher-account">Open Teacher Account Controls</button><p class="neutral-note">Teacher accounts are created from Intake Information → Accounts. Research Admin handles Supabase Auth; do not create participant accounts manually in Supabase.</p>${participantSetupInner}</div></details>`;
   return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,gameLoginEmailEnabled:state.communications.game_login_email_enabled===true,gameLoginEmailStatus:state.communications.game_login_email_status,weeklyRecapSystemEnabled:state.communications.weekly_recap_system_enabled===true,unpublishedDraftChanges:draftChanged,qualtricsMeasures:state.communications.qualtrics_measures})
     .replace('<!-- PARTICIPANT_READINESS -->',participantSetup)
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
