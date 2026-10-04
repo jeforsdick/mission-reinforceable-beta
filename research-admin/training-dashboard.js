@@ -60,14 +60,10 @@ async function loadDashboard(client) {
 }
 
 function start() {
-  if (!target || !window.supabase) return;
-  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-
-  client.auth.onAuthStateChange((_event, session) => {
-    if (session) setTimeout(() => loadDashboard(client), 0);
-    else target.innerHTML = "";
-  });
-
+  if (!target) return;
+  const client = window.__mrResearchAdminClient;
+  const state = window.__mrResearchAdminState;
+  if (!client || !state) return;
   loadDashboard(client);
 }
 
@@ -77,7 +73,12 @@ target?.addEventListener("click", async (event) => {
     const observerName = clearButton.dataset.clearObserverName || "this observer";
     if (!window.confirm(`Clear ${observerName} for live observations?\n\nUse this only after you have reviewed training and completed the Q&A/calibration you require.`)) return;
     clearButton.disabled = true;
-    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const client = window.__mrResearchAdminClient;
+    if (!client) {
+      window.alert("Research Admin session is not ready. Refresh and try again.");
+      clearButton.disabled = false;
+      return;
+    }
     const { data: { session } } = await client.auth.getSession();
     const { error } = await client.from("research_observer_clearance")
       .update({
@@ -107,8 +108,5 @@ target?.addEventListener("click", async (event) => {
   if (panel.open) panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", start, { once: true });
-} else {
-  start();
-}
+window.addEventListener("mr-research-admin-ready", start);
+if (window.__mrResearchAdminClient && window.__mrResearchAdminState) start();
