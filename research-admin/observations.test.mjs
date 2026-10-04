@@ -8,8 +8,10 @@ const js=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
 const e=x=>String(x??'');
 assert.deepEqual(coverage(10,2),{completed:10,paired:2,percent:20,required:2,additional:0,meets:true});
 assert.equal(qualification({teacher_fidelity_agreement:85,student_behavior_agreement:85}),true);
-assert.equal(mayAssignPrimary({active:true,observer_type:'primary_researcher'}),true);
+assert.equal(mayAssignPrimary({active:true,observer_type:'primary_researcher',status:'qualified'}),false);
+assert.equal(mayAssignPrimary({active:true,observer_type:'trained_observer',status:'qualified'}),true);
 assert.equal(mayAssignSecondary({active:true,observer_type:'trained_observer',status:'qualified'}),true);
+assert.equal(mayAssignSecondary({active:true,observer_type:'primary_researcher',status:'qualified'}),true);
 assert.equal(ioaDisplay({overall_ioa_attention:true,teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:90}),'Needs recalibration');
 assert.equal(correctionEvent({summary_revision_number:2,summary_recorded_at:'2026-08-19'}),'2026-08-19');
 
