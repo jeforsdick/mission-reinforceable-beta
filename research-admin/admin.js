@@ -753,13 +753,19 @@ async function loadTestCases(){
   state.testCases=cases.filter(item=>item?.is_test===true);
 }
 async function loadIntakes() { const { data, error } = await state.client.rpc('research_admin_intakes'); if (error) throw error; state.intakes = data || []; await ensureWeeklyQualtricsStudyTask(); const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{}); if(operationsError) throw operationsError; const {data:observations,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{});if(observationError)throw observationError;state.observationData=observations;(operations.cases||[]).forEach(item=>attachCaseObservations(item,observations));state.operations=operations;await loadTestCases(); }
+function withTimeout(promise, ms, message) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
+  ]);
+}
 async function start() {
   show('loading-view');
   try {
     if (!window.supabase) throw new Error('The secure sign-in service did not load.');
     state.client ||= window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
     window.__mrResearchAdminClient = state.client;
-    const { data: { session }, error } = await state.client.auth.getSession(); if (error) throw error;
+    const { data: { session }, error } = await withTimeout(state.client.auth.getSession(), 10000, 'Secure sign-in check timed out. Please refresh the page.'); if (error) throw error;
     if (!session) { show('login-view'); return; }
     const { data: profile, error: profileError } = await state.client.from('profiles').select('role,active').eq('id', session.user.id).maybeSingle();
     if (profileError) throw profileError;
