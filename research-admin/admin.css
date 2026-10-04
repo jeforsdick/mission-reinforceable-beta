@@ -593,3 +593,13 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .participant-setup-stage{margin:0}
 @media(max-width:980px){.setup-readiness-columns{grid-template-columns:1fr}}
 @media(max-width:650px){.setup-launch-heading,.setup-group-heading{flex-direction:column}.setup-readiness-row{grid-template-columns:1fr}.setup-readiness-row .quiet{justify-self:start}}
+
+.setup-readiness-copy{min-width:0}
+.setup-how{display:block;margin-top:5px;color:#526174;font-size:.63rem;line-height:1.35}
+.setup-how b{color:var(--purple)}
+.setup-system-note{margin-top:10px!important;padding:9px 11px;border-left:4px solid var(--green);background:#f1faf5;color:#416457!important;font-size:.72rem!important}
+.intervention-launch-instructions{margin-top:12px;padding:12px;border:1px solid #d7cce5;border-radius:10px;background:var(--purple-pale)}
+.intervention-launch-instructions>strong{color:var(--navy);font-size:.78rem}
+.intervention-launch-instructions ol{margin:7px 0 6px;padding-left:1.3rem}
+.intervention-launch-instructions li{margin:3px 0;font-size:.68rem}
+.intervention-launch-instructions small{display:block;color:var(--muted);font-size:.62rem;line-height:1.35}
