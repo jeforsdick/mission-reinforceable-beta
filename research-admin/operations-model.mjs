@@ -134,7 +134,7 @@ export function baselineReadiness(item){
 export function measureNeeds(item){
   const current=currentByKey(item.measures,'measure_key'), phase=item.current_phase||'prebaseline', keys=[];
   if(['baseline','intervention','maintenance','complete'].includes(phase)&&current.tses_pre?.status!=='complete') keys.push('tses_pre');
-  if(phase==='complete') for(const key of ['tses_post','urp_ir','teacher_interview']) if(current[key]?.status!=='complete') keys.push(key);
+  if(['maintenance','complete'].includes(phase)) for(const key of ['tses_post','urp_ir','teacher_interview']) if(current[key]?.status!=='complete') keys.push(key);
   return keys;
 }
 export function interventionReadiness(item){
