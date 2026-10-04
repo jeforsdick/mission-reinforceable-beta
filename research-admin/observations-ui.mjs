@@ -38,6 +38,11 @@ export function renderObserverTeam(data,e){
          <label class="check-option"><input type="checkbox" name="active"${checked(observer.active)}> Active</label>
          <button class="quiet">Save observer</button>
        </form>
+       <form class="observer-login-form compact-form" data-id="${observer.id}">
+         <label>Observer login email<input name="email" type="email" autocomplete="off" value="${e(observer.login_email||'')}" placeholder="name@utah.edu" required></label>
+         <button class="quiet" type="submit">Save login email</button>
+         <small>Used for secure Observer Training and the live Observer Portal. Once the account is linked, changing this email is intentionally blocked.</small>
+       </form>
        ${observer.training_history?.length?`<details class="legacy-training-details"><summary>Legacy training history</summary><ol>${observer.training_history.map(x=>`<li>${e(x.event_date)} · ${e(x.event_type)} · Teacher ${pct(x.teacher_fidelity_agreement)} · Student ${pct(x.student_behavior_agreement)}</li>`).join('')}</ol></details>`:''}
      </details>
    </article>
