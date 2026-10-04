@@ -627,3 +627,40 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .baseline-coaching .coaching-work>.compact-form{margin-top:12px}
 @media(max-width:950px){.baseline-progress-grid{grid-template-columns:repeat(3,1fr)}.baseline-collection-plan{grid-template-columns:1fr}}
 @media(max-width:650px){.baseline-observation-heading{flex-direction:column}.baseline-progress-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* Streamlined Maintenance workspace */
+.maintenance-withdrawal-card{margin-bottom:16px;padding:16px;border:1px solid var(--line);border-radius:13px;background:#fcfbf8}
+.maintenance-withdrawal-card.withdrawn{border-left:5px solid var(--green)}
+.maintenance-withdrawal-card.attention-state{border-left:5px solid #b5473c;background:#fff8f6}
+.maintenance-withdrawal-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.maintenance-withdrawal-heading h2{margin:.25rem 0 .4rem}
+.maintenance-withdrawal-heading p:last-child{margin:0;color:var(--muted);max-width:850px}
+.maintenance-withdrawal-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.maintenance-withdrawal-status>div{padding:10px 11px;border-radius:9px;background:#f4f2ed}
+.maintenance-withdrawal-status span,.maintenance-withdrawal-status strong{display:block}
+.maintenance-withdrawal-status span{color:var(--muted);font-size:.64rem;font-weight:850}
+.maintenance-withdrawal-status strong{margin-top:3px;font-size:.76rem}
+.maintenance-observation-hub{margin-top:14px}
+.maintenance-observation-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.maintenance-observation-heading h2{margin:.25rem 0 .4rem}
+.maintenance-observation-heading p:last-child{margin:0;color:var(--muted);max-width:820px}
+.maintenance-progress-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:16px 0}
+.maintenance-progress-grid>div{padding:11px;border:1px solid var(--line);border-radius:10px;background:#fcfbf8}
+.maintenance-progress-grid span,.maintenance-progress-grid strong,.maintenance-progress-grid small{display:block}
+.maintenance-progress-grid span{color:var(--muted);font-size:.64rem;font-weight:850}
+.maintenance-progress-grid strong{margin-top:3px;color:var(--navy);font-size:1.08rem}
+.maintenance-progress-grid small{margin-top:2px;color:var(--muted);font-size:.61rem}
+.maintenance-plan-card{display:grid;grid-template-columns:1.3fr 1fr;gap:10px;margin:12px 0 16px}
+.maintenance-plan-card>div{padding:12px 13px;border-radius:10px;background:#f7f5ef}
+.maintenance-plan-card span{display:block;color:var(--purple);font-size:.66rem;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.maintenance-plan-card p{margin:5px 0 0;color:#526174;font-size:.74rem;line-height:1.45}
+.maintenance-next-action{border-left:4px solid var(--gold)}
+.maintenance-next-action strong{display:block;margin-top:5px;color:var(--navy);font-size:.8rem;line-height:1.4}
+.maintenance-observation-history,.maintenance-coaching{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fcfbf8}
+.maintenance-observation-history>summary,.maintenance-coaching>summary{cursor:pointer;color:var(--purple);font-size:.76rem;font-weight:900}
+.maintenance-observation-history[open]>summary,.maintenance-coaching[open]>summary{margin-bottom:10px}
+.maintenance-closeout-note{display:flex;gap:9px;align-items:flex-start;margin-top:14px;padding:11px 13px;border-left:4px solid var(--purple);background:var(--purple-pale);border-radius:0 9px 9px 0}
+.maintenance-closeout-note strong{color:var(--navy)}
+.maintenance-closeout-note span{color:#526174}
+@media(max-width:800px){.maintenance-withdrawal-status,.maintenance-progress-grid{grid-template-columns:repeat(2,1fr)}.maintenance-plan-card{grid-template-columns:1fr}}
+@media(max-width:650px){.maintenance-withdrawal-heading,.maintenance-observation-heading{flex-direction:column}.maintenance-closeout-note{flex-direction:column}}
