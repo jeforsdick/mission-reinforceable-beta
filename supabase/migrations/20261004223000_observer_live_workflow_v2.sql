@@ -407,7 +407,7 @@ begin
 
   for score_value in select value #>> '{}' from jsonb_array_elements(target_interval_scores)
   loop
-    if score_value not in ('occurred','did_not_occur','not_observed') then
+    if score_value is null or score_value not in ('occurred','did_not_occur','not_observed') then
       raise exception 'invalid interval score' using errcode='22023';
     end if;
   end loop;
@@ -513,6 +513,17 @@ begin
     raise exception 'this observation session is not assigned to you' using errcode='42501';
   end if;
 
+  if slot.status in ('cancelled','needs_reschedule') then
+    raise exception 'this session is no longer active; contact the research administrator' using errcode='55000';
+  end if;
+  if slot.status = 'completed' and slot.observation_id is null then
+    raise exception 'completed schedule slot is missing its observation link' using errcode='55000';
+  end if;
+  if slot.secondary_observer_id is not null
+     and slot.secondary_role not in ('formal_ioa','supported_calibration','calibration_and_ioa') then
+    raise exception 'paired observation role is not configured' using errcode='55000';
+  end if;
+
   select * into current_record
   from public.research_observation_records_v2 r
   where r.slot_id = slot.id
@@ -546,7 +557,7 @@ begin
   loop
     target_id := target_item->>'id';
     score_value := target_fidelity_scores->>target_id;
-    if score_value not in ('implemented','not_implemented','no_opportunity') then
+    if score_value is null or score_value not in ('implemented','not_implemented','no_opportunity') then
       raise exception 'every fidelity checklist item must be resolved before submission' using errcode='22023';
     end if;
     if score_value = 'implemented' then implemented_count := implemented_count + 1; end if;
@@ -568,9 +579,13 @@ begin
 
   for interval_value in select value #>> '{}' from jsonb_array_elements(target_interval_scores)
   loop
-    if interval_value = 'occurred' then occurred_count := occurred_count + 1;
-    elsif interval_value = 'did_not_occur' then did_not_occur_count := did_not_occur_count + 1;
-    elsif interval_value <> 'not_observed' then
+    if interval_value = 'occurred' then
+      occurred_count := occurred_count + 1;
+    elsif interval_value = 'did_not_occur' then
+      did_not_occur_count := did_not_occur_count + 1;
+    elsif interval_value = 'not_observed' then
+      null;
+    else
       raise exception 'invalid interval score' using errcode='22023';
     end if;
   end loop;
