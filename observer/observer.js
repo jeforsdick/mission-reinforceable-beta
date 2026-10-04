@@ -219,14 +219,16 @@ function normalizeIntervals(values=[]) {
   return result;
 }
 function startCollectionState(record) {
+  const savedElapsed=Math.min(REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
   return {
-    startedAt: record?.started_at ? new Date(record.started_at).getTime() : Date.now(),
-    endedAt: null,
-    fidelityScores: {...(record?.fidelity_scores||{})},
-    intervals: normalizeIntervals(record?.interval_scores||[]),
+    savedElapsed,
+    runStartedAt:Date.now(),
+    endedAt:null,
+    fidelityScores:{...(record?.fidelity_scores||{})},
+    intervals:normalizeIntervals(record?.interval_scores||[]),
     continuing:false,
     notObserved:false,
-    lastInterval:-1
+    lastInterval:Math.max(-1,Math.floor(savedElapsed/REAL_SESSION.intervalSeconds))
   };
 }
 async function beginCollection() {
@@ -244,13 +246,15 @@ async function beginCollection() {
   $("review-view").hidden=true;
   $("submitted-view").hidden=true;
   $("collection-view").hidden=false;
+  $("finish-collection").disabled=true;
   renderFidelity();
   tick();
-  timer=setInterval(tick,250);
+  if (elapsedSeconds()<REAL_SESSION.durationSeconds) timer=setInterval(tick,250);
 }
 
 function elapsedSeconds() {
-  return Math.min(REAL_SESSION.durationSeconds,Math.max(0,Math.floor((Date.now()-collection.startedAt)/1000)));
+  const running=Math.max(0,Math.floor((Date.now()-collection.runStartedAt)/1000));
+  return Math.min(REAL_SESSION.durationSeconds,collection.savedElapsed+running);
 }
 function currentIntervalIndex() {
   return Math.min(REAL_SESSION.intervalCount-1,Math.floor(elapsedSeconds()/REAL_SESSION.intervalSeconds));
@@ -277,7 +281,11 @@ function tick() {
   $("elapsed-clock").textContent=formatClock(elapsed);
   $("interval-number").textContent=String(index+1);
   const within=elapsed%REAL_SESSION.intervalSeconds;
-  $("interval-clock").textContent=formatClock(within===0?REAL_SESSION.intervalSeconds:REAL_SESSION.intervalSeconds-within);
+  $("interval-clock").textContent=elapsed>=REAL_SESSION.durationSeconds?"00:00":formatClock(within===0?REAL_SESSION.intervalSeconds:REAL_SESSION.intervalSeconds-within);
+  $("finish-collection").disabled=elapsed<REAL_SESSION.durationSeconds;
+  $("finish-collection").textContent=elapsed<REAL_SESSION.durationSeconds
+    ? `End & Review at 30:00 (${formatClock(REAL_SESSION.durationSeconds-elapsed)} left)`
+    : "End & Review Observation";
   if (elapsed>=REAL_SESSION.durationSeconds) finishCollection();
 }
 function stopTimer() {
@@ -342,20 +350,24 @@ async function saveDraft() {
   const result=await client.rpc("research_observer_save_observation_draft",{
     target_slot_id:currentPacket.slot.id,
     target_fidelity_scores:collection.fidelityScores,
-    target_interval_scores:compactDraftIntervals()
+    target_interval_scores:compactDraftIntervals(),
+    target_elapsed_seconds:elapsedSeconds()
   });
   $("autosave-status").textContent=result.error?"Autosave problem — keep this screen open":"Saved";
 }
-function finalizeAllIntervals() {
+function finalizeCompletedIntervals() {
   for (let i=0;i<REAL_SESSION.intervalCount;i++) {
     if (!collection.intervals[i]) collection.intervals[i]=collection.notObserved?"not_observed":collection.continuing?"occurred":"did_not_occur";
   }
 }
 function finishCollection() {
-  if (!collection) return;
+  if (!collection || elapsedSeconds()<REAL_SESSION.durationSeconds) return;
   stopTimer();
+  collection.savedElapsed=REAL_SESSION.durationSeconds;
+  collection.runStartedAt=Date.now();
   collection.endedAt=new Date().toISOString();
-  finalizeAllIntervals();
+  finalizeCompletedIntervals();
+  saveDraft();
   $("collection-view").hidden=true;
   $("review-view").hidden=false;
   renderReview();
@@ -406,6 +418,7 @@ async function submitObservation() {
     target_slot_id:currentPacket.slot.id,
     target_fidelity_scores:collection.fidelityScores,
     target_interval_scores:collection.intervals,
+    target_elapsed_seconds:REAL_SESSION.durationSeconds,
     target_collection_ended_at:collection.endedAt||new Date().toISOString(),
     target_observation_note:$("observation-note").value.trim()||null
   });
@@ -450,7 +463,9 @@ $("finish-collection").addEventListener("click",finishCollection);
 $("resume-collection").addEventListener("click",()=>{
   $("review-view").hidden=true;
   $("collection-view").hidden=false;
-  timer=setInterval(tick,250);
+  collection.savedElapsed=REAL_SESSION.durationSeconds;
+  collection.runStartedAt=Date.now();
+  tick();
 });
 $("submit-observation").addEventListener("click",submitObservation);
 
