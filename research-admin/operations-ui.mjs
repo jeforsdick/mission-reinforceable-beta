@@ -75,35 +75,35 @@ export function renderOperations(item,prepared,e,launchConfig={}){
  const qaPreviewReady=prepared.resource_map?.qa_previewed===true;
  const interventionOrientationReady=completeChecklist('intervention_orientation');
  const setupStatus=(ready,readyLabel='Complete',needsLabel='Needs action')=>`<span class="setup-readiness-status ${ready?'ready':'needs'}">${ready?readyLabel:needsLabel}</span>`;
- const setupRow=(label,ready,detail,target,readyLabel='Complete',needsLabel='Needs action')=>`<div class="setup-readiness-row"><div><strong>${e(label)}</strong><small>${e(detail)}</small></div>${setupStatus(ready,readyLabel,needsLabel)}<button type="button" class="quiet setup-detail-jump" data-setup-detail-target="${target}">View / Edit</button></div>`;
+ const setupRow=(label,ready,detail,target,help,readyLabel='Complete',needsLabel='Needs action')=>`<div class="setup-readiness-row"><div class="setup-readiness-copy"><strong>${e(label)}</strong><small>${e(detail)}</small><span class="setup-how"><b>How:</b> ${e(help)}</span></div>${setupStatus(ready,readyLabel,needsLabel)}<button type="button" class="quiet setup-detail-jump" data-setup-detail-target="${target}">View / Edit</button></div>`;
  const baselineLaunchRows=[
-   setupRow('Permissions',permissionReady,'Teacher consent · Parent permission · Student assent','operations-enrollment'),
-   setupRow('BSP + measurement',bspPrepReady,'Technical review · Safety · Routine · Behavior definition · Fidelity checklist','operations-enrollment'),
-   setupRow('TSES Pre',tsesPreReady,'Pre-baseline teacher efficacy measure','operations-enrollment'),
-   setupRow('Baseline assignment',baselineAssignmentReady,assignment,'operations-prebaseline',baselineAssignmentReady?'Assigned':'Needs assignment','Needs assignment'),
-   setupRow('Baseline orientation',baselineOrientationReady,'Study logistics and observation procedures','operations-prebaseline'),
-   setupRow('Observation setup',observationSetupReady,'Routine and target behavior measurement setup','operations-prebaseline'),
-   setupRow('Observer readiness',observerReady,'At least one observer cleared for live collection','operations-prebaseline',observerReady?'Observer available':'Needs cleared observer','Needs cleared observer')
+   setupRow('Permissions',permissionReady,'Teacher consent · Parent permission · Student assent','operations-enrollment','Obtain the required consent/permission/assent forms, then record each status and date here.'),
+   setupRow('BSP + measurement',bspPrepReady,'Technical review · Safety · Routine · Behavior definition · Fidelity checklist','operations-enrollment','Review the existing BSP, complete the safety screen, finalize the observation routine and target-behavior definition, then finalize and second-review the fidelity checklist.'),
+   setupRow('TSES Pre',tsesPreReady,'Pre-baseline teacher efficacy measure','operations-enrollment','Open the TSES Pre Qualtrics survey from this section, then record the measure as Complete after it is submitted.'),
+   setupRow('Baseline assignment',baselineAssignmentReady,assignment,'operations-prebaseline','Choose stagger position 1–5 here. Research Admin converts that to the planned 6, 8, 10, 12, or 14-observation minimum.',baselineAssignmentReady?'Assigned':'Needs assignment','Needs assignment'),
+   setupRow('Baseline orientation',baselineOrientationReady,'Study logistics and observation procedures','operations-prebaseline','Complete the logistics-only teacher orientation, including observation scheduling and study timeline, then mark it Complete.'),
+   setupRow('Observation setup',observationSetupReady,'Routine and target behavior measurement setup','operations-prebaseline','Enter the selected routine and operational target-behavior definition here. The routine clock time is added when you build the weekly observation schedule.'),
+   setupRow('Observer readiness',observerReady,'At least one observer cleared for live collection','operations-prebaseline','This updates automatically. Finish observer training/calibration in Observer Training and manually clear at least one observer for live data collection.',observerReady?'Observer available':'Needs cleared observer','Needs cleared observer')
  ].join('');
  const interventionPrepRows=[
-   setupRow('Teacher account',teacherReady,'Secure teacher account ready for Mission: Reinforceable','participant-setup-details',teacherReady?'Ready':'Needs account','Needs account'),
-   setupRow('Protected game content',contentPresent,'Published case-specific game content','operations-game-ready'),
-   setupRow('Resource Map + reviews',resourceReviewsReady,'Resource Map · Behavior review · Privacy review','operations-game-ready'),
-   setupRow('QA preview',qaPreviewReady,'Published game reviewed before launch','operations-game-ready'),
-   setupRow('MR orientation',interventionOrientationReady,'Teacher orientation to Mission: Reinforceable','operations-game-ready')
+   setupRow('Teacher account',teacherReady,'Secure teacher account ready for Mission: Reinforceable','participant-setup-details','Use Intake Information → Accounts → Create Teacher Account. Research Admin creates the Supabase Auth account for you; do not create it manually in Supabase.',teacherReady?'Ready':'Needs account','Needs account'),
+   setupRow('Protected game content',contentPresent,'Published case-specific game content','operations-game-ready','Go to Game Creation, finish the case-specific content, run Full Draft Check, and publish the protected version. No GitHub editing is required.'),
+   setupRow('Resource Map + reviews',resourceReviewsReady,'Resource Map · Behavior review · Privacy review','operations-game-ready','Complete the Resource Map in Game Creation, then record the Behavior Review and Privacy Review signoffs.'),
+   setupRow('QA preview',qaPreviewReady,'Published game reviewed before launch','operations-game-ready','Preview the published protected game as the QA case, verify the teacher experience, then record the QA Preview signoff.'),
+   setupRow('MR orientation',interventionOrientationReady,'Teacher orientation to Mission: Reinforceable','operations-game-ready','After the published game is ready, orient the teacher to accessing and using Mission: Reinforceable, then mark the orientation Complete.')
  ].join('');
  const setupNext=baselineLaunchReady
    ? (game.ready?'Baseline launch and intervention preparation are ready.':'Baseline launch is ready. Continue intervention preparation while baseline is running.')
    : `${baseline.remaining + (observationSetupReady?0:1) + (observerReady?0:1)} baseline launch item${baseline.remaining + (observationSetupReady?0:1) + (observerReady?0:1)===1?'':'s'} still need attention.`;
  const setupDashboard=`<section id="operations-setup-dashboard" class="panel operations-section operations-stage-panel setup-launch-dashboard" data-operations-stage-panel="setup" hidden>
    <div class="setup-launch-heading">
-     <div><p class="eyebrow">Setup</p><h2>Launch Readiness</h2><p>Use this as the case setup checklist. Open a detail section only when something needs review or editing.</p></div>
+     <div><p class="eyebrow">Setup</p><h2>Launch Readiness</h2><p>Use this as the case setup checklist. Open a detail section only when something needs review or editing.</p><p class="setup-system-note"><strong>Normal case setup happens in Research Admin.</strong> You should not need to manually edit Supabase or GitHub for routine participant setup.</p></div>
      <span class="setup-launch-badge ${baselineLaunchReady?'ready':'needs'}">${baselineLaunchReady?'Baseline Ready':'Setup in Progress'}</span>
    </div>
    <p class="setup-next">${e(setupNext)}</p>
    <div class="setup-readiness-columns">
      <section class="setup-readiness-group"><div class="setup-group-heading"><div><h3>Baseline Launch</h3><p>Required before classroom baseline data collection begins.</p></div>${setupStatus(baselineLaunchReady,'READY','NOT READY')}</div><div class="setup-readiness-list">${baselineLaunchRows}</div></section>
-     <section class="setup-readiness-group"><div class="setup-group-heading"><div><h3>Intervention Preparation</h3><p>Can be completed while baseline is running.</p></div>${setupStatus(game.ready,'READY','IN PROGRESS')}</div><div class="setup-readiness-list">${interventionPrepRows}</div></section>
+     <section class="setup-readiness-group"><div class="setup-group-heading"><div><h3>Intervention Preparation</h3><p>Can be completed while baseline is running.</p></div>${setupStatus(game.ready,'READY','IN PROGRESS')}</div><div class="setup-readiness-list">${interventionPrepRows}</div><div class="intervention-launch-instructions"><strong>When Intervention actually starts:</strong><ol><li>Record the phase change to Intervention.</li><li>Open the Intervention tab and click <b>Activate Game Access</b>.</li><li>Click <b>Send Game Login</b> so the teacher receives password/setup instructions.</li><li>Click <b>Enable Daily Reminders</b>.</li></ol><small>Those buttons handle the underlying account/access/email systems. No manual Supabase or GitHub step is part of the normal launch workflow.</small></div></section>
    </div>
  </section>`;
  return `<nav class="operations-subnav" aria-label="Research Operations stages">${[['Overview','overview'],['Setup','setup'],['Baseline','baseline'],['Intervention','intervention'],['Maintenance','maintenance'],['Closeout','closeout'],['History','history']].map(([label,id])=>`<button type="button" class="operations-stage-tab" data-operations-stage="${id}" aria-selected="false">${label}</button>`).join('')}</nav>
