@@ -125,6 +125,8 @@ export function renderOperations(item,prepared,e,launchConfig={}){
    if(value==='measure')return 'measure';
    if(value==='coaching')return 'coaching';
    if(value==='study event')return 'event';
+   if(value==='protocol')return 'protocol';
+   if(value==='task')return 'task';
    return 'other';
  };
  const historyCounts={
@@ -133,9 +135,11 @@ export function renderOperations(item,prepared,e,launchConfig={}){
    ioa:timeline.filter(x=>historyCategoryKey(x.category)==='ioa').length,
    measure:timeline.filter(x=>historyCategoryKey(x.category)==='measure').length,
    coaching:timeline.filter(x=>historyCategoryKey(x.category)==='coaching').length,
-   event:timeline.filter(x=>historyCategoryKey(x.category)==='event').length
+   event:timeline.filter(x=>historyCategoryKey(x.category)==='event').length,
+   protocol:timeline.filter(x=>historyCategoryKey(x.category)==='protocol').length,
+   task:timeline.filter(x=>historyCategoryKey(x.category)==='task').length
  };
- const historyFilters=[['all','All',timeline.length],['phase','Phase',historyCounts.phase],['observation','Observations',historyCounts.observation],['ioa','IOA',historyCounts.ioa],['measure','Measures',historyCounts.measure],['coaching','Coaching',historyCounts.coaching],['event','Study Events',historyCounts.event]]
+ const historyFilters=[['all','All',timeline.length],['phase','Phase',historyCounts.phase],['observation','Observations',historyCounts.observation],['ioa','IOA',historyCounts.ioa],['measure','Measures',historyCounts.measure],['coaching','Coaching',historyCounts.coaching],['event','Study Events',historyCounts.event],['protocol','Setup / Protocol',historyCounts.protocol],['task','Completed Tasks',historyCounts.task]]
    .map(([key,label,count])=>`<button type="button" class="history-filter ${key==='all'?'active':''}" data-history-filter="${key}" aria-pressed="${key==='all'?'true':'false'}">${label} <span>${count}</span></button>`).join('');
  const historyTimeline=timeline.length?timeline.map(x=>{const key=historyCategoryKey(x.category);return `<li class="history-timeline-item" data-history-category="${key}"><time>${e(String(x.date).slice(0,10))}</time><span class="history-category history-category-${key}">${e(x.category)}</span><strong>${e(x.label)}</strong></li>`;}).join(''):'<li class="history-empty">No case history recorded yet.</li>';
  const studyEventTool=`<details id="operations-events" class="history-tool-card"><summary><span>Log / Resolve Study Events</span><small>${(item.study_events||[]).filter(x=>!x.resolved_at).length} unresolved</small></summary><div class="history-tool-body"><p>Use this for absences, schedule changes, technical issues, BSP changes, safety concerns, protocol deviations, and other events that could affect interpretation.</p><form id="event-form" class="compact-form"><label>Date<input name="date" type="date" required></label><label>Type<select name="type">${opts(['teacher_absence','student_absence','school_schedule_disruption','missed_observation','technical_issue','email_delivery_issue','bsp_change','safety_concern','support_requested','withdrawal','placement_change','protocol_deviation','observer_issue','advisor_pi_decision','other'])}</select></label><label class="check-option"><input type="checkbox" name="affects_observation"> Affected an observation</label><label class="check-option"><input type="checkbox" name="affects_mr_exposure"> Affected MR access/practice</label><label class="check-option"><input type="checkbox" name="affects_phase_interpretation"> Could affect interpretation</label><label>What happened?<textarea name="note" maxlength="1000" required></textarea></label><label>What did you do? — optional<textarea name="action_taken" maxlength="1000"></textarea></label>${privacy}<button class="primary">Save Event</button></form><ul class="history-tool-list">${eventRows}</ul></div></details>`;
@@ -148,10 +152,13 @@ export function renderOperations(item,prepared,e,launchConfig={}){
      <div><span>Measures</span><strong>${historyCounts.measure}</strong></div>
      <div><span>Coaching contacts</span><strong>${historyCounts.coaching}</strong></div>
      <div><span>Study events</span><strong>${historyCounts.event}</strong></div>
+     <div><span>Setup / protocol</span><strong>${historyCounts.protocol}</strong></div>
+     <div><span>Completed tasks</span><strong>${historyCounts.task}</strong></div>
    </div>
    <div class="history-filter-bar" aria-label="Filter case history">${historyFilters}</div>
+   <p class="history-filter-empty neutral-note" hidden>No records in this category.</p>
    <ol class="history-timeline">${historyTimeline}</ol>
-   <div class="history-tools"><h3>Audit &amp; Corrections</h3><p class="neutral-note">These tools preserve append-only records. Use them only when you need to document or correct context.</p>${studyEventTool}${studyDayContext}</div>
+   <div class="history-tools"><h3>Context &amp; Corrections</h3><p class="neutral-note">These tools preserve append-only context and correction records. Open them only when you need to document or correct something.</p>${studyEventTool}${studyDayContext}</div>
  </section>`;
  const setupDashboard=`<section id="operations-setup-dashboard" class="panel operations-section operations-stage-panel setup-launch-dashboard" data-operations-stage-panel="setup" hidden>
    <div class="setup-launch-heading">
