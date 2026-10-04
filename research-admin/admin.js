@@ -303,6 +303,13 @@ function bindOperationsStageNavigation(caseId){
   showStage(button.dataset.operationsStageTarget);
   document.querySelector('.operations-subnav')?.scrollIntoView({behavior:'smooth',block:'start'});
  }));
+ document.querySelectorAll('[data-setup-detail-target]').forEach(button=>button.addEventListener('click',()=>{
+  showStage('setup');
+  const target=document.getElementById(button.dataset.setupDetailTarget);
+  if(!target)return;
+  if(target.tagName==='DETAILS') target.open=true;
+  target.scrollIntoView({behavior:'smooth',block:'start'});
+ }));
  const stored=sessionStorage.getItem(storageKey);
  showStage(validStages.includes(stored)?stored:'overview');
 }
@@ -472,7 +479,8 @@ function readinessPanel(data) {
   const manifest=state.authoringWorkspace&&draftRevisionManifest(state.authoringWorkspace),source=state.publishedSource;
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged=Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
-  const participantSetup=renderParticipantReadiness(state.participantReadiness,escapeHtml,{productionEmailDelivery:state.communications.teacher_reminder_system_enabled===true,weeklyEmail:state.communications.weekly_email});
+  const participantSetupInner=renderParticipantReadiness(state.participantReadiness,escapeHtml,{productionEmailDelivery:state.communications.teacher_reminder_system_enabled===true,weeklyEmail:state.communications.weekly_email}).replace('class="panel operations-section"','class="operations-section participant-readiness-inner"');
+  const participantSetup=`<details id="participant-setup-details" class="panel setup-detail-panel"><summary><span>Teacher Account &amp; Communications</span><small>Account linkage, game access readiness, daily reminders, and weekly teacher email</small></summary><div class="setup-detail-body">${participantSetupInner}</div></details>`;
   return renderOperations({...state.caseOperations,case_code:data.case.case_code},{...data,teacher_account_ready:state.accounts.teacher?.ready===true},escapeHtml,{teacherReminderSystemEnabled:state.communications.teacher_reminder_system_enabled===true,gameLoginEmailEnabled:state.communications.game_login_email_enabled===true,gameLoginEmailStatus:state.communications.game_login_email_status,weeklyRecapSystemEnabled:state.communications.weekly_recap_system_enabled===true,unpublishedDraftChanges:draftChanged,qualtricsMeasures:state.communications.qualtrics_measures})
     .replace('<!-- PARTICIPANT_READINESS -->',participantSetup)
     .replace('<!-- INTERVENTION_FIDELITY -->',fidelityPanel());
