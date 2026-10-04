@@ -176,12 +176,12 @@ const baselineCloseout=baselineMarkup.slice(baselineMarkup.indexOf('id="operatio
 assert.match(baselineCloseout,/Available after maintenance and End Measures\.[\s\S]*View Closeout Details/);
 const maintenanceMarkup=renderOperations({...baselineCase,current_phase:'maintenance',case_active:true,participant_active:true}, {reminders:{enabled:true}}, x=>String(x));
 assert.equal(lifecycleStage({...baselineCase,current_phase:'maintenance'}),'Maintenance');
-assert.match(maintenanceMarkup,/Maintenance is active, but game access is still On/);
-assert.match(maintenanceMarkup,/Maintenance is active, but reminders are still On/);
 const maintenanceSection=maintenanceMarkup.slice(maintenanceMarkup.indexOf('id="operations-maintenance"'),maintenanceMarkup.indexOf('id="operations-end-measures"'));
-assert.match(maintenanceSection,/Mission: Reinforceable Withdrawn[\s\S]*Weekly Teacher Reports stop with Intervention/);
-assert.match(maintenanceSection,/Post-intervention measures are administered after the final maintenance observation\./);
-assert.match(maintenanceSection,/Complete maintenance observations before administering post-intervention measures\.[\s\S]*Record Maintenance Observation/);
+assert.match(maintenanceSection,/Withdrawal Check[\s\S]*Game access[\s\S]*On — turn off[\s\S]*Daily reminders[\s\S]*On — turn off/);
+assert.match(maintenanceSection,/Withdraw Mission: Reinforceable/);
+assert.match(maintenanceSection,/Maintenance Progress[\s\S]*2–3 probes across approximately 3–5 weeks/);
+assert.match(maintenanceSection,/Coaching-as-Usual Contacts/);
+assert.match(maintenanceSection,/After the final maintenance probe:[\s\S]*Closeout/);
 const maintenanceEnd=maintenanceMarkup.slice(maintenanceMarkup.indexOf('id="operations-end-measures"'),maintenanceMarkup.indexOf('id="operations-closeout"'));
 assert.doesNotMatch(maintenanceEnd,/inline-record measure-form|Open TSES Post|Copy Teacher Link/,'active Maintenance does not expose End Measure controls');
 const qualtrics={qualtricsMeasures:{tses_post:{configured:true,url:'https://example.test/tses'},urp_ir:{configured:true,url:'https://example.test/urp'},teacher_interview:{configured:true,url:'https://example.test/interview'}}};
