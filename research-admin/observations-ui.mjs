@@ -187,6 +187,57 @@ function renderInterventionObservationWorkspace(item,e){
  </section>`;
 }
 
+function renderBaselineObservationWorkspace(item,e){
+ const data=item.observation_data||{},setup=(data.setups||[])[0],observers=data.observers||[];
+ const rows=(data.observations||[]).filter(x=>x.phase==='baseline');
+ const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)));
+ const latest=completed[0];
+ const ioaCount=completed.filter(x=>x.ioa).length;
+ const ioaPercent=completed.length?Math.round(1000*ioaCount/completed.length)/10:0;
+ const planned=Number(item.protocol?.planned_baseline_observations||0);
+ const position=Number(item.protocol?.stagger_position||0);
+ const remaining=planned?Math.max(planned-completed.length,0):null;
+ const planText=position===1
+   ? 'First dyad: schedule a 30-minute baseline observation each school day when the routine occurs and the teacher/student are present, until the minimum baseline requirement is met.'
+   : position>1
+     ? 'Later dyad: collect intermittent baseline probes at least weekly while waiting, then collect at least 3 consecutive observation sessions immediately before Intervention.'
+     : 'Assign the baseline stagger position in Setup to display the planned probe pattern.';
+ const nextText=!planned
+   ? 'Assign the baseline stagger position before data collection begins.'
+   : completed.length<planned
+     ? `Continue baseline probes. ${remaining} observation${remaining===1?'':'s'} remain before the planned minimum is met.`
+     : position>1
+       ? 'Planned minimum met. Review data stability and confirm the required final consecutive pre-intervention observations before making the phase decision.'
+       : 'Planned minimum met. Review data stability before making the phase decision.';
+ const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
+ const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const manualForm=item.current_phase==='baseline'
+   ? newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:'record-baseline-observation-form',heading:'Administrative Manual Entry'})
+   : '';
+ return `<section class="baseline-observation-hub">
+   <div class="baseline-observation-heading">
+     <div><p class="eyebrow">Baseline</p><h2>Baseline Progress</h2><p>30-minute observations in the identified classroom routine before Mission: Reinforceable is introduced.</p></div>
+     <span class="phase-chip">${planned?`${completed.length}/${planned} minimum`:'Not assigned'}</span>
+   </div>
+   <div class="baseline-progress-grid">
+     <div><span>Planned minimum</span><strong>${planned||'—'}</strong><small>${position?`Stagger position ${position}`:'Assign in Setup'}</small></div>
+     <div><span>Completed</span><strong>${completed.length}</strong><small>${remaining===null?'—':remaining===0?'Minimum met':`${remaining} remaining`}</small></div>
+     <div><span>Baseline IOA</span><strong>${ioaPercent.toFixed(1)}%</strong><small>${ioaCount} of ${completed.length} observations</small></div>
+     <div><span>Latest fidelity</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong></div>
+     <div><span>Latest student behavior</span><strong>${pct(latest?.student_target_behavior_percent)}</strong></div>
+   </div>
+   <div class="baseline-collection-plan">
+     <div><span>Collection Plan</span><p>${e(planText)}</p></div>
+     <div class="baseline-next-action"><span>Next</span><strong>${e(nextText)}</strong></div>
+   </div>
+   <details class="baseline-observation-history">
+     <summary>Observation History (${completed.length})</summary>
+     ${compactObservationHistory(rows,'baseline',e)}
+   </details>
+   ${manualForm?`<details class="admin-observation-fallback"><summary>Administrative fallback: enter a completed observation manually</summary><p class="neutral-note">Use only if a completed observation cannot be submitted or linked through the observer workflow.</p>${manualForm}</details>`:''}
+ </section>`;
+}
+
 
 export function renderObservationSetup(item,e){
  const setup=(item.observation_data?.setups||[])[0];
@@ -197,6 +248,7 @@ export function renderObservationSetup(item,e){
 
 export function renderPhaseObservationWorkspace(item,phase,e){
  if(phase==='intervention')return renderInterventionObservationWorkspace(item,e);
+ if(phase==='baseline')return renderBaselineObservationWorkspace(item,e);
  const data=item.observation_data||{},setup=(data.setups||[])[0],observers=data.observers||[];
  const rows=(data.observations||[]).filter(x=>x.phase===phase),completed=rows.filter(x=>x.summary_revision_id),latest=completed[0],ioa=completed.filter(x=>x.ioa).length;
  const title=phase[0].toUpperCase()+phase.slice(1);
