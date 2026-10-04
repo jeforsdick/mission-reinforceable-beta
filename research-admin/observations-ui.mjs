@@ -153,8 +153,8 @@ function renderInterventionObservationWorkspace(item,e){
      ${slot.status==='needs_reschedule'?`<small>${e(slot.reschedule_reason||'Needs reschedule')}</small>`:''}
    </article>`;
  }).join(''):`<p class="empty-admin-state">No observation days are assigned for this week yet.</p>`;
- const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
- const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const primaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const secondaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
  const manualForm=item.current_phase==='intervention'?newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:'record-intervention-observation-form',heading:'Administrative Manual Entry'}):'';
  return `<section class="intervention-observation-hub">
    <div class="intervention-observation-heading">
@@ -209,8 +209,8 @@ function renderBaselineObservationWorkspace(item,e){
      : position>1
        ? 'Planned minimum met. Review data stability and confirm the required final consecutive pre-intervention observations before making the phase decision.'
        : 'Planned minimum met. Review data stability before making the phase decision.';
- const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
- const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const primaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const secondaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
  const manualForm=item.current_phase==='baseline'
    ? newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:'record-baseline-observation-form',heading:'Administrative Manual Entry'})
    : '';
@@ -254,8 +254,8 @@ function renderMaintenanceObservationWorkspace(item,e){
      : completed.length===2
        ? "Minimum maintenance target met. Decide whether a third probe is needed before closeout."
        : "Maintenance probe target complete. Review the pattern and proceed to closeout when appropriate.";
- const primaryOptions=observers.filter(x=>x.active&&x.status==="qualified");
- const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==="trained_observer"&&x.status==="qualified");
+ const primaryOptions=observers.filter(x=>x.active&&x.observer_type==="trained_observer"&&x.status==="qualified");
+ const secondaryOptions=observers.filter(x=>x.active&&x.status==="qualified");
  const manualForm=item.current_phase==="maintenance"
    ? newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:"record-maintenance-observation-form",heading:"Administrative Manual Entry"})
    : "";
