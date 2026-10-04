@@ -17,11 +17,12 @@ const form=newObservationForm({},true,[{id:'p',observer_code:'JO'}],[{id:'s',obs
 assert.match(form,/Record Baseline Observation[\s\S]*Teacher fidelity %[\s\S]*Student target behavior %[\s\S]*Was IOA collected\?/);
 assert.doesNotMatch(form,/interval-cell|fidelity-entry|implemented_as_written|120 intervals/);
 const row={id:'summary',observation_date:'2026-08-18',phase:'baseline',session_number:1,primary_observer_code:'JO',summary_revision_id:'rev-2',summary_revision_number:2,summary_recorded_at:'2026-08-19',secondary_observer_id:'s',secondary_observer_code:'JM',teacher_fidelity_percent:76.5,student_target_behavior_percent:10,ioa:{teacher_fidelity_ioa_percent:80,student_behavior_ioa_percent:79,overall_ioa_attention:true}};
-const rendered=renderPhaseObservationWorkspace({current_phase:'baseline',protocol:{planned_baseline_observations:6},observation_data:{coverage:{completed:1,ioa:1,percent:100},setups:[{target_routine:'Arrival',target_behavior_definition:'Calls out'}],observers:[],observations:[row]}},'baseline',e);
-assert.match(rendered,/Completed observations in this phase[\s\S]*1[\s\S]*Latest teacher fidelity in this phase[\s\S]*76\.5%[\s\S]*Planned minimum[\s\S]*6/);
-assert.match(rendered,/Edit Summary[\s\S]*Correction reason/);
-assert.doesNotMatch(rendered,/Correct Summary|data-initial-legacy/);
-assert.match(rendered,/Teacher fidelity IOA is 80%\. Recalibration required/);
+const rendered=renderPhaseObservationWorkspace({current_phase:'baseline',protocol:{planned_baseline_observations:6,stagger_position:1},observation_data:{coverage:{completed:1,ioa:1,percent:100},setups:[{target_routine:'Arrival',target_behavior_definition:'Calls out'}],observers:[],observations:[row]}},'baseline',e);
+assert.match(rendered,/Baseline Progress[\s\S]*Planned minimum[\s\S]*6[\s\S]*Completed[\s\S]*1[\s\S]*Latest fidelity[\s\S]*76\.5%/);
+assert.match(rendered,/First dyad:[\s\S]*each school day/);
+assert.match(rendered,/Observation History \(1\)[\s\S]*Correct summary[\s\S]*Correction reason/);
+assert.match(rendered,/IOA needs researcher review \/ recalibration follow-up/);
+assert.doesNotMatch(rendered,/data-initial-legacy/);
 assert.doesNotMatch(form,/name="phase"|Phase<select/);
 assert.match(renderObservationSetup({observation_data:{setups:[]}},e),/Observation Setup[\s\S]*Save Observation Setup/);
 
