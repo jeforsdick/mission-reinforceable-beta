@@ -71,7 +71,7 @@ target?.addEventListener("click", async (event) => {
   const clearButton = event.target.closest("[data-clear-observer-id]");
   if (clearButton) {
     const observerName = clearButton.dataset.clearObserverName || "this observer";
-    if (!window.confirm(`Clear ${observerName} for live observations?\n\nUse this only after you have reviewed training and completed the Q&A/calibration you require.`)) return;
+    if (!window.confirm(`Clear ${observerName} for independent observations?\n\nConfirm the online criterion is met and you have completed the team review / field calibration you require.`)) return;
     clearButton.disabled = true;
     const client = window.__mrResearchAdminClient;
     if (!client) {
@@ -79,15 +79,11 @@ target?.addEventListener("click", async (event) => {
       clearButton.disabled = false;
       return;
     }
-    const { data: { session } } = await client.auth.getSession();
-    const { error } = await client.from("research_observer_clearance")
-      .update({
-        clearance_status: "cleared",
-        cleared_at: new Date().toISOString(),
-        cleared_by: session?.user?.id || null,
-        updated_at: new Date().toISOString()
-      })
-      .eq("observer_id", clearButton.dataset.clearObserverId);
+    const { error } = await client.rpc("research_admin_set_observer_clearance", {
+      target_observer_id: clearButton.dataset.clearObserverId,
+      target_status: "cleared",
+      target_note: "Online training complete; researcher confirmed team review / field calibration."
+    });
     if (error) {
       window.alert(error.message);
       clearButton.disabled = false;

@@ -636,8 +636,6 @@ async function beep() {
     second.connect(gain);
     second.start(now + 0.11);
     second.stop(now + 0.22);
-
-      if (typeof navigator.vibrate === "function") navigator.vibrate(60);
     return true;
   } catch {
     return false;
