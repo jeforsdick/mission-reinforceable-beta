@@ -6,7 +6,7 @@ export function observationAttention(item){const data=item.observation_data||{},
 export function denverWeek(now=new Date()){const date=new Date(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'}).format(now)+'T12:00:00Z'),day=(date.getUTCDay()+6)%7;date.setUTCDate(date.getUTCDate()-day);const monday=date.toISOString().slice(0,10);date.setUTCDate(date.getUTCDate()+6);return{monday,sunday:date.toISOString().slice(0,10)};}
 export function ioaDisplay(ioa){if(!ioa)return null;if(ioa.overall_ioa_attention)return 'Needs recalibration';if(ioa.teacher_fidelity_ioa_percent==null||ioa.student_behavior_ioa_percent==null)return 'Needs review';return 'Meets criterion';}
 export function recalibrationState(low,good){if(!low)return 'qualified';if(!good)return 'recalibration_required';return [good.date,good.recorded_at].join('|')>[low.date,low.recorded_at].join('|')?'qualified':'recalibration_required';}
-export function mayAssignPrimary(observer){return Boolean(observer?.active&&(observer.observer_type==='primary_researcher'||(observer.observer_type==='trained_observer'&&observer.status==='qualified')));}
-export function mayAssignSecondary(observer){return Boolean(observer?.active&&observer.observer_type==='trained_observer'&&observer.status==='qualified');}
+export function mayAssignPrimary(observer){return Boolean(observer?.active&&observer.observer_type==='trained_observer'&&observer.status==='qualified');}
+export function mayAssignSecondary(observer){return Boolean(observer?.active&&observer.status==='qualified');}
 export function ioaNeedsReview(ioa){return Boolean(ioa&&(ioa.overall_ioa_attention||ioa.teacher_fidelity_ioa_percent==null||ioa.student_behavior_ioa_percent==null));}
 export function correctionEvent(observation){return Number(observation?.summary_revision_number)>1?observation.summary_recorded_at:null;}
