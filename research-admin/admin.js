@@ -313,7 +313,29 @@ function bindOperationsStageNavigation(caseId){
  const stored=sessionStorage.getItem(storageKey);
  showStage(validStages.includes(stored)?stored:'overview');
 }
-function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)return;bindOperationsStageNavigation(caseId);
+function bindHistoryFilters(){
+ const buttons=[...document.querySelectorAll('[data-history-filter]')];
+ const rows=[...document.querySelectorAll('[data-history-category]')];
+ if(!buttons.length)return;
+ const apply=filter=>{
+   let visible=0;
+   rows.forEach(row=>{
+     const show=filter==='all'||row.dataset.historyCategory===filter;
+     row.hidden=!show;
+     if(show)visible++;
+   });
+   buttons.forEach(button=>{
+     const active=button.dataset.historyFilter===filter;
+     button.classList.toggle('active',active);
+     button.setAttribute('aria-pressed',String(active));
+   });
+   const empty=document.querySelector('.history-filter-empty');
+   if(empty) empty.hidden=visible>0;
+ };
+ buttons.forEach(button=>button.addEventListener('click',()=>apply(button.dataset.historyFilter)));
+ apply('all');
+}
+function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)return;bindOperationsStageNavigation(caseId);bindHistoryFilters();
  document.querySelectorAll('.copy-qualtrics-link').forEach(button=>button.addEventListener('click',async()=>{const feedback=button.parentElement.querySelector('.copy-qualtrics-feedback');try{if(!navigator.clipboard?.writeText)throw new Error('Clipboard unavailable');await navigator.clipboard.writeText(button.dataset.url);feedback.textContent='Teacher link copied.';}catch{feedback.textContent='Clipboard access failed. Copy the link from the field shown.';window.prompt('Copy teacher link:',button.dataset.url);}}));
  bindObservationControls(caseId);
  $('#protocol-form')?.addEventListener('submit',event=>{event.preventDefault();operationRpc('research_admin_set_case_protocol',{target_case_id:caseId,target_stagger_position:Number(new FormData(event.currentTarget).get('position'))});});
