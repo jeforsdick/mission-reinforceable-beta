@@ -33,11 +33,12 @@ const ids = [
   "submit-attempt","results-eyebrow","results-title","results-copy","training-fidelity-agreement",
   "training-fidelity-agreement-detail","training-interval-agreement","practice-feedback-key","answer-key-list",
   "continue-after-results","repeat-case","feedback-form","questions-form","complete-title","completion-summary","test-sound",
-  "attempt-storage-message","feedback-storage-message","questions-storage-message"
+  "attempt-storage-message","feedback-storage-message","questions-storage-message","login-status"
 ];
 const els = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 
-let state = loadState();
+let state = null;
+let activeStorageKey = null;
 let player = null;
 let playerReady = false;
 let playerCaseId = null;
@@ -78,7 +79,8 @@ function blankModuleState(observer) {
 
 function loadState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    if (!activeStorageKey) return null;
+    const parsed = JSON.parse(localStorage.getItem(activeStorageKey) || "null");
     if (!parsed || parsed.version !== 5) return null;
     parsed.module ||= {};
     parsed.attempts ||= { nora: null, kai: null };
@@ -90,7 +92,7 @@ function loadState() {
 }
 
 function saveState() {
-  if (state) localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (state && activeStorageKey) localStorage.setItem(activeStorageKey, JSON.stringify(state));
 }
 
 function submissionId(existing) {
@@ -108,7 +110,7 @@ function getTrainingDb() {
   if (trainingDb) return trainingDb;
   if (!window.supabase) throw new Error("The secure training database did not load.");
   trainingDb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
   });
   return trainingDb;
 }
@@ -129,6 +131,8 @@ async function syncCachedAttempts() {
       attempt.clientSubmissionId = submissionId(attempt.clientSubmissionId);
       attempt.submittedAt ||= new Date().toISOString();
       const agreement = fidelityAgreementFor(attempt, caseData);
+      const studentAgreement = studentAgreementFor(attempt, caseData);
+      const qualified = trainingQualified(attempt, caseData);
       await insertTrainingRecord("observer_training_attempts", {
         client_submission_id: attempt.clientSubmissionId,
         observer_name: state.observer,
@@ -146,8 +150,8 @@ async function syncCachedAttempts() {
         notes: attempt.notes || null,
         teacher_fidelity_agreement: roundedPercent(agreement?.percent),
         desired_outcome_agreement: roundedPercent(agreement?.outcomePercent),
-        student_behavior_agreement: null,
-        qualified: null,
+        student_behavior_agreement: roundedPercent(studentAgreement?.percent),
+        qualified,
         source_environment: SOURCE_ENVIRONMENT
       });
       attempt.remoteSaved = true;
@@ -172,7 +176,7 @@ function roundedPercent(value) {
 
 function clearState() {
   state = null;
-  localStorage.removeItem(STORAGE_KEY);
+  if (activeStorageKey) localStorage.removeItem(activeStorageKey);
 }
 
 function hideAllViews() {
@@ -211,6 +215,70 @@ function showLogin() {
   hideAllViews();
   els["login-view"].hidden = false;
   resetScrollPosition();
+}
+
+
+async function initializeAuthenticatedTraining() {
+  const client = getTrainingDb();
+  const { data: { session }, error: sessionError } = await client.auth.getSession();
+  if (sessionError || !session) {
+    state = null;
+    activeStorageKey = null;
+    showLogin();
+    return;
+  }
+
+  const { data: identity, error: identityError } = await client.rpc("research_observer_claim_training_account");
+  if (identityError || !identity?.training_name) {
+    await client.auth.signOut();
+    state = null;
+    activeStorageKey = null;
+    showLogin();
+    setStorageMessage("login-status", "This email is not connected to an observer training account. Check the address or contact Jess.", true);
+    return;
+  }
+
+  activeStorageKey = `${STORAGE_KEY}:${session.user.id}`;
+  state = loadState();
+  if (!state || state.observer !== identity.training_name) {
+    state = blankModuleState(identity.training_name);
+    saveState();
+  }
+  await syncCachedAttempts();
+  initializeAuthenticatedTraining();
+}
+
+async function sendTrainingMagicLink(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const email = String(new FormData(form).get("email") || "").trim().toLowerCase();
+  if (!email) return;
+  const button = form.querySelector('button[type="submit"]');
+  button.disabled = true;
+  setStorageMessage("login-status", "Sending secure sign-in link…");
+  const client = getTrainingDb();
+  const redirectTo = new URL("/observe/", window.location.origin).toString();
+  const { error } = await client.auth.signInWithOtp({
+    email,
+    options: { shouldCreateUser: false, emailRedirectTo: redirectTo }
+  });
+  button.disabled = false;
+  if (error) {
+    setStorageMessage("login-status", "We couldn’t send the sign-in link. Check the email address and try again.", true);
+    return;
+  }
+  form.querySelector('input[name="email"]').value = email;
+  setStorageMessage("login-status", "Check your email for a one-time secure sign-in link. You can close this tab after the email arrives.");
+}
+
+async function signOutTraining() {
+  stopTimer();
+  pausePlayer();
+  await getTrainingDb().auth.signOut();
+  state = null;
+  activeStorageKey = null;
+  showLogin();
+  setStorageMessage("login-status", "Signed out.");
 }
 
 function stepStatus(done, locked = false) {
@@ -1312,20 +1380,9 @@ function restore() {
   }
 }
 
-els["preview-login-form"].addEventListener("submit", (event) => {
-  event.preventDefault();
-  const data = new FormData(event.currentTarget);
-  const observer = String(data.get("observer") || "").trim();
-  if (!observer) return;
-  state = blankModuleState(observer);
-  saveState();
-  showModule();
-});
+els["preview-login-form"].addEventListener("submit", sendTrainingMagicLink);
 
-els["preview-sign-out"].addEventListener("click", () => {
-  clearState();
-  showLogin();
-});
+els["preview-sign-out"].addEventListener("click", signOutTraining);
 
 document.querySelectorAll(".back-module").forEach((button) => {
   button.addEventListener("click", showModule);
