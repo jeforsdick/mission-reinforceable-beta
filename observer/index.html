@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Observer Portal | Mission: Reinforceable</title>
+  <title>Observer Account | Mission: Reinforceable</title>
   <link rel="icon" href="/favicon.png">
   <link rel="stylesheet" href="/assets/site/site.css">
   <link rel="stylesheet" href="/observer/observer.css">
@@ -19,51 +19,75 @@
           <img class="brand-icon" src="/favicon.png" alt="">
           <img class="brand-logo" src="/assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable">
         </a>
-        <span class="private-badge">Observer Portal</span>
+        <span class="private-badge">Observer Account</span>
       </div>
     </header>
 
     <main class="observer-main">
-      <section id="loading-view" class="observer-card"><h1>Checking secure access…</h1></section>
+      <section id="loading-view" class="observer-card narrow-card"><h1>Checking secure access…</h1></section>
 
       <section id="login-view" class="observer-card narrow-card" hidden>
-        <p class="eyebrow">Observer Portal</p>
+        <p class="eyebrow">Observer Account</p>
         <h1>Sign in</h1>
-        <p>Use your observer account to see only the observation sessions assigned to you.</p>
+        <p>One account gives you access to observer training, your assigned schedule, and live data collection.</p>
         <form id="login-form">
           <label>Email<input name="email" type="email" autocomplete="username" required></label>
           <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
           <button class="primary-button" type="submit">Sign in</button>
           <p id="login-error" class="message" role="alert"></p>
         </form>
+        <details class="first-time-setup">
+          <summary>First time here or forgot your password?</summary>
+          <p>Enter the email Jess connected to your observer account. We’ll send a secure link so you can create or reset your password.</p>
+          <form id="password-setup-request-form">
+            <label>Email<input name="email" type="email" autocomplete="email" required></label>
+            <button class="secondary-button" type="submit">Email Password Setup Link</button>
+            <p id="password-setup-status" class="setup-status" role="status" aria-live="polite"></p>
+          </form>
+        </details>
       </section>
 
       <section id="unauthorized-view" class="observer-card narrow-card" hidden>
-        <p class="eyebrow">Observer Portal</p>
-        <h1>Observer access not connected</h1>
-        <p>Your account is signed in, but it is not linked to an active observer record.</p>
+        <p class="eyebrow">Observer Account</p>
+        <h1>Account not connected</h1>
+        <p>This signed-in account is not linked to an active dissertation observer record. Contact Jess before continuing.</p>
         <button id="unauthorized-signout" class="secondary-button" type="button">Sign out</button>
       </section>
 
       <section id="portal-view" hidden>
         <div class="portal-heading">
           <div>
-            <p class="eyebrow">My Schedule</p>
+            <p class="eyebrow">Observer Center</p>
             <h1 id="observer-name">Observer</h1>
-            <p>Your assigned sessions appear here. The case, routine, checklist, and IOA role load automatically.</p>
+            <p>Your training, assigned schedule, and data-collection sessions live here.</p>
           </div>
           <button id="sign-out" class="secondary-button" type="button">Sign out</button>
         </div>
 
-        <section class="observer-card readiness-card">
-          <div><span>Live observation status</span><strong id="readiness-status">Training pending</strong></div>
-          <p id="readiness-help">Live collection unlocks after training and calibration are cleared.</p>
-        </section>
+        <nav class="observer-account-nav" aria-label="Observer account sections">
+          <a href="/observe/">Training</a>
+          <a href="#my-schedule">My Schedule</a>
+        </nav>
 
-        <section class="observer-card">
+        <div class="observer-home-grid">
+          <section class="observer-card hub-card">
+            <p class="eyebrow">Training</p>
+            <h2 id="training-status-label">Checking training…</h2>
+            <p id="training-status-help">Your training progress is linked to this account.</p>
+            <a class="primary-button button-link" href="/observe/">Open Observer Training</a>
+          </section>
+
+          <section class="observer-card hub-card">
+            <p class="eyebrow">Live Collection</p>
+            <h2 id="readiness-status">Training pending</h2>
+            <p id="readiness-help">Live collection unlocks after training and calibration are complete.</p>
+          </section>
+        </div>
+
+        <section id="my-schedule" class="observer-card">
           <div class="section-heading">
-            <div><p class="eyebrow">Assigned</p><h2>My observation sessions</h2></div>
-            <p>Open the assigned session instead of choosing a case manually.</p>
+            <div><p class="eyebrow">My Schedule</p><h2>Assigned observation sessions</h2></div>
+            <p>Jess assigns sessions. Only sessions assigned to you appear here.</p>
           </div>
           <div id="assignment-list" class="assignment-list"></div>
         </section>
