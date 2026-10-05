@@ -89,30 +89,65 @@ async function loadPortal() {
   if (account.error || !account.data) { show("unauthorized-view"); return; }
 
   observerId=account.data.observer_id;
-  const [observer,clearance,slots]=await Promise.all([
+  const [observer,clearance,slots,attempts,feedback,questions]=await Promise.all([
     client.from("research_observers").select("display_name,observer_code").eq("id",observerId).maybeSingle(),
     client.from("research_observer_clearance").select("clearance_status,clearance_note").eq("observer_id",observerId).maybeSingle(),
     client.from("research_observation_schedule_slots")
       .select("*")
       .gte("observation_date",new Date(Date.now()-7*86400000).toISOString().slice(0,10))
-      .order("observation_date",{ascending:true})
+      .order("observation_date",{ascending:true}),
+    client.from("observer_training_attempts").select("case_id,qualified,submitted_at").order("submitted_at",{ascending:false}),
+    client.from("observer_training_feedback").select("id,submitted_at").order("submitted_at",{ascending:false}).limit(1),
+    client.from("observer_training_questions").select("id,submitted_at").order("submitted_at",{ascending:false}).limit(1)
   ]);
-  if (observer.error || clearance.error || slots.error) { show("unauthorized-view"); return; }
+  if (observer.error || clearance.error || slots.error || attempts.error || feedback.error || questions.error) {
+    show("unauthorized-view");
+    return;
+  }
 
   $("observer-name").textContent=observer.data?.display_name||"Observer";
   clearanceStatus=clearance.data?.clearance_status||"pending";
+
+  const latestByCase={};
+  for(const row of attempts.data||[]) if(!latestByCase[row.case_id]) latestByCase[row.case_id]=row;
+  const nora=latestByCase.nora, kai=latestByCase.kai;
+  const onlineComplete=Boolean(nora?.qualified===true&&kai?.qualified===true&&(feedback.data||[]).length&&(questions.data||[]).length);
+  const anyTraining=Boolean((attempts.data||[]).length||(feedback.data||[]).length||(questions.data||[]).length);
+  if(clearanceStatus==="cleared"){
+    $("training-status-label").textContent="Training complete";
+    $("training-status-help").textContent="You are cleared for independent observations.";
+  }else if(kai&&kai.qualified===false){
+    $("training-status-label").textContent="Qualification needs review";
+    $("training-status-help").textContent="Jess will review your qualification attempt and next steps with you.";
+  }else if(onlineComplete){
+    $("training-status-label").textContent="Online qualification complete";
+    $("training-status-help").textContent="Field calibration is still required before independent collection.";
+  }else if(anyTraining){
+    $("training-status-label").textContent="Training in progress";
+    $("training-status-help").textContent="Continue your asynchronous observer training.";
+  }else{
+    $("training-status-label").textContent="Training not started";
+    $("training-status-help").textContent="Complete the asynchronous training before live data collection.";
+  }
+
   if (clearanceStatus==="cleared") {
-    $("readiness-status").textContent="Cleared for live observations";
+    $("readiness-status").textContent="Cleared for independent observations";
     $("readiness-help").textContent="Open an assigned session on its scheduled date to collect data.";
   } else if (clearanceStatus==="revoked") {
     $("readiness-status").textContent="Recalibration required";
-    $("readiness-help").textContent="Do not collect independently until you are cleared again.";
+    $("readiness-help").textContent="Do not collect independently until Jess clears you again.";
   } else {
-    $("readiness-status").textContent="Training pending";
-    $("readiness-help").textContent="Live collection unlocks after training and calibration are complete.";
+    $("readiness-status").textContent="Live collection locked";
+    $("readiness-help").textContent=onlineComplete
+      ?"Online qualification is complete; Jess will unlock independent collection after field calibration."
+      :"Complete training and calibration before independent collection.";
   }
+
   renderAssignments(slots.data||[]);
   show("portal-view");
+
+  const next=new URL(window.location.href).searchParams.get("next");
+  if(next==="/observe/"||next==="/observe") window.location.replace("/observe/");
 }
 
 async function openSession(slotId) {
@@ -433,6 +468,23 @@ async function submitObservation() {
     ?"Your record is locked. The paired observer still submits independently; the system will calculate agreement and finalize automatically after both are in."
     :"The scheduled session has been finalized and linked automatically.";
 }
+async function requestPasswordSetup(event){
+  event.preventDefault();
+  const form=event.currentTarget;
+  const email=String(new FormData(form).get("email")||"").trim().toLowerCase();
+  const status=$("password-setup-status");
+  status.textContent="";
+  if(!email)return;
+  const button=form.querySelector('button[type="submit"]');
+  button.disabled=true;
+  const redirectTo=new URL("/set-password/",window.location.origin).toString();
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});
+  button.disabled=false;
+  status.textContent=error
+    ?"We couldn’t send the setup email. Check the address and try again."
+    :"If that email is connected to an observer account, a secure password setup link is on the way.";
+}
+
 async function signOut() {
   stopTimer();
   await client.auth.signOut();
@@ -450,6 +502,7 @@ $("login-form").addEventListener("submit",async(event)=>{
   if (result.error) { $("login-error").textContent="Sign-in failed. Check your email and password."; return; }
   loadPortal();
 });
+$("password-setup-request-form").addEventListener("submit",requestPasswordSetup);
 $("sign-out").addEventListener("click",signOut);
 $("unauthorized-signout").addEventListener("click",signOut);
 $("back-to-schedule").addEventListener("click",loadPortal);
