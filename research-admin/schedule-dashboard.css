@@ -53,3 +53,7 @@
 @media(max-width:1100px){.weekly-kpis{grid-template-columns:repeat(2,1fr)}.schedule-case-grid{grid-template-columns:1fr}}
 @media(max-width:760px){.schedule-heading{flex-direction:column}.week-switcher{justify-content:flex-start}.weekly-kpis{grid-template-columns:1fr 1fr}.routine-config-form{grid-template-columns:1fr 1fr}.routine-config-form input:first-child{grid-column:1/-1}.routine-config-form button{grid-column:1/-1}}
 @media(max-width:500px){.weekly-kpis{grid-template-columns:1fr}}
+.schedule-config-details{margin-top:14px;border-top:1px solid var(--line);padding-top:11px}
+.schedule-config-details>summary{width:max-content;max-width:100%;padding:7px 9px;border-radius:8px;color:var(--purple);font-size:.72rem;font-weight:900;cursor:pointer}
+.schedule-config-details>summary:hover{background:var(--purple-pale)}
+.schedule-config-details[open]>summary{margin-bottom:10px}

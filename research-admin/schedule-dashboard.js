@@ -241,8 +241,10 @@ function render() {
       (attention.length ? attention.map(function (x) { return '<span>⚠ ' + esc(x) + '</span>'; }).join("") : '<span class="all-good">Nothing urgent in the weekly schedule.</span>') +
     '</div>' +
     '<div class="week-board">' + days.map(renderDay).join("") + '</div>' +
-    '<h3 class="case-config-title">Case routine times & weekly progress</h3>' +
-    '<div class="schedule-case-grid">' + (activeCases().length ? activeCases().map(renderCaseSetup).join("") : '<p>No active study cases.</p>') + '</div>' +
+    '<details class="schedule-config-details">' +
+      '<summary>Routine setup & weekly case progress</summary>' +
+      '<div class="schedule-case-grid">' + (activeCases().length ? activeCases().map(renderCaseSetup).join("") : '<p>No active study cases.</p>') + '</div>' +
+    '</details>' +
     '</section>';
 
   bind();
