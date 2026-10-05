@@ -17,6 +17,7 @@ let currentPacket = null;
 let collection = null;
 let timer = null;
 let audioContext = null;
+let cueAudio = null;
 let saveTimer = null;
 
 function show(viewId) {
@@ -249,6 +250,11 @@ function renderSession() {
 }
 
 async function ensureAudio() {
+  if (!cueAudio) {
+    cueAudio=new Audio("/assets/game/audio/magic-click.mp3");
+    cueAudio.preload="auto";
+    cueAudio.volume=1;
+  }
   if (!audioContext) {
     const AudioCtx=window.AudioContext||window.webkitAudioContext;
     if (AudioCtx) audioContext=new AudioCtx();
@@ -256,45 +262,38 @@ async function ensureAudio() {
   if (audioContext?.state!=="running") {
     try { await audioContext.resume(); } catch {}
   }
-  return audioContext;
+  return cueAudio;
 }
 async function beep() {
-  const ctx=await ensureAudio();
-  if (!ctx || ctx.state!=="running") return false;
+  const audio=await ensureAudio();
 
-  const now=ctx.currentTime;
-  const master=ctx.createGain();
-  master.gain.setValueAtTime(.0001,now);
-  master.gain.exponentialRampToValueAtTime(.20,now+.012);
-  master.gain.setValueAtTime(.20,now+.18);
-  master.gain.exponentialRampToValueAtTime(.0001,now+.52);
-  master.connect(ctx.destination);
-
-  // Bright three-note "spell" chime: long enough to hear on a phone,
-  // but still brief enough not to compete with classroom observation.
-  const notes=[
-    [0.00,659.25,.24],
-    [0.10,880.00,.26],
-    [0.22,1174.66,.30]
-  ];
-
-  for (const [offset,freq,duration] of notes) {
-    const osc=ctx.createOscillator();
-    const noteGain=ctx.createGain();
-
-    osc.type="triangle";
-    osc.frequency.setValueAtTime(freq,now+offset);
-
-    noteGain.gain.setValueAtTime(.0001,now+offset);
-    noteGain.gain.exponentialRampToValueAtTime(.75,now+offset+.012);
-    noteGain.gain.exponentialRampToValueAtTime(.0001,now+offset+duration);
-
-    osc.connect(noteGain);
-    noteGain.connect(master);
-    osc.start(now+offset);
-    osc.stop(now+offset+duration+.02);
+  if (audio) {
+    try {
+      audio.pause();
+      audio.currentTime=0;
+      audio.volume=1;
+      await audio.play();
+      return true;
+    } catch {}
   }
 
+  // Fallback if media playback is unavailable.
+  const ctx=audioContext;
+  if (!ctx || ctx.state!=="running") return false;
+  const now=ctx.currentTime;
+  const gain=ctx.createGain();
+  gain.gain.setValueAtTime(.0001,now);
+  gain.gain.exponentialRampToValueAtTime(.18,now+.01);
+  gain.gain.exponentialRampToValueAtTime(.0001,now+.35);
+  gain.connect(ctx.destination);
+  for (const [offset,freq] of [[0,660],[.09,880],[.18,1175]]) {
+    const osc=ctx.createOscillator();
+    osc.type="triangle";
+    osc.frequency.setValueAtTime(freq,now+offset);
+    osc.connect(gain);
+    osc.start(now+offset);
+    osc.stop(now+offset+.16);
+  }
   return true;
 }
 
