@@ -20,7 +20,11 @@
         const button=form.querySelector('button');button.disabled=true;
         const {error:updateError}=await client.auth.updateUser({password});
         if(updateError){button.disabled=false;invalid();return;}
-        form.reset();form.hidden=true;status.textContent='Password created. Opening Mission: Reinforceable…';setTimeout(()=>location.replace('/game/'),900);
+        form.reset();form.hidden=true;
+        const {data:observerAccount}=await client.from('research_observer_accounts').select('observer_id').eq('auth_user_id',session.user.id).eq('active',true).maybeSingle();
+        const observerReady=Boolean(observerAccount?.observer_id);
+        status.textContent=observerReady?'Password created. Opening your Observer Account…':'Password created. Opening Mission: Reinforceable…';
+        setTimeout(()=>location.replace(observerReady?'/observer/':'/game/'),900);
       });
     }catch{invalid();}
   }
