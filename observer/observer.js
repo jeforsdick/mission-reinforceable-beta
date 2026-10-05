@@ -3,6 +3,7 @@ import { REAL_SESSION, calculateFidelity, calculateStudentBehavior, formatClock 
 const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W";
 const DENVER_TODAY = () => new Intl.DateTimeFormat("en-CA",{timeZone:"America/Denver",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+const SESSION_HANDOFF_KEY = "mr-observer-auth-handoff-v1";
 
 const $ = (id) => document.getElementById(id);
 const views = ["loading-view","login-view","unauthorized-view","portal-view","session-view"].map($);
@@ -468,6 +469,20 @@ async function submitObservation() {
     ?"Your record is locked. The paired observer still submits independently; the system will calculate agreement and finalize automatically after both are in."
     :"The scheduled session has been finalized and linked automatically.";
 }
+async function openTraining(event){
+  event?.preventDefault();
+  const {data:{session}}=await client.auth.getSession();
+  if(!session){
+    show("login-view");
+    return;
+  }
+  sessionStorage.setItem(SESSION_HANDOFF_KEY,JSON.stringify({
+    access_token:session.access_token,
+    refresh_token:session.refresh_token
+  }));
+  window.location.assign("/observe/");
+}
+
 async function requestPasswordSetup(event){
   event.preventDefault();
   const form=event.currentTarget;
@@ -503,6 +518,7 @@ $("login-form").addEventListener("submit",async(event)=>{
   loadPortal();
 });
 $("password-setup-request-form").addEventListener("submit",requestPasswordSetup);
+document.querySelectorAll(".open-training-link").forEach((link)=>link.addEventListener("click",openTraining));
 $("sign-out").addEventListener("click",signOut);
 $("unauthorized-signout").addEventListener("click",signOut);
 $("back-to-schedule").addEventListener("click",loadPortal);
