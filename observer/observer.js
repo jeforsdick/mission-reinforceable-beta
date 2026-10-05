@@ -4,6 +4,7 @@ const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W";
 const DENVER_TODAY = () => new Intl.DateTimeFormat("en-CA",{timeZone:"America/Denver",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 const SESSION_HANDOFF_KEY = "mr-observer-auth-handoff-v1";
+const CANONICAL_ORIGIN = "https://www.missionreinforceable.com";
 
 const $ = (id) => document.getElementById(id);
 const views = ["loading-view","login-view","unauthorized-view","portal-view","session-view"].map($);
@@ -148,7 +149,7 @@ async function loadPortal() {
   show("portal-view");
 
   const next=new URL(window.location.href).searchParams.get("next");
-  if(next==="/observe/"||next==="/observe") window.location.replace("/observe/");
+  if(next==="/observe/"||next==="/observe") window.location.replace(CANONICAL_ORIGIN+"/observe/");
 }
 
 async function openSession(slotId) {
@@ -480,7 +481,7 @@ async function openTraining(event){
     access_token:session.access_token,
     refresh_token:session.refresh_token
   }));
-  window.location.assign("/observe/");
+  window.location.assign(CANONICAL_ORIGIN+"/observe/");
 }
 
 async function requestPasswordSetup(event){
@@ -492,7 +493,7 @@ async function requestPasswordSetup(event){
   if(!email)return;
   const button=form.querySelector('button[type="submit"]');
   button.disabled=true;
-  const redirectTo=new URL("/set-password/",window.location.origin).toString();
+  const redirectTo=CANONICAL_ORIGIN+"/set-password/";
   const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});
   button.disabled=false;
   status.textContent=error
