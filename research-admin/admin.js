@@ -160,7 +160,7 @@ function renderStudyOverview() {
 
   $('#study-wide-tasks').innerHTML=renderStudyWideTasks(studyTasks,escapeHtml);
   $('#observer-team').innerHTML=renderObserverTeam(state.observationData||{observers:[]},escapeHtml);
-  const realStudyIds=new Set((state.operations.cases||[]).filter(item=>item.is_test!==true).map(item=>item.study_id));
+  const realStudyIds=new Set(currentRealCases().map(item=>item.study_id).filter(Boolean));
   $('#study-ioa').innerHTML=renderStudyIoaSummary(state.observationData||{},escapeHtml,realStudyIds);
   if (state.observerMessage && $('#observer-message')) { $('#observer-message').textContent=state.observerMessage; state.observerMessage=''; }
   document.querySelectorAll('.open-case').forEach(button=>button.addEventListener('click',()=>{
