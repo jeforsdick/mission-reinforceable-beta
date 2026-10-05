@@ -1,7 +1,6 @@
 import { accountState, antecedentContext, normalizeTargets, readinessForCase } from './admin-model.mjs';
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
-import { ioaNeedsReview } from './observations-model.mjs';
-import { attentionForCase, baselineReadiness, measureNeeds, studyWideAttention, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, dashboardCaseCounts } from './operations-model.mjs';
+import { attentionForCase, studyWideAttention, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs?v=20261004-history-polish-1';
 import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs';
 import { validateFullDraft } from './game-draft-validator.mjs';
@@ -25,43 +24,149 @@ function show(id) {
 }
 
 function intakeDate(row) { return row.submitted_at || row.created_at; }
+function percentLabel(value) {
+  if (value == null || value === '' || !Number.isFinite(Number(value))) return '—';
+  const number=Number(value);
+  return `${number.toFixed(Number.isInteger(number)?0:1)}%`;
+}
+function currentRealCases() {
+  return partitionDashboardCases(state.operations.cases||[]).current.filter(item=>item.is_test!==true);
+}
+function studyIoaSnapshot() {
+  const cases=currentRealCases();
+  const allowedStudyIds=new Set(cases.map(item=>item.study_id).filter(Boolean));
+  const rows=(state.observationData?.by_dyad||[]).filter(row=>allowedStudyIds.has(row.study_id));
+  const completed=rows.reduce((sum,row)=>sum+Number(row.completed||0),0);
+  const ioa=rows.reduce((sum,row)=>sum+Number(row.ioa||0),0);
+  return {completed,ioa,percent:completed?(ioa/completed)*100:0};
+}
+function attentionGroups() {
+  const caseGroups=currentRealCases().map(item=>({
+    label:item.study_id||item.case_code||'Case',
+    kind:'Case',
+    reasons:attentionForCase(item)
+  })).filter(group=>group.reasons.length);
+  const studyReasons=studyWideAttention(state.operations.study_wide_tasks||[]);
+  const groups=[...caseGroups];
+  if (studyReasons.length) groups.push({label:'Study-wide',kind:'Study',reasons:studyReasons});
+
+  const activeIntakes=state.intakes.filter(row=>['submitted','approved'].includes(row.status));
+  activeIntakes.forEach(row=>groups.push({
+    label:row.request_id||row.teacher_name||'Intake',
+    kind:'Intake',
+    reasons:[row.status==='submitted'?'New intake is ready for review.':'Approved intake still needs case preparation.']
+  }));
+  return groups;
+}
 function renderCounts() {
-  const count = status => state.intakes.filter(row => row.status === status).length;
-  const {current}=partitionDashboardCases(state.operations.cases);
-  const currentCaseIds=new Set(current.map(item=>item.id));
-  const prepared=state.intakes.filter(row=>row.status==='converted'&&currentCaseIds.has(row.converted_case_id)).length;
-  const caseCounts=dashboardCaseCounts(state.operations.cases);
-  const cards = [['New Intakes', count('submitted')], ['Approved / Preparing', count('approved')], ['Prepared Cases', prepared], ['Intervention Active', caseCounts.intervention]];
-  $('#counts').innerHTML = cards.map(([label, value]) => `<article class="count"><span>${label}</span><strong>${value}</strong></article>`).join('');
+  const cases=currentRealCases();
+  const ioa=studyIoaSnapshot();
+  const groups=attentionGroups();
+  const activeObservers=(state.observationData?.observers||[]).filter(observer=>observer.active!==false);
+  const readyObservers=activeObservers.filter(observer=>observer.status==='qualified').length;
+  const cards=[
+    ['Study cases',cases.length,'current dissertation dyads'],
+    ['Needs attention',groups.length,groups.length?'items to review':'nothing blocking'],
+    ['IOA coverage',percentLabel(ioa.percent),`${ioa.ioa} of ${ioa.completed} finalized`],
+    ['Observers ready',`${readyObservers}/${activeObservers.length}`,'cleared for live collection']
+  ];
+  $('#counts').innerHTML=cards.map(([label,value,detail])=>`<article class="home-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(detail)}</small></article>`).join('');
+}
+function renderTodayAttention() {
+  const groups=attentionGroups();
+  $('#study-attention').innerHTML=groups.length
+    ? `<div class="attention-list">${groups.map(group=>{
+        const visible=group.reasons.slice(0,2);
+        const extra=Math.max(0,group.reasons.length-visible.length);
+        return `<article class="attention-row">
+          <div class="attention-row-label"><span>${escapeHtml(group.kind)}</span><strong>${escapeHtml(group.label)}</strong></div>
+          <div class="attention-row-copy">${visible.map(reason=>`<p>${escapeHtml(reason)}</p>`).join('')}${extra?`<small>+${extra} more item${extra===1?'':'s'} inside the case</small>`:''}</div>
+        </article>`;
+      }).join('')}</div>`
+    : '<div class="attention-clear"><strong>Nothing needs your attention right now.</strong><span>The study dashboard has no unresolved case or intake items.</span></div>';
 }
 function renderHome() {
   renderCounts();
+  renderTodayAttention();
   renderStudyOverview();
-  const activeIntakes = state.intakes.filter(row => ['submitted','approved'].includes(row.status));
-  $('#intake-list').innerHTML = activeIntakes.length ? activeIntakes.map(row => `<article class="intake-card"><div class="card-top"><span class="pill">${escapeHtml(row.status)}</span><span class="id">${escapeHtml(row.request_id)}</span></div><h3>${escapeHtml(row.teacher_name)}</h3><dl><div><dt>Teacher email</dt><dd>${escapeHtml(row.teacher_email)}</dd></div><div><dt>Coach</dt><dd>${escapeHtml(row.coach_name)}</dd></div><div><dt>Coach email</dt><dd>${escapeHtml(row.coach_email)}</dd></div><div><dt>Student / grade</dt><dd>${escapeHtml(row.student_initials)} · ${escapeHtml(row.grade_level)}</dd></div><div><dt>Submitted</dt><dd>${formatDate(intakeDate(row))}</dd></div></dl><button class="primary review" data-id="${escapeHtml(row.request_id)}">Review intake</button></article>`).join('') : '<article class="panel"><h3>No active intake requests</h3><p>New or approved intakes will appear here. Converted intakes live with their case record.</p></article>';
-  document.querySelectorAll('.review').forEach(button => button.addEventListener('click', () => openDetail(button.dataset.id, 'intake')));
+  const activeIntakes=state.intakes.filter(row=>['submitted','approved'].includes(row.status));
+  $('#intake-list').innerHTML=activeIntakes.length
+    ? activeIntakes.map(row=>`<article class="intake-card compact-intake-card"><div class="card-top"><span class="pill">${escapeHtml(row.status)}</span><span class="id">${escapeHtml(row.request_id)}</span></div><h3>${escapeHtml(row.teacher_name)}</h3><div class="compact-intake-meta"><span>${escapeHtml(row.student_initials)} · ${escapeHtml(row.grade_level)}</span><span>Coach: ${escapeHtml(row.coach_name)}</span><span>Submitted ${escapeHtml(formatDate(intakeDate(row)))}</span></div><button class="primary review" data-id="${escapeHtml(row.request_id)}">Review intake</button></article>`).join('')
+    : '<div class="attention-clear quiet-clear"><strong>No active intake requests.</strong><span>New or approved requests will appear here.</span></div>';
+  document.querySelectorAll('.review').forEach(button=>button.addEventListener('click',()=>openDetail(button.dataset.id,'intake')));
   show('home-view');
 }
 
 function renderStudyOverview() {
-  const {current,archived}=partitionDashboardCases(state.operations.cases), studyTasks=state.operations.study_wide_tasks||[];
-  const visibleCases=visibleDashboardCases(state.operations.cases,state.testCases,{showArchived:state.showArchivedCases,showTest:true});
-  const all=current.flatMap(item=>attentionForCase(item).map(reason=>({studyId:item.study_id,reason}))).concat(studyWideAttention(studyTasks).map(reason=>({studyId:'Study-wide',reason})));
-  $('#study-attention').innerHTML=all.length?`<section class="panel attention"><h3>Needs Attention</h3><ul>${all.map(({studyId,reason})=>`<li><strong>${escapeHtml(studyId)}</strong> — ${escapeHtml(reason)}</li>`).join('')}</ul></section>`:'<section class="panel"><strong>Nothing needs attention.</strong></section>';
+  const {archived}=partitionDashboardCases(state.operations.cases);
+  const studyTasks=state.operations.study_wide_tasks||[];
+  const visibleCases=visibleDashboardCases(
+    state.operations.cases,
+    state.testCases,
+    {showArchived:state.showArchivedCases,showTest:state.showTestCases}
+  );
+
   const toggle=$('#archived-cases-toggle');
   toggle.hidden=archived.length===0;
   toggle.textContent=state.showArchivedCases?'Hide archived cases':'Show archived cases';
   toggle.setAttribute('aria-pressed',String(state.showArchivedCases));
   toggle.onclick=()=>{state.showArchivedCases=!state.showArchivedCases;renderStudyOverview();};
+
   const testToggle=$('#test-cases-toggle');
-  if(testToggle) testToggle.hidden=true;
-  $('#study-case-list').innerHTML=visibleCases.length?visibleCases.map(item=>{const archivedCase=item.archived_at!=null,isTest=item.is_test===true,matchingIntake=state.intakes.some(row=>row.converted_case_id===item.id),attention=archivedCase||isTest?[]:attentionForCase(item), baseline=baselineReadiness(item), measureCount=measureNeeds(item).length; const demoTools=!archivedCase&&/^CASE-DEMO-/.test(item.case_code||'')&&/^MR-DEMO-/.test(item.study_id||'')?`<section class="demo-login-tools"><p class="eyebrow">DEMO LOGIN TOOLS</p><details><summary>SET TEST PASSWORD</summary><form class="legacy-test-password-form" data-case-id="${escapeHtml(item.id)}"><label>New test password<input name="password" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><label>Confirm test password<input name="confirmation" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><button class="primary" type="submit">Set Test Password</button><small>Demo account only. No email is sent.</small><p class="legacy-test-password-result" role="status"></p></form></details></section>`:''; return `<article class="intake-card study-card${archivedCase?' archived-case':''}${isTest?' test-case':''}"><div class="card-top"><span class="pill">${archivedCase?'Archived':escapeHtml(item.current_phase)}</span><span class="id">${escapeHtml(item.case_code)}</span></div><h3>${escapeHtml(item.study_id)}</h3>${isTest?'<p class="test-participant-badge">QA CASE · excluded from dissertation outcomes</p>':''}${archivedCase&&item.archive_reason?`<p class="archive-reason">${escapeHtml(item.archive_reason)}</p>`:''}<p>Student alias: <strong>${escapeHtml(item.student_alias)}</strong></p><dl><div><dt>Baseline target</dt><dd>${item.protocol?`${item.protocol.planned_baseline_observations} observations`:'Not assigned'}</dd></div><div><dt>Baseline readiness</dt><dd>${baseline.ready?'Complete':`${baseline.remaining} left`}</dd></div><div><dt>Measures</dt><dd>${measureCount?`${measureCount} left`:'Current'}</dd></div><div><dt>Open tasks</dt><dd>${(item.tasks||[]).filter(x=>x.status==='pending').length}</dd></div><div><dt>Study events</dt><dd>${(item.study_events||[]).filter(x=>!x.resolved_at).length} unresolved</dd></div><div><dt>Observations</dt><dd>${item.observation_data?.observations?.filter(x=>x.summary_revision_id).length||0}</dd></div><div><dt>IOA</dt><dd>${item.observation_data?.coverage?.percent||0}% coverage</dd></div><div><dt>IOA Review</dt><dd>${item.observation_data?.observations?.filter(x=>ioaNeedsReview(x.ioa)).length||0}</dd></div><div><dt>Attention</dt><dd>${attention.length||'None'}</dd></div></dl>${!archivedCase||matchingIntake?`<button class="primary open-case" data-case="${item.id}">Open Case</button>`:''}${demoTools}</article>`}).join(''):'<article class="panel"><h3>No prepared study cases</h3><p>Converted cases will appear here without being activated.</p></article>';
+  if (testToggle) {
+    testToggle.hidden=(state.testCases||[]).length===0;
+    testToggle.textContent=state.showTestCases?'Hide QA cases':'Show QA cases';
+    testToggle.setAttribute('aria-pressed',String(state.showTestCases));
+    testToggle.onclick=()=>{state.showTestCases=!state.showTestCases;renderStudyOverview();};
+  }
+
+  $('#study-case-list').innerHTML=visibleCases.length
+    ? visibleCases.map(item=>{
+        const archivedCase=item.archived_at!=null;
+        const isTest=item.is_test===true;
+        const matchingIntake=state.intakes.some(row=>row.converted_case_id===item.id);
+        const attention=archivedCase||isTest?[]:attentionForCase(item);
+        const stats=observationSummary(item);
+        const latest=stats.latest;
+        const label=item.study_id||item.case_code||'Case';
+        const phase=archivedCase?'Archived':String(item.current_phase||'prebaseline').replaceAll('_',' ');
+        const next=archivedCase
+          ? (item.archive_reason||'Historical case record.')
+          : isTest
+          ? 'QA case — excluded from dissertation outcomes.'
+          : nextAction(item);
+        const ioaCoverage=Number(item.observation_data?.coverage?.percent||0);
+        const demoTools=!archivedCase&&/^CASE-DEMO-/.test(item.case_code||'')&&/^MR-DEMO-/.test(item.study_id||'')
+          ? `<section class="demo-login-tools"><p class="eyebrow">DEMO LOGIN TOOLS</p><details><summary>SET TEST PASSWORD</summary><form class="legacy-test-password-form" data-case-id="${escapeHtml(item.id)}"><label>New test password<input name="password" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><label>Confirm test password<input name="confirmation" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><button class="primary" type="submit">Set Test Password</button><small>Demo account only. No email is sent.</small><p class="legacy-test-password-result" role="status"></p></form></details></section>`
+          : '';
+        return `<article class="study-health-card${archivedCase?' archived-case':''}${isTest?' test-case':''}${attention.length?' needs-attention':''}">
+          <div class="study-health-head">
+            <div><span class="phase-pill">${escapeHtml(phase)}</span><h3>${escapeHtml(label)}</h3><small>${escapeHtml(item.case_code||'')} · ${escapeHtml(item.student_alias||'Student')}</small></div>
+            ${attention.length?`<span class="attention-count">${attention.length} attention</span>`:''}
+          </div>
+          ${isTest?'<p class="test-participant-badge">QA CASE · excluded from dissertation outcomes</p>':''}
+          <div class="case-snapshot">
+            <div><span>Latest fidelity</span><strong>${latest?percentLabel(latest.teacher_fidelity_percent):'—'}</strong></div>
+            <div><span>Student behavior</span><strong>${latest?percentLabel(latest.student_target_behavior_percent):'—'}</strong></div>
+            <div><span>Observations</span><strong>${stats.rows.length}</strong></div>
+            <div><span>IOA</span><strong>${percentLabel(ioaCoverage)}</strong></div>
+          </div>
+          <div class="case-next-action"><span>${archivedCase?'Status':'Next'}</span><strong>${escapeHtml(next)}</strong></div>
+          ${!archivedCase&&matchingIntake?`<button class="primary open-case" data-case="${item.id}">Open Case</button>`:''}
+          ${demoTools}
+        </article>`;
+      }).join('')
+    : '<div class="attention-clear quiet-clear"><strong>No study cases in this view.</strong><span>Use the QA or archived filters if you are looking for a test or historical case.</span></div>';
+
   $('#study-wide-tasks').innerHTML=renderStudyWideTasks(studyTasks,escapeHtml);
   $('#observer-team').innerHTML=renderObserverTeam(state.observationData||{observers:[]},escapeHtml);
   const realStudyIds=new Set((state.operations.cases||[]).filter(item=>item.is_test!==true).map(item=>item.study_id));
   $('#study-ioa').innerHTML=renderStudyIoaSummary(state.observationData||{},escapeHtml,realStudyIds);
-  if (state.observerMessage && $('#observer-message')) { $('#observer-message').textContent = state.observerMessage; state.observerMessage = ''; }
-  document.querySelectorAll('.open-case').forEach(button=>button.addEventListener('click',()=>{const intake=state.intakes.find(row=>row.converted_case_id===button.dataset.case); if(intake) openDetail(intake.request_id, 'operations');}));
+  if (state.observerMessage && $('#observer-message')) { $('#observer-message').textContent=state.observerMessage; state.observerMessage=''; }
+  document.querySelectorAll('.open-case').forEach(button=>button.addEventListener('click',()=>{
+    const intake=state.intakes.find(row=>row.converted_case_id===button.dataset.case);
+    if(intake) openDetail(intake.request_id,'operations');
+  }));
   document.querySelectorAll('.legacy-test-password-form').forEach(form=>form.addEventListener('submit',setLegacyTestPassword));
   bindTaskControls(null,'#study-task-form');
   bindObserverTeam();
