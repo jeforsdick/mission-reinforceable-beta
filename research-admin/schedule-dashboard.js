@@ -80,28 +80,42 @@ function calibrationSupportObservers() {
   });
 }
 
-function activeCases() {
-  return (dashboard.cases || []).filter(function (c) {
-    return !c.archived_at && c.is_test !== true;
+function allSchedulingCases() {
+  var seen = new Set();
+  return (dashboard.cases || []).concat(dashboard.testCases || []).filter(function (c) {
+    if (!c || seen.has(c.id)) return false;
+    seen.add(c.id);
+    return true;
   });
+}
+function activeCases() {
+  return allSchedulingCases().filter(function (c) {
+    return !c.archived_at;
+  });
+}
+function isTestCase(caseId) {
+  var item = allSchedulingCases().find(function (c) { return c.id === caseId; });
+  return item?.is_test === true;
 }
 
 function weeklySummary() {
-  var expected = (dashboard.schedules || []).reduce(function (sum, row) {
+  var studySchedules = (dashboard.schedules || []).filter(function (row) { return !isTestCase(row.case_id); });
+  var studySlots = (dashboard.slots || []).filter(function (row) { return !isTestCase(row.case_id); });
+  var expected = studySchedules.reduce(function (sum, row) {
     return sum + Number(row.weekly_target_days || 3);
   }, 0);
-  var completed = dashboard.slots.filter(function (s) { return s.status === "completed"; }).length;
-  var assigned = dashboard.slots.filter(function (s) {
+  var completed = studySlots.filter(function (s) { return s.status === "completed"; }).length;
+  var assigned = studySlots.filter(function (s) {
     return !!s.primary_observer_id && s.status !== "cancelled" && s.status !== "needs_reschedule";
   }).length;
-  var reschedules = dashboard.slots.filter(function (s) { return s.status === "needs_reschedule"; }).length;
+  var reschedules = studySlots.filter(function (s) { return s.status === "needs_reschedule"; }).length;
   var cumulative = dashboard.state.observationData && dashboard.state.observationData.coverage
     ? dashboard.state.observationData.coverage : {};
   var cumulativeCompleted = Number(cumulative.completed || 0);
   var cumulativeIoa = Number(cumulative.ioa || 0);
   var remaining = Math.max(expected - completed, 0);
   var requiredByEnd = Math.ceil((cumulativeCompleted + remaining) * 0.20);
-  var plannedIoa = dashboard.slots.filter(function (s) {
+  var plannedIoa = studySlots.filter(function (s) {
     return s.secondary_role === "formal_ioa" || s.secondary_role === "calibration_and_ioa";
   }).length;
   return {
@@ -117,7 +131,8 @@ function weeklySummary() {
 }
 
 function caseLabel(item) {
-  return item.study_id || item.case_code || "Case";
+  var label = item.study_id || item.case_code || "Case";
+  return item.is_test === true ? label + " · QA" : label;
 }
 
 function renderCaseSetup(item) {
@@ -357,6 +372,7 @@ async function load() {
 
   dashboard = {
     cases: state.operations && state.operations.cases ? state.operations.cases : [],
+    testCases: state.testCases || [],
     schedules: responses[0].data || [],
     slots: responses[1].data || [],
     observers: state.observationData && state.observationData.observers ? state.observationData.observers : [],
