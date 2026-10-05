@@ -12,7 +12,7 @@
     if(!window.supabase) addScript('https://unpkg.com/@supabase/supabase-js@2');
   },2500);
 })();
-</script><script type="module" src="/research-admin/admin.js?v=20261005-observer-nav"></script><script type="module" src="/research-admin/training-dashboard.js?v=20261004-mobile-auth-2"></script><script type="module" src="/research-admin/schedule-dashboard.js?v=20261004-mobile-auth-2"></script></head>
+</script><script type="module" src="/research-admin/admin.js?v=20261005-command-center"></script><script type="module" src="/research-admin/training-dashboard.js?v=20261004-mobile-auth-2"></script><script type="module" src="/research-admin/schedule-dashboard.js?v=20261004-mobile-auth-2"></script></head>
 <body><header class="site-header"><div class="nav-wrap"><a class="brand" href="/" aria-label="Mission: Reinforceable home"><img class="brand-icon" src="/favicon.png" alt=""><img class="brand-logo" src="/assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable"></a><span class="private">Research Admin</span><nav class="header-actions" aria-label="Account navigation"><a id="observer-portal-link" class="dashboard-link" href="/observer/" hidden>Observer</a><a id="coaching-dashboard-link" class="dashboard-link" href="/coach-dashboard/" hidden>Coaching Dashboard</a><button id="sign-out" class="quiet" hidden>Sign out</button></nav></div></header>
 <main>
   <section id="loading-view" class="state-card"><h1>Checking secure access…</h1></section>
@@ -20,24 +20,33 @@
   <section id="unauthorized-view" class="state-card" hidden><p class="eyebrow">Access restricted</p><h1>Unauthorized</h1><p>This area requires an active <strong>research_admin</strong> profile.</p><button class="quiet sign-out-action">Return to sign in</button></section>
   <section id="error-view" class="state-card" hidden><h1>We could not load Research Admin</h1><p id="error-message"></p><button id="retry" class="primary">Try again</button></section>
   <section id="home-view" hidden>
-    <div class="hero admin-hero">
+    <div class="admin-home-heading">
       <div>
         <p class="eyebrow">Research Admin</p>
-        <h1>Dissertation Tracking Hub</h1>
-        <p>Manage study cases, observer training, live observer access, IOA coverage, and intake in one place.</p>
+        <h1>Dissertation Command Center</h1>
+        <p>See what needs attention, what is scheduled, and where each case stands.</p>
       </div>
-      <div class="safeguard"><strong>Study phase ≠ game access</strong><span>The game and reminders stay off until you turn them on.</span></div>
+      <div class="home-safety-note"><strong>Study phase ≠ game access</strong><span>Game access and reminders stay off until deliberately enabled.</span></div>
     </div>
 
     <nav class="admin-home-nav" aria-label="Research admin sections">
-      <a href="#study-overview-section">Study Cases</a>
-      <a href="#observer-training-section">Observer Training</a>
-      <a href="#observer-team-section">Observer Team</a>
-      <a href="#study-ioa-section">Study IOA</a>
+      <a href="#today-section">Today</a>
+      <a href="#weekly-schedule-section">This Week</a>
+      <a href="#study-overview-section">Cases</a>
+      <a href="#study-ioa-section">IOA</a>
+      <a href="#observer-team-section">Observers</a>
       <a href="#intake-queue-section">Intake</a>
+      <a href="#observer-training-section">Training Details</a>
     </nav>
 
-    <div id="counts" class="counts"></div>
+    <section id="today-section" class="admin-home-section command-center-section" aria-labelledby="today-title">
+      <div class="section-heading command-center-heading">
+        <div><p class="eyebrow">Right Now</p><h2 id="today-title">What needs your attention</h2></div>
+        <p>Only current dissertation cases and active intake items appear here.</p>
+      </div>
+      <div id="counts" class="home-kpis"></div>
+      <div id="study-attention" class="attention-summary"></div>
+    </section>
 
     <section id="weekly-schedule-section" class="admin-home-section" aria-label="This week">
       <div id="weekly-schedule-dashboard"></div>
@@ -46,38 +55,40 @@
     <section id="study-overview-section" class="admin-home-section" aria-labelledby="study-overview-title">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Study Overview</p>
-          <h2 id="study-overview-title">Study Cases</h2>
+          <p class="eyebrow">Study Health</p>
+          <h2 id="study-overview-title">Dissertation Cases</h2>
           <div class="case-filter-controls">
             <button id="archived-cases-toggle" class="quiet case-filter-toggle" type="button" aria-pressed="false" hidden>Show archived cases</button>
-            <button id="test-cases-toggle" class="quiet case-filter-toggle" type="button" aria-pressed="false">Show test cases</button>
+            <button id="test-cases-toggle" class="quiet case-filter-toggle" type="button" aria-pressed="false" hidden>Show QA cases</button>
           </div>
         </div>
-        <p>Deidentified study information only.</p>
+        <p>Phase, latest data, and the next decision you need to make.</p>
       </div>
-      <div id="study-attention" class="attention-summary"></div>
-      <div id="study-case-list" class="card-grid"></div>
+      <div id="study-case-list" class="study-case-grid"></div>
       <div id="study-wide-tasks"></div>
-    </section>
-
-    <section id="observer-training-section" class="admin-home-section" aria-label="Observer training">
-      <div id="observer-training-dashboard"></div>
-    </section>
-
-    <section id="observer-team-section" class="admin-home-section" aria-label="Observer team">
-      <div id="observer-team"></div>
     </section>
 
     <section id="study-ioa-section" class="admin-home-section" aria-label="Study IOA">
       <div id="study-ioa"></div>
     </section>
 
+    <section id="observer-team-section" class="admin-home-section" aria-label="Observer team">
+      <div id="observer-team"></div>
+    </section>
+
     <section id="intake-queue-section" class="admin-home-section" aria-labelledby="intake-queue-title">
       <div class="section-heading">
-        <div><p class="eyebrow">Intake Queue</p><h2 id="intake-queue-title">Intake requests</h2></div>
-        <p>Review new intake requests and set up approved cases.</p>
+        <div><p class="eyebrow">Intake</p><h2 id="intake-queue-title">Active intake requests</h2></div>
+        <p>Only submitted or approved requests stay in this queue.</p>
       </div>
       <div id="intake-list" class="card-grid"></div>
+    </section>
+
+    <section id="observer-training-section" class="admin-home-section admin-secondary-section" aria-label="Observer training">
+      <details class="admin-deep-dive">
+        <summary><span>Observer Training Details</span><small>Nora/Kai scores, questions, feedback, and clearance controls</small></summary>
+        <div id="observer-training-dashboard"></div>
+      </details>
     </section>
   </section>
   <section id="detail-view" hidden><div class="detail-navigation no-print"><button id="back-home" class="quiet">← Research Admin</button><button id="print-intake" class="quiet">Print / Save PDF</button></div><div id="detail"></div></section>
