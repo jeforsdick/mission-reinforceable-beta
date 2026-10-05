@@ -1505,4 +1505,4 @@ els["questions-form"].addEventListener("submit", submitQuestions);
 
 window.addEventListener("beforeunload", saveState);
 
-restore();
+initializeAuthenticatedTraining();
