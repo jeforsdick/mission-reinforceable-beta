@@ -3,6 +3,7 @@
 const crypto = require('node:crypto');
 const { isEligibleStudyDay } = require('./granite-study-calendar');
 const { buildMissionReminderEmail } = require('./mission-reminder-email');
+const { buildObserverTrainingEmail } = require('./observer-training-email');
 
 const TYPES = Object.freeze({ DAILY: 'daily_prompt', FOLLOWUP: 'followup_reminder' });
 const SUBJECTS = Object.freeze({
@@ -51,6 +52,13 @@ function authorized(header, secret) {
   if (!secret || typeof header !== 'string' || !header.startsWith('Bearer ')) return false;
   const supplied = Buffer.from(header.slice(7));
   const expected = Buffer.from(secret);
+  return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
+}
+
+function authorizedActionToken(token, action, date, secret) {
+  if (!secret || typeof token !== 'string' || !token) return false;
+  const supplied = Buffer.from(token);
+  const expected = Buffer.from(crypto.createHmac('sha256', secret).update(`${action}:${date}`).digest('hex'));
   return supplied.length === expected.length && crypto.timingSafeEqual(supplied, expected);
 }
 
@@ -143,14 +151,49 @@ function createHandler(type, dependencies = {}) {
 function createSmokeTestHandler(dependencies = {}) {
   const fetchImpl = dependencies.fetch || global.fetch;
   return async function handler(request, response) {
-    const emailPathTest = request.query && request.query.action === 'resend-email-test';
+    const action = request.query && request.query.action;
+    const emailPathTest = action === 'resend-email-test';
+    const observerEmailTest = action === 'observer-training-email-test';
     const expectedMethod = emailPathTest ? 'POST' : 'GET';
-    if (emailPathTest) response.setHeader('Cache-Control', 'no-store');
+    if (emailPathTest || observerEmailTest) response.setHeader('Cache-Control', 'no-store');
     if (request.method !== expectedMethod) {
       response.setHeader('Allow', expectedMethod);
       return response.status(405).json({ error: 'Method not allowed' });
     }
-    if (!authorized(request.headers && request.headers.authorization, process.env.CRON_SECRET)) return response.status(401).json({ error: 'Unauthorized' });
+
+    let requestAuthorized = authorized(request.headers && request.headers.authorization, process.env.CRON_SECRET);
+    if (observerEmailTest && !requestAuthorized) {
+      const date = studyDate(new Date(), 'America/Denver');
+      requestAuthorized = authorizedActionToken(request.query && request.query.token, action, date, process.env.CRON_SECRET);
+    }
+    if (!requestAuthorized) return response.status(401).json({ error: 'Unauthorized' });
+
+    if (observerEmailTest) {
+      if (!process.env.RESEND_API_KEY || !process.env.TEST_EMAIL_RECIPIENT) {
+        return response.status(503).json({ error: 'Observer email test configuration is incomplete' });
+      }
+      try {
+        const email = buildObserverTrainingEmail();
+        const send = await fetchImpl('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: email.from,
+            reply_to: email.replyTo,
+            to: [process.env.TEST_EMAIL_RECIPIENT],
+            subject: `[TEST] ${email.subject}`,
+            html: email.html,
+            text: email.text
+          })
+        });
+        if (!send.ok) return response.status(502).json({ error: 'Observer test email could not be sent' });
+        const provider = await send.json();
+        return response.status(200).json({ success: true, message_id: provider.id || null });
+      } catch {
+        return response.status(502).json({ error: 'Observer test email could not be sent' });
+      }
+    }
+
     if (emailPathTest) {
       if (!process.env.RESEND_API_KEY || !process.env.TEST_EMAIL_RECIPIENT || !process.env.TEACHER_GAME_URL) {
         return response.status(503).json({ error: 'Test email configuration is incomplete' });
@@ -193,4 +236,4 @@ function createSmokeTestHandler(dependencies = {}) {
   };
 }
 
-module.exports = { TYPES, SUBJECTS, emailFor, studyDate, idempotencyKey, authorized, validateConfiguration, createHandler, createSmokeTestHandler };
+module.exports = { TYPES, SUBJECTS, emailFor, studyDate, idempotencyKey, authorized, authorizedActionToken, validateConfiguration, createHandler, createSmokeTestHandler };
