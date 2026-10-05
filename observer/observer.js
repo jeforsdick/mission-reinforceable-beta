@@ -11,6 +11,7 @@ const views = ["loading-view","login-view","unauthorized-view","portal-view","se
 let client = null;
 let observerId = null;
 let clearanceStatus = "pending";
+let observerType = null;
 let onlineTrainingComplete = false;
 let currentPacket = null;
 let collection = null;
@@ -52,8 +53,9 @@ function canStartSlot(slot) {
   const activeToday=slot.observation_date===DENVER_TODAY()
     && ["scheduled","confirmed"].includes(slot.status);
   if(!activeToday) return false;
-  if(clearanceStatus==="cleared") return true;
   if(clearanceStatus==="revoked") return false;
+  if(observerType==="primary_researcher") return true;
+  if(clearanceStatus==="cleared") return true;
   if(slot.secondary_role!=="supported_calibration") return false;
   if(slot.primary_observer_id===observerId) return onlineTrainingComplete;
   return slot.secondary_observer_id===observerId;
@@ -98,7 +100,7 @@ async function loadPortal() {
 
   observerId=account.data.observer_id;
   const [observer,clearance,slots,attempts,feedback,questions]=await Promise.all([
-    client.from("research_observers").select("display_name,observer_code").eq("id",observerId).maybeSingle(),
+    client.from("research_observers").select("display_name,observer_code,observer_type").eq("id",observerId).maybeSingle(),
     client.from("research_observer_clearance").select("clearance_status,clearance_note").eq("observer_id",observerId).maybeSingle(),
     client.from("research_observation_schedule_slots")
       .select("*")
@@ -114,6 +116,7 @@ async function loadPortal() {
   }
 
   $("observer-name").textContent=observer.data?.display_name||"Observer";
+  observerType=observer.data?.observer_type||null;
   clearanceStatus=clearance.data?.clearance_status||"pending";
 
   const latestByCase={};
@@ -122,7 +125,10 @@ async function loadPortal() {
   const onlineComplete=Boolean(nora?.qualified===true&&kai?.qualified===true&&(feedback.data||[]).length&&(questions.data||[]).length);
   onlineTrainingComplete=onlineComplete;
   const anyTraining=Boolean((attempts.data||[]).length||(feedback.data||[]).length||(questions.data||[]).length);
-  if(clearanceStatus==="cleared"){
+  if(observerType==="primary_researcher"){
+    $("training-status-label").textContent="Researcher access";
+    $("training-status-help").textContent="Observer training is not required for your primary researcher role.";
+  }else if(clearanceStatus==="cleared"){
     $("training-status-label").textContent="Training complete";
     $("training-status-help").textContent="You are cleared for independent observations.";
   }else if(kai&&kai.qualified===false){
@@ -144,7 +150,10 @@ async function loadPortal() {
     && ["scheduled","confirmed"].includes(slot.status)
     && (slot.primary_observer_id===observerId||slot.secondary_observer_id===observerId)
   );
-  if (clearanceStatus==="cleared") {
+  if (observerType==="primary_researcher" && clearanceStatus!=="revoked") {
+    $("readiness-status").textContent="Researcher collection access ready";
+    $("readiness-help").textContent="You may be assigned as a backup primary observer or as the paired calibration / IOA observer.";
+  } else if (clearanceStatus==="cleared") {
     $("readiness-status").textContent="Cleared for independent observations";
     $("readiness-help").textContent="Open an assigned session on its scheduled date to collect data.";
   } else if (clearanceStatus==="revoked") {
