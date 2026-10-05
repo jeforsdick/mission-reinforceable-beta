@@ -1,40 +1,37 @@
+import { REAL_SESSION, calculateFidelity, calculateStudentBehavior, formatClock } from "/observe/observation-model.mjs";
+
 const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W";
+const DENVER_TODAY = () => new Intl.DateTimeFormat("en-CA",{timeZone:"America/Denver",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 
-const loadingView = document.getElementById("loading-view");
-const loginView = document.getElementById("login-view");
-const unauthorizedView = document.getElementById("unauthorized-view");
-const portalView = document.getElementById("portal-view");
-const loginForm = document.getElementById("login-form");
-const loginError = document.getElementById("login-error");
-const observerName = document.getElementById("observer-name");
-const readinessStatus = document.getElementById("readiness-status");
-const readinessHelp = document.getElementById("readiness-help");
-const assignmentList = document.getElementById("assignment-list");
-
+const $ = (id) => document.getElementById(id);
+const views = ["loading-view","login-view","unauthorized-view","portal-view","session-view"].map($);
 let client = null;
+let observerId = null;
+let clearanceStatus = "pending";
+let currentPacket = null;
+let collection = null;
+let timer = null;
+let audioContext = null;
+let saveTimer = null;
 
-function show(view) {
-  [loadingView, loginView, unauthorizedView, portalView].forEach(function (el) {
-    el.hidden = el !== view;
-  });
+function show(viewId) {
+  views.forEach((el) => { el.hidden = el.id !== viewId; });
 }
-
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
 function dateLabel(value) {
-  var date = new Date(value + "T12:00:00");
-  return new Intl.DateTimeFormat(undefined, { weekday:"long", month:"short", day:"numeric" }).format(date);
+  const date = new Date(value + "T12:00:00");
+  return new Intl.DateTimeFormat(undefined,{weekday:"long",month:"short",day:"numeric"}).format(date);
 }
-
 function timeLabel(value) {
   if (!value) return "—";
-  var parts = String(value).slice(0,5).split(":");
-  var hour = Number(parts[0]);
-  var minute = Number(parts[1]);
-  return (hour % 12 || 12) + ":" + String(minute).padStart(2,"0") + " " + (hour < 12 ? "AM" : "PM");
+  const [h,m]=String(value).slice(0,5).split(":").map(Number);
+  return `${h%12||12}:${String(m).padStart(2,"0")} ${h<12?"AM":"PM"}`;
 }
-
-function roleLabel(slot, observerId) {
-  if (slot.secondary_observer_id === observerId) {
+function roleLabel(slot,id) {
+  if (slot.secondary_observer_id === id) {
     if (slot.secondary_role === "formal_ioa") return "Formal IOA";
     if (slot.secondary_role === "supported_calibration") return "Supported calibration";
     if (slot.secondary_role === "calibration_and_ioa") return "Calibration + IOA";
@@ -42,114 +39,497 @@ function roleLabel(slot, observerId) {
   }
   return "Primary observer";
 }
-
-function renderAssignments(slots, observerId) {
+function humanStatus(status) {
+  return String(status||"").replaceAll("_"," ").replace(/\b\w/g,(x)=>x.toUpperCase());
+}
+function canOpenSlot(slot) {
+  return ["scheduled","confirmed","completed"].includes(slot.status);
+}
+function canStartSlot(slot) {
+  return clearanceStatus === "cleared"
+    && slot.observation_date === DENVER_TODAY()
+    && ["scheduled","confirmed"].includes(slot.status);
+}
+function renderAssignments(slots) {
   if (!slots.length) {
-    assignmentList.innerHTML = '<p class="empty-state">Nothing is currently assigned to you.</p>';
+    $("assignment-list").innerHTML = '<p class="empty-state">Nothing is currently assigned to you.</p>';
     return;
   }
-  assignmentList.innerHTML = slots.map(function (slot) {
-    return '<article class="assignment-card">' +
-      '<div><strong>' + dateLabel(slot.observation_date) + ' · ' + (slot.case_code_snapshot || "Case") + '</strong>' +
-      '<span>' + (slot.routine_label_snapshot || "Routine") + ' · ' + timeLabel(slot.planned_start_time) + '–' + timeLabel(slot.planned_end_time) + '</span>' +
-      '<small>Status: ' + String(slot.status || "").replaceAll("_"," ") + '</small></div>' +
-      '<div><span class="assignment-role">' + roleLabel(slot, observerId) + '</span></div>' +
-      '</article>';
+  $("assignment-list").innerHTML = slots.map((slot) => {
+    const role=roleLabel(slot,observerId);
+    const open=canOpenSlot(slot);
+    const today=slot.observation_date===DENVER_TODAY();
+    const action=slot.status==="completed"?"View Completed":today&&canStartSlot(slot)?"Open Session":"View Session";
+    return `<article class="assignment-card ${escapeHtml(slot.status)}">
+      <div class="assignment-main">
+        <strong>${escapeHtml(dateLabel(slot.observation_date))} · ${escapeHtml(slot.case_code_snapshot||"Case")}</strong>
+        <span>${escapeHtml(slot.routine_label_snapshot||"Routine")} · ${escapeHtml(timeLabel(slot.planned_start_time))}–${escapeHtml(timeLabel(slot.planned_end_time))}</span>
+        <small>${escapeHtml(humanStatus(slot.status))}</small>
+      </div>
+      <div class="assignment-actions">
+        <span class="assignment-role">${escapeHtml(role)}</span>
+        ${open?`<button class="primary-button open-session" data-slot="${escapeHtml(slot.id)}" type="button">${escapeHtml(action)}</button>`:""}
+      </div>
+    </article>`;
   }).join("");
+  document.querySelectorAll(".open-session").forEach((button)=>button.addEventListener("click",()=>openSession(button.dataset.slot)));
 }
 
 async function loadPortal() {
-  show(loadingView);
-  var sessionResult = await client.auth.getSession();
-  var session = sessionResult.data.session;
-  if (!session) {
-    show(loginView);
-    return;
-  }
+  stopTimer();
+  show("loading-view");
+  const session=(await client.auth.getSession()).data.session;
+  if (!session) { show("login-view"); return; }
 
-  var accountResult = await client.from("research_observer_accounts")
+  const account=await client.from("research_observer_accounts")
     .select("observer_id,active")
-    .eq("auth_user_id", session.user.id)
-    .eq("active", true)
+    .eq("auth_user_id",session.user.id)
+    .eq("active",true)
     .maybeSingle();
+  if (account.error || !account.data) { show("unauthorized-view"); return; }
 
-  if (accountResult.error || !accountResult.data) {
-    show(unauthorizedView);
-    return;
-  }
-
-  var observerId = accountResult.data.observer_id;
-  var responses = await Promise.all([
-    client.from("research_observers").select("display_name,observer_code").eq("id", observerId).maybeSingle(),
-    client.from("research_observer_clearance").select("clearance_status,clearance_note").eq("observer_id", observerId).maybeSingle(),
+  observerId=account.data.observer_id;
+  const [observer,clearance,slots,attempts,feedback,questions]=await Promise.all([
+    client.from("research_observers").select("display_name,observer_code").eq("id",observerId).maybeSingle(),
+    client.from("research_observer_clearance").select("clearance_status,clearance_note").eq("observer_id",observerId).maybeSingle(),
     client.from("research_observation_schedule_slots")
       .select("*")
-      .gte("observation_date", new Date().toISOString().slice(0,10))
-      .order("observation_date", { ascending:true })
+      .gte("observation_date",new Date(Date.now()-7*86400000).toISOString().slice(0,10))
+      .order("observation_date",{ascending:true}),
+    client.from("observer_training_attempts").select("case_id,qualified,submitted_at").order("submitted_at",{ascending:false}),
+    client.from("observer_training_feedback").select("id,submitted_at").order("submitted_at",{ascending:false}).limit(1),
+    client.from("observer_training_questions").select("id,submitted_at").order("submitted_at",{ascending:false}).limit(1)
   ]);
-
-  if (responses[0].error || responses[1].error || responses[2].error) {
-    show(unauthorizedView);
+  if (observer.error || clearance.error || slots.error || attempts.error || feedback.error || questions.error) {
+    show("unauthorized-view");
     return;
   }
 
-  var observer = responses[0].data;
-  var clearance = responses[1].data;
-  observerName.textContent = observer && observer.display_name ? observer.display_name : "Observer";
+  $("observer-name").textContent=observer.data?.display_name||"Observer";
+  clearanceStatus=clearance.data?.clearance_status||"pending";
 
-  var status = clearance && clearance.clearance_status ? clearance.clearance_status : "pending";
-  if (status === "cleared") {
-    readinessStatus.textContent = "Cleared for live observations";
-    readinessHelp.textContent = "Your assigned observation sessions will appear below.";
-  } else if (status === "revoked") {
-    readinessStatus.textContent = "Recalibration required";
-    readinessHelp.textContent = "Do not collect independently until Jess clears you again.";
-  } else {
-    readinessStatus.textContent = "Training pending";
-    readinessHelp.textContent = "Jess will clear you for live observations after training and calibration are complete.";
+  const latestByCase={};
+  for(const row of attempts.data||[]) if(!latestByCase[row.case_id]) latestByCase[row.case_id]=row;
+  const nora=latestByCase.nora, kai=latestByCase.kai;
+  const onlineComplete=Boolean(nora?.qualified===true&&kai?.qualified===true&&(feedback.data||[]).length&&(questions.data||[]).length);
+  const anyTraining=Boolean((attempts.data||[]).length||(feedback.data||[]).length||(questions.data||[]).length);
+  if(clearanceStatus==="cleared"){
+    $("training-status-label").textContent="Training complete";
+    $("training-status-help").textContent="You are cleared for independent observations.";
+  }else if(kai&&kai.qualified===false){
+    $("training-status-label").textContent="Qualification needs review";
+    $("training-status-help").textContent="Jess will review your qualification attempt and next steps with you.";
+  }else if(onlineComplete){
+    $("training-status-label").textContent="Online qualification complete";
+    $("training-status-help").textContent="Field calibration is still required before independent collection.";
+  }else if(anyTraining){
+    $("training-status-label").textContent="Training in progress";
+    $("training-status-help").textContent="Continue your asynchronous observer training.";
+  }else{
+    $("training-status-label").textContent="Training not started";
+    $("training-status-help").textContent="Complete the asynchronous training before live data collection.";
   }
 
-  renderAssignments(responses[2].data || [], observerId);
-  show(portalView);
+  if (clearanceStatus==="cleared") {
+    $("readiness-status").textContent="Cleared for independent observations";
+    $("readiness-help").textContent="Open an assigned session on its scheduled date to collect data.";
+  } else if (clearanceStatus==="revoked") {
+    $("readiness-status").textContent="Recalibration required";
+    $("readiness-help").textContent="Do not collect independently until Jess clears you again.";
+  } else {
+    $("readiness-status").textContent="Live collection locked";
+    $("readiness-help").textContent=onlineComplete
+      ?"Online qualification is complete; Jess will unlock independent collection after field calibration."
+      :"Complete training and calibration before independent collection.";
+  }
+
+  renderAssignments(slots.data||[]);
+  show("portal-view");
+
+  const next=new URL(window.location.href).searchParams.get("next");
+  if(next==="/observe/"||next==="/observe") window.location.replace("/observe/");
+}
+
+async function openSession(slotId) {
+  $("start-error").textContent="";
+  show("loading-view");
+  const result=await client.rpc("research_observer_observation_packet",{target_slot_id:slotId});
+  if (result.error) {
+    show("portal-view");
+    window.alert(result.error.message);
+    return;
+  }
+  currentPacket=result.data;
+  renderSession();
+  show("session-view");
+}
+
+function renderSession() {
+  const packet=currentPacket;
+  const slot=packet.slot;
+  $("session-title").textContent=`${slot.case_code||"Case"} · ${dateLabel(slot.observation_date)}`;
+  $("session-meta").textContent=`${slot.routine_label||"Routine"} · ${timeLabel(slot.planned_start_time)}–${timeLabel(slot.planned_end_time)} · ${humanStatus(packet.phase)}`;
+  $("session-role").textContent=packet.observer.role==="primary"?"Primary observer":roleLabel({
+    secondary_observer_id:packet.observer.id,
+    secondary_role:slot.secondary_role
+  },packet.observer.id);
+  $("session-routine").textContent=packet.setup?.target_routine||slot.routine_label||"Routine";
+  $("session-behavior").textContent=packet.setup?.target_behavior_definition||"Target behavior definition unavailable.";
+  $("collector-case").textContent=slot.case_code||"Case";
+  $("collector-behavior-definition").textContent=packet.setup?.target_behavior_definition||"";
+  $("collector-behavior-name").textContent="Student target behavior";
+  $("preflight-targets").innerHTML=(packet.fidelity_targets||[]).map((target)=>`
+    <article><span>${escapeHtml(target.domain||"Fidelity")}</span><strong>${escapeHtml(target.description)}</strong></article>
+  `).join("")||'<p class="message">No active fidelity targets are available.</p>';
+
+  ["session-preflight","collection-view","review-view","submitted-view"].forEach((id)=>$(id).hidden=true);
+  const record=packet.record;
+
+  if (slot.status==="completed" || slot.observation_id) {
+    $("session-status").textContent="Completed";
+    $("session-status-help").textContent="This scheduled session is linked to a finalized dissertation observation.";
+    $("submitted-title").textContent="Observation completed";
+    $("submitted-help").textContent="The session has been finalized and linked automatically.";
+    $("submitted-view").hidden=false;
+    return;
+  }
+  if (record?.status==="submitted") {
+    $("session-status").textContent="Submitted";
+    $("session-status-help").textContent=slot.secondary_role
+      ?"Your independent record is locked while the paired observer finishes."
+      :"Your record has been submitted.";
+    $("submitted-title").textContent="Your observation is submitted";
+    $("submitted-help").textContent=slot.secondary_role
+      ?"No comparison is shown here. The system will pair the records after both observers submit."
+      :"The observation is waiting for finalization.";
+    $("submitted-view").hidden=false;
+    return;
+  }
+
+  $("session-status").textContent=packet.ready_to_start?"Ready for collection":"Not ready";
+  $("session-status-help").textContent=packet.ready_to_start
+    ?"Review the case information, test the audible cue, then start."
+    :"This session cannot start yet. Check clearance, date, phase, setup, and checklist status.";
+  $("session-preflight").hidden=false;
+  $("start-live-observation").disabled=!packet.ready_to_start;
+  if (record?.status==="draft") {
+    $("start-live-observation").disabled=false;
+    $("start-live-observation").textContent="Resume Observation";
+  } else {
+    $("start-live-observation").textContent="Start Observation";
+  }
+}
+
+async function ensureAudio() {
+  if (!audioContext) {
+    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+    if (AudioCtx) audioContext=new AudioCtx();
+  }
+  if (audioContext?.state!=="running") {
+    try { await audioContext.resume(); } catch {}
+  }
+  return audioContext;
+}
+async function beep() {
+  const ctx=await ensureAudio();
+  if (!ctx || ctx.state!=="running") return false;
+  const now=ctx.currentTime;
+  const gain=ctx.createGain();
+  gain.gain.setValueAtTime(.0001,now);
+  gain.gain.exponentialRampToValueAtTime(.11,now+.01);
+  gain.gain.exponentialRampToValueAtTime(.0001,now+.22);
+  gain.connect(ctx.destination);
+  for (const [offset,freq] of [[0,740],[.11,880]]) {
+    const osc=ctx.createOscillator();
+    osc.type="sine"; osc.frequency.setValueAtTime(freq,now+offset); osc.connect(gain);
+    osc.start(now+offset); osc.stop(now+offset+.10);
+  }
+  return true;
+}
+
+function blankIntervals() { return Array(REAL_SESSION.intervalCount).fill(null); }
+function normalizeIntervals(values=[]) {
+  const result=blankIntervals();
+  values.slice(0,REAL_SESSION.intervalCount).forEach((value,index)=>{ result[index]=value||null; });
+  return result;
+}
+function startCollectionState(record) {
+  const savedElapsed=Math.min(REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
+  return {
+    savedElapsed,
+    runStartedAt:Date.now(),
+    endedAt:null,
+    fidelityScores:{...(record?.fidelity_scores||{})},
+    intervals:normalizeIntervals(record?.interval_scores||[]),
+    continuing:false,
+    notObserved:false,
+    lastInterval:Math.max(-1,Math.floor(savedElapsed/REAL_SESSION.intervalSeconds))
+  };
+}
+async function beginCollection() {
+  $("start-error").textContent="";
+  await ensureAudio();
+  let record=currentPacket.record;
+  if (!record) {
+    const result=await client.rpc("research_observer_start_observation",{target_slot_id:currentPacket.slot.id});
+    if (result.error) { $("start-error").textContent=result.error.message; return; }
+    record=result.data;
+    currentPacket.record=record;
+  }
+  collection=startCollectionState(record);
+  $("session-preflight").hidden=true;
+  $("review-view").hidden=true;
+  $("submitted-view").hidden=true;
+  $("collection-view").hidden=false;
+  $("finish-collection").disabled=true;
+  renderFidelity();
+  tick();
+  if (elapsedSeconds()<REAL_SESSION.durationSeconds) timer=setInterval(tick,250);
+}
+
+function elapsedSeconds() {
+  const running=Math.max(0,Math.floor((Date.now()-collection.runStartedAt)/1000));
+  return Math.min(REAL_SESSION.durationSeconds,collection.savedElapsed+running);
+}
+function currentIntervalIndex() {
+  return Math.min(REAL_SESSION.intervalCount-1,Math.floor(elapsedSeconds()/REAL_SESSION.intervalSeconds));
+}
+function finalizeBoundaryThrough(activeIndex) {
+  if (collection.lastInterval<0) collection.lastInterval=activeIndex;
+  while (collection.lastInterval<activeIndex) {
+    const index=collection.lastInterval;
+    if (!collection.intervals[index]) {
+      collection.intervals[index]=collection.notObserved?"not_observed":collection.continuing?"occurred":"did_not_occur";
+    }
+    collection.lastInterval+=1;
+    if (collection.notObserved) collection.intervals[collection.lastInterval]="not_observed";
+    else if (collection.continuing) collection.intervals[collection.lastInterval]="occurred";
+    beep();
+    queueSave();
+  }
+}
+function tick() {
+  if (!collection) return;
+  const elapsed=elapsedSeconds();
+  const index=currentIntervalIndex();
+  finalizeBoundaryThrough(index);
+  $("elapsed-clock").textContent=formatClock(elapsed);
+  $("interval-number").textContent=String(index+1);
+  const within=elapsed%REAL_SESSION.intervalSeconds;
+  $("interval-clock").textContent=elapsed>=REAL_SESSION.durationSeconds?"00:00":formatClock(within===0?REAL_SESSION.intervalSeconds:REAL_SESSION.intervalSeconds-within);
+  $("finish-collection").disabled=elapsed<REAL_SESSION.durationSeconds;
+  $("finish-collection").textContent=elapsed<REAL_SESSION.durationSeconds
+    ? `End & Review at 30:00 (${formatClock(REAL_SESSION.durationSeconds-elapsed)} left)`
+    : "End & Review Observation";
+  if (elapsed>=REAL_SESSION.durationSeconds) finishCollection();
+}
+function stopTimer() {
+  if (timer) clearInterval(timer);
+  timer=null;
+}
+function renderFidelity() {
+  const targets=currentPacket.fidelity_targets||[];
+  const scored=targets.filter((t)=>collection.fidelityScores[t.id]).length;
+  $("fidelity-progress").textContent=`${scored}/${targets.length} scored`;
+  $("fidelity-list").innerHTML=targets.map((target)=> {
+    const score=collection.fidelityScores[target.id];
+    return `<article class="fidelity-item">
+      <div><span>${escapeHtml(target.domain||"Fidelity")}</span><strong>${escapeHtml(target.description)}</strong></div>
+      <div class="fidelity-buttons">
+        <button type="button" data-target="${target.id}" data-score="implemented" class="${score==="implemented"?"selected":""}">Implemented as Written</button>
+        <button type="button" data-target="${target.id}" data-score="not_implemented" class="${score==="not_implemented"?"selected":""}">Not Implemented as Written</button>
+      </div>
+    </article>`;
+  }).join("");
+  document.querySelectorAll(".fidelity-buttons button").forEach((button)=>button.addEventListener("click",()=>{
+    collection.fidelityScores[button.dataset.target]=button.dataset.score;
+    renderFidelity();
+    queueSave();
+  }));
+}
+function setMode(which) {
+  if (which==="continuing") {
+    collection.continuing=!collection.continuing;
+    if (collection.continuing) collection.notObserved=false;
+  } else {
+    collection.notObserved=!collection.notObserved;
+    if (collection.notObserved) collection.continuing=false;
+  }
+  $("continuing-toggle").setAttribute("aria-pressed",String(collection.continuing));
+  $("not-observed-toggle").setAttribute("aria-pressed",String(collection.notObserved));
+  const index=currentIntervalIndex();
+  if (collection.notObserved) collection.intervals[index]="not_observed";
+  else if (collection.continuing) collection.intervals[index]="occurred";
+  queueSave();
+}
+function markOccurred() {
+  const index=currentIntervalIndex();
+  collection.intervals[index]="occurred";
+  collection.notObserved=false;
+  $("not-observed-toggle").setAttribute("aria-pressed","false");
+  $("target-occurred").classList.add("marked");
+  setTimeout(()=>$("target-occurred").classList.remove("marked"),180);
+  queueSave();
+}
+function compactDraftIntervals() {
+  const last=collection.intervals.reduce((idx,value,i)=>value?i:idx,-1);
+  return last<0?[]:collection.intervals.slice(0,last+1);
+}
+function queueSave() {
+  $("autosave-status").textContent="Saving…";
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer=setTimeout(saveDraft,450);
+}
+async function saveDraft() {
+  if (!collection || currentPacket.record?.status==="submitted") return;
+  const result=await client.rpc("research_observer_save_observation_draft",{
+    target_slot_id:currentPacket.slot.id,
+    target_fidelity_scores:collection.fidelityScores,
+    target_interval_scores:compactDraftIntervals(),
+    target_elapsed_seconds:elapsedSeconds()
+  });
+  $("autosave-status").textContent=result.error?"Autosave problem — keep this screen open":"Saved";
+}
+function finalizeCompletedIntervals() {
+  for (let i=0;i<REAL_SESSION.intervalCount;i++) {
+    if (!collection.intervals[i]) collection.intervals[i]=collection.notObserved?"not_observed":collection.continuing?"occurred":"did_not_occur";
+  }
+}
+function finishCollection() {
+  if (!collection || elapsedSeconds()<REAL_SESSION.durationSeconds) return;
+  stopTimer();
+  collection.savedElapsed=REAL_SESSION.durationSeconds;
+  collection.runStartedAt=Date.now();
+  collection.endedAt=new Date().toISOString();
+  finalizeCompletedIntervals();
+  saveDraft();
+  $("collection-view").hidden=true;
+  $("review-view").hidden=false;
+  renderReview();
+}
+function renderReview() {
+  const targets=currentPacket.fidelity_targets||[];
+  $("review-fidelity-list").innerHTML=targets.map((target)=>{
+    const score=collection.fidelityScores[target.id]||"";
+    return `<article class="review-item">
+      <strong>${escapeHtml(target.description)}</strong>
+      <select data-review-target="${target.id}">
+        <option value="">Choose score</option>
+        <option value="implemented"${score==="implemented"?" selected":""}>Implemented as Written</option>
+        <option value="not_implemented"${score==="not_implemented"?" selected":""}>Not Implemented as Written</option>
+        <option value="no_opportunity"${score==="no_opportunity"?" selected":""}>No Opportunity</option>
+      </select>
+    </article>`;
+  }).join("");
+  document.querySelectorAll("[data-review-target]").forEach((select)=>select.addEventListener("change",()=>{
+    if (select.value) collection.fidelityScores[select.dataset.reviewTarget]=select.value;
+    else delete collection.fidelityScores[select.dataset.reviewTarget];
+    updateReviewSummary();
+  }));
+  $("observation-note").value=currentPacket.record?.observation_note||"";
+  updateReviewSummary();
+}
+function updateReviewSummary() {
+  const fidelity=calculateFidelity(collection.fidelityScores);
+  const behavior=calculateStudentBehavior(collection.intervals);
+  $("review-fidelity-percent").textContent=fidelity.percent==null?"—":`${fidelity.percent.toFixed(1)}%`;
+  $("review-behavior-percent").textContent=behavior.percent==null?"—":`${behavior.percent.toFixed(1)}%`;
+}
+async function submitObservation() {
+  $("review-error").textContent="";
+  const missing=(currentPacket.fidelity_targets||[]).filter((target)=>!collection.fidelityScores[target.id]);
+  if (missing.length) {
+    $("review-error").textContent=`Resolve all fidelity items before submitting (${missing.length} remaining).`;
+    return;
+  }
+  const fidelity=calculateFidelity(collection.fidelityScores);
+  const behavior=calculateStudentBehavior(collection.intervals);
+  if (fidelity.scoreable===0) { $("review-error").textContent="At least one fidelity item must have an observable opportunity."; return; }
+  if (behavior.observed===0) { $("review-error").textContent="At least one student-behavior interval must be observable."; return; }
+
+  $("submit-observation").disabled=true;
+  $("submit-observation").textContent="Submitting…";
+  const result=await client.rpc("research_observer_submit_observation",{
+    target_slot_id:currentPacket.slot.id,
+    target_fidelity_scores:collection.fidelityScores,
+    target_interval_scores:collection.intervals,
+    target_elapsed_seconds:REAL_SESSION.durationSeconds,
+    target_collection_ended_at:collection.endedAt||new Date().toISOString(),
+    target_observation_note:$("observation-note").value.trim()||null
+  });
+  $("submit-observation").disabled=false;
+  $("submit-observation").textContent="Submit Observation";
+  if (result.error) { $("review-error").textContent=result.error.message; return; }
+
+  $("review-view").hidden=true;
+  $("submitted-view").hidden=false;
+  $("submitted-title").textContent=result.data.completed?"Observation completed":"Your observation is submitted";
+  $("submitted-help").textContent=result.data.waiting_for_partner
+    ?"Your record is locked. The paired observer still submits independently; the system will calculate agreement and finalize automatically after both are in."
+    :"The scheduled session has been finalized and linked automatically.";
+}
+async function requestPasswordSetup(event){
+  event.preventDefault();
+  const form=event.currentTarget;
+  const email=String(new FormData(form).get("email")||"").trim().toLowerCase();
+  const status=$("password-setup-status");
+  status.textContent="";
+  if(!email)return;
+  const button=form.querySelector('button[type="submit"]');
+  button.disabled=true;
+  const redirectTo=new URL("/set-password/",window.location.origin).toString();
+  const {error}=await client.auth.resetPasswordForEmail(email,{redirectTo});
+  button.disabled=false;
+  status.textContent=error
+    ?"We couldn’t send the setup email. Check the address and try again."
+    :"If that email is connected to an observer account, a secure password setup link is on the way.";
 }
 
 async function signOut() {
+  stopTimer();
   await client.auth.signOut();
-  show(loginView);
+  show("login-view");
 }
 
-loginForm.addEventListener("submit", async function (event) {
+$("login-form").addEventListener("submit",async(event)=>{
   event.preventDefault();
-  loginError.textContent = "";
-  var form = new FormData(loginForm);
-  var result = await client.auth.signInWithPassword({
-    email: String(form.get("email") || "").trim(),
-    password: String(form.get("password") || "")
+  $("login-error").textContent="";
+  const form=new FormData(event.currentTarget);
+  const result=await client.auth.signInWithPassword({
+    email:String(form.get("email")||"").trim(),
+    password:String(form.get("password")||"")
   });
-  if (result.error) {
-    loginError.textContent = "Sign-in failed. Check your email and password.";
-    return;
-  }
+  if (result.error) { $("login-error").textContent="Sign-in failed. Check your email and password."; return; }
   loadPortal();
 });
-
-document.getElementById("sign-out").addEventListener("click", signOut);
-document.getElementById("unauthorized-signout").addEventListener("click", signOut);
+$("password-setup-request-form").addEventListener("submit",requestPasswordSetup);
+$("sign-out").addEventListener("click",signOut);
+$("unauthorized-signout").addEventListener("click",signOut);
+$("back-to-schedule").addEventListener("click",loadPortal);
+$("submitted-back").addEventListener("click",loadPortal);
+$("test-live-cue").addEventListener("click",beep);
+$("start-live-observation").addEventListener("click",beginCollection);
+$("target-occurred").addEventListener("click",markOccurred);
+$("continuing-toggle").addEventListener("click",()=>setMode("continuing"));
+$("not-observed-toggle").addEventListener("click",()=>setMode("notObserved"));
+$("finish-collection").addEventListener("click",finishCollection);
+$("resume-collection").addEventListener("click",()=>{
+  $("review-view").hidden=true;
+  $("collection-view").hidden=false;
+  collection.savedElapsed=REAL_SESSION.durationSeconds;
+  collection.runStartedAt=Date.now();
+  tick();
+});
+$("submit-observation").addEventListener("click",submitObservation);
 
 function start() {
   if (!window.supabase) {
-    loadingView.innerHTML = "<h1>Sign-in service did not load.</h1>";
+    $("loading-view").innerHTML="<h1>Sign-in service did not load.</h1>";
     return;
   }
-  client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
-  client.auth.onAuthStateChange(function (_event, session) {
-    if (!session) show(loginView);
-  });
+  client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  client.auth.onAuthStateChange((_event,session)=>{ if (!session) show("login-view"); });
   loadPortal();
 }
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", start, { once:true });
-} else {
-  start();
-}
+if (document.readyState==="loading") document.addEventListener("DOMContentLoaded",start,{once:true});
+else start();

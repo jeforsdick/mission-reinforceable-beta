@@ -56,6 +56,11 @@ function clearedObservers() {
     return o.active && dashboard.clearance[o.id] === "cleared";
   });
 }
+function primaryObservers() {
+  return clearedObservers().filter(function (o) {
+    return o.observer_type === "trained_observer";
+  });
+}
 
 function activeCases() {
   return (dashboard.cases || []).filter(function (c) {
@@ -146,7 +151,10 @@ function renderDay(date) {
     return '<option value="' + esc(schedule.case_id) + '"' + (already ? " disabled" : "") + '>' +
       esc(caseLabel(item)) + ' · ' + labelTime(schedule.routine_start_time) + '</option>';
   }).join("");
-  var observerOptions = clearedObservers().map(function (o) {
+  var observerOptions = primaryObservers().map(function (o) {
+    return '<option value="' + esc(o.id) + '">' + esc(o.display_name) + '</option>';
+  }).join("");
+  var pairedOptions = clearedObservers().map(function (o) {
     return '<option value="' + esc(o.id) + '">' + esc(o.display_name) + '</option>';
   }).join("");
   return '<section class="schedule-day">' +
@@ -155,9 +163,11 @@ function renderDay(date) {
     '<details class="add-slot"><summary>+ Assign observation</summary>' +
     '<form class="assign-slot-form" data-date="' + dateKey + '">' +
     '<select name="case_id" required><option value="">Case</option>' + caseOptions + '</select>' +
-    '<select name="observer_id" required><option value="">Observer</option>' +
-      (observerOptions || '<option value="" disabled>No cleared observers yet</option>') +
+    '<select name="observer_id" required><option value="">Primary observer</option>' +
+      (observerOptions || '<option value="" disabled>No cleared primary collectors yet</option>') +
     '</select>' +
+    '<select name="secondary_id"><option value="">No paired observer</option>' + pairedOptions + '</select>' +
+    '<select name="secondary_role"><option value="">Paired role</option><option value="formal_ioa">Formal IOA</option><option value="supported_calibration">Supported calibration</option><option value="calibration_and_ioa">Calibration + IOA</option></select>' +
     '<button class="quiet" type="submit"' + (observerOptions ? "" : " disabled") + '>Assign</button>' +
     '</form></details></section>';
 }
@@ -226,6 +236,14 @@ function bind() {
       var fd = new FormData(form);
       var caseId = String(fd.get("case_id"));
       var observerId = String(fd.get("observer_id"));
+      var secondaryId = String(fd.get("secondary_id") || "");
+      var secondaryRole = String(fd.get("secondary_role") || "");
+      if ((secondaryId && !secondaryRole) || (!secondaryId && secondaryRole)) {
+        return window.alert("Choose both a paired observer and the paired-observer role.");
+      }
+      if (secondaryId && secondaryId === observerId) {
+        return window.alert("Primary and paired observers must be different people.");
+      }
       var schedule = scheduleFor(caseId);
       var item = activeCases().find(function (c) { return c.id === caseId; });
       if (!schedule || !item) return;
@@ -235,6 +253,8 @@ function bind() {
         planned_start_time: schedule.routine_start_time,
         planned_end_time: schedule.routine_end_time,
         primary_observer_id: observerId,
+        secondary_observer_id: secondaryId || null,
+        secondary_role: secondaryRole || null,
         status: "scheduled",
         attendance_status: "unchecked",
         case_code_snapshot: caseLabel(item),

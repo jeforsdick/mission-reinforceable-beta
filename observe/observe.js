@@ -224,7 +224,7 @@ async function initializeAuthenticatedTraining() {
   if (sessionError || !session) {
     state = null;
     activeStorageKey = null;
-    showLogin();
+    window.location.replace("/observer/?next=/observe/");
     return;
   }
 
@@ -233,8 +233,7 @@ async function initializeAuthenticatedTraining() {
     await client.auth.signOut();
     state = null;
     activeStorageKey = null;
-    showLogin();
-    setStorageMessage("login-status", "This email is not connected to an observer training account. Check the address or contact Jess.", true);
+    window.location.replace("/observer/?training_error=1");
     return;
   }
 
@@ -245,7 +244,7 @@ async function initializeAuthenticatedTraining() {
     saveState();
   }
   await syncCachedAttempts();
-  initializeAuthenticatedTraining();
+  restore();
 }
 
 async function sendTrainingMagicLink(event) {
@@ -277,8 +276,7 @@ async function signOutTraining() {
   await getTrainingDb().auth.signOut();
   state = null;
   activeStorageKey = null;
-  showLogin();
-  setStorageMessage("login-status", "Signed out.");
+  window.location.replace("/observer/");
 }
 
 function stepStatus(done, locked = false) {
@@ -1380,7 +1378,10 @@ function restore() {
   }
 }
 
-els["preview-login-form"].addEventListener("submit", sendTrainingMagicLink);
+els["preview-login-form"].addEventListener("submit", (event) => {
+  event.preventDefault();
+  window.location.assign("/observer/?next=/observe/");
+});
 
 els["preview-sign-out"].addEventListener("click", signOutTraining);
 

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <title>Observer Portal | Mission: Reinforceable</title>
+  <title>Observer Account | Mission: Reinforceable</title>
   <link rel="icon" href="/favicon.png">
   <link rel="stylesheet" href="/assets/site/site.css">
   <link rel="stylesheet" href="/observer/observer.css">
@@ -19,53 +19,172 @@
           <img class="brand-icon" src="/favicon.png" alt="">
           <img class="brand-logo" src="/assets/game/skin-v2/mission-reinforceable-title.png" alt="Mission: Reinforceable">
         </a>
-        <span class="private-badge">Observer Portal</span>
+        <span class="private-badge">Observer Account</span>
       </div>
     </header>
 
     <main class="observer-main">
-      <section id="loading-view" class="observer-card"><h1>Checking secure access…</h1></section>
+      <section id="loading-view" class="observer-card narrow-card"><h1>Checking secure access…</h1></section>
 
-      <section id="login-view" class="observer-card" hidden>
-        <p class="eyebrow">Observer Portal</p>
+      <section id="login-view" class="observer-card narrow-card" hidden>
+        <p class="eyebrow">Observer Account</p>
         <h1>Sign in</h1>
-        <p>Use your observer account to view only your assigned observation sessions.</p>
+        <p>One account gives you access to observer training, your assigned schedule, and live data collection.</p>
         <form id="login-form">
           <label>Email<input name="email" type="email" autocomplete="username" required></label>
           <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
           <button class="primary-button" type="submit">Sign in</button>
           <p id="login-error" class="message" role="alert"></p>
         </form>
+        <details class="first-time-setup">
+          <summary>First time here or forgot your password?</summary>
+          <p>Enter the email Jess connected to your observer account. We’ll send a secure link so you can create or reset your password.</p>
+          <form id="password-setup-request-form">
+            <label>Email<input name="email" type="email" autocomplete="email" required></label>
+            <button class="secondary-button" type="submit">Email Password Setup Link</button>
+            <p id="password-setup-status" class="setup-status" role="status" aria-live="polite"></p>
+          </form>
+        </details>
       </section>
 
-      <section id="unauthorized-view" class="observer-card" hidden>
-        <p class="eyebrow">Observer Portal</p>
-        <h1>Observer access not connected</h1>
-        <p>Your account is signed in, but it is not currently linked to an active observer record.</p>
+      <section id="unauthorized-view" class="observer-card narrow-card" hidden>
+        <p class="eyebrow">Observer Account</p>
+        <h1>Account not connected</h1>
+        <p>This signed-in account is not linked to an active dissertation observer record. Contact Jess before continuing.</p>
         <button id="unauthorized-signout" class="secondary-button" type="button">Sign out</button>
       </section>
 
       <section id="portal-view" hidden>
         <div class="portal-heading">
           <div>
-            <p class="eyebrow">My Schedule</p>
+            <p class="eyebrow">Observer Center</p>
             <h1 id="observer-name">Observer</h1>
-            <p>Only sessions assigned to you appear here.</p>
+            <p>Your training, assigned schedule, and data-collection sessions live here.</p>
           </div>
           <button id="sign-out" class="secondary-button" type="button">Sign out</button>
         </div>
 
-        <section class="observer-card readiness-card">
-          <div><span>Live observation status</span><strong id="readiness-status">Training pending</strong></div>
-          <p id="readiness-help">Jess will clear you for live observations after training and calibration are complete.</p>
-        </section>
+        <nav class="observer-account-nav" aria-label="Observer account sections">
+          <a href="/observe/">Training</a>
+          <a href="#my-schedule">My Schedule</a>
+        </nav>
 
-        <section class="observer-card">
+        <div class="observer-home-grid">
+          <section class="observer-card hub-card">
+            <p class="eyebrow">Training</p>
+            <h2 id="training-status-label">Checking training…</h2>
+            <p id="training-status-help">Your training progress is linked to this account.</p>
+            <a class="primary-button button-link" href="/observe/">Open Observer Training</a>
+          </section>
+
+          <section class="observer-card hub-card">
+            <p class="eyebrow">Live Collection</p>
+            <h2 id="readiness-status">Training pending</h2>
+            <p id="readiness-help">Live collection unlocks after training and calibration are complete.</p>
+          </section>
+        </div>
+
+        <section id="my-schedule" class="observer-card">
           <div class="section-heading">
-            <div><p class="eyebrow">Upcoming</p><h2>My assigned observations</h2></div>
-            <p>Case code and routine only; school/teacher logistics will come from Jess.</p>
+            <div><p class="eyebrow">My Schedule</p><h2>Assigned observation sessions</h2></div>
+            <p>Jess assigns sessions. Only sessions assigned to you appear here.</p>
           </div>
           <div id="assignment-list" class="assignment-list"></div>
+        </section>
+      </section>
+
+      <section id="session-view" hidden>
+        <button id="back-to-schedule" class="text-button" type="button">← Back to my schedule</button>
+        <div class="portal-heading compact">
+          <div>
+            <p class="eyebrow">Assigned Session</p>
+            <h1 id="session-title">Observation</h1>
+            <p id="session-meta"></p>
+          </div>
+          <span id="session-role" class="assignment-role"></span>
+        </div>
+
+        <section id="session-status-card" class="observer-card session-status-card">
+          <div><span>Status</span><strong id="session-status">Ready</strong></div>
+          <p id="session-status-help"></p>
+        </section>
+
+        <div id="session-preflight">
+          <section class="observer-card">
+            <div class="preflight-grid">
+              <div><span>Target routine</span><strong id="session-routine"></strong></div>
+              <div><span>Student target behavior</span><p id="session-behavior"></p></div>
+            </div>
+          </section>
+          <section class="observer-card">
+            <div class="section-heading"><div><p class="eyebrow">Teacher fidelity</p><h2>Review before you begin</h2></div><p>The checklist is locked to this case for this session.</p></div>
+            <div id="preflight-targets" class="preflight-targets"></div>
+          </section>
+          <div class="preflight-actions">
+            <button id="test-live-cue" class="secondary-button" type="button">🔊 Test 15-Second Cue</button>
+            <button id="start-live-observation" class="primary-button" type="button">Start Observation</button>
+          </div>
+          <p id="start-error" class="message" role="alert"></p>
+        </div>
+
+        <section id="collection-view" hidden>
+          <div class="collection-shell">
+            <aside class="student-recorder">
+              <div class="collector-head">
+                <div><p class="eyebrow">Student behavior</p><h2 id="collector-behavior-name">Target behavior</h2></div>
+                <span class="case-chip" id="collector-case"></span>
+              </div>
+              <div class="timer-grid">
+                <div><span>Elapsed</span><strong id="elapsed-clock">00:00</strong></div>
+                <div><span>Interval</span><strong><span id="interval-number">1</span>/120</strong></div>
+                <div><span>Next cue</span><strong id="interval-clock">00:15</strong></div>
+              </div>
+              <p id="collector-behavior-definition" class="behavior-definition"></p>
+              <button id="target-occurred" class="target-button" type="button">TARGET BEHAVIOR OCCURRED</button>
+              <div class="mode-buttons">
+                <button id="continuing-toggle" class="mode-button" type="button" aria-pressed="false">Behavior continuing</button>
+                <button id="not-observed-toggle" class="mode-button" type="button" aria-pressed="false">Not observable</button>
+              </div>
+              <p class="collector-help">No tap = behavior did not occur in that interval. The cue only marks a new 15-second interval.</p>
+            </aside>
+
+            <section class="fidelity-recorder">
+              <div class="collector-head">
+                <div><p class="eyebrow">Teacher implementation</p><h2>Fidelity</h2></div>
+                <strong id="fidelity-progress">0/0 scored</strong>
+              </div>
+              <div id="fidelity-list" class="fidelity-list"></div>
+            </section>
+          </div>
+
+          <div class="collection-actions">
+            <span id="autosave-status">Autosave ready</span>
+            <button id="finish-collection" class="primary-button" type="button">End & Review Observation</button>
+          </div>
+        </section>
+
+        <section id="review-view" class="observer-card" hidden>
+          <p class="eyebrow">Review</p>
+          <h2>Resolve anything still blank</h2>
+          <p>Use <strong>No Opportunity</strong> only when the event needed to score that fidelity item never occurred during the observation.</p>
+          <div id="review-fidelity-list" class="review-fidelity-list"></div>
+          <label>Observation note — optional<textarea id="observation-note" maxlength="1000" rows="3"></textarea></label>
+          <div class="review-summary">
+            <div><span>Teacher fidelity</span><strong id="review-fidelity-percent">—</strong></div>
+            <div><span>Student target behavior</span><strong id="review-behavior-percent">—</strong></div>
+          </div>
+          <p id="review-error" class="message" role="alert"></p>
+          <div class="review-actions">
+            <button id="resume-collection" class="secondary-button" type="button">Back to Collection</button>
+            <button id="submit-observation" class="primary-button" type="button">Submit Observation</button>
+          </div>
+        </section>
+
+        <section id="submitted-view" class="observer-card submitted-card" hidden>
+          <p class="eyebrow">Submitted</p>
+          <h2 id="submitted-title">Observation submitted</h2>
+          <p id="submitted-help"></p>
+          <button id="submitted-back" class="primary-button" type="button">Back to My Schedule</button>
         </section>
       </section>
     </main>

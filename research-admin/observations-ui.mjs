@@ -161,8 +161,8 @@ function renderInterventionObservationWorkspace(item,e){
      ${slot.status==='needs_reschedule'?`<small>${e(slot.reschedule_reason||'Needs reschedule')}</small>`:''}
    </article>`;
  }).join(''):`<p class="empty-admin-state">No observation days are assigned for this week yet.</p>`;
- const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
- const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const primaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const secondaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
  const manualForm=item.current_phase==='intervention'?newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:'record-intervention-observation-form',heading:'Administrative Manual Entry'}):'';
  return `<section class="intervention-observation-hub">
    <div class="intervention-observation-heading">
@@ -217,8 +217,8 @@ function renderBaselineObservationWorkspace(item,e){
      : position>1
        ? 'Planned minimum met. Review data stability and confirm the required final consecutive pre-intervention observations before making the phase decision.'
        : 'Planned minimum met. Review data stability before making the phase decision.';
- const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
- const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const primaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const secondaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
  const manualForm=item.current_phase==='baseline'
    ? newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:'record-baseline-observation-form',heading:'Administrative Manual Entry'})
    : '';
@@ -262,8 +262,8 @@ function renderMaintenanceObservationWorkspace(item,e){
      : completed.length===2
        ? "Minimum maintenance target met. Decide whether a third probe is needed before closeout."
        : "Maintenance probe target complete. Review the pattern and proceed to closeout when appropriate.";
- const primaryOptions=observers.filter(x=>x.active&&x.status==="qualified");
- const secondaryOptions=observers.filter(x=>x.active&&x.observer_type==="trained_observer"&&x.status==="qualified");
+ const primaryOptions=observers.filter(x=>x.active&&x.observer_type==="trained_observer"&&x.status==="qualified");
+ const secondaryOptions=observers.filter(x=>x.active&&x.status==="qualified");
  const manualForm=item.current_phase==="maintenance"
    ? newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:"record-maintenance-observation-form",heading:"Administrative Manual Entry"})
    : "";
@@ -304,7 +304,7 @@ export function renderPhaseObservationWorkspace(item,phase,e){
  const rows=(data.observations||[]).filter(x=>x.phase===phase),completed=rows.filter(x=>x.summary_revision_id),latest=completed[0],ioa=completed.filter(x=>x.ioa).length;
  const title=phase[0].toUpperCase()+phase.slice(1);
  const history=rows.map(x=>{const note=x.summary_observation_note||x.context_note;const time=x.start_time||x.end_time?`${timeLabel(x.start_time)||'—'}–${timeLabel(x.end_time)||'—'} · `:'';const alerts=[];if(x.ioa?.teacher_fidelity_ioa_percent!=null&&Number(x.ioa.teacher_fidelity_ioa_percent)<=80)alerts.push(`Needs review — Teacher fidelity IOA is ${pct(x.ioa.teacher_fidelity_ioa_percent)}. Recalibration required.`);if(x.ioa?.student_behavior_ioa_percent!=null&&Number(x.ioa.student_behavior_ioa_percent)<=80)alerts.push(`Needs review — Student behavior IOA is ${Number(x.ioa.student_behavior_ioa_percent)===80?'80%':'below criterion'}. Recalibration required.`);return `<li id="observation-${x.id}"><strong>${e(dateLabel(x.observation_date))} · ${e(title)} · Observation #${x.session_number}</strong><p>${time}${e(x.primary_observer_code)}</p><p>Teacher fidelity: <strong>${pct(x.teacher_fidelity_percent)}</strong><br>Student target behavior: <strong>${pct(x.student_target_behavior_percent)}</strong></p>${x.ioa?`<p>IOA: ${e(x.secondary_observer_code)}<br>Teacher fidelity IOA: ${pct(x.ioa?.teacher_fidelity_ioa_percent)}<br>Student behavior IOA: ${pct(x.ioa?.student_behavior_ioa_percent)}</p>`:'<p>IOA: Not collected</p>'}${alerts.map(a=>`<p class="attention">${a}</p>`).join('')}${note?`<p>Notes: ${e(note)}</p>`:''}<button type="button" class="quiet edit-summary-toggle" data-observation="${x.id}">Edit Summary</button>${editSummaryForm(x,e)}</li>`;}).join('')||`<li>No ${e(title.toLowerCase())} classroom observations.</li>`;
- const primaryOptions=observers.filter(x=>x.active&&x.status==='qualified'),secondaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified');
+ const primaryOptions=observers.filter(x=>x.active&&x.observer_type==='trained_observer'&&x.status==='qualified'),secondaryOptions=observers.filter(x=>x.active&&x.status==='qualified');
  const extra=phase==='baseline'?`<div><span>Planned minimum</span><strong>${item.protocol?.planned_baseline_observations||'Not assigned'}</strong></div>`:phase==='maintenance'?'<div><span>Target</span><strong>2–3 probes</strong></div>':'';
  const stats=`<div class="observation-stats phase-observation-summary"><div><span>Completed observations in this phase</span><strong>${completed.length}</strong></div><div><span>Latest teacher fidelity in this phase</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong></div><div><span>Latest student target behavior in this phase</span><strong>${pct(latest?.student_target_behavior_percent)}</strong></div><div><span>IOA collected in this phase</span><strong>${ioa} / ${completed.length}</strong></div>${extra}</div>`;
  const form=item.current_phase===phase?newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:`record-${phase}-observation-form`,heading:`Record ${title} Observation`}):'';
