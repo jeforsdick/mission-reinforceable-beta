@@ -246,19 +246,39 @@ async function initializeAuthenticatedTraining() {
     return;
   }
 
-  const { data: identity, error: identityError } = await client.rpc("research_observer_claim_training_account");
-  if (identityError || !identity?.training_name) {
-    await client.auth.signOut();
+  const { data: account, error: accountError } = await client
+    .from("research_observer_accounts")
+    .select("observer_id,active")
+    .eq("auth_user_id",session.user.id)
+    .eq("active",true)
+    .maybeSingle();
+
+  if (accountError || !account?.observer_id) {
     state = null;
     activeStorageKey = null;
-    window.location.replace(CANONICAL_ORIGIN+"/observer/?training_error=1");
+    window.location.replace(CANONICAL_ORIGIN+"/observer/?training_error=account");
+    return;
+  }
+
+  const { data: observer, error: observerError } = await client
+    .from("research_observers")
+    .select("display_name,observer_code,active")
+    .eq("id",account.observer_id)
+    .eq("active",true)
+    .maybeSingle();
+
+  const trainingName=String(observer?.display_name||"").trim().split(/\s+/)[0];
+  if (observerError || !trainingName) {
+    state = null;
+    activeStorageKey = null;
+    window.location.replace(CANONICAL_ORIGIN+"/observer/?training_error=observer");
     return;
   }
 
   activeStorageKey = `${STORAGE_KEY}:${session.user.id}`;
   state = loadState();
-  if (!state || state.observer !== identity.training_name) {
-    state = blankModuleState(identity.training_name);
+  if (!state || state.observer !== trainingName) {
+    state = blankModuleState(trainingName);
     saveState();
   }
   await syncCachedAttempts();
