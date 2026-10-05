@@ -343,6 +343,7 @@ function tick() {
   finalizeBoundaryThrough(index);
   $("elapsed-clock").textContent=formatClock(elapsed);
   $("interval-number").textContent=String(index+1);
+  $("target-occurred").classList.toggle("marked",collection.intervals[index]==="occurred");
   const within=elapsed%REAL_SESSION.intervalSeconds;
   $("interval-clock").textContent=elapsed>=REAL_SESSION.durationSeconds?"00:00":formatClock(within===0?REAL_SESSION.intervalSeconds:REAL_SESSION.intervalSeconds-within);
   $("finish-collection").disabled=elapsed<REAL_SESSION.durationSeconds;
@@ -396,7 +397,6 @@ function markOccurred() {
   collection.notObserved=false;
   $("not-observed-toggle").setAttribute("aria-pressed","false");
   $("target-occurred").classList.add("marked");
-  setTimeout(()=>$("target-occurred").classList.remove("marked"),180);
   queueSave();
 }
 function compactDraftIntervals() {
