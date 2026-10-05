@@ -11,6 +11,7 @@ const views = ["loading-view","login-view","unauthorized-view","portal-view","se
 let client = null;
 let observerId = null;
 let clearanceStatus = "pending";
+let onlineTrainingComplete = false;
 let currentPacket = null;
 let collection = null;
 let timer = null;
@@ -48,9 +49,14 @@ function canOpenSlot(slot) {
   return ["scheduled","confirmed","completed"].includes(slot.status);
 }
 function canStartSlot(slot) {
-  return clearanceStatus === "cleared"
-    && slot.observation_date === DENVER_TODAY()
+  const activeToday=slot.observation_date===DENVER_TODAY()
     && ["scheduled","confirmed"].includes(slot.status);
+  if(!activeToday) return false;
+  if(clearanceStatus==="cleared") return true;
+  if(clearanceStatus==="revoked") return false;
+  if(slot.secondary_role!=="supported_calibration") return false;
+  if(slot.primary_observer_id===observerId) return onlineTrainingComplete;
+  return slot.secondary_observer_id===observerId;
 }
 function renderAssignments(slots) {
   if (!slots.length) {
@@ -114,6 +120,7 @@ async function loadPortal() {
   for(const row of attempts.data||[]) if(!latestByCase[row.case_id]) latestByCase[row.case_id]=row;
   const nora=latestByCase.nora, kai=latestByCase.kai;
   const onlineComplete=Boolean(nora?.qualified===true&&kai?.qualified===true&&(feedback.data||[]).length&&(questions.data||[]).length);
+  onlineTrainingComplete=onlineComplete;
   const anyTraining=Boolean((attempts.data||[]).length||(feedback.data||[]).length||(questions.data||[]).length);
   if(clearanceStatus==="cleared"){
     $("training-status-label").textContent="Training complete";
@@ -132,16 +139,24 @@ async function loadPortal() {
     $("training-status-help").textContent="Complete the asynchronous training before live data collection.";
   }
 
+  const calibrationAssignment=(slots.data||[]).some((slot)=>
+    slot.secondary_role==="supported_calibration"
+    && ["scheduled","confirmed"].includes(slot.status)
+    && (slot.primary_observer_id===observerId||slot.secondary_observer_id===observerId)
+  );
   if (clearanceStatus==="cleared") {
     $("readiness-status").textContent="Cleared for independent observations";
     $("readiness-help").textContent="Open an assigned session on its scheduled date to collect data.";
   } else if (clearanceStatus==="revoked") {
     $("readiness-status").textContent="Recalibration required";
     $("readiness-help").textContent="Do not collect independently until Jess clears you again.";
+  } else if (calibrationAssignment && (onlineComplete || (slots.data||[]).some((slot)=>slot.secondary_role==="supported_calibration"&&slot.secondary_observer_id===observerId))) {
+    $("readiness-status").textContent="Field calibration ready";
+    $("readiness-help").textContent="Your supported calibration session can be collected before independent clearance.";
   } else {
     $("readiness-status").textContent="Live collection locked";
     $("readiness-help").textContent=onlineComplete
-      ?"Online qualification is complete; Jess will unlock independent collection after field calibration."
+      ?"Online qualification is complete; a supported field-calibration session is the next step."
       :"Complete training and calibration before independent collection.";
   }
 
@@ -171,7 +186,9 @@ function renderSession() {
   const slot=packet.slot;
   $("session-title").textContent=`${slot.case_code||"Case"} · ${dateLabel(slot.observation_date)}`;
   $("session-meta").textContent=`${slot.routine_label||"Routine"} · ${timeLabel(slot.planned_start_time)}–${timeLabel(slot.planned_end_time)} · ${humanStatus(packet.phase)}`;
-  $("session-role").textContent=packet.observer.role==="primary"?"Primary observer":roleLabel({
+  $("session-role").textContent=packet.observer.role==="primary"
+    ?(slot.secondary_role==="supported_calibration"?"Primary observer · Supported calibration":"Primary observer")
+    :roleLabel({
     secondary_observer_id:packet.observer.id,
     secondary_role:slot.secondary_role
   },packet.observer.id);

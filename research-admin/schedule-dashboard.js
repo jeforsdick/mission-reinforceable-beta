@@ -61,6 +61,22 @@ function primaryObservers() {
     return o.observer_type === "trained_observer";
   });
 }
+function onlineTrainingReady(id) {
+  return (dashboard.training || []).some(function (row) {
+    return row.observer_id === id && row.online_criterion_met === true && row.module_complete === true;
+  });
+}
+function calibrationPrimaryObservers() {
+  return (dashboard.observers || []).filter(function (o) {
+    return o.active && o.observer_type === "trained_observer"
+      && (dashboard.clearance[o.id] === "cleared" || onlineTrainingReady(o.id));
+  });
+}
+function calibrationSupportObservers() {
+  return (dashboard.observers || []).filter(function (o) {
+    return o.active && o.observer_type === "primary_researcher";
+  });
+}
 
 function activeCases() {
   return (dashboard.cases || []).filter(function (c) {
@@ -151,11 +167,16 @@ function renderDay(date) {
     return '<option value="' + esc(schedule.case_id) + '"' + (already ? " disabled" : "") + '>' +
       esc(caseLabel(item)) + ' · ' + labelTime(schedule.routine_start_time) + '</option>';
   }).join("");
-  var observerOptions = primaryObservers().map(function (o) {
-    return '<option value="' + esc(o.id) + '">' + esc(o.display_name) + '</option>';
+  var observerOptions = calibrationPrimaryObservers().map(function (o) {
+    var calibrationOnly = dashboard.clearance[o.id] !== "cleared";
+    return '<option value="' + esc(o.id) + '">' + esc(o.display_name + (calibrationOnly ? " — calibration only" : "")) + '</option>';
   }).join("");
-  var pairedOptions = clearedObservers().map(function (o) {
-    return '<option value="' + esc(o.id) + '">' + esc(o.display_name) + '</option>';
+  var pairedPool = clearedObservers().concat(calibrationSupportObservers().filter(function (o) {
+    return !clearedObservers().some(function (x) { return x.id === o.id; });
+  }));
+  var pairedOptions = pairedPool.map(function (o) {
+    var supportOnly = o.observer_type === "primary_researcher" && dashboard.clearance[o.id] !== "cleared";
+    return '<option value="' + esc(o.id) + '">' + esc(o.display_name + (supportOnly ? " — calibration support" : "")) + '</option>';
   }).join("");
   return '<section class="schedule-day">' +
     '<header><strong>' + labelDay(date) + '</strong><span>' + slots.length + ' planned</span></header>' +
@@ -168,6 +189,7 @@ function renderDay(date) {
     '</select>' +
     '<select name="secondary_id"><option value="">No paired observer</option>' + pairedOptions + '</select>' +
     '<select name="secondary_role"><option value="">Paired role</option><option value="formal_ioa">Formal IOA</option><option value="supported_calibration">Supported calibration</option><option value="calibration_and_ioa">Calibration + IOA</option></select>' +
+    '<small class="schedule-helper">Supported calibration can use an online-qualified observer before final clearance when paired with Jess.</small>' +
     '<button class="quiet" type="submit"' + (observerOptions ? "" : " disabled") + '>Assign</button>' +
     '</form></details></section>';
 }
@@ -244,6 +266,26 @@ function bind() {
       if (secondaryId && secondaryId === observerId) {
         return window.alert("Primary and paired observers must be different people.");
       }
+      var primary = (dashboard.observers || []).find(function (o) { return o.id === observerId; });
+      var secondary = (dashboard.observers || []).find(function (o) { return o.id === secondaryId; });
+      var primaryCleared = dashboard.clearance[observerId] === "cleared";
+      var secondaryCleared = secondaryId ? dashboard.clearance[secondaryId] === "cleared" : false;
+
+      if (secondaryRole === "supported_calibration") {
+        if (!primary || primary.observer_type !== "trained_observer" || !(primaryCleared || onlineTrainingReady(observerId))) {
+          return window.alert("Supported calibration requires a trained observer who has completed the online module.");
+        }
+        if (!secondary || secondary.observer_type !== "primary_researcher") {
+          return window.alert("Supported calibration must be paired with Jess as the primary researcher.");
+        }
+      } else {
+        if (!primaryCleared) {
+          return window.alert("Independent and IOA observations require a cleared primary observer.");
+        }
+        if (secondaryId && !secondaryCleared) {
+          return window.alert("This paired-observer role requires a cleared secondary observer.");
+        }
+      }
       var schedule = scheduleFor(caseId);
       var item = activeCases().find(function (c) { return c.id === caseId; });
       if (!schedule || !item) return;
@@ -297,9 +339,10 @@ async function load() {
   var responses = await Promise.all([
     client.from("research_case_observation_schedule").select("*").eq("active", true),
     client.from("research_observation_schedule_slots").select("*").gte("observation_date", start).lte("observation_date", end).order("observation_date"),
-    client.from("research_observer_clearance").select("*")
+    client.from("research_observer_clearance").select("*"),
+    client.rpc("research_admin_observer_training_dashboard")
   ]);
-  var error = responses[0].error || responses[1].error || responses[2].error;
+  var error = responses[0].error || responses[1].error || responses[2].error || responses[3].error;
   if (error) {
     target.innerHTML = '<section class="panel schedule-panel"><p class="attention">Weekly schedule could not load: ' + esc(error.message) + '</p></section>';
     return;
@@ -311,6 +354,7 @@ async function load() {
     slots: responses[1].data || [],
     observers: state.observationData && state.observationData.observers ? state.observationData.observers : [],
     clearance: Object.fromEntries((responses[2].data || []).map(function (x) { return [x.observer_id, x.clearance_status]; })),
+    training: responses[3].data || [],
     state: state
   };
   render();
