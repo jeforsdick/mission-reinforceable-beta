@@ -15,6 +15,7 @@ const STORAGE_KEY = "mr-observer-training-module-v5";
 const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W";
 const SOURCE_ENVIRONMENT = location.hostname === "missionreinforceable.com" || location.hostname === "www.missionreinforceable.com" ? "production" : "preview";
+const SESSION_HANDOFF_KEY = "mr-observer-auth-handoff-v1";
 let trainingDb = null;
 
 const ids = [
@@ -220,7 +221,23 @@ function showLogin() {
 
 async function initializeAuthenticatedTraining() {
   const client = getTrainingDb();
-  const { data: { session }, error: sessionError } = await client.auth.getSession();
+  let { data: { session }, error: sessionError } = await client.auth.getSession();
+
+  if (!session && !sessionError) {
+    const handoff=sessionStorage.getItem(SESSION_HANDOFF_KEY);
+    if(handoff){
+      try{
+        const tokens=JSON.parse(handoff);
+        const restored=await client.auth.setSession({
+          access_token:tokens.access_token,
+          refresh_token:tokens.refresh_token
+        });
+        if(!restored.error) session=restored.data.session;
+      }catch{}
+      sessionStorage.removeItem(SESSION_HANDOFF_KEY);
+    }
+  }
+
   if (sessionError || !session) {
     state = null;
     activeStorageKey = null;
@@ -270,13 +287,11 @@ async function sendTrainingMagicLink(event) {
   setStorageMessage("login-status", "Check your email for a one-time secure sign-in link. You can close this tab after the email arrives.");
 }
 
-async function signOutTraining() {
+function returnToObserverCenter() {
   stopTimer();
   pausePlayer();
-  await getTrainingDb().auth.signOut();
-  state = null;
-  activeStorageKey = null;
-  window.location.replace("/observer/");
+  saveState();
+  window.location.assign("/observer/");
 }
 
 function stepStatus(done, locked = false) {
@@ -1383,7 +1398,7 @@ els["preview-login-form"].addEventListener("submit", (event) => {
   window.location.assign("/observer/?next=/observe/");
 });
 
-els["preview-sign-out"].addEventListener("click", signOutTraining);
+els["preview-sign-out"].addEventListener("click", returnToObserverCenter);
 
 document.querySelectorAll(".back-module").forEach((button) => {
   button.addEventListener("click", showModule);
