@@ -261,17 +261,40 @@ async function ensureAudio() {
 async function beep() {
   const ctx=await ensureAudio();
   if (!ctx || ctx.state!=="running") return false;
+
   const now=ctx.currentTime;
-  const gain=ctx.createGain();
-  gain.gain.setValueAtTime(.0001,now);
-  gain.gain.exponentialRampToValueAtTime(.11,now+.01);
-  gain.gain.exponentialRampToValueAtTime(.0001,now+.22);
-  gain.connect(ctx.destination);
-  for (const [offset,freq] of [[0,740],[.11,880]]) {
+  const master=ctx.createGain();
+  master.gain.setValueAtTime(.0001,now);
+  master.gain.exponentialRampToValueAtTime(.20,now+.012);
+  master.gain.setValueAtTime(.20,now+.18);
+  master.gain.exponentialRampToValueAtTime(.0001,now+.52);
+  master.connect(ctx.destination);
+
+  // Bright three-note "spell" chime: long enough to hear on a phone,
+  // but still brief enough not to compete with classroom observation.
+  const notes=[
+    [0.00,659.25,.24],
+    [0.10,880.00,.26],
+    [0.22,1174.66,.30]
+  ];
+
+  for (const [offset,freq,duration] of notes) {
     const osc=ctx.createOscillator();
-    osc.type="sine"; osc.frequency.setValueAtTime(freq,now+offset); osc.connect(gain);
-    osc.start(now+offset); osc.stop(now+offset+.10);
+    const noteGain=ctx.createGain();
+
+    osc.type="triangle";
+    osc.frequency.setValueAtTime(freq,now+offset);
+
+    noteGain.gain.setValueAtTime(.0001,now+offset);
+    noteGain.gain.exponentialRampToValueAtTime(.75,now+offset+.012);
+    noteGain.gain.exponentialRampToValueAtTime(.0001,now+offset+duration);
+
+    osc.connect(noteGain);
+    noteGain.connect(master);
+    osc.start(now+offset);
+    osc.stop(now+offset+duration+.02);
   }
+
   return true;
 }
 
