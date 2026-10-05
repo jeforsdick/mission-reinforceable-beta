@@ -21,6 +21,7 @@ function show(id) {
   const authenticatedAdminView = ['home-view', 'detail-view'].includes(id);
   $('#sign-out').hidden = !authenticatedAdminView;
   $('#coaching-dashboard-link').hidden = !authenticatedAdminView;
+  $('#observer-portal-link').hidden = !authenticatedAdminView;
 }
 
 function intakeDate(row) { return row.submitted_at || row.created_at; }
