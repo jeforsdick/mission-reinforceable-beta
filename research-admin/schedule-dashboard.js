@@ -66,9 +66,11 @@ function onlineTrainingReady(id) {
     return row.observer_id === id && row.online_criterion_met === true && row.module_complete === true;
   });
 }
-function calibrationPrimaryObservers() {
+function primaryCandidateObservers() {
   return (dashboard.observers || []).filter(function (o) {
-    return o.active && o.observer_type === "trained_observer"
+    if (!o.active) return false;
+    if (o.observer_type === "primary_researcher") return dashboard.clearance[o.id] !== "revoked";
+    return o.observer_type === "trained_observer"
       && (dashboard.clearance[o.id] === "cleared" || onlineTrainingReady(o.id));
   });
 }
@@ -167,9 +169,11 @@ function renderDay(date) {
     return '<option value="' + esc(schedule.case_id) + '"' + (already ? " disabled" : "") + '>' +
       esc(caseLabel(item)) + ' · ' + labelTime(schedule.routine_start_time) + '</option>';
   }).join("");
-  var observerOptions = calibrationPrimaryObservers().map(function (o) {
-    var calibrationOnly = dashboard.clearance[o.id] !== "cleared";
-    return '<option value="' + esc(o.id) + '">' + esc(o.display_name + (calibrationOnly ? " — calibration only" : "")) + '</option>';
+  var observerOptions = primaryCandidateObservers().map(function (o) {
+    var suffix = "";
+    if (o.observer_type === "primary_researcher") suffix = " — researcher backup";
+    else if (dashboard.clearance[o.id] !== "cleared") suffix = " — calibration only";
+    return '<option value="' + esc(o.id) + '">' + esc(o.display_name + suffix) + '</option>';
   }).join("");
   var pairedPool = clearedObservers().concat(calibrationSupportObservers().filter(function (o) {
     return !clearedObservers().some(function (x) { return x.id === o.id; });
@@ -189,7 +193,7 @@ function renderDay(date) {
     '</select>' +
     '<select name="secondary_id"><option value="">No paired observer</option>' + pairedOptions + '</select>' +
     '<select name="secondary_role"><option value="">Paired role</option><option value="formal_ioa">Formal IOA</option><option value="supported_calibration">Supported calibration</option><option value="calibration_and_ioa">Calibration + IOA</option></select>' +
-    '<small class="schedule-helper">Supported calibration can use an online-qualified observer before final clearance when paired with Jess.</small>' +
+    '<small class="schedule-helper">Supported calibration uses an online-qualified trainee + Jess. Jess may also serve as a researcher backup primary when needed.</small>' +
     '<button class="quiet" type="submit"' + (observerOptions ? "" : " disabled") + '>Assign</button>' +
     '</form></details></section>';
 }
@@ -270,6 +274,8 @@ function bind() {
       var secondary = (dashboard.observers || []).find(function (o) { return o.id === secondaryId; });
       var primaryCleared = dashboard.clearance[observerId] === "cleared";
       var secondaryCleared = secondaryId ? dashboard.clearance[secondaryId] === "cleared" : false;
+      var primaryIsResearcher = primary?.observer_type === "primary_researcher";
+      var secondaryIsResearcher = secondary?.observer_type === "primary_researcher";
 
       if (secondaryRole === "supported_calibration") {
         if (!primary || primary.observer_type !== "trained_observer" || !(primaryCleared || onlineTrainingReady(observerId))) {
@@ -279,11 +285,11 @@ function bind() {
           return window.alert("Supported calibration must be paired with Jess as the primary researcher.");
         }
       } else {
-        if (!primaryCleared) {
-          return window.alert("Independent and IOA observations require a cleared primary observer.");
+        if (!primaryCleared && !primaryIsResearcher) {
+          return window.alert("Independent and IOA observations require a cleared trained observer or the primary researcher.");
         }
-        if (secondaryId && !secondaryCleared) {
-          return window.alert("This paired-observer role requires a cleared secondary observer.");
+        if (secondaryId && !secondaryCleared && !secondaryIsResearcher) {
+          return window.alert("This paired-observer role requires a cleared observer or the primary researcher.");
         }
       }
       var schedule = scheduleFor(caseId);
@@ -300,7 +306,8 @@ function bind() {
         status: "scheduled",
         attendance_status: "unchecked",
         case_code_snapshot: caseLabel(item),
-        routine_label_snapshot: schedule.routine_label || "Routine"
+        routine_label_snapshot: schedule.routine_label || "Routine",
+        observer_message_note: primaryIsResearcher ? "Primary researcher serving as backup primary observer." : null
       };
       var result = await window.__mrResearchAdminClient.from("research_observation_schedule_slots").insert(payload);
       if (result.error) return window.alert(result.error.message);
