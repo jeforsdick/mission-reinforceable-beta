@@ -303,13 +303,14 @@ function normalizeIntervals(values=[]) {
   values.slice(0,REAL_SESSION.intervalCount).forEach((value,index)=>{ result[index]=value||null; });
   return result;
 }
-function startCollectionState(record) {
+function startCollectionState(record,fidelityOutcomes={}) {
   const savedElapsed=Math.min(REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
   return {
     savedElapsed,
     runStartedAt:Date.now(),
     endedAt:null,
     fidelityScores:{...(record?.fidelity_scores||{})},
+    fidelityOutcomes:{...(fidelityOutcomes||{})},
     intervals:normalizeIntervals(record?.interval_scores||[]),
     continuing:false,
     notObserved:false,
@@ -326,7 +327,9 @@ async function beginCollection() {
     record=result.data;
     currentPacket.record=record;
   }
-  collection=startCollectionState(record);
+  const outcomeResult=await client.rpc("research_observer_get_fidelity_outcomes",{target_slot_id:currentPacket.slot.id});
+  if (outcomeResult.error) { $("start-error").textContent="Could not load saved desired-outcome ratings. Please try again."; return; }
+  collection=startCollectionState(record,outcomeResult.data||{});
   $("session-preflight").hidden=true;
   $("review-view").hidden=true;
   $("submitted-view").hidden=true;
@@ -384,16 +387,33 @@ function renderFidelity() {
   $("fidelity-progress").textContent=`${scored}/${targets.length} scored`;
   $("fidelity-list").innerHTML=targets.map((target)=> {
     const score=collection.fidelityScores[target.id];
+    const outcome=collection.fidelityOutcomes[target.id]||"";
     return `<article class="fidelity-item">
       <div><span>${escapeHtml(target.domain||"Fidelity")}</span><strong>${escapeHtml(target.description)}</strong></div>
-      <div class="fidelity-buttons">
-        <button type="button" data-target="${target.id}" data-score="implemented" class="${score==="implemented"?"selected":""}">Implemented as Written</button>
-        <button type="button" data-target="${target.id}" data-score="not_implemented" class="${score==="not_implemented"?"selected":""}">Not Implemented as Written</button>
+      <div class="fidelity-response">
+        <div class="fidelity-buttons">
+          <button type="button" data-target="${target.id}" data-score="implemented" class="${score==="implemented"?"selected":""}">Implemented as Written</button>
+          <button type="button" data-target="${target.id}" data-score="not_implemented" class="${score==="not_implemented"?"selected":""}">Not Implemented as Written</button>
+        </div>
+        ${score==="implemented" ? `<div class="fidelity-outcome-prompt">
+          <strong>Did it have the desired outcome on behavior?</strong>
+          <div class="fidelity-outcome-actions">
+            <button type="button" data-outcome-target="${target.id}" data-outcome="yes" class="${outcome==="yes"?"selected":""}">Yes</button>
+            <button type="button" data-outcome-target="${target.id}" data-outcome="no" class="${outcome==="no"?"selected":""}">No</button>
+            <button type="button" data-outcome-target="${target.id}" data-outcome="unclear" class="${outcome==="unclear"?"selected":""}">Not clear</button>
+          </div>
+        </div>` : ""}
       </div>
     </article>`;
   }).join("");
   document.querySelectorAll(".fidelity-buttons button").forEach((button)=>button.addEventListener("click",()=>{
     collection.fidelityScores[button.dataset.target]=button.dataset.score;
+    if (button.dataset.score!=="implemented") delete collection.fidelityOutcomes[button.dataset.target];
+    renderFidelity();
+    queueSave();
+  }));
+  document.querySelectorAll("[data-outcome-target]").forEach((button)=>button.addEventListener("click",()=>{
+    collection.fidelityOutcomes[button.dataset.outcomeTarget]=button.dataset.outcome;
     renderFidelity();
     queueSave();
   }));
@@ -431,14 +451,22 @@ function queueSave() {
   saveTimer=setTimeout(saveDraft,450);
 }
 async function saveDraft() {
-  if (!collection || currentPacket.record?.status==="submitted") return;
-  const result=await client.rpc("research_observer_save_observation_draft",{
-    target_slot_id:currentPacket.slot.id,
-    target_fidelity_scores:collection.fidelityScores,
-    target_interval_scores:compactDraftIntervals(),
-    target_elapsed_seconds:elapsedSeconds()
-  });
-  $("autosave-status").textContent=result.error?"Autosave problem — keep this screen open":"Saved";
+  if (!collection || currentPacket.record?.status==="submitted") return true;
+  const [result,outcomeResult]=await Promise.all([
+    client.rpc("research_observer_save_observation_draft",{
+      target_slot_id:currentPacket.slot.id,
+      target_fidelity_scores:collection.fidelityScores,
+      target_interval_scores:compactDraftIntervals(),
+      target_elapsed_seconds:elapsedSeconds()
+    }),
+    client.rpc("research_observer_save_fidelity_outcomes",{
+      target_slot_id:currentPacket.slot.id,
+      target_fidelity_outcomes:collection.fidelityOutcomes
+    })
+  ]);
+  const hasError=Boolean(result.error||outcomeResult.error);
+  $("autosave-status").textContent=hasError?"Autosave problem — keep this screen open":"Saved";
+  return !hasError;
 }
 function finalizeCompletedIntervals() {
   for (let i=0;i<REAL_SESSION.intervalCount;i++) {
@@ -457,26 +485,47 @@ function finishCollection() {
   $("review-view").hidden=false;
   renderReview();
 }
-function renderReview() {
+function renderReview(noteOverride) {
   const targets=currentPacket.fidelity_targets||[];
+  const noteValue=noteOverride===undefined ? (currentPacket.record?.observation_note||"") : noteOverride;
   $("review-fidelity-list").innerHTML=targets.map((target)=>{
     const score=collection.fidelityScores[target.id]||"";
+    const outcome=collection.fidelityOutcomes[target.id]||"";
     return `<article class="review-item">
       <strong>${escapeHtml(target.description)}</strong>
-      <select data-review-target="${target.id}">
-        <option value="">Choose score</option>
-        <option value="implemented"${score==="implemented"?" selected":""}>Implemented as Written</option>
-        <option value="not_implemented"${score==="not_implemented"?" selected":""}>Not Implemented as Written</option>
-        <option value="no_opportunity"${score==="no_opportunity"?" selected":""}>No Opportunity</option>
-      </select>
+      <div class="review-controls">
+        <select data-review-target="${target.id}">
+          <option value="">Choose score</option>
+          <option value="implemented"${score==="implemented"?" selected":""}>Implemented as Written</option>
+          <option value="not_implemented"${score==="not_implemented"?" selected":""}>Not Implemented as Written</option>
+          <option value="no_opportunity"${score==="no_opportunity"?" selected":""}>No Opportunity</option>
+        </select>
+        ${score==="implemented" ? `<div class="review-outcome-prompt ${outcome?"complete":""}">
+          <strong>Desired outcome on behavior?</strong>
+          <div class="fidelity-outcome-actions">
+            <button type="button" data-review-outcome-target="${target.id}" data-outcome="yes" class="${outcome==="yes"?"selected":""}">Yes</button>
+            <button type="button" data-review-outcome-target="${target.id}" data-outcome="no" class="${outcome==="no"?"selected":""}">No</button>
+            <button type="button" data-review-outcome-target="${target.id}" data-outcome="unclear" class="${outcome==="unclear"?"selected":""}">Not clear</button>
+          </div>
+        </div>` : ""}
+      </div>
     </article>`;
   }).join("");
   document.querySelectorAll("[data-review-target]").forEach((select)=>select.addEventListener("change",()=>{
+    const note=$("observation-note").value;
     if (select.value) collection.fidelityScores[select.dataset.reviewTarget]=select.value;
     else delete collection.fidelityScores[select.dataset.reviewTarget];
-    updateReviewSummary();
+    if (select.value!=="implemented") delete collection.fidelityOutcomes[select.dataset.reviewTarget];
+    renderReview(note);
+    queueSave();
   }));
-  $("observation-note").value=currentPacket.record?.observation_note||"";
+  document.querySelectorAll("[data-review-outcome-target]").forEach((button)=>button.addEventListener("click",()=>{
+    const note=$("observation-note").value;
+    collection.fidelityOutcomes[button.dataset.reviewOutcomeTarget]=button.dataset.outcome;
+    renderReview(note);
+    queueSave();
+  }));
+  $("observation-note").value=noteValue;
   updateReviewSummary();
 }
 function updateReviewSummary() {
@@ -487,15 +536,30 @@ function updateReviewSummary() {
 }
 async function submitObservation() {
   $("review-error").textContent="";
-  const missing=(currentPacket.fidelity_targets||[]).filter((target)=>!collection.fidelityScores[target.id]);
+  const targets=currentPacket.fidelity_targets||[];
+  const missing=targets.filter((target)=>!collection.fidelityScores[target.id]);
   if (missing.length) {
     $("review-error").textContent=`Resolve all fidelity items before submitting (${missing.length} remaining).`;
+    return;
+  }
+  const missingOutcomes=targets.filter((target)=>
+    collection.fidelityScores[target.id]==="implemented" && !collection.fidelityOutcomes[target.id]
+  );
+  if (missingOutcomes.length) {
+    $("review-error").textContent=`Rate the desired outcome for every item marked Implemented (${missingOutcomes.length} remaining).`;
     return;
   }
   const fidelity=calculateFidelity(collection.fidelityScores);
   const behavior=calculateStudentBehavior(collection.intervals);
   if (fidelity.scoreable===0) { $("review-error").textContent="At least one fidelity item must have an observable opportunity."; return; }
   if (behavior.observed===0) { $("review-error").textContent="At least one student-behavior interval must be observable."; return; }
+
+  if (saveTimer) clearTimeout(saveTimer);
+  const saved=await saveDraft();
+  if (!saved) {
+    $("review-error").textContent="The latest scores could not be saved. Please try again before submitting.";
+    return;
+  }
 
   $("submit-observation").disabled=true;
   $("submit-observation").textContent="Submitting…";
