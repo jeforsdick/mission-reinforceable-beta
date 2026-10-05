@@ -260,7 +260,7 @@ async function sendTrainingMagicLink(event) {
   const redirectTo = new URL("/observe/", window.location.origin).toString();
   const { error } = await client.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: true, emailRedirectTo: redirectTo }
+    options: { shouldCreateUser: false, emailRedirectTo: redirectTo }
   });
   button.disabled = false;
   if (error) {
