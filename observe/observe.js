@@ -16,6 +16,7 @@ const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W";
 const SOURCE_ENVIRONMENT = location.hostname === "missionreinforceable.com" || location.hostname === "www.missionreinforceable.com" ? "production" : "preview";
 const SESSION_HANDOFF_KEY = "mr-observer-auth-handoff-v1";
+const CANONICAL_ORIGIN = "https://www.missionreinforceable.com";
 let trainingDb = null;
 
 const ids = [
@@ -241,7 +242,7 @@ async function initializeAuthenticatedTraining() {
   if (sessionError || !session) {
     state = null;
     activeStorageKey = null;
-    window.location.replace("/observer/?next=/observe/");
+    window.location.replace(CANONICAL_ORIGIN+"/observer/?next=/observe/");
     return;
   }
 
@@ -250,7 +251,7 @@ async function initializeAuthenticatedTraining() {
     await client.auth.signOut();
     state = null;
     activeStorageKey = null;
-    window.location.replace("/observer/?training_error=1");
+    window.location.replace(CANONICAL_ORIGIN+"/observer/?training_error=1");
     return;
   }
 
@@ -291,7 +292,7 @@ function returnToObserverCenter() {
   stopTimer();
   pausePlayer();
   saveState();
-  window.location.assign("/observer/");
+  window.location.assign(CANONICAL_ORIGIN+"/observer/");
 }
 
 function stepStatus(done, locked = false) {
@@ -1395,7 +1396,7 @@ function restore() {
 
 els["preview-login-form"].addEventListener("submit", (event) => {
   event.preventDefault();
-  window.location.assign("/observer/?next=/observe/");
+  window.location.assign(CANONICAL_ORIGIN+"/observer/?next=/observe/");
 });
 
 els["preview-sign-out"].addEventListener("click", returnToObserverCenter);
