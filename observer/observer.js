@@ -303,18 +303,44 @@ function normalizeIntervals(values=[]) {
   values.slice(0,REAL_SESSION.intervalCount).forEach((value,index)=>{ result[index]=value||null; });
   return result;
 }
+function markAwayIntervals(intervals,fromElapsed,toElapsed) {
+  const from=Math.max(0,Math.min(REAL_SESSION.durationSeconds,Number(fromElapsed)||0));
+  const to=Math.max(from,Math.min(REAL_SESSION.durationSeconds,Number(toElapsed)||0));
+  const startIndex=Math.min(REAL_SESSION.intervalCount-1,Math.floor(from/REAL_SESSION.intervalSeconds));
+  const activeIndex=Math.min(REAL_SESSION.intervalCount-1,Math.floor(to/REAL_SESSION.intervalSeconds));
+  const endIndex=to>=REAL_SESSION.durationSeconds ? REAL_SESSION.intervalCount-1 : activeIndex-1;
+  let marked=0;
+  for (let index=startIndex;index<=endIndex;index++) {
+    if (!intervals[index]) {
+      intervals[index]="not_observed";
+      marked+=1;
+    }
+  }
+  return marked;
+}
 function startCollectionState(record,fidelityOutcomes={}) {
   const savedElapsed=Math.min(REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
+  const parsedStart=Date.parse(record?.started_at||"");
+  const startedAtMs=Number.isFinite(parsedStart) ? parsedStart : Date.now()-(savedElapsed*1000);
+  const wallElapsed=Math.min(
+    REAL_SESSION.durationSeconds,
+    Math.max(savedElapsed,Math.max(0,Math.floor((Date.now()-startedAtMs)/1000)))
+  );
+  const intervals=normalizeIntervals(record?.interval_scores||[]);
+  const awayMarked=markAwayIntervals(intervals,savedElapsed,wallElapsed);
+  const activeIndex=Math.min(REAL_SESSION.intervalCount-1,Math.floor(wallElapsed/REAL_SESSION.intervalSeconds));
   return {
     savedElapsed,
-    runStartedAt:Date.now(),
-    endedAt:null,
+    startedAtMs,
+    endedAt:new Date(startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString(),
     fidelityScores:{...(record?.fidelity_scores||{})},
     fidelityOutcomes:{...(fidelityOutcomes||{})},
-    intervals:normalizeIntervals(record?.interval_scores||[]),
+    intervals,
     continuing:false,
     notObserved:false,
-    lastInterval:Math.max(-1,Math.floor(savedElapsed/REAL_SESSION.intervalSeconds))
+    lastInterval:activeIndex,
+    hiddenAtElapsed:null,
+    awayMarked
   };
 }
 async function beginCollection() {
@@ -337,12 +363,14 @@ async function beginCollection() {
   $("finish-collection").disabled=true;
   renderFidelity();
   tick();
+  if (collection.awayMarked>0) queueSave();
   if (elapsedSeconds()<REAL_SESSION.durationSeconds) timer=setInterval(tick,250);
 }
 
 function elapsedSeconds() {
-  const running=Math.max(0,Math.floor((Date.now()-collection.runStartedAt)/1000));
-  return Math.min(REAL_SESSION.durationSeconds,collection.savedElapsed+running);
+  if (!collection) return 0;
+  const wallElapsed=Math.max(0,Math.floor((Date.now()-collection.startedAtMs)/1000));
+  return Math.min(REAL_SESSION.durationSeconds,Math.max(collection.savedElapsed,wallElapsed));
 }
 function currentIntervalIndex() {
   return Math.min(REAL_SESSION.intervalCount-1,Math.floor(elapsedSeconds()/REAL_SESSION.intervalSeconds));
@@ -362,7 +390,7 @@ function finalizeBoundaryThrough(activeIndex) {
   }
 }
 function tick() {
-  if (!collection) return;
+  if (!collection || document.hidden) return;
   const elapsed=elapsedSeconds();
   const index=currentIntervalIndex();
   finalizeBoundaryThrough(index);
@@ -465,7 +493,12 @@ async function saveDraft() {
     })
   ]);
   const hasError=Boolean(result.error||outcomeResult.error);
-  $("autosave-status").textContent=hasError?"Autosave problem — keep this screen open":"Saved";
+  if (!hasError) collection.savedElapsed=Math.max(collection.savedElapsed,elapsedSeconds());
+  const awayNote=!hasError && collection.awayMarked>0
+    ? ` · ${collection.awayMarked} interval${collection.awayMarked===1?"":"s"} marked Not observed while away`
+    : "";
+  $("autosave-status").textContent=hasError?"Autosave problem — keep this screen open":`Saved${awayNote}`;
+  if (!hasError) collection.awayMarked=0;
   return !hasError;
 }
 function finalizeCompletedIntervals() {
@@ -477,12 +510,12 @@ function finishCollection() {
   if (!collection || elapsedSeconds()<REAL_SESSION.durationSeconds) return;
   stopTimer();
   collection.savedElapsed=REAL_SESSION.durationSeconds;
-  collection.runStartedAt=Date.now();
-  collection.endedAt=new Date().toISOString();
+  collection.endedAt=new Date(collection.startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString();
   finalizeCompletedIntervals();
   saveDraft();
   $("collection-view").hidden=true;
   $("review-view").hidden=false;
+  $("resume-collection").hidden=true;
   renderReview();
 }
 function renderReview(noteOverride) {
@@ -645,11 +678,44 @@ $("finish-collection").addEventListener("click",finishCollection);
 $("resume-collection").addEventListener("click",()=>{
   $("review-view").hidden=true;
   $("collection-view").hidden=false;
-  collection.savedElapsed=REAL_SESSION.durationSeconds;
-  collection.runStartedAt=Date.now();
   tick();
 });
 $("submit-observation").addEventListener("click",submitObservation);
+
+function handleCollectorVisibilityChange() {
+  if (!collection || $("collection-view").hidden || currentPacket?.record?.status==="submitted") return;
+
+  if (document.hidden) {
+    collection.hiddenAtElapsed=elapsedSeconds();
+    if (saveTimer) clearTimeout(saveTimer);
+    saveDraft();
+    return;
+  }
+
+  const fromElapsed=collection.hiddenAtElapsed ?? collection.savedElapsed;
+  const toElapsed=elapsedSeconds();
+  const marked=markAwayIntervals(collection.intervals,fromElapsed,toElapsed);
+  collection.hiddenAtElapsed=null;
+  collection.awayMarked+=marked;
+  collection.lastInterval=currentIntervalIndex();
+
+  if (marked>0) {
+    collection.continuing=false;
+    collection.notObserved=false;
+    $("continuing-toggle").setAttribute("aria-pressed","false");
+    $("not-observed-toggle").setAttribute("aria-pressed","false");
+    queueSave();
+  }
+
+  tick();
+  if (elapsedSeconds()<REAL_SESSION.durationSeconds && !timer) timer=setInterval(tick,250);
+}
+document.addEventListener("visibilitychange",handleCollectorVisibilityChange);
+window.addEventListener("pagehide",()=>{
+  if (!collection || $("collection-view").hidden || currentPacket?.record?.status==="submitted") return;
+  if (saveTimer) clearTimeout(saveTimer);
+  saveDraft();
+});
 
 function start() {
   if (!window.supabase) {
