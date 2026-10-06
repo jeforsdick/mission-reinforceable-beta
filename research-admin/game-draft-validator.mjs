@@ -163,9 +163,12 @@ export function validateFullDraft(input) {
       if (!substantive(mission.focus)) issue('MISSION QUALITY', 'blocking', 'Define the mission design goal / behavioral discrimination.', `${missionPath} → Design Goal`, missionAction);
   
       if (!Array.isArray(mission.functionPressure) || mission.functionPressure.length === 0) {
-        issue('MISSION QUALITY', 'blocking', 'Choose at least one function pressure for the mission.', `${missionPath} → Function Pressure`, missionAction);
+        issue('MISSION QUALITY', 'blocking', 'Choose at least one behavioral function in play for the mission.', `${missionPath} → Function(s) in Play`, missionAction);
       } else for (const value of mission.functionPressure) if (!FUNCTIONS.has(value)) {
-        issue('MISSION QUALITY', 'blocking', `Function pressure “${value}” is not canonical.`, `${missionPath} → Function Pressure`, missionAction);
+        issue('MISSION QUALITY', 'blocking', `Behavioral function “${value}” is not canonical.`, `${missionPath} → Function(s) in Play`, missionAction);
+      }
+      if (!substantive(authoringMeta.functionPressureContext)) {
+        issue('MISSION QUALITY', 'blocking', 'Describe what makes the selected function relevant in this classroom situation.', `${missionPath} → Function-Related Pressure`, missionAction);
       }
   
       if (!Array.isArray(authoringMeta.activeBipComponents) || authoringMeta.activeBipComponents.length === 0) {
