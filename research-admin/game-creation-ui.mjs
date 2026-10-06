@@ -165,12 +165,12 @@ export function blankMission(caseCode, type, slot) {
     const ids = decision === 1 ? ['d1_start'] : TRAJECTORIES.map(branch => stepId(decision, branch));
     for (const id of ids) RATINGS.forEach(({ key }, index) => { steps[id].choices[key].next = nextStepId(decision, TRAJECTORIES[index]); delete steps[id].choices[key].ending; });
   }
-  return { id: defaultMissionId(caseCode, type, slot), title: '', expectedSteps: 5, start: 'd1_start', focus: '', routine: '', functionPressure: [], bipTargets: [], authoringMeta: { centralTension: '', activeBipComponents: [] }, endings: Object.fromEntries(ENDINGS.map(key => [key, { text: '', wizard: '' }])), steps };
+  return { id: defaultMissionId(caseCode, type, slot), title: '', expectedSteps: 5, start: 'd1_start', focus: '', routine: '', functionPressure: [], bipTargets: [], authoringMeta: { centralTension: '', tone: '', activeBipComponents: [], qualityReview: { behavioral: false, gameDesign: false } }, endings: Object.fromEntries(ENDINGS.map(key => [key, { text: '', wizard: '' }])), steps };
 }
 export function normalizeMission(value, caseCode, type, slot) {
   const base = blankMission(caseCode, type, slot);
   if (!value || typeof value !== 'object' || Array.isArray(value)) return base;
-  const mission = { ...base, ...structuredClone(value), authoringMeta: { ...base.authoringMeta, ...(value.authoringMeta || {}), centralTension: value.authoringMeta?.centralTension ?? value.centralTension ?? '', activeBipComponents: value.authoringMeta?.activeBipComponents ?? value.activeBipComponents ?? [] }, endings: { ...base.endings, ...(value.endings || {}) }, steps: { ...base.steps } };
+  const mission = { ...base, ...structuredClone(value), authoringMeta: { ...base.authoringMeta, ...(value.authoringMeta || {}), centralTension: value.authoringMeta?.centralTension ?? value.centralTension ?? '', tone: value.authoringMeta?.tone ?? value.tone ?? '', activeBipComponents: value.authoringMeta?.activeBipComponents ?? value.activeBipComponents ?? [], qualityReview: { ...base.authoringMeta.qualityReview, ...(value.authoringMeta?.qualityReview || {}) } }, endings: { ...base.endings, ...(value.endings || {}) }, steps: { ...base.steps } };
   delete mission.centralTension; delete mission.activeBipComponents;
   mission.functionPressure = (value.functionPressure || []).map(canonicalFunction);
   for (const [id, template] of Object.entries(base.steps)) {
