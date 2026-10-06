@@ -688,6 +688,22 @@ function bindMissionBuilder() {
   }));
   document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
   document.querySelectorAll('[data-branch]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); state.missionNav.branch = button.dataset.branch; redrawGameCreation(); }));
+
+  const sceneOrder = [
+    { decision:1, branch:'supported' },
+    ...[2,3,4,5].flatMap(decision => ['supported','wobbly','escalated'].map(branch => ({ decision, branch })))
+  ];
+  const moveSimpleScene = direction => {
+    preserveAllAuthoringForms();
+    const currentIndex = sceneOrder.findIndex(item => item.decision===state.missionNav.decision && item.branch===state.missionNav.branch);
+    const nextIndex = Math.max(0,Math.min(sceneOrder.length-1,currentIndex+direction));
+    state.missionNav = { ...sceneOrder[nextIndex] };
+    redrawGameCreation();
+    document.querySelector('.simple-decision-editor')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  };
+  document.querySelector('[data-simple-prev]')?.addEventListener('click',()=>moveSimpleScene(-1));
+  document.querySelector('[data-simple-next]')?.addEventListener('click',()=>moveSimpleScene(1));
+
   $('#save-mission-draft')?.addEventListener('click', saveMissionDraft);
 }
 function bindPublishedReview() {
