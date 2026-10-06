@@ -138,6 +138,7 @@ function canonicalQualityMission(value) {
     }
     return step;
   };
+  target.start = 'd1_start';
   target.steps = { d1_start: makeStep(1, sourceSteps.s1) };
   for (let decision = 2; decision <= 5; decision++) for (const branch of ['supported','wobbly','escalated']) target.steps[`d${decision}_${branch}`] = makeStep(decision, sourceSteps[`s${decision}`]);
   target.steps.d1_start.meta = { fidelityTargetKey: 'proactive_01' };
