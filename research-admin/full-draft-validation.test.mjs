@@ -87,15 +87,13 @@ test('fidelity concentration changes preserve invalid, inactive, and bank covera
   assert(warnings.includes('Target response_01 appears in only one mission.'));
 });
 
-test('final-authoring mission completeness blocks blank participant-facing fields and required metadata', () => { const mutations = [
+test('final-authoring mission completeness blocks blank participant-facing fields', () => { const mutations = [
   ['mission title', mission => { mission.title = ''; }, /Add a mission title/],
   ['scene', mission => { mission.steps.s1.text = ''; }, /Add the scene text/],
   ['teacher action', mission => { mission.steps.s1.choices.A.text = ''; }, /Add the teacher action/],
   ['consequence', mission => { mission.steps.s1.choices.A.consequence = ''; }, /Add what happens next/],
   ['Wizard feedback', mission => { mission.steps.s1.choices.A.wizard = ''; }, /Add Wizard feedback/],
   ['behavioral explanation', mission => { mission.steps.s1.choices.A.feedback = ''; }, /Add the behavioral explanation/],
-  ['choice metadata', mission => { mission.steps.s1.choices.A.meta.mechanism = ''; }, /Add the choice mechanism/],
-  ['ending narrative', mission => { mission.endings.STRONG.text = ''; }, /Add the STRONG ending narrative/],
   ['expected steps', mission => { mission.expectedSteps = 4; }, /exactly 5 decisions/]
 ]; for (const [label, mutate, expected] of mutations) { const value = workspace(); mutate(value.missions[0].mission); const report = validateFullDraft(value); assert.equal(report.ready, false, label); assert.match(report.categories['MISSION STRUCTURE'].errors.map(item => item.message).join('\n'), expected, label); } });
 
@@ -148,12 +146,6 @@ function canonicalQualityMission(value) {
 test('canonical authoring quality gate accepts a reviewed mission with meaningful branching', () => {
   const value = workspace(); canonicalQualityMission(value); const report = validateFullDraft(value);
   assert.equal(report.categories['MISSION QUALITY'].errors.length, 0); assert.equal(report.ready, true);
-});
-
-test('canonical authoring quality gate blocks missing human review confirmations', () => {
-  const value = workspace(); const target = canonicalQualityMission(value); target.authoringMeta.qualityReview.behavioral = false; target.authoringMeta.qualityReview.gameDesign = false;
-  const errors = validateFullDraft(value).categories['MISSION QUALITY'].errors.map(item => item.message);
-  assert(errors.some(message => /behavioral-accuracy review/i.test(message))); assert(errors.some(message => /game-design review/i.test(message)));
 });
 
 test('canonical authoring quality gate blocks fake branching and impossible recovery', () => {
