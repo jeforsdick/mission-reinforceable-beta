@@ -121,6 +121,13 @@ export function nextAction(item,now=new Date()){
   if(phase==='complete'&&['tses_post','urp_ir','teacher_interview'].some(key=>measures[key]?.status!=='complete')) return 'Complete the post-intervention measures.';
   return 'Case closeout is recorded.';
 }
+export function observerBaselineReady(item){
+  return (item.observation_data?.observers||[]).some(observer=>
+    observer.active!==false
+    && observer.observer_type==='trained_observer'
+    && observer.status==='qualified'
+  );
+}
 export function baselineReadiness(item){
   const checklist=currentByKey(item.checklist), measures=currentByKey(item.measures,'measure_key'), missing=[];
   if(!item.protocol) missing.push('Baseline assignment');
@@ -129,6 +136,9 @@ export function baselineReadiness(item){
     if(!acceptable.includes(checklist[key]?.status)) missing.push(CHECKLIST.find(x=>x[0]===key)[1]);
   }
   if(measures.tses_pre?.status!=='complete') missing.push('TSES — Pre-Baseline');
+  if(!(item.observation_data?.setups||[]).length) missing.push('Observation setup');
+  if(Number(item.active_fidelity_target_count||0)<1) missing.push('Active fidelity checklist');
+  if(!observerBaselineReady(item)) missing.push('Observer readiness');
   return {ready:missing.length===0,missing,remaining:missing.length};
 }
 export function measureNeeds(item){

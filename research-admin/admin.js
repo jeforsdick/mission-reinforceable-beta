@@ -63,12 +63,14 @@ function renderCounts() {
   const ioa=studyIoaSnapshot();
   const groups=attentionGroups();
   const activeObservers=(state.observationData?.observers||[]).filter(observer=>observer.active!==false);
-  const readyObservers=activeObservers.filter(observer=>observer.status==='qualified').length;
+  const trainedObservers=activeObservers.filter(observer=>observer.observer_type==='trained_observer');
+  const clearedObservers=trainedObservers.filter(observer=>observer.status==='qualified').length;
+  const onlineReadyObservers=trainedObservers.filter(observer=>observer.online_training_ready===true&&observer.status!=='qualified').length;
   const cards=[
     ['Study cases',cases.length,'current dissertation dyads'],
     ['Needs attention',groups.length,groups.length?'items to review':'nothing blocking'],
     ['IOA coverage',percentLabel(ioa.percent),`${ioa.ioa} of ${ioa.completed} finalized`],
-    ['Observers ready',`${readyObservers}/${activeObservers.length}`,'cleared for live collection']
+    ['Observers ready',`${clearedObservers}/${trainedObservers.length}`,onlineReadyObservers?`${onlineReadyObservers} more online-ready for supported calibration`:'trained observers cleared']
   ];
   $('#counts').innerHTML=cards.map(([label,value,detail])=>`<article class="home-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong><small>${escapeHtml(detail)}</small></article>`).join('');
 }
