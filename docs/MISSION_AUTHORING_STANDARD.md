@@ -44,7 +44,8 @@ Every mission must include:
 - mission type
 - classroom routine
 - central tension
-- function pressure when supported
+- behavioral function(s) in play
+- a brief description of what makes that function relevant in the specific classroom situation
 - BIP components in play
 - exact fidelity-target opportunities
 - exactly 5 decision points per play-through
@@ -93,7 +94,11 @@ ROUTINE / LOCATION:
 
 CENTRAL TENSION:
 
-FUNCTION PRESSURE:
+FUNCTION(S) IN PLAY:
+Attention / Escape-Avoidance / Tangible-Access / Automatic-Sensory / Multiple / Unclear
+
+WHAT MAKES THE FUNCTION RELEVANT HERE?
+Describe the actual classroom condition that creates function-related pressure in this scenario (e.g., adult attention is temporarily unavailable; a difficult task has just been presented; access to a preferred item is delayed).
 
 ACTIVE BIP COMPONENTS:
 Prevent / Teach / Reinforce / Respond / Crisis if supported
