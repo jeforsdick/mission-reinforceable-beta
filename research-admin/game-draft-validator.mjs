@@ -147,7 +147,6 @@ export function validateFullDraft(input) {
     requireText(mission.routine, 'Routine', 'Add the mission routine.');
     if (mission.expectedSteps !== 5) issue('MISSION STRUCTURE', 'blocking', 'Mission playthroughs must contain exactly 5 decisions.', `${missionPath} → Expected Steps`, missionAction);
     if (!substantive(mission.start) || !mission.steps?.[mission.start]) issue('MISSION STRUCTURE', 'blocking', 'Choose a valid mission start step.', `${missionPath} → Start`, missionAction);
-    for (const ending of ENDINGS) requireText(mission.endings?.[ending]?.text, `${ending} Ending`, `Add the ${ending} ending narrative.`);
 
     const titleKey = normalizedText(mission.title);
     if (isCanonicalAuthoringMission && titleKey) {
@@ -157,37 +156,6 @@ export function validateFullDraft(input) {
     }
 
     const authoringMeta = mission.authoringMeta || {};
-    if (isCanonicalAuthoringMission) {
-      if (!substantive(authoringMeta.centralTension)) issue('MISSION QUALITY', 'blocking', 'Define the central tension that makes this mission difficult.', `${missionPath} → Central Tension`, missionAction);
-      if (!substantive(authoringMeta.tone)) issue('MISSION QUALITY', 'blocking', 'Add the emotional / narrative tone for this mission.', `${missionPath} → Tone`, missionAction);
-      if (!substantive(mission.focus)) issue('MISSION QUALITY', 'blocking', 'Define the mission design goal / behavioral discrimination.', `${missionPath} → Design Goal`, missionAction);
-  
-      if (!Array.isArray(mission.functionPressure) || mission.functionPressure.length === 0) {
-        issue('MISSION QUALITY', 'blocking', 'Choose at least one behavioral function in play for the mission.', `${missionPath} → Function(s) in Play`, missionAction);
-      } else for (const value of mission.functionPressure) if (!FUNCTIONS.has(value)) {
-        issue('MISSION QUALITY', 'blocking', `Behavioral function “${value}” is not canonical.`, `${missionPath} → Function(s) in Play`, missionAction);
-      }
-      if (!substantive(authoringMeta.functionPressureContext)) {
-        issue('MISSION QUALITY', 'blocking', 'Describe what makes the selected function relevant in this classroom situation.', `${missionPath} → Function-Related Pressure`, missionAction);
-      }
-  
-      if (!Array.isArray(authoringMeta.activeBipComponents) || authoringMeta.activeBipComponents.length === 0) {
-        issue('MISSION QUALITY', 'blocking', 'Choose the BIP components actively in play.', `${missionPath} → Active BIP Components`, missionAction);
-      } else for (const value of authoringMeta.activeBipComponents) if (!COMPONENTS.has(value)) {
-        issue('MISSION QUALITY', 'blocking', `BIP component “${value}” is not canonical.`, `${missionPath} → Active BIP Components`, missionAction);
-      }
-  
-      if (authoringMeta.qualityReview?.behavioral !== true) {
-        issue('MISSION QUALITY', 'blocking', 'Complete the behavioral-accuracy review for this mission.', `${missionPath} → Mission Quality Review`, missionAction);
-      }
-      if (authoringMeta.qualityReview?.gameDesign !== true) {
-        issue('MISSION QUALITY', 'blocking', 'Complete the game-design review for this mission.', `${missionPath} → Mission Quality Review`, missionAction);
-      }
-      if (!Array.isArray(mission.bipTargets) || mission.bipTargets.length === 0) {
-        issue('MISSION QUALITY', 'warning', 'No exact fidelity opportunities are declared for this mission. Confirm that is deliberate.', `${missionPath} → Fidelity Target Opportunities`, missionAction);
-      }
-  
-      }
     for (const [stepId, step] of Object.entries(mission.steps || {})) {
       const decisionMatch = /^d(\d+)/.exec(stepId);
       const decision = decisionMatch?.[1] || stepId;
@@ -239,17 +207,12 @@ export function validateFullDraft(input) {
         if (!substantive(choice?.wizard)) issue('MISSION STRUCTURE', 'blocking', 'Add Wizard feedback.', `${choicePath} → Wizard Feedback`, missionAction);
         if (!substantive(choice?.feedback)) issue('MISSION STRUCTURE', 'blocking', 'Add the behavioral explanation.', `${choicePath} → Behavioral Explanation`, missionAction);
         const meta = choice?.meta;
-        if (!meta || typeof meta !== 'object' || Array.isArray(meta)) issue('MISSION STRUCTURE', 'blocking', 'Add canonical choice metadata.', `${choicePath} → Metadata`, missionAction);
-        else {
-          if (!substantive(meta.bipComponent) || !COMPONENTS.has(meta.bipComponent)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical BIP component.', `${choicePath} → BIP Component`, missionAction);
-          if (!substantive(meta.mechanism)) issue('MISSION STRUCTURE', 'blocking', 'Add the choice mechanism.', `${choicePath} → Mechanism`, missionAction);
-          if (!substantive(meta.errorType) || !ERROR_TYPES.has(meta.errorType)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical Error Type.', `${choicePath} → Error Type`, missionAction);
-          if (!substantive(meta.function) || !FUNCTIONS.has(meta.function)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical behavior function.', `${choicePath} → Function`, missionAction);
-          if (isCanonicalAuthoringMission && choice.score === 10 && meta.errorType && meta.errorType !== 'none') {
-            issue('MISSION QUALITY', 'blocking', 'A 10-point plan-aligned choice must use Error Type = None.', `${choicePath} → Error Type`, missionAction);
-          }
-          if (isCanonicalAuthoringMission && (choice.score === 5 || choice.score === 0) && meta.errorType === 'none') {
-            issue('MISSION QUALITY', 'blocking', 'A 5- or 0-point choice needs an error type that explains what is incomplete or plan-drifting.', `${choicePath} → Error Type`, missionAction);
+        if (meta && typeof meta === 'object' && !Array.isArray(meta)) {
+          if (substantive(meta.bipComponent) && !COMPONENTS.has(meta.bipComponent)) issue('MISSION STRUCTURE', 'blocking', 'Correct the saved BIP component metadata.', `${choicePath} → BIP Component`, missionAction);
+          if (substantive(meta.errorType) && !ERROR_TYPES.has(meta.errorType)) issue('MISSION STRUCTURE', 'blocking', 'Correct the saved error-type metadata.', `${choicePath} → Error Type`, missionAction);
+          if (substantive(meta.function) && !FUNCTIONS.has(meta.function)) issue('MISSION STRUCTURE', 'blocking', 'Correct the saved behavior-function metadata.', `${choicePath} → Function`, missionAction);
+          if (choice.score === 10 && meta.errorType && meta.errorType !== 'none') {
+            issue('MISSION QUALITY', 'blocking', 'A 10-point plan-aligned choice cannot carry error metadata.', `${choicePath} → Error Type`, missionAction);
           }
         }
       }
@@ -317,8 +280,6 @@ export function validateFullDraft(input) {
     if (stepKey && !KEY_PATTERN.test(stepKey)) issue('FIDELITY LINKS', 'blocking', 'Correct the malformed fidelity target key.', location);
     else if (stepKey && !manifest.has(stepKey)) issue('FIDELITY LINKS', 'blocking', `Fidelity target ${stepKey} is not active for this case.`, location);
     else if (stepKey) {
-      const declared = Array.isArray(mission.bipTargets) ? new Set(mission.bipTargets) : null;
-      if (declared && !declared.has(stepKey)) issue('FIDELITY LINKS', 'blocking', `Decision uses ${stepKey}, but the mission does not declare that target under Fidelity Target Opportunities.`, location);
       const domain = stepKey.split('_')[0], approvedDomain = manifest.get(stepKey)?.domain;
       if (approvedDomain && approvedDomain !== domain) issue('FIDELITY LINKS', 'blocking', `Fidelity target ${stepKey} does not match its approved domain.`, location);
       const item = coverage.get(stepKey) || { count: 0, missions: new Map() }; item.count++; item.missions.set(mission.id, (item.missions.get(mission.id) || 0) + 1); coverage.set(stepKey, item);
@@ -343,9 +304,6 @@ export function validateFullDraft(input) {
     }
   }
   for (const [mission, stats] of missionLinking) {
-    for (const key of Array.isArray(mission.bipTargets) ? mission.bipTargets : []) if (manifest.has(key) && !stats.targets.has(key)) {
-      issue('FIDELITY LINKS', 'blocking', `Mission ${mission.id} declares ${key} as an opportunity but never links a decision to it.`, mission.id);
-    }
     if (stats.authoredScenes < 5) continue;
     if (stats.authoredScenes >= 8 && stats.targets.size === 1) {
       const [key] = stats.targets.keys();
