@@ -10,6 +10,8 @@ const FORBIDDEN_FIELD = /(?:^on[a-z]+$|script|html|href|src|url|uri|(?:^|_)(?:pa
 const HTML = /<\s*\/?\s*(?:script|iframe|object|embed|style|[a-z][\w-]*)\b|javascript\s*:|\bon(?:click|load|error|mouse\w*|key\w*|submit|focus|blur)\s*=/i;
 const PRIVACY = { email: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i, phone: /(?:\+?1[\s.-]?)?(?:\(\d{3}\)|\d{3})[\s.-]\d{3}[\s.-]\d{4}\b/, url: /\b(?:https?:\/\/|www\.)\S+/i, 'full date': /\b(?:\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},\s+\d{4})\b/i };
 const substantive = value => typeof value === 'string' && value.trim().length > 0;
+const normalizedText = value => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+const wordCount = value => normalizedText(value) ? normalizedText(value).split(' ').length : 0;
 const missionValue = row => row?.mission || row?.mission_json || row?.draft || row?.content || null;
 const targetKey = target => target?.target_key || target?.key;
 const canonicalDecisionNumber = stepId => {
@@ -114,7 +116,7 @@ function validateResources(resources, alias) {
 
 export function validateFullDraft(input) {
   const snapshot = input?.missions?.daily && input?.missions?.wild && input?.missions?.crisis ? input : buildFullDraftSnapshot(input);
-  const categories = Object.fromEntries(['GAME SETUP', 'MISSION BANK', 'MISSION STRUCTURE', 'RESOURCE MAP', 'FIDELITY LINKS', 'PRIVACY & SAFETY'].map(name => [name, { errors: [], warnings: [] }]));
+  const categories = Object.fromEntries(['GAME SETUP', 'MISSION BANK', 'MISSION STRUCTURE', 'MISSION QUALITY', 'RESOURCE MAP', 'FIDELITY LINKS', 'PRIVACY & SAFETY'].map(name => [name, { errors: [], warnings: [] }]));
   const issue = (category, severity, message, path = '', action = null) => categories[category][severity === 'blocking' ? 'errors' : 'warnings'].push({ severity, message, path, action });
   const setup = snapshot.setup || {};
   if (!snapshot.setupRevisionExists) issue('GAME SETUP', 'blocking', 'Add and save Game Setup.', 'Game Setup', { type: 'setup' });
