@@ -21,7 +21,19 @@ const laterBase={
   current_phase:'baseline',study_id:'MR-002',student_alias:'Student',case_code:'CASE-002',
   case_active:false,participant_active:false,
   protocol:{stagger_position:2,planned_baseline_observations:8},
-  checklist:[],measures:[],tasks:[],study_events:[],
+  checklist:[
+    {item_key:'teacher_consent',status:'complete'},
+    {item_key:'parent_permission',status:'complete'},
+    {item_key:'student_assent',status:'complete'},
+    {item_key:'bsp_technical_review',status:'complete'},
+    {item_key:'safety_screen',status:'complete'},
+    {item_key:'target_routine_finalized',status:'complete'},
+    {item_key:'target_behavior_definition',status:'complete'},
+    {item_key:'fidelity_checklist_finalized',status:'complete'},
+    {item_key:'fidelity_checklist_second_review',status:'complete'},
+    {item_key:'baseline_orientation',status:'complete'}
+  ],
+  measures:[{measure_key:'tses_pre',status:'complete'}],tasks:[],study_events:[],
   prepared_content:{protected_content_present:true,resource_map_ready:true},
   observation_data:{observations:[...initial,...probes],setups:[{case_id:'case'}],observers:[],coverage:{}}
 };
