@@ -37,7 +37,7 @@ jobs:
           supabase --version
 
       - name: Run Research Operations launch-readiness tests
-        run: node --test research-admin/operations.test.mjs
+        run: node --test research-admin/baseline-launch-readiness.test.mjs
 
       - name: Replay clean local database
         run: ./scripts/replay-clean-supabase.sh
