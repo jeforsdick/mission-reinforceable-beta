@@ -129,39 +129,145 @@ export function validateFullDraft(input) {
     for (const slot of slots.keys()) if (slot < 1 || slot > spec.count) issue('MISSION BANK', 'blocking', `${spec.label} has an invalid saved slot ${slot}.`, `${spec.label} ${slot}`);
   }
   for (const error of validateMissionStructure(plainGroups).errors) issue('MISSION STRUCTURE', 'blocking', `Correct ${error.rule.replaceAll('_', ' ')} in mission ${error.mission_id || '(missing ID)'}.`, error.step_id ? `${error.mission_id || 'Mission'} → ${error.step_id}` : error.mission_id || 'Mission');
+  const titleLocations = new Map();
+  const openingScenes = new Map();
   for (const [type, entries] of Object.entries(snapshot.missions)) for (const { slotNumber, mission } of entries) {
     if (!mission) continue;
-    const missionPath = `${TYPES[type].label} ${slotNumber}`;
-    const requireText = (value, label, message) => { if (!substantive(value)) issue('MISSION STRUCTURE', 'blocking', message, `${missionPath} → ${label}`, { type: 'mission', missionType: type, slot: slotNumber }); };
+    const missionPath = \`\${TYPES[type].label} \${slotNumber}\`;
+    const missionAction = { type: 'mission', missionType: type, slot: slotNumber };
+    const requireText = (value, label, message) => {
+      if (!substantive(value)) issue('MISSION STRUCTURE', 'blocking', message, \`\${missionPath} → \${label}\`, missionAction);
+    };
+
     requireText(mission.id, 'Mission ID', 'Add a mission ID.');
     requireText(mission.title, 'Mission Title', 'Add a mission title.');
     requireText(mission.routine, 'Routine', 'Add the mission routine.');
-    if (mission.expectedSteps !== 5) issue('MISSION STRUCTURE', 'blocking', 'Mission playthroughs must contain exactly 5 decisions.', `${missionPath} → Expected Steps`, { type: 'mission', missionType: type, slot: slotNumber });
-    if (!substantive(mission.start) || !mission.steps?.[mission.start]) issue('MISSION STRUCTURE', 'blocking', 'Choose a valid mission start step.', `${missionPath} → Start`, { type: 'mission', missionType: type, slot: slotNumber });
-    for (const ending of ENDINGS) requireText(mission.endings?.[ending]?.text, `${ending} Ending`, `Add the ${ending} ending narrative.`);
+    if (mission.expectedSteps !== 5) issue('MISSION STRUCTURE', 'blocking', 'Mission playthroughs must contain exactly 5 decisions.', \`\${missionPath} → Expected Steps\`, missionAction);
+    if (!substantive(mission.start) || !mission.steps?.[mission.start]) issue('MISSION STRUCTURE', 'blocking', 'Choose a valid mission start step.', \`\${missionPath} → Start\`, missionAction);
+    for (const ending of ENDINGS) requireText(mission.endings?.[ending]?.text, \`\${ending} Ending\`, \`Add the \${ending} ending narrative.\`);
+
+    const titleKey = normalizedText(mission.title);
+    if (titleKey) {
+      const locations = titleLocations.get(titleKey) || [];
+      locations.push(missionPath);
+      titleLocations.set(titleKey, locations);
+    }
+
+    const authoringMeta = mission.authoringMeta || {};
+    if (!substantive(authoringMeta.centralTension)) issue('MISSION QUALITY', 'blocking', 'Define the central tension that makes this mission difficult.', \`\${missionPath} → Central Tension\`, missionAction);
+    if (!substantive(authoringMeta.tone)) issue('MISSION QUALITY', 'blocking', 'Add the emotional / narrative tone for this mission.', \`\${missionPath} → Tone\`, missionAction);
+    if (!substantive(mission.focus)) issue('MISSION QUALITY', 'blocking', 'Define the mission design goal / behavioral discrimination.', \`\${missionPath} → Design Goal\`, missionAction);
+
+    if (!Array.isArray(mission.functionPressure) || mission.functionPressure.length === 0) {
+      issue('MISSION QUALITY', 'blocking', 'Choose at least one function pressure for the mission.', \`\${missionPath} → Function Pressure\`, missionAction);
+    } else for (const value of mission.functionPressure) if (!FUNCTIONS.has(value)) {
+      issue('MISSION QUALITY', 'blocking', \`Function pressure “\${value}” is not canonical.\`, \`\${missionPath} → Function Pressure\`, missionAction);
+    }
+
+    if (!Array.isArray(authoringMeta.activeBipComponents) || authoringMeta.activeBipComponents.length === 0) {
+      issue('MISSION QUALITY', 'blocking', 'Choose the BIP components actively in play.', \`\${missionPath} → Active BIP Components\`, missionAction);
+    } else for (const value of authoringMeta.activeBipComponents) if (!COMPONENTS.has(value)) {
+      issue('MISSION QUALITY', 'blocking', \`BIP component “\${value}” is not canonical.\`, \`\${missionPath} → Active BIP Components\`, missionAction);
+    }
+
+    if (authoringMeta.qualityReview?.behavioral !== true) {
+      issue('MISSION QUALITY', 'blocking', 'Complete the behavioral-accuracy review for this mission.', \`\${missionPath} → Mission Quality Review\`, missionAction);
+    }
+    if (authoringMeta.qualityReview?.gameDesign !== true) {
+      issue('MISSION QUALITY', 'blocking', 'Complete the game-design review for this mission.', \`\${missionPath} → Mission Quality Review\`, missionAction);
+    }
+    if (!Array.isArray(mission.bipTargets) || mission.bipTargets.length === 0) {
+      issue('MISSION QUALITY', 'warning', 'No exact fidelity opportunities are declared for this mission. Confirm that is deliberate.', \`\${missionPath} → Fidelity Target Opportunities\`, missionAction);
+    }
+
     for (const [stepId, step] of Object.entries(mission.steps || {})) {
-      const decision = /^d(\d+)/.exec(stepId)?.[1] || stepId;
-      const stepPath = `${missionPath} → Decision ${decision}`;
-      if (!substantive(step?.text)) issue('MISSION STRUCTURE', 'blocking', 'Add the scene text.', `${stepPath} → Scene`, { type: 'mission', missionType: type, slot: slotNumber });
-      if (!substantive(step?.hint)) issue('MISSION STRUCTURE', 'blocking', 'Add a hint.', `${stepPath} → Hint`, { type: 'mission', missionType: type, slot: slotNumber });
+      const decisionMatch = /^d(\d+)/.exec(stepId);
+      const decision = decisionMatch?.[1] || stepId;
+      const stepPath = \`\${missionPath} → Decision \${decision}\`;
+      if (!substantive(step?.text)) issue('MISSION STRUCTURE', 'blocking', 'Add the scene text.', \`\${stepPath} → Scene\`, missionAction);
+      if (!substantive(step?.hint)) issue('MISSION STRUCTURE', 'blocking', 'Add a hint.', \`\${stepPath} → Hint\`, missionAction);
+
+      const sceneWords = wordCount(step?.text);
+      const canonicalDecision = canonicalDecisionNumber(stepId);
+      if (sceneWords) {
+        if (canonicalDecision === 1 && (sceneWords < 60 || sceneWords > 160)) {
+          issue('MISSION QUALITY', 'warning', 'Opening scene is outside the usual rich-scene range (about 80–130 words). Review immersion and pacing.', \`\${stepPath} → Scene\`, missionAction);
+        } else if (canonicalDecision && canonicalDecision > 1 && (sceneWords < 25 || sceneWords > 120)) {
+          issue('MISSION QUALITY', 'warning', 'Later scene is unusually short or long. Review whether it carries the previous consequence forward without dragging.', \`\${stepPath} → Scene\`, missionAction);
+        }
+      }
+      if (canonicalDecision === 1 && substantive(step?.text)) {
+        const key = normalizedText(step.text);
+        const locations = openingScenes.get(key) || [];
+        locations.push(missionPath);
+        openingScenes.set(key, locations);
+      }
+
       const choices = Object.values(step?.choices || {});
-      if (choices.length !== 3) continue; // The structural finding already reports this once.
+      if (choices.length !== 3) continue;
+
+      const choiceTexts = choices.map(choice => normalizedText(choice?.text)).filter(Boolean);
+      if (choiceTexts.length === 3 && new Set(choiceTexts).size < 3) {
+        issue('MISSION QUALITY', 'blocking', 'Each score must use a distinct teacher action; duplicate choice text was found.', \`\${stepPath} → Choices\`, missionAction);
+      }
+
+      const lengths = choices.map(choice => wordCount(choice?.text)).filter(Boolean);
+      if (lengths.length === 3) {
+        const shortest = Math.min(...lengths), longest = Math.max(...lengths);
+        if (shortest > 0 && longest / shortest > 2.5 && longest - shortest >= 12) {
+          issue('MISSION QUALITY', 'warning', 'Choice lengths are noticeably uneven; make sure wording length does not reveal the best answer.', \`\${stepPath} → Choices\`, missionAction);
+        }
+      }
+
+      const nextStates = choices.map(choice => choice?.next).filter(Boolean);
+      if (nextStates.length && new Set(nextStates).size < 2) {
+        issue('MISSION QUALITY', 'blocking', 'All three choices lead to the same next state. Branching must visibly change the classroom trajectory.', \`\${stepPath} → Branching\`, missionAction);
+      }
+
       for (const choice of choices) {
-        const choicePath = `${stepPath} → Choice ${choice?.score ?? '?'}`;
-        if (!substantive(choice?.text)) issue('MISSION STRUCTURE', 'blocking', 'Add the teacher action.', `${choicePath} → Teacher Action`, { type: 'mission', missionType: type, slot: slotNumber });
-        if (!substantive(choice?.consequence)) issue('MISSION STRUCTURE', 'blocking', 'Add what happens next.', `${choicePath} → What Happens Next`, { type: 'mission', missionType: type, slot: slotNumber });
-        if (!substantive(choice?.wizard)) issue('MISSION STRUCTURE', 'blocking', 'Add Wizard feedback.', `${choicePath} → Wizard Feedback`, { type: 'mission', missionType: type, slot: slotNumber });
-        if (!substantive(choice?.feedback)) issue('MISSION STRUCTURE', 'blocking', 'Add the behavioral explanation.', `${choicePath} → Behavioral Explanation`, { type: 'mission', missionType: type, slot: slotNumber });
+        const choicePath = \`\${stepPath} → Choice \${choice?.score ?? '?'}\`;
+        if (!substantive(choice?.text)) issue('MISSION STRUCTURE', 'blocking', 'Add the teacher action.', \`\${choicePath} → Teacher Action\`, missionAction);
+        if (!substantive(choice?.consequence)) issue('MISSION STRUCTURE', 'blocking', 'Add what happens next.', \`\${choicePath} → What Happens Next\`, missionAction);
+        if (!substantive(choice?.wizard)) issue('MISSION STRUCTURE', 'blocking', 'Add Wizard feedback.', \`\${choicePath} → Wizard Feedback\`, missionAction);
+        if (!substantive(choice?.feedback)) issue('MISSION STRUCTURE', 'blocking', 'Add the behavioral explanation.', \`\${choicePath} → Behavioral Explanation\`, missionAction);
         const meta = choice?.meta;
-        if (!meta || typeof meta !== 'object' || Array.isArray(meta)) issue('MISSION STRUCTURE', 'blocking', 'Add canonical choice metadata.', `${choicePath} → Metadata`, { type: 'mission', missionType: type, slot: slotNumber });
+        if (!meta || typeof meta !== 'object' || Array.isArray(meta)) issue('MISSION STRUCTURE', 'blocking', 'Add canonical choice metadata.', \`\${choicePath} → Metadata\`, missionAction);
         else {
-          if (!substantive(meta.bipComponent) || !COMPONENTS.has(meta.bipComponent)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical BIP component.', `${choicePath} → BIP Component`, { type: 'mission', missionType: type, slot: slotNumber });
-          if (!substantive(meta.mechanism)) issue('MISSION STRUCTURE', 'blocking', 'Add the choice mechanism.', `${choicePath} → Mechanism`, { type: 'mission', missionType: type, slot: slotNumber });
-          if (!substantive(meta.errorType) || !ERROR_TYPES.has(meta.errorType)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical Error Type.', `${choicePath} → Error Type`, { type: 'mission', missionType: type, slot: slotNumber });
-          if (!substantive(meta.function) || !FUNCTIONS.has(meta.function)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical behavior function.', `${choicePath} → Function`, { type: 'mission', missionType: type, slot: slotNumber });
+          if (!substantive(meta.bipComponent) || !COMPONENTS.has(meta.bipComponent)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical BIP component.', \`\${choicePath} → BIP Component\`, missionAction);
+          if (!substantive(meta.mechanism)) issue('MISSION STRUCTURE', 'blocking', 'Add the choice mechanism.', \`\${choicePath} → Mechanism\`, missionAction);
+          if (!substantive(meta.errorType) || !ERROR_TYPES.has(meta.errorType)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical Error Type.', \`\${choicePath} → Error Type\`, missionAction);
+          if (!substantive(meta.function) || !FUNCTIONS.has(meta.function)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical behavior function.', \`\${choicePath} → Function\`, missionAction);
+          if (choice.score === 10 && meta.errorType && meta.errorType !== 'none') {
+            issue('MISSION QUALITY', 'blocking', 'A 10-point plan-aligned choice must use Error Type = None.', \`\${choicePath} → Error Type\`, missionAction);
+          }
+          if ((choice.score === 5 || choice.score === 0) && meta.errorType === 'none') {
+            issue('MISSION QUALITY', 'blocking', 'A 5- or 0-point choice needs an error type that explains what is incomplete or plan-drifting.', \`\${choicePath} → Error Type\`, missionAction);
+          }
         }
       }
     }
+
+    const canonical = mission.steps?.d1_start && mission.steps?.d2_supported && mission.steps?.d2_wobbly && mission.steps?.d2_escalated;
+    if (canonical) {
+      const canRecover = [2,3,4].some(decision => {
+        const step = mission.steps?.[\`d\${decision}_escalated\`];
+        return Object.values(step?.choices || {}).some(choice => choice?.score === 10 && choice?.next && !choice.next.endsWith('_escalated'));
+      });
+      if (!canRecover) issue('MISSION QUALITY', 'blocking', 'The escalated trajectory never offers a meaningful recovery path before the final decision.', \`\${missionPath} → Branching\`, missionAction);
+
+      const canWorsen = [2,3,4].some(decision => {
+        const step = mission.steps?.[\`d\${decision}_supported\`];
+        return Object.values(step?.choices || {}).some(choice => choice?.score === 0 && choice?.next && !choice.next.endsWith('_supported'));
+      });
+      if (!canWorsen) issue('MISSION QUALITY', 'blocking', 'The supported trajectory cannot meaningfully worsen after a poor choice; keep later decisions consequential.', \`\${missionPath} → Branching\`, missionAction);
+    }
+  }
+
+  for (const locations of titleLocations.values()) if (locations.length > 1) {
+    issue('MISSION QUALITY', 'blocking', \`Mission titles must be unique. Duplicate title appears in \${locations.join(', ')}.\`, locations[0]);
+  }
+  for (const locations of openingScenes.values()) if (locations.length > 1) {
+    issue('MISSION QUALITY', 'warning', \`The same opening scene appears in multiple missions: \${locations.join(', ')}. Confirm the mission bank has enough scenario variety.\`, locations[0]);
   }
   const injectedResources = snapshot.resources && { ...structuredClone(snapshot.resources), studentAlias: snapshot.studentAlias };
   const resourceReport = validateResources(injectedResources, snapshot.studentAlias);
