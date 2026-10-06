@@ -122,19 +122,10 @@ export function nextAction(item,now=new Date()){
   return 'Case closeout is recorded.';
 }
 export function observerBaselineReady(item){
-  const observers=item.observation_data?.observers||[];
-  const primaryResearcherAvailable=observers.some(observer=>
-    observer.active!==false
-    && observer.observer_type==='primary_researcher'
-    && observer.status==='qualified'
-  );
-  return observers.some(observer=>
+  return (item.observation_data?.observers||[]).some(observer=>
     observer.active!==false
     && observer.observer_type==='trained_observer'
-    && (
-      observer.status==='qualified'
-      || (observer.online_training_ready===true && primaryResearcherAvailable)
-    )
+    && observer.status==='qualified'
   );
 }
 export function baselineReadiness(item){
