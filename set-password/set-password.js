@@ -21,10 +21,22 @@
         const {error:updateError}=await client.auth.updateUser({password});
         if(updateError){button.disabled=false;invalid();return;}
         form.reset();form.hidden=true;
-        const {data:observerAccount}=await client.from('research_observer_accounts').select('observer_id').eq('auth_user_id',session.user.id).eq('active',true).maybeSingle();
+        const [{data:observerAccount},{data:participant}]=await Promise.all([
+          client.from('research_observer_accounts').select('observer_id').eq('auth_user_id',session.user.id).eq('active',true).maybeSingle(),
+          client.from('participants').select('id,active,case_id').eq('auth_user_id',session.user.id).maybeSingle()
+        ]);
         const observerReady=Boolean(observerAccount?.observer_id);
-        status.textContent=observerReady?'Password created. Opening your Observer Account…':'Password created. Opening Mission: Reinforceable…';
-        setTimeout(()=>location.replace(observerReady?'/observer/':'/game/'),900);
+        if(observerReady){
+          status.textContent='Password created. Opening your Observer Account…';
+          setTimeout(()=>location.replace('/observer/'),900);
+          return;
+        }
+        if(participant && participant.active!==true){
+          status.textContent='Password created. You are ready for your Mission: Reinforceable orientation. Study missions will stay locked until the research team starts your intervention.';
+          return;
+        }
+        status.textContent='Password created. Opening Mission: Reinforceable…';
+        setTimeout(()=>location.replace('/game/'),900);
       });
     }catch{invalid();}
   }
