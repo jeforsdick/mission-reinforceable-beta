@@ -875,3 +875,10 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
   .authoring-fidelity-brief li{grid-template-columns:1fr}
   .authoring-design-cues{flex-direction:column}
 }
+
+.mission-progress-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+.mission-progress-strip>div{padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:#f8f6f1}
+.mission-progress-strip span,.mission-progress-strip strong{display:block}
+.mission-progress-strip span{color:var(--muted);font-size:.62rem;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
+.mission-progress-strip strong{margin-top:2px;color:var(--navy);font-size:1rem}
+@media(max-width:700px){.mission-progress-strip{grid-template-columns:1fr 1fr}}
