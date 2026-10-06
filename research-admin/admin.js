@@ -451,6 +451,25 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
  $('#protocol-form')?.addEventListener('submit',event=>{event.preventDefault();operationRpc('research_admin_set_case_protocol',{target_case_id:caseId,target_stagger_position:Number(new FormData(event.currentTarget).get('position'))});});
  document.querySelectorAll('.checklist-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form);operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null});}));
  document.querySelectorAll('.measure-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form),status=f.get('status');if(status==='complete'&&!f.get('completed_on')){window.alert('Completion date is required when status is Complete.');return;}operationRpc('research_admin_record_measure',{target_case_id:caseId,target_measure_key:form.dataset.key,target_status:status,target_completed_on:f.get('completed_on')||null,target_external_reference:f.get('external_reference')||null,target_brief_note:f.get('note')||null});}));
+ $('#start-intervention-form')?.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const form=event.currentTarget,f=new FormData(form),button=form.querySelector('button[type="submit"]');
+  if(!window.confirm('Start Intervention now?\n\nThis will record the Intervention phase, activate Mission: Reinforceable game access, and enable daily reminders together. This cannot be backdated.'))return;
+  button.disabled=true;
+  try{
+    await adminApi('/api/research-admin-start-intervention',{
+      case_id:caseId,
+      effective_date:f.get('effective_date'),
+      baseline_pattern_reviewed:f.has('baseline_pattern_reviewed'),
+      recent_series_reviewed:f.get('recent_series_reviewed')==='true'||f.has('recent_series_reviewed'),
+      decision_note:f.get('note')
+    });
+    await openDetail(state.selected.request_id,state.selectedTab);
+  }catch(error){
+    window.alert(error.message);
+    button.disabled=false;
+  }
+ });
  $('#phase-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_phase',{target_case_id:caseId,target_phase:f.get('phase'),target_effective_date:f.get('effective_date'),target_decision_note:f.get('note')||null});});
  $('#activate-game-access')?.addEventListener('click',()=>{if(window.confirm('Activate Mission: Reinforceable game access for this teacher?\n\nThis will activate the participant and case for normal teacher gameplay. It will not send email or enable reminders.'))operationRpc('research_admin_set_intervention_game_access',{target_case_id:caseId,target_enabled:true});});
  $('#deactivate-game-access')?.addEventListener('click',()=>{if(window.confirm('Deactivate Mission: Reinforceable game access for this teacher?\n\nThis will deactivate the participant and case and turn off daily reminders. It will not delete study records.'))operationRpc('research_admin_set_intervention_game_access',{target_case_id:caseId,target_enabled:false});});
