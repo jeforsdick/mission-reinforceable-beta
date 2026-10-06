@@ -233,6 +233,62 @@ function renderPublishedReview(published = {}) {
   return `<section class="published-game-review builder-section"><h2>Published Game Review</h2><p>This reviews the currently published protected game; it does not publish mission drafts.</p>${content.present ? `<p><strong>Reviewing protected version v${version}</strong></p><button id="preview-protected-game" class="primary" type="button" data-case-code="${esc(published.case_code)}" data-content-version="${version}">Preview Published Version (v${version})</button><p><small>QA Preview is researcher testing only. It loads current protected version v${version}, records that game content version in QA telemetry, and does not activate teacher access or count as participant study data.</small></p><div class="launch-reviews">${reviews.map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" data-content-version="${version}" ${done ? 'disabled' : ''}><span>${label} · v${version}</span><strong>${done ? 'Complete ✓' : 'Needs review'}</strong></button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '<p class="needs">No published protected game is available to preview or review yet.</p>'}<h3>Teacher preparation</h3><p>Record the existing intervention orientation requirement here.</p>${orientationCard}</section>`;
 }
 const privacyWarning = 'Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.';
+const authoringBriefValue = value => typeof value === 'string' && value.trim()
+  ? \`<p>\${esc(value)}</p>\`
+  : '<p class="authoring-brief-empty">Not provided.</p>';
+const authoringBriefField = (label, value) => \`<div class="authoring-brief-field"><span>\${esc(label)}</span>\${authoringBriefValue(value)}</div>\`;
+
+export function renderAuthoringBrief(workspace) {
+  const context = workspace?.intake_context || {};
+  const fidelity = targets(workspace);
+  const sourceTime = context.source_updated_at ? dateLabel(context.source_updated_at) : '';
+  return \`<section class="builder-section authoring-brief" aria-labelledby="authoring-brief-title">
+    <div class="authoring-brief-heading">
+      <div><p class="eyebrow">RESEARCHER AUTHORING BRIEF</p><h2 id="authoring-brief-title">Build from the plan, write from the classroom</h2></div>
+      <span class="authoring-source-chip">\${sourceTime ? \`Case context updated \${esc(sourceTime)}\` : 'Case context loaded'}</span>
+    </div>
+    <p class="authoring-source-rule"><strong>Source-of-truth rule:</strong> the approved BSP/BIP and finalized fidelity targets govern the game. Intake information below is supplemental classroom context. If they conflict, use the BSP/BIP.</p>
+    <div class="authoring-brief-grid">
+      <section>
+        <h3>Behavior pathway</h3>
+        \${authoringBriefField('Target behavior', context.target_behavior)}
+        \${authoringBriefField('Observable topography', context.behavior_topography)}
+        \${authoringBriefField('Primary function', context.primary_function || workspace?.primary_function)}
+        \${authoringBriefField('Replacement behavior', context.replacement_behavior)}
+        \${authoringBriefField('Desired behavior', context.desired_behavior)}
+      </section>
+      <section>
+        <h3>Plan actions</h3>
+        \${authoringBriefField('Prevent', context.prevention_strategies)}
+        \${authoringBriefField('Teach', context.teaching_strategies)}
+        \${authoringBriefField('Reinforce', context.reinforcement_system)}
+        \${authoringBriefField('Respond', context.response_strategy)}
+        \${context.has_crisis_plan ? authoringBriefField('Crisis / safety', context.crisis_plan) : '<div class="authoring-no-crisis"><strong>No formal crisis plan recorded.</strong><span>High-intensity missions may not invent crisis or safety procedures.</span></div>'}
+      </section>
+      <section>
+        <h3>Classroom reality</h3>
+        \${authoringBriefField('Typical settings / routines', context.typical_settings)}
+        \${authoringBriefField('Common triggers', context.common_triggers)}
+        \${authoringBriefField('What usually follows behavior', context.typical_consequences)}
+        \${authoringBriefField('What staff do now', context.current_staff_responses)}
+        \${authoringBriefField('Requested practice situations', context.requested_scenarios)}
+      </section>
+      <section>
+        <h3>Personalization fuel</h3>
+        \${authoringBriefField('Strengths / interests', context.student_strengths)}
+        \${authoringBriefField('Known reinforcers / preferences', context.preferred_items_activities)}
+        \${authoringBriefField('Preference assessment notes', context.preference_assessment_notes)}
+        \${authoringBriefField('Additional context', context.additional_context)}
+        \${authoringBriefField('Grade', context.grade_level)}
+      </section>
+    </div>
+    <div class="authoring-fidelity-brief">
+      <div><h3>Approved fidelity targets</h3><p>These are the observable teacher behaviors the mission bank is ultimately rehearsing. Link a decision only when the exact target is a defensible scoring criterion.</p></div>
+      <ul>\${fidelity.map(target => \`<li><code>\${esc(targetKey(target))}</code><span>\${esc(target.description)}</span><small>\${esc(target.domain)}</small></li>\`).join('') || '<li>No active fidelity targets returned for this case.</li>'}</ul>
+    </div>
+    <div class="authoring-design-cues"><strong>Design cue:</strong><span>Turn current staff habits into plausible 5- and 0-point choices, use real routines for scenario variety, make the function pressure visible, and carry each consequence into the next scene.</span></div>
+  </section>\`;
+}
 export function renderGameSetup(setup, message = '') {
   return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2><p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
 }
