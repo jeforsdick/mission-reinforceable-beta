@@ -135,6 +135,7 @@ export function validateFullDraft(input) {
     if (!mission) continue;
     const missionPath = `${TYPES[type].label} ${slotNumber}`;
     const missionAction = { type: 'mission', missionType: type, slot: slotNumber };
+    const isCanonicalAuthoringMission = Boolean(mission.steps?.d1_start && mission.steps?.d2_supported && mission.steps?.d2_wobbly && mission.steps?.d2_escalated);
     let sceneLengthOutliers = 0;
     let choiceBalanceOutliers = 0;
     const requireText = (value, label, message) => {
@@ -149,39 +150,41 @@ export function validateFullDraft(input) {
     for (const ending of ENDINGS) requireText(mission.endings?.[ending]?.text, `${ending} Ending`, `Add the ${ending} ending narrative.`);
 
     const titleKey = normalizedText(mission.title);
-    if (titleKey) {
+    if (isCanonicalAuthoringMission && titleKey) {
       const locations = titleLocations.get(titleKey) || [];
       locations.push(missionPath);
       titleLocations.set(titleKey, locations);
     }
 
     const authoringMeta = mission.authoringMeta || {};
-    if (!substantive(authoringMeta.centralTension)) issue('MISSION QUALITY', 'blocking', 'Define the central tension that makes this mission difficult.', `${missionPath} → Central Tension`, missionAction);
-    if (!substantive(authoringMeta.tone)) issue('MISSION QUALITY', 'blocking', 'Add the emotional / narrative tone for this mission.', `${missionPath} → Tone`, missionAction);
-    if (!substantive(mission.focus)) issue('MISSION QUALITY', 'blocking', 'Define the mission design goal / behavioral discrimination.', `${missionPath} → Design Goal`, missionAction);
-
-    if (!Array.isArray(mission.functionPressure) || mission.functionPressure.length === 0) {
-      issue('MISSION QUALITY', 'blocking', 'Choose at least one function pressure for the mission.', `${missionPath} → Function Pressure`, missionAction);
-    } else for (const value of mission.functionPressure) if (!FUNCTIONS.has(value)) {
-      issue('MISSION QUALITY', 'blocking', `Function pressure “${value}” is not canonical.`, `${missionPath} → Function Pressure`, missionAction);
-    }
-
-    if (!Array.isArray(authoringMeta.activeBipComponents) || authoringMeta.activeBipComponents.length === 0) {
-      issue('MISSION QUALITY', 'blocking', 'Choose the BIP components actively in play.', `${missionPath} → Active BIP Components`, missionAction);
-    } else for (const value of authoringMeta.activeBipComponents) if (!COMPONENTS.has(value)) {
-      issue('MISSION QUALITY', 'blocking', `BIP component “${value}” is not canonical.`, `${missionPath} → Active BIP Components`, missionAction);
-    }
-
-    if (authoringMeta.qualityReview?.behavioral !== true) {
-      issue('MISSION QUALITY', 'blocking', 'Complete the behavioral-accuracy review for this mission.', `${missionPath} → Mission Quality Review`, missionAction);
-    }
-    if (authoringMeta.qualityReview?.gameDesign !== true) {
-      issue('MISSION QUALITY', 'blocking', 'Complete the game-design review for this mission.', `${missionPath} → Mission Quality Review`, missionAction);
-    }
-    if (!Array.isArray(mission.bipTargets) || mission.bipTargets.length === 0) {
-      issue('MISSION QUALITY', 'warning', 'No exact fidelity opportunities are declared for this mission. Confirm that is deliberate.', `${missionPath} → Fidelity Target Opportunities`, missionAction);
-    }
-
+    if (isCanonicalAuthoringMission) {
+      if (!substantive(authoringMeta.centralTension)) issue('MISSION QUALITY', 'blocking', 'Define the central tension that makes this mission difficult.', `${missionPath} → Central Tension`, missionAction);
+      if (!substantive(authoringMeta.tone)) issue('MISSION QUALITY', 'blocking', 'Add the emotional / narrative tone for this mission.', `${missionPath} → Tone`, missionAction);
+      if (!substantive(mission.focus)) issue('MISSION QUALITY', 'blocking', 'Define the mission design goal / behavioral discrimination.', `${missionPath} → Design Goal`, missionAction);
+  
+      if (!Array.isArray(mission.functionPressure) || mission.functionPressure.length === 0) {
+        issue('MISSION QUALITY', 'blocking', 'Choose at least one function pressure for the mission.', `${missionPath} → Function Pressure`, missionAction);
+      } else for (const value of mission.functionPressure) if (!FUNCTIONS.has(value)) {
+        issue('MISSION QUALITY', 'blocking', `Function pressure “${value}” is not canonical.`, `${missionPath} → Function Pressure`, missionAction);
+      }
+  
+      if (!Array.isArray(authoringMeta.activeBipComponents) || authoringMeta.activeBipComponents.length === 0) {
+        issue('MISSION QUALITY', 'blocking', 'Choose the BIP components actively in play.', `${missionPath} → Active BIP Components`, missionAction);
+      } else for (const value of authoringMeta.activeBipComponents) if (!COMPONENTS.has(value)) {
+        issue('MISSION QUALITY', 'blocking', `BIP component “${value}” is not canonical.`, `${missionPath} → Active BIP Components`, missionAction);
+      }
+  
+      if (authoringMeta.qualityReview?.behavioral !== true) {
+        issue('MISSION QUALITY', 'blocking', 'Complete the behavioral-accuracy review for this mission.', `${missionPath} → Mission Quality Review`, missionAction);
+      }
+      if (authoringMeta.qualityReview?.gameDesign !== true) {
+        issue('MISSION QUALITY', 'blocking', 'Complete the game-design review for this mission.', `${missionPath} → Mission Quality Review`, missionAction);
+      }
+      if (!Array.isArray(mission.bipTargets) || mission.bipTargets.length === 0) {
+        issue('MISSION QUALITY', 'warning', 'No exact fidelity opportunities are declared for this mission. Confirm that is deliberate.', `${missionPath} → Fidelity Target Opportunities`, missionAction);
+      }
+  
+      }
     for (const [stepId, step] of Object.entries(mission.steps || {})) {
       const decisionMatch = /^d(\d+)/.exec(stepId);
       const decision = decisionMatch?.[1] || stepId;
@@ -191,14 +194,14 @@ export function validateFullDraft(input) {
 
       const sceneWords = wordCount(step?.text);
       const canonicalDecision = canonicalDecisionNumber(stepId);
-      if (sceneWords) {
+      if (isCanonicalAuthoringMission && sceneWords) {
         if (canonicalDecision === 1 && (sceneWords < 60 || sceneWords > 160)) {
           sceneLengthOutliers++;
         } else if (canonicalDecision && canonicalDecision > 1 && (sceneWords < 25 || sceneWords > 120)) {
           sceneLengthOutliers++;
         }
       }
-      if (canonicalDecision === 1 && substantive(step?.text)) {
+      if (isCanonicalAuthoringMission && canonicalDecision === 1 && substantive(step?.text)) {
         const key = normalizedText(step.text);
         const locations = openingScenes.get(key) || [];
         locations.push(missionPath);
@@ -209,12 +212,12 @@ export function validateFullDraft(input) {
       if (choices.length !== 3) continue;
 
       const choiceTexts = choices.map(choice => normalizedText(choice?.text)).filter(Boolean);
-      if (choiceTexts.length === 3 && new Set(choiceTexts).size < 3) {
+      if (isCanonicalAuthoringMission && choiceTexts.length === 3 && new Set(choiceTexts).size < 3) {
         issue('MISSION QUALITY', 'blocking', 'Each score must use a distinct teacher action; duplicate choice text was found.', `${stepPath} → Choices`, missionAction);
       }
 
       const lengths = choices.map(choice => wordCount(choice?.text)).filter(Boolean);
-      if (lengths.length === 3) {
+      if (isCanonicalAuthoringMission && lengths.length === 3) {
         const shortest = Math.min(...lengths), longest = Math.max(...lengths);
         if (shortest > 0 && longest / shortest > 2.5 && longest - shortest >= 12) {
           choiceBalanceOutliers++;
@@ -222,7 +225,7 @@ export function validateFullDraft(input) {
       }
 
       const nextStates = choices.map(choice => choice?.next).filter(Boolean);
-      if (nextStates.length && new Set(nextStates).size < 2) {
+      if (isCanonicalAuthoringMission && nextStates.length && new Set(nextStates).size < 2) {
         issue('MISSION QUALITY', 'blocking', 'All three choices lead to the same next state. Branching must visibly change the classroom trajectory.', `${stepPath} → Branching`, missionAction);
       }
 
@@ -239,21 +242,20 @@ export function validateFullDraft(input) {
           if (!substantive(meta.mechanism)) issue('MISSION STRUCTURE', 'blocking', 'Add the choice mechanism.', `${choicePath} → Mechanism`, missionAction);
           if (!substantive(meta.errorType) || !ERROR_TYPES.has(meta.errorType)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical Error Type.', `${choicePath} → Error Type`, missionAction);
           if (!substantive(meta.function) || !FUNCTIONS.has(meta.function)) issue('MISSION STRUCTURE', 'blocking', 'Choose a canonical behavior function.', `${choicePath} → Function`, missionAction);
-          if (choice.score === 10 && meta.errorType && meta.errorType !== 'none') {
+          if (isCanonicalAuthoringMission && choice.score === 10 && meta.errorType && meta.errorType !== 'none') {
             issue('MISSION QUALITY', 'blocking', 'A 10-point plan-aligned choice must use Error Type = None.', `${choicePath} → Error Type`, missionAction);
           }
-          if ((choice.score === 5 || choice.score === 0) && meta.errorType === 'none') {
+          if (isCanonicalAuthoringMission && (choice.score === 5 || choice.score === 0) && meta.errorType === 'none') {
             issue('MISSION QUALITY', 'blocking', 'A 5- or 0-point choice needs an error type that explains what is incomplete or plan-drifting.', `${choicePath} → Error Type`, missionAction);
           }
         }
       }
     }
 
-    if (sceneLengthOutliers) issue('MISSION QUALITY', 'warning', `${sceneLengthOutliers} scene${sceneLengthOutliers===1?' is':'s are'} outside the usual narrative length range. Review immersion, consequence carry-forward, and pacing.`, `${missionPath} → Scenes`, missionAction);
-    if (choiceBalanceOutliers) issue('MISSION QUALITY', 'warning', `${choiceBalanceOutliers} decision scene${choiceBalanceOutliers===1?' has':'s have'} noticeably uneven choice lengths. Make sure wording length does not reveal the best answer.`, `${missionPath} → Choices`, missionAction);
+    if (isCanonicalAuthoringMission && sceneLengthOutliers) issue('MISSION QUALITY', 'warning', `${sceneLengthOutliers} scene${sceneLengthOutliers===1?' is':'s are'} outside the usual narrative length range. Review immersion, consequence carry-forward, and pacing.`, `${missionPath} → Scenes`, missionAction);
+    if (isCanonicalAuthoringMission && choiceBalanceOutliers) issue('MISSION QUALITY', 'warning', `${choiceBalanceOutliers} decision scene${choiceBalanceOutliers===1?' has':'s have'} noticeably uneven choice lengths. Make sure wording length does not reveal the best answer.`, `${missionPath} → Choices`, missionAction);
 
-    const canonical = mission.steps?.d1_start && mission.steps?.d2_supported && mission.steps?.d2_wobbly && mission.steps?.d2_escalated;
-    if (canonical) {
+    if (isCanonicalAuthoringMission) {
       const canRecover = [2,3,4].some(decision => {
         const step = mission.steps?.[`d${decision}_escalated`];
         return Object.values(step?.choices || {}).some(choice => choice?.score === 10 && choice?.next && !choice.next.endsWith('_escalated'));
