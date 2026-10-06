@@ -1,4 +1,4 @@
-import { CHECKLIST, MEASURES, PHASES, COACHING_FOCUSES, TASK_CATEGORIES, currentByKey, baselineReadiness, attentionForCase, timelineForCase, denverToday, checklistStatuses, LIFECYCLE_STAGES, lifecycleStage, nextAction, observationSummary, gamePreparationReadiness, interventionElapsed } from './operations-model.mjs';
+import { CHECKLIST, MEASURES, PHASES, COACHING_FOCUSES, TASK_CATEGORIES, currentByKey, baselineReadiness, observerBaselineReady, attentionForCase, timelineForCase, denverToday, checklistStatuses, LIFECYCLE_STAGES, lifecycleStage, nextAction, observationSummary, gamePreparationReadiness, interventionElapsed } from './operations-model.mjs';
 import { renderObservationSetup, renderPhaseObservationWorkspace } from './observations-ui.mjs';
 
 export function renderWeeklyCheckins(item,e){
@@ -86,13 +86,14 @@ export function renderOperations(item,prepared,e,launchConfig={}){
  const completeChecklist=(key,allowNA=false)=>allowNA?['complete','not_applicable'].includes(checklist[key]?.status):checklist[key]?.status==='complete';
  const permissionReady=completeChecklist('teacher_consent')&&completeChecklist('parent_permission')&&completeChecklist('student_assent',true);
  const bspPrepKeys=['bsp_technical_review','safety_screen','target_routine_finalized','target_behavior_definition','fidelity_checklist_finalized','fidelity_checklist_second_review'];
- const bspPrepReady=bspPrepKeys.every(key=>completeChecklist(key));
+ const fidelityTargetReady=Number(item.active_fidelity_target_count||0)>0;
+ const bspPrepReady=bspPrepKeys.every(key=>completeChecklist(key))&&fidelityTargetReady;
  const tsesPreReady=measures.tses_pre?.status==='complete';
  const baselineAssignmentReady=Boolean(item.protocol);
  const baselineOrientationReady=completeChecklist('baseline_orientation');
  const observationSetupReady=(item.observation_data?.setups||[]).length>0;
- const observerReady=(item.observation_data?.observers||[]).some(x=>x.active&&x.status==='qualified');
- const baselineLaunchReady=baseline.ready&&observationSetupReady&&observerReady;
+ const observerReady=observerBaselineReady(item);
+ const baselineLaunchReady=baseline.ready;
  const resourceReviewsReady=resourceReady&&prepared.resource_map?.behavior_reviewed===true&&prepared.resource_map?.privacy_reviewed===true;
  const qaPreviewReady=prepared.resource_map?.qa_previewed===true;
  const interventionOrientationReady=completeChecklist('intervention_orientation');
@@ -100,12 +101,12 @@ export function renderOperations(item,prepared,e,launchConfig={}){
  const setupRow=(label,ready,detail,target,help,readyLabel='Complete',needsLabel='Needs action')=>`<div class="setup-readiness-row"><div class="setup-readiness-copy"><strong>${e(label)}</strong><small>${e(detail)}</small><span class="setup-how"><b>How:</b> ${e(help)}</span></div>${setupStatus(ready,readyLabel,needsLabel)}<button type="button" class="quiet setup-detail-jump" data-setup-detail-target="${target}">View / Edit</button></div>`;
  const baselineLaunchRows=[
    setupRow('Permissions',permissionReady,'Teacher consent · Parent permission · Student assent','operations-enrollment','Obtain the required consent/permission/assent forms, then record each status and date here.'),
-   setupRow('BSP + measurement',bspPrepReady,'Technical review · Safety · Routine · Behavior definition · Fidelity checklist','operations-enrollment','Review the existing BSP, complete the safety screen, finalize the observation routine and target-behavior definition, then finalize and second-review the fidelity checklist.'),
+   setupRow('BSP + measurement',bspPrepReady,'Technical review · Safety · Routine · Behavior definition · Fidelity checklist','operations-enrollment','Review the existing BSP, complete the safety screen, finalize the observation routine and target-behavior definition, then finalize and second-review an active fidelity checklist.'),
    setupRow('TSES Pre',tsesPreReady,'Pre-baseline teacher efficacy measure','operations-enrollment','Open the TSES Pre Qualtrics survey from this section, then record the measure as Complete after it is submitted.'),
    setupRow('Baseline assignment',baselineAssignmentReady,assignment,'operations-prebaseline','Choose stagger position 1–5 here. Research Admin converts that to the planned 6, 8, 10, 12, or 14-observation minimum.',baselineAssignmentReady?'Assigned':'Needs assignment','Needs assignment'),
    setupRow('Baseline orientation',baselineOrientationReady,'Study logistics and observation procedures','operations-prebaseline','Complete the logistics-only teacher orientation, including observation scheduling and study timeline, then mark it Complete.'),
    setupRow('Observation setup',observationSetupReady,'Routine and target behavior measurement setup','operations-prebaseline','Enter the selected routine and operational target-behavior definition here. The routine clock time is added when you build the weekly observation schedule.'),
-   setupRow('Observer readiness',observerReady,'At least one observer cleared for live collection','operations-prebaseline','This updates automatically. Finish observer training/calibration in Observer Training and manually clear at least one observer for live data collection.',observerReady?'Observer available':'Needs cleared observer','Needs cleared observer')
+   setupRow('Observer readiness',observerReady,'At least one trained observer ready for baseline','operations-prebaseline','This updates automatically. A trained observer may be fully cleared, or may begin with supported calibration after completing the online requirements while the primary researcher is available.',observerReady?'Observer available':'Needs observer ready','Needs observer ready')
  ].join('');
  const interventionPrepRows=[
    setupRow('Teacher account',teacherReady,'Secure teacher account ready for Mission: Reinforceable','participant-setup-details','Use Intake Information → Accounts → Create Teacher Account. Research Admin creates the Supabase Auth account for you; do not create it manually in Supabase.',teacherReady?'Ready':'Needs account','Needs account'),
@@ -116,7 +117,7 @@ export function renderOperations(item,prepared,e,launchConfig={}){
  ].join('');
  const setupNext=baselineLaunchReady
    ? (game.ready?'Baseline launch and intervention preparation are ready.':'Baseline launch is ready. Continue intervention preparation while baseline is running.')
-   : `${baseline.remaining + (observationSetupReady?0:1) + (observerReady?0:1)} baseline launch item${baseline.remaining + (observationSetupReady?0:1) + (observerReady?0:1)===1?'':'s'} still need attention.`;
+   : `${baseline.remaining} baseline launch item${baseline.remaining===1?'':'s'} still need attention.`;
  const historyCategoryKey=category=>{
    const value=String(category||'').toLowerCase();
    if(value==='phase')return 'phase';
