@@ -104,7 +104,9 @@ export function nextAction(item,now=new Date()){
   if(phase==='baseline'){
     if(!item.protocol||stats.baseline<(item.protocol.planned_baseline_observations||0)) return 'Record the next baseline observation.';
     if(!gameReadiness(item).ready) return 'Finish game readiness before starting intervention.';
-    return 'Baseline minimum is met. Review the data and decide whether to move to intervention.';
+    return item.protocol?.stagger_position>1
+      ? 'Baseline minimum is met. Review level, trend, variability, and the required 3-session pre-intervention series before starting Intervention.'
+      : 'Baseline minimum is met. Review level, trend, and variability before starting Intervention.';
   }
   if(phase==='intervention'){
     const elapsed=interventionElapsed(item,now);
@@ -140,6 +142,23 @@ export function baselineReadiness(item){
   if(Number(item.active_fidelity_target_count||0)<1) missing.push('Active fidelity checklist');
   if(!observerBaselineReady(item)) missing.push('Observer readiness');
   return {ready:missing.length===0,missing,remaining:missing.length};
+}
+export function interventionStartReadiness(item,prepared=item.prepared_content||{},{reminderSystemEnabled=true}={}){
+  const stats=observationSummary(item),game=gamePreparationReadiness(item,prepared),missing=[];
+  const planned=Number(item.protocol?.planned_baseline_observations||0);
+  if((item.current_phase||'prebaseline')!=='baseline') missing.push('Current phase must be Baseline');
+  if(!item.protocol) missing.push('Baseline assignment');
+  else if(stats.baseline<planned) missing.push(`Baseline minimum: ${stats.baseline}/${planned} finalized observations`);
+  for(const reason of game.missing) missing.push(reason);
+  if((item.study_events||[]).some(event=>!event.resolved_at&&event.affects_phase_interpretation===true)) missing.push('Resolve phase-interpretation study events');
+  if(!reminderSystemEnabled) missing.push('Production daily reminder delivery');
+  return {
+    ready:missing.length===0,
+    missing,
+    baselineCount:stats.baseline,
+    plannedMinimum:planned,
+    requiresRecentSeries:Number(item.protocol?.stagger_position||0)>1
+  };
 }
 export function measureNeeds(item){
   const current=currentByKey(item.measures,'measure_key'), phase=item.current_phase||'prebaseline', keys=[];
