@@ -273,6 +273,15 @@ export function validateFullDraft(input) {
   const resourceReport = validateResources(injectedResources, snapshot.studentAlias);
   resourceReport.errors.forEach(item => issue('RESOURCE MAP', 'blocking', item.message, item.path)); resourceReport.warnings.forEach(item => issue('PRIVACY & SAFETY', 'warning', item.message, item.path));
   const manifest = new Map(snapshot.activeFidelityTargets.map(target => [targetKey(target), target]));
+  if (manifest.size === 0) issue('FIDELITY LINKS', 'blocking', 'No active approved fidelity targets are available for this case. Finalize the fidelity checklist before publishing the game.', 'Approved fidelity targets');
+  for (const [type, entries] of Object.entries(snapshot.missions)) for (const { slotNumber, mission } of entries) {
+    if (!mission) continue;
+    for (const key of Array.isArray(mission.bipTargets) ? mission.bipTargets : []) {
+      const path = `${TYPES[type].label} ${slotNumber} → Fidelity Target Opportunities`;
+      if (!KEY_PATTERN.test(key)) issue('FIDELITY LINKS', 'blocking', `Declared fidelity target ${key} is malformed.`, path, { type: 'mission', missionType: type, slot: slotNumber });
+      else if (!manifest.has(key)) issue('FIDELITY LINKS', 'blocking', `Declared fidelity target ${key} is not active for this case.`, path, { type: 'mission', missionType: type, slot: slotNumber });
+    }
+  }
   const coverage = new Map();
   const missionLinking = new Map();
   for (const [type, entries] of Object.entries(snapshot.missions)) for (const { slotNumber, mission } of entries) for (const [stepId, step] of Object.entries(mission?.steps || {})) {
@@ -295,6 +304,8 @@ export function validateFullDraft(input) {
     if (stepKey && !KEY_PATTERN.test(stepKey)) issue('FIDELITY LINKS', 'blocking', 'Correct the malformed fidelity target key.', location);
     else if (stepKey && !manifest.has(stepKey)) issue('FIDELITY LINKS', 'blocking', `Fidelity target ${stepKey} is not active for this case.`, location);
     else if (stepKey) {
+      const declared = new Set(Array.isArray(mission.bipTargets) ? mission.bipTargets : []);
+      if (!declared.has(stepKey)) issue('FIDELITY LINKS', 'blocking', `Decision uses ${stepKey}, but the mission does not declare that target under Fidelity Target Opportunities.`, location);
       const domain = stepKey.split('_')[0], approvedDomain = manifest.get(stepKey)?.domain;
       if (approvedDomain && approvedDomain !== domain) issue('FIDELITY LINKS', 'blocking', `Fidelity target ${stepKey} does not match its approved domain.`, location);
       const item = coverage.get(stepKey) || { count: 0, missions: new Map() }; item.count++; item.missions.set(mission.id, (item.missions.get(mission.id) || 0) + 1); coverage.set(stepKey, item);
@@ -305,8 +316,11 @@ export function validateFullDraft(input) {
       if (!snapshot.hasCrisisPlan && choice?.meta?.bipComponent === 'Crisis') issue('PRIVACY & SAFETY', 'blocking', 'Crisis BIP-component metadata requires a formal crisis plan.', `${location} → Choice ${choiceKey}`);
     }
   }
-  for (const [key] of manifest) { const item = coverage.get(key); if (!item) issue('FIDELITY LINKS', 'warning', `Approved target ${key} is never linked; researcher review is required.`, key); else { if (item.count < 3) issue('FIDELITY LINKS', 'warning', `Target ${key} is linked fewer than 3 times.`, key); if (item.missions.size === 1) issue('FIDELITY LINKS', 'warning', `Target ${key} appears in only one mission.`, key); } }
+  for (const [key] of manifest) { const item = coverage.get(key); if (!item) issue('FIDELITY LINKS', 'blocking', `Approved target ${key} is never rehearsed anywhere in the mission bank.`, key); else { if (item.count < 3) issue('FIDELITY LINKS', 'warning', `Target ${key} is linked fewer than 3 times.`, key); if (item.missions.size === 1) issue('FIDELITY LINKS', 'warning', `Target ${key} appears in only one mission.`, key); } }
   for (const [mission, stats] of missionLinking) {
+    for (const key of Array.isArray(mission.bipTargets) ? mission.bipTargets : []) if (manifest.has(key) && !stats.targets.has(key)) {
+      issue('FIDELITY LINKS', 'blocking', `Mission ${mission.id} declares ${key} as an opportunity but never links a decision to it.`, mission.id);
+    }
     if (stats.authoredScenes < 5) continue;
     if (stats.authoredScenes >= 8 && stats.targets.size === 1) {
       const [key] = stats.targets.keys();
