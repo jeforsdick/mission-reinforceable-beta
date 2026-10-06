@@ -74,7 +74,11 @@ assert.match(api,/research_admin_start_intervention/);
 assert.match(api,/target_actor_id:actor\.id/);
 
 const admin=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
-assert.match(admin,/start-intervention-form[\s\S]*research-admin-start-intervention/);
-assert.doesNotMatch(admin,/start-intervention-form[\s\S]*research_admin_record_phase/);
+const startHandler=admin.slice(
+  admin.indexOf("$('#start-intervention-form')"),
+  admin.indexOf("$('#phase-form')")
+);
+assert.match(startHandler,/research-admin-start-intervention/);
+assert.doesNotMatch(startHandler,/research_admin_record_phase/);
 
 console.log('Baseline -> Intervention launch safeguards passed.');
