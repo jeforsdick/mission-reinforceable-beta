@@ -259,6 +259,11 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
     wobbly: ['After the 5-point path','Something helped, but an important ingredient was missed'],
     escalated: ['After the 0-point path','The previous response made the situation harder']
   };
+  const sceneOrder = [
+    { decision:1, branch:'supported' },
+    ...[2,3,4,5].flatMap(number => TRAJECTORIES.map(branch => ({ decision:number, branch })))
+  ];
+  const sceneIndex = sceneOrder.findIndex(item => item.decision===decision && item.branch===nav.branch);
   return `<section class="mission-builder simple-mission-builder" data-case-id="${esc(workspace.case.id)}">
     <header>
       <div><p class="eyebrow">EDITING ${esc(group.label.toUpperCase())} MISSION ${Number(selection.slot_number)}</p><h2>${esc(mission.title || `${group.label} Mission ${selection.slot_number}`)}</h2></div>
@@ -308,9 +313,9 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
       </div>
 
       <div class="simple-step-nav">
-        <button type="button" class="quiet" data-simple-prev${decision===1?' disabled':''}>← Previous step</button>
+        <button type="button" class="quiet" data-simple-prev${sceneIndex<=0?' disabled':''}>← Previous scene</button>
         <span>${decision===1?'Opening scene':decision===5?'Final decision':`Decision ${decision} · ${branchLabels[nav.branch][0]}`}</span>
-        <button type="button" class="quiet" data-simple-next${decision===5?' disabled':''}>Next step →</button>
+        <button type="button" class="quiet" data-simple-next${sceneIndex>=sceneOrder.length-1?' disabled':''}>Next scene →</button>
       </div>
     </section>
 
