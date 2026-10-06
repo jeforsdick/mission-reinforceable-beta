@@ -38,6 +38,14 @@ const complete=(row,allowNA=false)=>row?.status==='complete'||(allowNA&&row?.sta
 export function observationSummary(item,now=new Date()){
   const rows=(item.observation_data?.observations||[]).filter(row=>row.summary_revision_id);
   const phaseRows=phase=>rows.filter(row=>row.phase===phase);
+  const baselineRows=phaseRows('baseline');
+  const baselineNewest=[...baselineRows].sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date))||Number(b.session_number||0)-Number(a.session_number||0));
+  const baselineRoles={
+    daily:baselineRows.filter(row=>row.baseline_measurement_role==='daily_baseline').length,
+    initial:baselineRows.filter(row=>row.baseline_measurement_role==='initial_series').length,
+    intermittent:baselineRows.filter(row=>row.baseline_measurement_role==='intermittent_probe').length,
+    preintervention:baselineRows.filter(row=>row.baseline_measurement_role==='preintervention_series').length
+  };
   const latest=[...rows].sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)))[0];
   const ioa=item.observation_data?.coverage||{};
   const monday=new Date(now); monday.setUTCDate(monday.getUTCDate()-((monday.getUTCDay()+6)%7));
@@ -46,9 +54,13 @@ export function observationSummary(item,now=new Date()){
   for(const row of [...phaseRows('intervention')].sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)))){
     if(Number(row.teacher_fidelity_percent)>=90) consecutive90++; else break;
   }
-  return {rows,baseline:phaseRows('baseline').length,intervention:phaseRows('intervention').length,maintenance:phaseRows('maintenance').length,
+  return {
+    rows,baseline:baselineRows.length,intervention:phaseRows('intervention').length,maintenance:phaseRows('maintenance').length,
+    baselineRoles,
+    finalThreePreintervention:baselineNewest.length>=3&&baselineNewest.slice(0,3).every(row=>row.baseline_measurement_role==='preintervention_series'),
     thisWeek:phaseRows('intervention').filter(row=>row.observation_date>=weekStart).length,latest,ioa,consecutive90,
-    reviewIssues:(item.observation_data?.observations||[]).filter(row=>!row.summary_revision_id||row.ioa?.overall_ioa_attention).length};
+    reviewIssues:(item.observation_data?.observations||[]).filter(row=>!row.summary_revision_id||row.ioa?.overall_ioa_attention).length
+  };
 }
 export function interventionElapsed(item,now=new Date()){
   const effective=(item.phase_history||[]).filter(row=>row.phase==='intervention'&&/^\d{4}-\d{2}-\d{2}$/.test(row.effective_date||'')).sort((a,b)=>a.effective_date.localeCompare(b.effective_date))[0]?.effective_date;
@@ -59,15 +71,13 @@ export function interventionElapsed(item,now=new Date()){
   return {effectiveDate:effective,days,weeks:days/7,minimumMet:days>=28};
 }
 export function gameReadiness(item){
-  const checklist=currentByKey(item.checklist),p=item.prepared_content||{};
-  const missing=[];
+  const p=item.prepared_content||{},missing=[];
   if(!p.protected_content_present) missing.push('protected game content');
   if(!p.resource_map_ready) missing.push('Resource Map');
-  if(!complete(checklist.intervention_orientation)) missing.push('teacher orientation');
   return {ready:missing.length===0,missing};
 }
 export function gamePreparationReadiness(item, prepared=item.prepared_content||{}){
-  const checklist=currentByKey(item.checklist),protectedContent=prepared.protected_content?.present??prepared.protected_content_present;
+  const protectedContent=prepared.protected_content?.present??prepared.protected_content_present;
   const resourceMap=prepared.resource_map?.status==='Ready'||prepared.resource_map_ready===true;
   const reviews=prepared.resource_map||{};
   const teacherReady=prepared.teacher_account_ready===true;
@@ -77,7 +87,6 @@ export function gamePreparationReadiness(item, prepared=item.prepared_content||{
   if(!reviews.behavior_reviewed) missing.push('Behavior Review');
   if(!reviews.privacy_reviewed) missing.push('Privacy Review');
   if(!reviews.qa_previewed) missing.push('QA Preview');
-  if(!complete(checklist.intervention_orientation)) missing.push('MR intervention orientation');
   if(!teacherReady) missing.push('teacher account');
   return {ready:missing.length===0,missing};
 }
@@ -102,11 +111,24 @@ export function nextAction(item,now=new Date()){
     return 'Baseline is ready. Record the phase change when you are ready to begin.';
   }
   if(phase==='baseline'){
-    if(!item.protocol||stats.baseline<(item.protocol.planned_baseline_observations||0)) return 'Record the next baseline observation.';
+    const position=Number(item.protocol?.stagger_position||0),planned=Number(item.protocol?.planned_baseline_observations||0);
+    const preStarted=Boolean(item.observation_data?.probe_state?.preintervention_series_started_on);
+    if(!item.protocol) return 'Assign the baseline stagger position.';
+    if(position===1){
+      if(stats.baseline<planned) return 'Continue daily baseline observations.';
+      if(!gameReadiness(item).ready) return 'Finish game readiness before starting intervention.';
+      return 'Daily baseline minimum is met. Review level, trend, and variability before starting Intervention.';
+    }
+    if(stats.baselineRoles.initial<3) return `Complete the initial 3-session baseline series (${stats.baselineRoles.initial}/3).`;
+    if(!preStarted){
+      const beforeFinal=Math.max(planned-3,3);
+      if(stats.baseline<beforeFinal) return 'Collect the next intermittent baseline probe.';
+      return 'Initial series and planned intermittent probes are complete. Begin the final 3-session pre-intervention series.';
+    }
+    if(stats.baselineRoles.preintervention<3||!stats.finalThreePreintervention) return `Complete the final 3-session pre-intervention series (${Math.min(stats.baselineRoles.preintervention,3)}/3).`;
+    if(stats.baseline<planned) return 'Continue the pre-intervention series until the assigned baseline minimum is met.';
     if(!gameReadiness(item).ready) return 'Finish game readiness before starting intervention.';
-    return item.protocol?.stagger_position>1
-      ? 'Baseline minimum is met. Review level, trend, variability, and the required 3-session pre-intervention series before starting Intervention.'
-      : 'Baseline minimum is met. Review level, trend, and variability before starting Intervention.';
+    return 'Multiple-probe baseline requirements are met. Review level, trend, variability, and the final series before starting Intervention.';
   }
   if(phase==='intervention'){
     const elapsed=interventionElapsed(item,now);
@@ -145,10 +167,16 @@ export function baselineReadiness(item){
 }
 export function interventionStartReadiness(item,prepared=item.prepared_content||{},{reminderSystemEnabled=true}={}){
   const stats=observationSummary(item),game=gamePreparationReadiness(item,prepared),missing=[];
-  const planned=Number(item.protocol?.planned_baseline_observations||0);
+  const planned=Number(item.protocol?.planned_baseline_observations||0),position=Number(item.protocol?.stagger_position||0);
   if((item.current_phase||'prebaseline')!=='baseline') missing.push('Current phase must be Baseline');
   if(!item.protocol) missing.push('Baseline assignment');
   else if(stats.baseline<planned) missing.push(`Baseline minimum: ${stats.baseline}/${planned} finalized observations`);
+  if(position>1){
+    if(stats.baselineRoles.initial<3) missing.push(`Initial baseline series: ${stats.baselineRoles.initial}/3`);
+    if(!item.observation_data?.probe_state?.preintervention_series_started_on) missing.push('Final pre-intervention series has not been started');
+    if(stats.baselineRoles.preintervention<3) missing.push(`Pre-intervention series: ${stats.baselineRoles.preintervention}/3`);
+    else if(!stats.finalThreePreintervention) missing.push('Final 3 baseline observations must be pre-intervention series observations');
+  }
   for(const reason of game.missing) missing.push(reason);
   if((item.study_events||[]).some(event=>!event.resolved_at&&event.affects_phase_interpretation===true)) missing.push('Resolve phase-interpretation study events');
   if(!reminderSystemEnabled) missing.push('Production daily reminder delivery');
@@ -157,7 +185,9 @@ export function interventionStartReadiness(item,prepared=item.prepared_content||
     missing,
     baselineCount:stats.baseline,
     plannedMinimum:planned,
-    requiresRecentSeries:Number(item.protocol?.stagger_position||0)>1
+    baselineRoles:stats.baselineRoles,
+    finalThreePreintervention:stats.finalThreePreintervention,
+    requiresRecentSeries:position>1
   };
 }
 export function measureNeeds(item){

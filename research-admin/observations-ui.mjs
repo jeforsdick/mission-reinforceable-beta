@@ -108,6 +108,13 @@ function secondaryRoleLabel(role){
  if(role==='calibration_and_ioa')return 'Calibration + IOA';
  return role?String(role).replaceAll('_',' '):'';
 }
+function baselineRoleLabel(role){
+ if(role==='daily_baseline')return 'Daily baseline';
+ if(role==='initial_series')return 'Initial baseline series';
+ if(role==='intermittent_probe')return 'Intermittent probe';
+ if(role==='preintervention_series')return 'Pre-intervention series';
+ return role?String(role).replaceAll('_',' '):'Baseline observation';
+}
 function compactObservationHistory(rows,phase,e){
  const title=phase[0].toUpperCase()+phase.slice(1);
  const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)));
@@ -117,7 +124,7 @@ function compactObservationHistory(rows,phase,e){
    const ioaAlert=x.ioa?.overall_ioa_attention===true;
    return `<article class="compact-observation-record" id="observation-${x.id}">
      <div class="compact-observation-main">
-       <div><strong>${e(dateLabel(x.observation_date))}</strong><span>Observation #${e(x.session_number)} · ${e(x.primary_observer_code||'Observer')}</span></div>
+       <div><strong>${e(dateLabel(x.observation_date))}</strong><span>Observation #${e(x.session_number)} · ${e(x.primary_observer_code||'Observer')}${x.phase==='baseline'?` · ${e(baselineRoleLabel(x.baseline_measurement_role))}`:''}</span></div>
        <div class="compact-observation-values"><span>Fidelity <strong>${pct(x.teacher_fidelity_percent)}</strong></span><span>Student behavior <strong>${pct(x.student_target_behavior_percent)}</strong></span></div>
        <span class="compact-ioa-badge ${x.ioa?'has-ioa':'no-ioa'}">${x.ioa?'IOA collected':'No IOA'}</span>
      </div>
@@ -198,25 +205,60 @@ function renderInterventionObservationWorkspace(item,e){
 function renderBaselineObservationWorkspace(item,e){
  const data=item.observation_data||{},setup=(data.setups||[])[0],observers=data.observers||[];
  const rows=(data.observations||[]).filter(x=>x.phase==='baseline');
- const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)));
+ const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date))||Number(b.session_number||0)-Number(a.session_number||0));
  const latest=completed[0];
  const ioaCount=completed.filter(x=>x.ioa).length;
  const ioaPercent=completed.length?Math.round(1000*ioaCount/completed.length)/10:0;
  const planned=Number(item.protocol?.planned_baseline_observations||0);
  const position=Number(item.protocol?.stagger_position||0);
  const remaining=planned?Math.max(planned-completed.length,0):null;
+ const initialCount=completed.filter(x=>x.baseline_measurement_role==='initial_series').length;
+ const intermittentCount=completed.filter(x=>x.baseline_measurement_role==='intermittent_probe').length;
+ const preCount=completed.filter(x=>x.baseline_measurement_role==='preintervention_series').length;
+ const dailyCount=completed.filter(x=>x.baseline_measurement_role==='daily_baseline').length;
+ const intermittentTarget=position>1?Math.max(planned-6,0):0;
+ const probeState=data.probe_state||null;
+ const preStarted=Boolean(probeState?.preintervention_series_started_on);
+ const readyToStartFinal=position>1&&!preStarted&&initialCount>=3&&completed.length>=Math.max(planned-3,3);
+ const lastThree=completed.slice(0,3);
+ const finalThreeReady=lastThree.length===3&&lastThree.every(x=>x.baseline_measurement_role==='preintervention_series');
+ const mode=position===1
+   ? 'Daily baseline'
+   : initialCount<3
+     ? 'Initial 3-session series'
+     : preStarted
+       ? 'Final 3-session pre-intervention series'
+       : 'Intermittent probes';
  const planText=position===1
-   ? 'First dyad: schedule a 30-minute baseline observation each school day when the routine occurs and the teacher/student are present, until the minimum baseline requirement is met.'
+   ? 'Position 1: collect baseline each school day when the target routine occurs and the teacher/student are present. Continue for at least 6 observations and longer if the pattern is not interpretable.'
    : position>1
-     ? 'Later dyad: collect intermittent baseline probes at least weekly while waiting, then collect at least 3 consecutive observation sessions immediately before Intervention.'
-     : 'Assign the baseline stagger position in Setup to display the planned probe pattern.';
+     ? 'Positions 2–5: collect an initial 3-session baseline series, then intermittent probes while earlier tiers progress, then deliberately begin a final 3-session series immediately before Intervention.'
+     : 'Assign the baseline stagger position in Setup to display the planned multiple-probe pattern.';
  const nextText=!planned
    ? 'Assign the baseline stagger position before data collection begins.'
-   : completed.length<planned
-     ? `Continue baseline probes. ${remaining} observation${remaining===1?'':'s'} remain before the planned minimum is met.`
-     : position>1
-       ? 'Planned minimum met. Review data stability and confirm the required final consecutive pre-intervention observations before making the phase decision.'
-       : 'Planned minimum met. Review data stability before making the phase decision.';
+   : position===1
+     ? completed.length<planned
+       ? `Continue daily baseline. ${remaining} observation${remaining===1?'':'s'} remain before the minimum is met.`
+       : 'Minimum met. Review level, trend, variability, and interpretability before starting Intervention.'
+     : initialCount<3
+       ? `Complete the initial 3-session series (${initialCount}/3).`
+       : !preStarted
+         ? completed.length<Math.max(planned-3,3)
+           ? `Continue intermittent probes. ${Math.max(planned-3-completed.length,0)} more observation${Math.max(planned-3-completed.length,0)===1?'':'s'} before the final series should begin.`
+           : 'Intermittent probe requirement for the planned minimum is met. Begin the final 3-session pre-intervention series when you are ready to approach Intervention.'
+         : !finalThreeReady
+           ? `Complete the final 3-session series (${Math.min(preCount,3)}/3).`
+           : completed.length<planned
+             ? `Final series is underway, but the assigned minimum is not yet met (${completed.length}/${planned}). Continue collecting in the pre-intervention series.`
+             : '3 → probes → 3 structure is complete. Review the baseline pattern before starting Intervention.';
+ const roleProgress=position===1
+   ? `<div><span>Collection mode</span><strong>Daily baseline</strong><small>${dailyCount} finalized</small></div>`
+   : `<div><span>Initial series</span><strong>${initialCount}/3</strong><small>first 3 baseline observations</small></div>
+      <div><span>Intermittent probes</span><strong>${intermittentCount}${intermittentTarget?`/${intermittentTarget} planned minimum`:''}</strong><small>generally at least weekly while waiting</small></div>
+      <div><span>Final series</span><strong>${preCount}/3</strong><small>${preStarted?`started ${e(probeState.preintervention_series_started_on)}`:'not started'}</small></div>`;
+ const beginFinal=readyToStartFinal
+   ? `<form id="begin-preintervention-series-form" class="compact-form baseline-series-start"><label>Optional note<input name="note" maxlength="1000" placeholder="Why the dyad is ready to begin the final series"></label><button class="primary" type="submit">Begin Final 3-Session Series</button><p class="neutral-note">Future finalized baseline observations will be marked as pre-intervention series observations. This does not start Intervention.</p></form>`
+   : '';
  const primaryOptions=observers.filter(mayAssignPrimary);
  const secondaryOptions=observers.filter(mayAssignSecondary);
  const manualForm=item.current_phase==='baseline'
@@ -224,28 +266,29 @@ function renderBaselineObservationWorkspace(item,e){
    : '';
  return `<section class="baseline-observation-hub">
    <div class="baseline-observation-heading">
-     <div><p class="eyebrow">Baseline</p><h2>Baseline Progress</h2><p>30-minute observations in the identified classroom routine before Mission: Reinforceable is introduced.</p></div>
+     <div><p class="eyebrow">Multiple-Probe Baseline</p><h2>Baseline / Probe Progress</h2><p>All observations remain analytically in Baseline; the collection role documents how each point fits the multiple-probe sequence.</p></div>
      <span class="phase-chip">${planned?`${completed.length}/${planned} minimum`:'Not assigned'}</span>
    </div>
+   <div class="baseline-collection-plan">
+     <div><span>Current collection mode</span><strong>${e(mode)}</strong><p>${e(planText)}</p></div>
+     <div class="baseline-next-action"><span>Next</span><strong>${e(nextText)}</strong></div>
+   </div>
    <div class="baseline-progress-grid">
-     <div><span>Planned minimum</span><strong>${planned||'—'}</strong><small>${position?`Stagger position ${position}`:'Assign in Setup'}</small></div>
-     <div><span>Completed</span><strong>${completed.length}</strong><small>${remaining===null?'—':remaining===0?'Minimum met':`${remaining} remaining`}</small></div>
+     <div><span>Assigned minimum</span><strong>${planned||'—'}</strong><small>${position?`Stagger position ${position}`:'Assign in Setup'}</small></div>
+     ${roleProgress}
      <div><span>Baseline IOA</span><strong>${ioaPercent.toFixed(1)}%</strong><small>${ioaCount} of ${completed.length} observations</small></div>
      <div><span>Latest fidelity</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong></div>
      <div><span>Latest student behavior</span><strong>${pct(latest?.student_target_behavior_percent)}</strong></div>
    </div>
-   <div class="baseline-collection-plan">
-     <div><span>Collection Plan</span><p>${e(planText)}</p></div>
-     <div class="baseline-next-action"><span>Next</span><strong>${e(nextText)}</strong></div>
-   </div>
+   ${position>1?'<p class="neutral-note"><strong>Planned sequence:</strong> 3 initial observations → intermittent probes → 3 consecutive pre-intervention observations.</p>':''}
+   ${beginFinal}
    <details class="baseline-observation-history">
      <summary>Observation History (${completed.length})</summary>
      ${compactObservationHistory(rows,'baseline',e)}
    </details>
-   ${manualForm?`<details class="admin-observation-fallback"><summary>Administrative fallback: enter a completed observation manually</summary><p class="neutral-note">Use only if a completed observation cannot be submitted or linked through the observer workflow.</p>${manualForm}</details>`:''}
+   ${manualForm?`<details class="admin-observation-fallback"><summary>Administrative fallback: enter a completed observation manually</summary><p class="neutral-note">Use only if a completed observation cannot be submitted or linked through the observer workflow. Its multiple-probe role is assigned automatically from the case's current collection stage.</p>${manualForm}</details>`:''}
  </section>`;
 }
-
 
 function renderMaintenanceObservationWorkspace(item,e){
  const data=item.observation_data||{},setup=(data.setups||[])[0],observers=data.observers||[];

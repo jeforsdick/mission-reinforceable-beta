@@ -102,7 +102,8 @@ function weeklySummary() {
   var studySchedules = (dashboard.schedules || []).filter(function (row) { return !isTestCase(row.case_id); });
   var studySlots = (dashboard.slots || []).filter(function (row) { return !isTestCase(row.case_id); });
   var expected = studySchedules.reduce(function (sum, row) {
-    return sum + Number(row.weekly_target_days || 3);
+    var item = caseForSchedule(row.case_id);
+    return sum + Number(collectionPlan(item,row).target || 0);
   }, 0);
   var completed = studySlots.filter(function (s) { return s.status === "completed"; }).length;
   var assigned = studySlots.filter(function (s) {
@@ -135,6 +136,42 @@ function caseLabel(item) {
   return item.is_test === true ? label + " · QA" : label;
 }
 
+function finalizedBaselineRows(item) {
+  return ((item && item.observation_data && item.observation_data.observations) || []).filter(function (row) {
+    return row.phase === "baseline" && !!row.summary_revision_id;
+  });
+}
+
+function collectionPlan(item, schedule) {
+  if (!item) return { label:"Not active", target:0 };
+  var phase = item.current_phase || "prebaseline";
+  if (phase === "baseline") {
+    var position = Number(item.protocol && item.protocol.stagger_position || 0);
+    var planned = Number(item.protocol && item.protocol.planned_baseline_observations || 0);
+    var rows = finalizedBaselineRows(item);
+    if (position === 1) return { label:"Daily baseline", target:5 };
+    if (position > 1) {
+      var initial = rows.filter(function (row) { return row.baseline_measurement_role === "initial_series"; }).length;
+      var preStarted = !!(item.observation_data && item.observation_data.probe_state && item.observation_data.probe_state.preintervention_series_started_on);
+      if (initial < 3) return { label:"Initial 3-session series", target:Math.max(3-initial,0) };
+      if (preStarted) {
+        var pre = rows.filter(function (row) { return row.baseline_measurement_role === "preintervention_series"; }).length;
+        return { label:"Final 3-session series", target:Math.max(3-pre,0) };
+      }
+      if (planned && rows.length >= Math.max(planned-3,3)) return { label:"Ready to begin final 3-session series", target:0 };
+      return { label:"Intermittent probe", target:1 };
+    }
+    return { label:"Baseline assignment needed", target:0 };
+  }
+  if (phase === "intervention") return { label:"Intervention observations", target:Number(schedule && schedule.weekly_target_days || 3) };
+  if (phase === "maintenance") return { label:"Maintenance probes", target:0 };
+  return { label:"No observations due", target:0 };
+}
+
+function caseForSchedule(caseId) {
+  return allSchedulingCases().find(function (item) { return item.id === caseId; });
+}
+
 function renderCaseSetup(item) {
   var schedule = scheduleFor(item.id);
   if (!schedule) {
@@ -148,12 +185,15 @@ function renderCaseSetup(item) {
       '</form></article>';
   }
   var caseSlots = dashboard.slots.filter(function (s) { return s.case_id === item.id; });
-  var assigned = caseSlots.filter(function (s) { return !!s.primary_observer_id && s.status !== "needs_reschedule"; }).length;
+  var assigned = caseSlots.filter(function (s) { return !!s.primary_observer_id && s.status !== "needs_reschedule" && s.status !== "cancelled"; }).length;
   var done = caseSlots.filter(function (s) { return s.status === "completed"; }).length;
+  var plan = collectionPlan(item,schedule);
+  var targetText = plan.target ? assigned + '/' + plan.target + ' assigned' : assigned + ' assigned';
   return '<article class="schedule-case-config">' +
     '<div><strong>' + esc(caseLabel(item)) + '</strong>' +
-    '<span>' + esc(schedule.routine_label || "Routine") + ' · ' + labelTime(schedule.routine_start_time) + '–' + labelTime(schedule.routine_end_time) + '</span></div>' +
-    '<div class="case-week-progress"><b>' + assigned + '/' + schedule.weekly_target_days + ' assigned</b><span>' + done + ' complete</span></div>' +
+    '<span>' + esc(schedule.routine_label || "Routine") + ' · ' + labelTime(schedule.routine_start_time) + '–' + labelTime(schedule.routine_end_time) + '</span>' +
+    '<small>' + esc(plan.label) + '</small></div>' +
+    '<div class="case-week-progress"><b>' + esc(targetText) + '</b><span>' + done + ' complete</span></div>' +
     '</article>';
 }
 
@@ -181,8 +221,9 @@ function renderDay(date) {
     var item = activeCases().find(function (c) { return c.id === schedule.case_id; });
     if (!item) return "";
     var already = slots.some(function (slot) { return slot.case_id === schedule.case_id; });
+    var plan = collectionPlan(item,schedule);
     return '<option value="' + esc(schedule.case_id) + '"' + (already ? " disabled" : "") + '>' +
-      esc(caseLabel(item)) + ' · ' + labelTime(schedule.routine_start_time) + '</option>';
+      esc(caseLabel(item)) + ' · ' + esc(plan.label) + ' · ' + labelTime(schedule.routine_start_time) + '</option>';
   }).join("");
   var observerOptions = primaryCandidateObservers().map(function (o) {
     var suffix = "";
@@ -226,7 +267,7 @@ function render() {
     '<section class="panel schedule-panel">' +
     '<div class="section-heading schedule-heading">' +
       '<div><p class="eyebrow">This Week</p><h2>Observation Command Center</h2>' +
-      '<p>Three different observation days per case; each case keeps its fixed routine time.</p></div>' +
+      '<p>Observation targets follow the design: Position 1 daily baseline; later tiers 3 → intermittent probes → 3; intervention approximately 3 days/week.</p></div>' +
       '<div class="week-switcher"><button class="quiet" id="prev-week">←</button><strong>' +
       labelDay(days[0]) + '–' + labelDay(days[4]) +
       '</strong><button class="quiet" id="next-week">→</button></div>' +

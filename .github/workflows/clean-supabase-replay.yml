@@ -40,6 +40,7 @@ jobs:
         run: |
           node --test research-admin/baseline-launch-readiness.test.mjs
           node --test research-admin/baseline-to-intervention.test.mjs
+          node --test research-admin/multiple-probe-baseline.test.mjs
 
       - name: Replay clean local database
         run: ./scripts/replay-clean-supabase.sh
