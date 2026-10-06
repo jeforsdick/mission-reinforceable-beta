@@ -11,7 +11,7 @@ import { renderParticipantReadiness } from './participant-readiness.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W';
-const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, testCases: [], showArchivedCases: false, showTestCases: false, selected: null, accounts: {}, communications: { teacher_reminder_system_enabled: false, game_login_email_enabled: false }, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null, validatedRevisionManifest: null, publishResult: null, publishedSource: null };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, testCases: [], baselineProbeEvents: [], showArchivedCases: false, showTestCases: false, selected: null, accounts: {}, communications: { teacher_reminder_system_enabled: false, game_login_email_enabled: false }, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null, validatedRevisionManifest: null, publishResult: null, publishedSource: null };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -451,6 +451,17 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
  $('#protocol-form')?.addEventListener('submit',event=>{event.preventDefault();operationRpc('research_admin_set_case_protocol',{target_case_id:caseId,target_stagger_position:Number(new FormData(event.currentTarget).get('position'))});});
  document.querySelectorAll('.checklist-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form);operationRpc('research_admin_record_checklist_status',{target_case_id:caseId,target_item_key:form.dataset.key,target_status:f.get('status'),target_status_date:f.get('status_date'),target_brief_note:f.get('note')||null});}));
  document.querySelectorAll('.measure-form').forEach(form=>form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form),status=f.get('status');if(status==='complete'&&!f.get('completed_on')){window.alert('Completion date is required when status is Complete.');return;}operationRpc('research_admin_record_measure',{target_case_id:caseId,target_measure_key:form.dataset.key,target_status:status,target_completed_on:f.get('completed_on')||null,target_external_reference:f.get('external_reference')||null,target_brief_note:f.get('note')||null});}));
+ $('#begin-preintervention-series-form')?.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const form=event.currentTarget,fd=new FormData(form);
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Denver',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  if(!window.confirm('Begin the final 3-session pre-intervention series now?\n\nFuture finalized Baseline observations will be documented as the pre-intervention series. This does not start Intervention.'))return;
+  await operationRpc('research_admin_start_preintervention_probe_series',{
+    target_case_id:caseId,
+    target_effective_date:today,
+    target_brief_note:fd.get('note')||null
+  });
+ });
  $('#start-intervention-form')?.addEventListener('submit',async event=>{
   event.preventDefault();
   const form=event.currentTarget,f=new FormData(form),button=form.querySelector('button[type="submit"]');
@@ -462,6 +473,7 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
       effective_date:f.get('effective_date'),
       baseline_pattern_reviewed:f.has('baseline_pattern_reviewed'),
       recent_series_reviewed:f.get('recent_series_reviewed')==='true'||f.has('recent_series_reviewed'),
+      orientation_completed:f.has('orientation_completed'),
       decision_note:f.get('note')
     });
     await openDetail(state.selected.request_id,state.selectedTab);
@@ -891,13 +903,28 @@ async function setStatus(status) {
   state.selected.status = status;
   renderHome();
 }
-function attachCaseObservations(item,observations){const rows=(observations.observations||[]).filter(x=>x.case_id===item.id),completed=rows.filter(x=>x.summary_revision_id).length,paired=rows.filter(x=>x.summary_revision_id&&x.ioa).length,required=Math.ceil(completed*.20);item.observation_data={...observations,observations:rows,setups:(observations.setups||[]).filter(x=>x.case_id===item.id),coverage:{completed,ioa:paired,percent:completed?Math.round(1000*paired/completed)/10:0,required_minimum:required,additional_needed:Math.max(required-paired,0)}};return item;}
+function attachCaseObservations(item,observations,probeEvents=state.baselineProbeEvents||[]){const rows=(observations.observations||[]).filter(x=>x.case_id===item.id),completed=rows.filter(x=>x.summary_revision_id).length,paired=rows.filter(x=>x.summary_revision_id&&x.ioa).length,required=Math.ceil(completed*.20),probeEvent=[...probeEvents].filter(x=>x.case_id===item.id&&x.event_type==='preintervention_series_started').sort((a,b)=>String(b.effective_date).localeCompare(String(a.effective_date))||String(b.recorded_at).localeCompare(String(a.recorded_at)))[0]||null;item.observation_data={...observations,observations:rows,setups:(observations.setups||[]).filter(x=>x.case_id===item.id),probe_state:probeEvent?{preintervention_series_started_on:probeEvent.effective_date,event_id:probeEvent.id}:null,coverage:{completed,ioa:paired,percent:completed?Math.round(1000*paired/completed)/10:0,required_minimum:required,additional_needed:Math.max(required-paired,0)}};return item;}
 async function loadTestCases(){
   const {data:caseIds,error}=await state.client.rpc('research_admin_test_case_ids');if(error)throw error;
-  const cases=await Promise.all((caseIds||[]).map(async({case_id})=>{const [{data:operations,error:operationsError},{data:observations,error:observationsError}]=await Promise.all([state.client.rpc('research_admin_operations_dashboard',{target_case_id:case_id}),state.client.rpc('research_admin_observation_dashboard',{target_case_id:case_id})]);if(operationsError)throw operationsError;if(observationsError)throw observationsError;return attachCaseObservations(operations.cases[0],observations);}));
+  const cases=await Promise.all((caseIds||[]).map(async({case_id})=>{const [{data:operations,error:operationsError},{data:observations,error:observationsError}]=await Promise.all([state.client.rpc('research_admin_operations_dashboard',{target_case_id:case_id}),state.client.rpc('research_admin_observation_dashboard',{target_case_id:case_id})]);if(operationsError)throw operationsError;if(observationsError)throw observationsError;return attachCaseObservations(operations.cases[0],observations,state.baselineProbeEvents);}));
   state.testCases=cases.filter(item=>item?.is_test===true);
 }
-async function loadIntakes() { const { data, error } = await state.client.rpc('research_admin_intakes'); if (error) throw error; state.intakes = data || []; await ensureWeeklyQualtricsStudyTask(); const {data:operations,error:operationsError}=await state.client.rpc('research_admin_operations_dashboard',{}); if(operationsError) throw operationsError; const {data:observations,error:observationError}=await state.client.rpc('research_admin_observation_dashboard',{});if(observationError)throw observationError;state.observationData=observations;(operations.cases||[]).forEach(item=>attachCaseObservations(item,observations));state.operations=operations;await loadTestCases(); }
+async function loadIntakes() {
+ const { data, error } = await state.client.rpc('research_admin_intakes'); if (error) throw error;
+ state.intakes = data || [];
+ await ensureWeeklyQualtricsStudyTask();
+ const [{data:operations,error:operationsError},{data:observations,error:observationError},{data:probeEvents,error:probeError}]=await Promise.all([
+   state.client.rpc('research_admin_operations_dashboard',{}),
+   state.client.rpc('research_admin_observation_dashboard',{}),
+   state.client.from('research_baseline_probe_events').select('*')
+ ]);
+ if(operationsError)throw operationsError;if(observationError)throw observationError;if(probeError)throw probeError;
+ state.baselineProbeEvents=probeEvents||[];
+ state.observationData=observations;
+ (operations.cases||[]).forEach(item=>attachCaseObservations(item,observations,state.baselineProbeEvents));
+ state.operations=operations;
+ await loadTestCases();
+}
 async function waitForSupabase(ms=10000) {
   const started=Date.now();
   while(!window.supabase && Date.now()-started<ms) {
