@@ -114,3 +114,60 @@ test('Full Draft accepts a substantive heading and blocks empty or unsafe headin
   value.resource_draft.resources.sections.bip.blocks[0].text = '<script>alert(1)</script>';
   assert.equal(validateFullDraft(value).ready, false);
 });
+
+function canonicalQualityMission(value) {
+  const target = value.missions[0].mission;
+  value.fidelity_targets = [{ target_key: 'proactive_01', domain: 'proactive', description: 'Use the approved proactive support.' }];
+  target.id = 'canonical_quality_01';
+  target.title = 'A Real Classroom Squeeze';
+  target.routine = 'Small-group instruction';
+  target.focus = 'Distinguish the exact timely plan action from reasonable but incomplete classroom support.';
+  target.functionPressure = ['escape'];
+  target.bipTargets = ['proactive_01'];
+  target.authoringMeta = { centralTension: 'The teacher must support the student while another learner also needs immediate help.', tone: 'Busy, realistic, recoverable', activeBipComponents: ['Prevent','Teach','Reinforce','Respond'], qualityReview: { behavioral: true, gameDesign: true } };
+  const sourceSteps = structuredClone(target.steps);
+  const nextBranch = score => score === 10 ? 'supported' : score === 5 ? 'wobbly' : 'escalated';
+  const makeStep = (decision, source) => {
+    const step = structuredClone(source);
+    step.text = decision === 1 ? 'It is a busy classroom routine with competing teacher demands. The student shows an early, observable signal before the target behavior begins. Another learner needs help at the same time, so the teacher must decide whether to use the individualized support now or rely on a reasonable classroom response that misses an active ingredient.' : 'The prior teacher response changed the student state and the classroom workload. The student now shows a clear, observable response while another demand competes for the teacher’s attention. The next choice can improve the trajectory, keep it wobbly, or make the situation harder.';
+    step.hint = 'Use the current student state, behavioral function, timing, and exact plan action.';
+    for (const choice of Object.values(step.choices)) {
+      choice.next = decision < 5 ? `d${decision + 1}_${nextBranch(choice.score)}` : null;
+      if (decision === 5) choice.ending = choice.score === 10 ? 'STRONG' : choice.score === 5 ? 'MIXED' : 'FRAGILE'; else delete choice.ending;
+    }
+    return step;
+  };
+  target.steps = { d1_start: makeStep(1, sourceSteps.s1) };
+  for (let decision = 2; decision <= 5; decision++) for (const branch of ['supported','wobbly','escalated']) target.steps[`d${decision}_${branch}`] = makeStep(decision, sourceSteps[`s${decision}`]);
+  target.steps.d1_start.meta = { fidelityTargetKey: 'proactive_01' };
+  return target;
+}
+
+test('canonical authoring quality gate accepts a reviewed mission with meaningful branching', () => {
+  const value = workspace(); canonicalQualityMission(value); const report = validateFullDraft(value);
+  assert.equal(report.categories['MISSION QUALITY'].errors.length, 0); assert.equal(report.ready, true);
+});
+
+test('canonical authoring quality gate blocks missing human review confirmations', () => {
+  const value = workspace(); const target = canonicalQualityMission(value); target.authoringMeta.qualityReview.behavioral = false; target.authoringMeta.qualityReview.gameDesign = false;
+  const errors = validateFullDraft(value).categories['MISSION QUALITY'].errors.map(item => item.message);
+  assert(errors.some(message => /behavioral-accuracy review/i.test(message))); assert(errors.some(message => /game-design review/i.test(message)));
+});
+
+test('canonical authoring quality gate blocks fake branching and impossible recovery', () => {
+  const value = workspace(); const target = canonicalQualityMission(value);
+  for (const choice of Object.values(target.steps.d2_supported.choices)) choice.next = 'd3_supported';
+  for (const decision of [2,3,4]) for (const choice of Object.values(target.steps[`d${decision}_escalated`].choices)) choice.next = `d${decision + 1}_escalated`;
+  const errors = validateFullDraft(value).categories['MISSION QUALITY'].errors.map(item => item.message);
+  assert(errors.some(message => /same next state/i.test(message))); assert(errors.some(message => /never offers a meaningful recovery path/i.test(message)));
+});
+
+test('canonical authoring bank cannot publish if an approved fidelity target is never rehearsed', () => {
+  const value = workspace(); const target = canonicalQualityMission(value); delete target.steps.d1_start.meta.fidelityTargetKey; target.bipTargets = [];
+  const report = validateFullDraft(value); assert.equal(report.ready, false); assert(report.categories['FIDELITY LINKS'].errors.some(item => /never rehearsed anywhere/i.test(item.message)));
+});
+
+test('legacy saved drafts remain compatible with stricter dissertation authoring checks', () => {
+  const value = workspace(); value.fidelity_targets = [{ target_key: 'proactive_01', domain: 'proactive' }]; const report = validateFullDraft(value);
+  assert.equal(report.ready, true); assert(report.categories['FIDELITY LINKS'].warnings.some(item => /never linked/i.test(item.message)));
+});
