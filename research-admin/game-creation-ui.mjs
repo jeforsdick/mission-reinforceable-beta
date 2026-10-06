@@ -222,7 +222,7 @@ export function missionAuthoringProgress(mission) {
 }
 
 export function renderMissionBank(workspace, selection) {
-  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `${mission?.authoringMeta?.qualityReview?.behavioral && mission?.authoringMeta?.qualityReview?.gameDesign ? 'Draft · reviewed' : 'Draft · quality review pending'}${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
+  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `${missionAuthoringProgress(mission).completeScenes}/13 scenes${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
 }
 const textField = (label, name, value, extra = '') => `<label>${label}<input ${extra} name="${name}" value="${esc(value)}"></label>`;
 const selectOptions = (values, value, empty = 'Select…') => `<option value="">${empty}</option>${values.map(item => { const option = typeof item === 'string' ? { value: item, label: item } : item; return `<option value="${esc(option.value)}"${selected(option.value, value)}>${esc(option.label)}</option>`; }).join('')}`;
@@ -404,17 +404,79 @@ export function renderGameCreation(workspace, selection, mission, nav, message =
 
 export function captureMission(root, mission, nav) {
   const one = name => root.querySelector(`[name="${name}"]`);
-  for (const name of ['id', 'title', 'routine', 'focus']) if (one(name)) mission[name] = one(name).value;
-  mission.authoringMeta = { centralTension: one('centralTension')?.value || '', tone: one('tone')?.value || '', functionPressureContext: one('functionPressureContext')?.value || '', activeBipComponents: [...root.querySelectorAll('[name="activeBipComponents"]:checked')].map(input => input.value), qualityReview: { behavioral: Boolean(one('qualityBehavioralReview')?.checked), gameDesign: Boolean(one('qualityGameDesignReview')?.checked) } };
-  mission.functionPressure = [...root.querySelectorAll('[name="functionPressure"] option:checked')].map(option => option.value);
-  mission.bipTargets = [...root.querySelectorAll('[name="bipTargets"]:checked')].map(input => input.value);
+  if (one('title')) mission.title = one('title').value;
+  if (one('routine')) mission.routine = one('routine').value;
+
   const editor = root.querySelector('.scene-editor');
   if (editor) {
-    const step = mission.steps[editor.dataset.stepId]; step.text = editor.querySelector('[name="text"]').value; step.hint = editor.querySelector('[name="hint"]').value;
-    const exact = editor.querySelector('[name="fidelityTargetKey"]').value; step.meta = exact ? { ...step.meta, fidelityTargetKey: exact } : Object.fromEntries(Object.entries(step.meta || {}).filter(([key]) => key !== 'fidelityTargetKey'));
-    editor.querySelectorAll('.choice-card').forEach((card, index) => { const { key, score } = RATINGS[index], item = step.choices[key]; for (const name of ['text', 'consequence', 'wizard', 'feedback']) item[name] = card.querySelector(`[name="${name}"]`).value; item.meta = Object.fromEntries(['bipComponent', 'mechanism', 'errorType', 'function'].map(name => [name, card.querySelector(`[name="${name}"]`).value])); item.score = score; if (nav.decision < 5) { item.next = nextStepId(nav.decision, card.querySelector('[name="trajectory"]').value); delete item.ending; } else { item.next = null; item.ending = card.querySelector('[name="ending"]').value; } });
+    const step = mission.steps[editor.dataset.stepId];
+    step.text = editor.querySelector('[name="text"]').value;
+    step.hint = editor.querySelector('[name="hint"]').value;
+
+    const exact = editor.querySelector('[name="fidelityTargetKey"]').value;
+    step.meta = exact
+      ? { ...(step.meta || {}), fidelityTargetKey: exact }
+      : Object.fromEntries(Object.entries(step.meta || {}).filter(([key]) => key !== 'fidelityTargetKey'));
+
+    const domain = exact ? exact.split('_')[0] : '';
+    const component = ({ proactive:'Prevent', teaching:'Teach', reinforcement:'Reinforce', response:'Respond', crisis:'Crisis' })[domain] || '';
+    const functionValue = canonicalFunction(mission.functionPressure?.[0]) || 'unclear';
+    const scoreTrajectory = { 10:'supported', 5:'wobbly', 0:'escalated' };
+    const wizardDefaults = {
+      10: 'YES. That matched the plan at the moment it mattered.',
+      5: 'Close call. Helpful idea — but an important ingredient is still missing.',
+      0: 'That response is understandable, but it drifts from the individualized plan.'
+    };
+
+    editor.querySelectorAll('.choice-card').forEach((card, index) => {
+      const { key, score } = RATINGS[index];
+      const item = step.choices[key];
+      item.text = card.querySelector('[name="text"]').value;
+      item.consequence = card.querySelector('[name="consequence"]').value;
+      item.feedback = card.querySelector('[name="feedback"]').value;
+      item.wizard = item.wizard?.trim() || wizardDefaults[score];
+      item.score = score;
+      item.meta = {
+        ...(item.meta || {}),
+        bipComponent: item.meta?.bipComponent || component,
+        mechanism: item.meta?.mechanism?.trim() || item.text.trim(),
+        errorType: score === 10
+          ? 'none'
+          : (item.meta?.errorType && item.meta.errorType !== 'none'
+            ? item.meta.errorType
+            : score === 5 ? 'missed_active_ingredient' : 'other_needs_review'),
+        function: item.meta?.function || functionValue
+      };
+      if (nav.decision < 5) {
+        item.next = nextStepId(nav.decision, scoreTrajectory[score]);
+        delete item.ending;
+      } else {
+        item.next = null;
+        delete item.ending;
+      }
+    });
   }
-  root.querySelectorAll('[data-ending]').forEach(card => { mission.endings[card.dataset.ending] = { text: card.querySelector('[name="text"]').value, wizard: card.querySelector('[name="wizard"]').value }; });
+
+  const linkedTargets = [...new Set(
+    Object.values(mission.steps || {})
+      .map(step => step?.meta?.fidelityTargetKey)
+      .filter(Boolean)
+  )];
+  mission.bipTargets = linkedTargets;
+
+  const linkedComponents = [...new Set(
+    linkedTargets
+      .map(key => ({ proactive:'Prevent', teaching:'Teach', reinforcement:'Reinforce', response:'Respond', crisis:'Crisis' })[String(key).split('_')[0]])
+      .filter(Boolean)
+  )];
+  mission.authoringMeta = {
+    ...(mission.authoringMeta || {}),
+    activeBipComponents: linkedComponents
+  };
+
+  if ((!mission.functionPressure || !mission.functionPressure.length) && linkedTargets.length) {
+    mission.functionPressure = ['unclear'];
+  }
   return mission;
 }
 
