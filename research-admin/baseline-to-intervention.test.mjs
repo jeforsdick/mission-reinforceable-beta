@@ -61,8 +61,12 @@ for(const required of [
   "'reminders_enabled'"
 ]) assert.ok(migration.includes(required),required);
 assert.match(migration,/target_effective_date is distinct from denver_today/);
-assert.match(migration,/grant execute on function public\.research_admin_start_intervention[\s\S]*to service_role/);
-assert.doesNotMatch(migration,/grant execute on function public\.research_admin_start_intervention[\s\S]*to authenticated/);
+const startAcl=migration.slice(
+  migration.indexOf('revoke all on function public.research_admin_start_intervention'),
+  migration.indexOf('create or replace function public.research_admin_record_phase')
+);
+assert.match(startAcl,/grant execute on function public\.research_admin_start_intervention[\s\S]*to service_role/);
+assert.doesNotMatch(startAcl,/to authenticated/);
 
 const api=fs.readFileSync(new URL('../api/research-admin-start-intervention.js',import.meta.url),'utf8');
 assert.match(api,/TEACHER_REMINDER_SYSTEM_ENABLED/);
