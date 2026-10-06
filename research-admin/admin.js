@@ -457,7 +457,7 @@ function bindOperations(){const caseId=state.readiness?.case?.id;if(!caseId)retu
   if(!window.confirm('Start Intervention now?\n\nThis will record the Intervention phase, activate Mission: Reinforceable game access, and enable daily reminders together. This cannot be backdated.'))return;
   button.disabled=true;
   try{
-    await adminApi('/api/research-admin-start-intervention',{
+    await adminApi('/api/research-admin-communication-readiness',{action:'start_intervention',
       case_id:caseId,
       effective_date:f.get('effective_date'),
       baseline_pattern_reviewed:f.has('baseline_pattern_reviewed'),
