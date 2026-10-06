@@ -131,3 +131,7 @@ begin
   return result;
 end;
 $$;
+
+
+revoke execute on function public.research_admin_game_authoring_workspace(uuid) from public, anon;
+grant execute on function public.research_admin_game_authoring_workspace(uuid) to authenticated, service_role;
