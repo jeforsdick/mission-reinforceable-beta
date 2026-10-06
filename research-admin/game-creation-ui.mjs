@@ -199,9 +199,35 @@ const targetKey = target => target.target_key || target.key;
 const targets = workspace => workspace?.active_fidelity_targets || workspace?.fidelity_targets || [];
 const dateLabel = value => value ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value)) : '';
 const isStarted = step => Boolean(step?.text || step?.hint || step?.meta?.fidelityTargetKey || Object.values(step?.choices || {}).some(item => item.text || item.consequence || item.wizard || item.feedback || Object.values(item.meta || {}).some(Boolean)));
+const missionSceneEntries = mission => Object.entries(mission?.steps || {}).filter(([id]) => /^d[1-5]_(?:start|supported|wobbly|escalated)$/.test(id));
+const choiceIsComplete = choice => Boolean(
+  choice?.text?.trim()
+  && choice?.consequence?.trim()
+  && choice?.wizard?.trim()
+  && choice?.feedback?.trim()
+  && choice?.meta?.bipComponent
+  && choice?.meta?.mechanism?.trim()
+  && choice?.meta?.errorType
+  && choice?.meta?.function
+);
+export function missionAuthoringProgress(mission) {
+  const scenes = missionSceneEntries(mission);
+  const completeScenes = scenes.filter(([,step]) =>
+    step?.text?.trim()
+    && step?.hint?.trim()
+    && Object.values(step?.choices || {}).length === 3
+    && Object.values(step?.choices || {}).every(choiceIsComplete)
+  ).length;
+  const choices = scenes.flatMap(([,step]) => Object.values(step?.choices || {}));
+  const completeChoices = choices.filter(choiceIsComplete).length;
+  const fidelityLinks = scenes.filter(([,step]) => step?.meta?.fidelityTargetKey).length;
+  const reviews = Number(mission?.authoringMeta?.qualityReview?.behavioral === true)
+    + Number(mission?.authoringMeta?.qualityReview?.gameDesign === true);
+  return { scenes: scenes.length, completeScenes, choices: choices.length, completeChoices, fidelityLinks, reviews };
+}
 
 export function renderMissionBank(workspace, selection) {
-  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `Draft${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
+  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `${mission?.authoringMeta?.qualityReview?.behavioral && mission?.authoringMeta?.qualityReview?.gameDesign ? 'Draft · reviewed' : 'Draft · quality review pending'}${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
 }
 const textField = (label, name, value, extra = '') => `<label>${label}<input ${extra} name="${name}" value="${esc(value)}"></label>`;
 const selectOptions = (values, value, empty = 'Select…') => `<option value="">${empty}</option>${values.map(item => { const option = typeof item === 'string' ? { value: item, label: item } : item; return `<option value="${esc(option.value)}"${selected(option.value, value)}>${esc(option.label)}</option>`; }).join('')}`;
