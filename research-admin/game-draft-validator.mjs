@@ -135,6 +135,8 @@ export function validateFullDraft(input) {
     if (!mission) continue;
     const missionPath = `${TYPES[type].label} ${slotNumber}`;
     const missionAction = { type: 'mission', missionType: type, slot: slotNumber };
+    let sceneLengthOutliers = 0;
+    let choiceBalanceOutliers = 0;
     const requireText = (value, label, message) => {
       if (!substantive(value)) issue('MISSION STRUCTURE', 'blocking', message, `${missionPath} → ${label}`, missionAction);
     };
@@ -191,9 +193,9 @@ export function validateFullDraft(input) {
       const canonicalDecision = canonicalDecisionNumber(stepId);
       if (sceneWords) {
         if (canonicalDecision === 1 && (sceneWords < 60 || sceneWords > 160)) {
-          issue('MISSION QUALITY', 'warning', 'Opening scene is outside the usual rich-scene range (about 80–130 words). Review immersion and pacing.', `${stepPath} → Scene`, missionAction);
+          sceneLengthOutliers++;
         } else if (canonicalDecision && canonicalDecision > 1 && (sceneWords < 25 || sceneWords > 120)) {
-          issue('MISSION QUALITY', 'warning', 'Later scene is unusually short or long. Review whether it carries the previous consequence forward without dragging.', `${stepPath} → Scene`, missionAction);
+          sceneLengthOutliers++;
         }
       }
       if (canonicalDecision === 1 && substantive(step?.text)) {
@@ -215,7 +217,7 @@ export function validateFullDraft(input) {
       if (lengths.length === 3) {
         const shortest = Math.min(...lengths), longest = Math.max(...lengths);
         if (shortest > 0 && longest / shortest > 2.5 && longest - shortest >= 12) {
-          issue('MISSION QUALITY', 'warning', 'Choice lengths are noticeably uneven; make sure wording length does not reveal the best answer.', `${stepPath} → Choices`, missionAction);
+          choiceBalanceOutliers++;
         }
       }
 
@@ -246,6 +248,9 @@ export function validateFullDraft(input) {
         }
       }
     }
+
+    if (sceneLengthOutliers) issue('MISSION QUALITY', 'warning', `${sceneLengthOutliers} scene${sceneLengthOutliers===1?' is':'s are'} outside the usual narrative length range. Review immersion, consequence carry-forward, and pacing.`, `${missionPath} → Scenes`, missionAction);
+    if (choiceBalanceOutliers) issue('MISSION QUALITY', 'warning', `${choiceBalanceOutliers} decision scene${choiceBalanceOutliers===1?' has':'s have'} noticeably uneven choice lengths. Make sure wording length does not reveal the best answer.`, `${missionPath} → Choices`, missionAction);
 
     const canonical = mission.steps?.d1_start && mission.steps?.d2_supported && mission.steps?.d2_wobbly && mission.steps?.d2_escalated;
     if (canonical) {
