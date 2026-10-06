@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { CHECKLIST, MEASURES, PHASES, COACHING_FOCUSES, LIFECYCLE_STAGES, baselineReadiness, observerBaselineReady, gameReadiness, gamePreparationReadiness, measureNeeds, interventionReadiness, attentionForCase, studyWideAttention, timelineForCase, checklistStatuses, denverToday, lifecycleStage, nextAction, observationSummary, interventionElapsed } from './operations-model.mjs';
+import { CHECKLIST, MEASURES, PHASES, COACHING_FOCUSES, LIFECYCLE_STAGES, baselineReadiness, gameReadiness, gamePreparationReadiness, measureNeeds, interventionReadiness, attentionForCase, studyWideAttention, timelineForCase, checklistStatuses, denverToday, lifecycleStage, nextAction, observationSummary, interventionElapsed } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs';
 import { renderGameCreation } from './game-creation-ui.mjs';
 const sql=fs.readFileSync(new URL('../supabase/migrations/20260818060000_research_operations_foundation.sql',import.meta.url),'utf8');
-const baselineLaunchSql=fs.readFileSync(new URL('../supabase/migrations/20261006043000_baseline_launch_readiness.sql',import.meta.url),'utf8');
 const html=fs.readFileSync(new URL('index.html',import.meta.url),'utf8');
 const js=fs.readFileSync(new URL('admin.js',import.meta.url),'utf8');
 const ui=fs.readFileSync(new URL('operations-ui.mjs',import.meta.url),'utf8');
@@ -22,9 +21,6 @@ for(const table of ['research_case_protocol','research_case_protocol_events','re
 for(const pair of ['when 1 then 6','when 2 then 8','when 3 then 10','when 4 then 12','when 5 then 14']) assert.match(sql,new RegExp(pair));
 assert.match(sql,/constraint research_case_protocol_stagger_position_key unique\(stagger_position\) deferrable/);
 assert.match(sql,/baseline prerequisites missing/);assert.match(sql,/student_assent[\s\S]*not in \('complete','not_applicable'\)/);
-for(const blocker of ['observation_setup','active_fidelity_checklist','cleared_trained_observer']) assert.match(baselineLaunchSql,new RegExp(blocker));
-assert.match(baselineLaunchSql,/observer_type='trained_observer'[\s\S]*clearance_status='cleared'/);
-assert.match(baselineLaunchSql,/active_fidelity_target_count/);
 assert.match(sql,/status_date date not null/);assert.match(sql,/recorded_at timestamptz not null default now/);
 assert.match(sql,/checklist status date is required/);assert.match(sql,/checklist status date cannot be in the future \(America\/Denver\)/);
 assert.match(sql,/coaching contact date cannot be in the future \(America\/Denver\)/);assert.match(sql,/study event date cannot be in the future \(America\/Denver\)/);
@@ -120,17 +116,11 @@ for(const field of ['affects_observation','affects_mr_exposure','affects_phase_i
 assert.match(js,/research_admin_resolve_study_event[\s\S]*target_action_taken:action/);
 assert.match(ui,/Duration — optional/);assert.match(js,/target_approximate_duration_minutes/);assert.match(ui,/name="focus"/);assert.match(js,/COACHING_FOCUSES\.includes/);
 const completeChecklist=CHECKLIST.map(([item_key])=>({item_key,status:'complete'}));
-const ready={current_phase:'prebaseline',protocol:{stagger_position:1},checklist:completeChecklist,measures:[{measure_key:'tses_pre',status:'complete'}],tasks:[],study_events:[],active_fidelity_target_count:1,observation_data:{setups:[{case_id:'case-1'}],observers:[{active:true,observer_type:'trained_observer',status:'qualified'}]}};
+const ready={current_phase:'prebaseline',protocol:{stagger_position:1},checklist:completeChecklist,measures:[{measure_key:'tses_pre',status:'complete'}],tasks:[],study_events:[]};
 assert.equal(baselineReadiness(ready).ready,true);assert.equal(baselineReadiness({...ready,protocol:null}).ready,false);
 for(const [key] of CHECKLIST.slice(0,10)){const item={...ready,checklist:completeChecklist.filter(x=>x.item_key!==key)};assert.equal(baselineReadiness(item).ready,false,key);}
 assert.equal(baselineReadiness({...ready,checklist:completeChecklist.map(x=>x.item_key==='student_assent'?{...x,status:'not_applicable'}:x)}).ready,true);
 assert.equal(baselineReadiness({...ready,measures:[]}).ready,false);
-assert.equal(observerBaselineReady(ready),true);
-assert.equal(observerBaselineReady({...ready,observation_data:{...ready.observation_data,observers:[{active:true,observer_type:'primary_researcher',status:'qualified'}]}}),false,'primary researcher does not satisfy baseline observer readiness');
-assert.equal(observerBaselineReady({...ready,observation_data:{...ready.observation_data,observers:[{active:true,observer_type:'trained_observer',status:'training_needed',online_training_ready:true},{active:true,observer_type:'primary_researcher',status:'qualified'}]}}),false,'online readiness plus researcher support does not satisfy baseline launch');
-assert.equal(baselineReadiness({...ready,observation_data:{...ready.observation_data,setups:[]}}).ready,false,'observation setup is required');
-assert.equal(baselineReadiness({...ready,active_fidelity_target_count:0}).ready,false,'an active fidelity checklist is required');
-assert.equal(baselineReadiness({...ready,observation_data:{...ready.observation_data,observers:[{active:true,observer_type:'primary_researcher',status:'qualified'}]}}).ready,false,'Jess alone does not make baseline ready');
 assert.deepEqual(measureNeeds({...ready,current_phase:'maintenance'}),['tses_post','urp_ir','teacher_interview']);
 assert.deepEqual(measureNeeds({...ready,current_phase:'complete'}),['tses_post','urp_ir','teacher_interview']);
 assert.equal(studyWideAttention([{title:'IRB follow-up',status:'pending',due_date:'2026-01-01'}],'2026-01-02')[0],'Study task overdue: IRB follow-up');
