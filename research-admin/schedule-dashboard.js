@@ -156,7 +156,7 @@ function collectionPlan(item, schedule) {
       if (initial < 3) return { label:"Initial 3-session series", target:Math.max(3-initial,0) };
       if (preStarted) {
         var pre = rows.filter(function (row) { return row.baseline_measurement_role === "preintervention_series"; }).length;
-        return { label:"Final 3-session series", target:Math.max(3-pre,0) || 1 };
+        return { label:"Final 3-session series", target:Math.max(3-pre,0) };
       }
       if (planned && rows.length >= Math.max(planned-3,3)) return { label:"Ready to begin final 3-session series", target:0 };
       return { label:"Intermittent probe", target:1 };
