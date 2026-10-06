@@ -36,8 +36,8 @@ jobs:
           docker info
           supabase --version
 
-      - name: Replay clean local database
-        run: ./scripts/replay-clean-supabase.sh
-
       - name: Run Research Operations launch-readiness tests
         run: node --test research-admin/operations.test.mjs
+
+      - name: Replay clean local database
+        run: ./scripts/replay-clean-supabase.sh
