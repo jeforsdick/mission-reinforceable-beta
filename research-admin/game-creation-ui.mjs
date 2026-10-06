@@ -203,12 +203,7 @@ const missionSceneEntries = mission => Object.entries(mission?.steps || {}).filt
 const choiceIsComplete = choice => Boolean(
   choice?.text?.trim()
   && choice?.consequence?.trim()
-  && choice?.wizard?.trim()
   && choice?.feedback?.trim()
-  && choice?.meta?.bipComponent
-  && choice?.meta?.mechanism?.trim()
-  && choice?.meta?.errorType
-  && choice?.meta?.function
 );
 export function missionAuthoringProgress(mission) {
   const scenes = missionSceneEntries(mission);
@@ -227,35 +222,109 @@ export function missionAuthoringProgress(mission) {
 }
 
 export function renderMissionBank(workspace, selection) {
-  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `${mission?.authoringMeta?.qualityReview?.behavioral && mission?.authoringMeta?.qualityReview?.gameDesign ? 'Draft · reviewed' : 'Draft · quality review pending'}${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
+  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `${missionAuthoringProgress(mission).completeScenes}/13 scenes${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
 }
 const textField = (label, name, value, extra = '') => `<label>${label}<input ${extra} name="${name}" value="${esc(value)}"></label>`;
 const selectOptions = (values, value, empty = 'Select…') => `<option value="">${empty}</option>${values.map(item => { const option = typeof item === 'string' ? { value: item, label: item } : item; return `<option value="${esc(option.value)}"${selected(option.value, value)}>${esc(option.label)}</option>`; }).join('')}`;
-function choiceCard(item, index, decision) {
+function choiceCard(item, index) {
   const rating = RATINGS[index];
-  const knownError = !item.meta.errorType || ERROR_TYPES.some(option => option.value === item.meta.errorType);
-  const errors = knownError ? ERROR_TYPES : [{ value: item.meta.errorType, label: `Existing specific value: ${item.meta.errorType}` }, ...ERROR_TYPES];
-  return `<fieldset class="choice-card" data-choice="${rating.key}"><legend><strong>${rating.score}</strong> — ${rating.label}</legend><input type="hidden" name="score" value="${rating.score}">${textField('TEACHER ACTION', 'text', item.text)}${textField('WHAT HAPPENS NEXT?', 'consequence', item.consequence)}${textField('WIZARD', 'wizard', item.wizard)}<label>BEHAVIORAL EXPLANATION<textarea name="feedback">${esc(item.feedback)}</textarea></label><label>BIP COMPONENT<select name="bipComponent">${selectOptions(COMPONENTS, item.meta.bipComponent)}</select></label>${textField('MECHANISM', 'mechanism', item.meta.mechanism)}<label>ERROR TYPE<select name="errorType">${selectOptions(errors, item.meta.errorType, 'No Error Type selected')}</select></label><label>FUNCTION<select name="function">${selectOptions(FUNCTIONS, item.meta.function)}</select></label>${decision < 5 ? `<label>NEXT STATE<select name="trajectory">${TRAJECTORIES.map(branch => `<option value="${branch}"${selected(nextStepId(decision, branch), item.next)}>${branch[0].toUpperCase() + branch.slice(1)}</option>`).join('')}</select></label>` : `<label>ENDING<select name="ending">${ENDINGS.map(key => `<option value="${key}"${selected(key, item.ending)}>${key[0] + key.slice(1).toLowerCase()}</option>`).join('')}</select></label>`}</fieldset>`;
+  const helper = rating.score === 10
+    ? 'Best match to the individualized plan in this moment.'
+    : rating.score === 5
+    ? 'Reasonable and tempting, but missing or mistiming an important ingredient.'
+    : 'A realistic response that drifts from the individualized plan.';
+  return `<fieldset class="choice-card simple-choice score-${rating.score}" data-choice="${rating.key}">
+    <legend><strong>${rating.score}</strong> — ${rating.label}</legend>
+    <small class="choice-helper">${helper}</small>
+    <label>TEACHER RESPONSE<textarea name="text" rows="3">${esc(item.text)}</textarea></label>
+    <label>WHAT HAPPENS NEXT?<textarea name="consequence" rows="3">${esc(item.consequence)}</textarea></label>
+    <label>WHY DOES THIS SCORE FIT?<textarea name="feedback" rows="3">${esc(item.feedback)}</textarea></label>
+  </fieldset>`;
 }
 export function draftPreviewUrl(caseCode, type, slot) {
   const params = new URLSearchParams({ qa_case: caseCode, qa_draft_type: type, qa_draft_slot: String(slot) });
   return `../game/?${params}`;
 }
 export function renderMissionBuilder(workspace, selection, mission, nav = { decision: 1, branch: 'supported' }, message = '') {
-  if (!selection || !mission) return '<section class="mission-builder-empty"><h2>Mission Builder</h2><p>Select a mission slot to begin.</p></section>';
-  const group = TYPES.find(item => item.type === selection.mission_type), decision = nav.decision, id = stepId(decision, nav.branch), step = mission.steps[id], fidelity = targets(workspace), saved = Boolean(latestDraft(workspace, selection.mission_type, selection.slot_number));
+  if (!selection || !mission) return '<section class="mission-builder-empty"><h2>Mission Builder</h2><p>Select a mission above to start writing.</p></section>';
+  const group = TYPES.find(item => item.type === selection.mission_type);
+  const decision = nav.decision;
+  const id = stepId(decision, nav.branch);
+  const step = mission.steps[id];
+  const fidelity = targets(workspace);
+  const saved = Boolean(latestDraft(workspace, selection.mission_type, selection.slot_number));
   const progress = missionAuthoringProgress(mission);
-  return `<section class="mission-builder" data-case-id="${esc(workspace.case.id)}"><header><div><p class="eyebrow">EDITING MISSION</p><h2>${group.label} ${selection.slot_number}</h2></div><div class="authoring-links"><a href="../docs/MISSION_AUTHORING_STANDARD.md" target="_blank" rel="noopener">Mission Authoring Standard</a><a href="../docs/examples/FICTIONAL_CASE_AUTHORING_EXAMPLE.md" target="_blank" rel="noopener">Fictional Training Examples</a></div></header><div class="mission-progress-strip"><div><span>Scenes complete</span><strong>${progress.completeScenes}/13</strong></div><div><span>Choices complete</span><strong>${progress.completeChoices}/39</strong></div><div><span>Exact fidelity links</span><strong>${progress.fidelityLinks}</strong></div><div><span>Quality reviews</span><strong>${progress.reviews}/2</strong></div></div><p class="privacy-warning">Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.</p>
-  <aside class="case-context"><h3>Case context</h3><dl><div><dt>Case code</dt><dd>${esc(workspace.case.case_code)}</dd></div><div><dt>Student alias</dt><dd>${esc(workspace.case.student_alias)}</dd></div>${workspace.primary_function ? `<div><dt>Primary function</dt><dd>${esc(workspace.primary_function)}</dd></div>` : ''}</dl><strong>Active fidelity targets</strong><ul>${fidelity.map(target => `<li><code>${esc(targetKey(target))}</code> ${esc(target.description)}</li>`).join('') || '<li>None returned for this case.</li>'}</ul></aside>
-  <section class="builder-section mission-setup"><h3>Mission Setup</h3><p class="mission-setup-helper">Complete the design card before writing branches. The mission should be difficult because of a real classroom discrimination—not because the wording is tricky.</p><div class="builder-grid">${textField('MISSION ID', 'id', mission.id, 'pattern="[A-Za-z0-9_-]+" required')}${textField('MISSION TITLE', 'title', mission.title)}<label>MISSION TYPE<input value="${group.label}" readonly></label>${textField('ROUTINE / LOCATION', 'routine', mission.routine)}${textField('CENTRAL TENSION', 'centralTension', mission.authoringMeta.centralTension)}${textField('EMOTIONAL / NARRATIVE TONE', 'tone', mission.authoringMeta.tone)}<label>FUNCTION(S) IN PLAY<select name="functionPressure" multiple>${FUNCTIONS.map(option => `<option value="${option.value}"${mission.functionPressure.includes(option.value) ? ' selected' : ''}>${esc(option.label)}</option>`).join('')}</select><small>Select the behavioral function(s) relevant to this scenario.</small></label>${textField('WHAT MAKES THE FUNCTION RELEVANT HERE?', 'functionPressureContext', mission.authoringMeta.functionPressureContext)}<fieldset><legend>ACTIVE BIP COMPONENTS</legend>${COMPONENTS.map(value => `<label><input type="checkbox" name="activeBipComponents" value="${value}"${checked(mission.authoringMeta.activeBipComponents.includes(value))}> ${value}</label>`).join('')}</fieldset><label class="wide">MISSION AUTHORING FOCUS / DESIGN GOAL<textarea name="focus">${esc(mission.focus)}</textarea><small>What discrimination should make this mission hard? Example: distinguish a kind but delayed response from the exact plan action needed now.</small></label></div>
-  <fieldset class="mission-quality-review"><legend>MISSION QUALITY REVIEW</legend>
-    <label><input type="checkbox" name="qualityBehavioralReview"${checked(mission.authoringMeta.qualityReview?.behavioral)}> <span><strong>Behavioral accuracy reviewed</strong><small>Every 10 is supported by the BSP; every 5 is defensibly incomplete; every 0 is realistic plan drift. Function, timing, contingency, replacement behavior, and safety all match the source plan.</small></span></label>
-    <label><input type="checkbox" name="qualityGameDesignReview"${checked(mission.authoringMeta.qualityReview?.gameDesign)}> <span><strong>Game design reviewed</strong><small>All three choices feel plausible at first glance; the 5 is tempting; the 0 is realistic rather than silly; consequences change later scenes; recovery is possible; and the mission feels like one classroom story rather than five quiz questions.</small></span></label>
-  </fieldset>
-  <p><small>These review confirmations are required by the Full Draft quality gate. They are authoring metadata only and are never shown to the teacher.</small></p></section>
-    <section class="builder-section bip-targets"><h3>Fidelity Target Opportunities</h3><p>Select only active, approved targets expected somewhere in this mission.</p>${fidelity.map(target => `<label class="target-option"><input type="checkbox" name="bipTargets" value="${esc(targetKey(target))}"${checked(mission.bipTargets.includes(targetKey(target)))}><span><code>${esc(targetKey(target))}</code><strong>${esc(target.description)}</strong><small>${esc(target.domain)}</small></span></label>`).join('') || '<p>No active targets are available.</p>'}</section>
-  <section class="builder-section decision-editor"><h3>Decisions</h3><nav class="decision-tabs">${DECISIONS.map((label, index) => { const number = index + 1, ids = number === 1 ? ['d1_start'] : TRAJECTORIES.map(branch => stepId(number, branch)), started = ids.some(key => isStarted(mission.steps[key])); return `<button type="button" data-decision="${number}" class="${decision === number ? 'selected' : ''}">Decision ${number}<small>${started ? 'Started' : 'Missing'}</small></button>`; }).join('')}</nav><h4>Decision ${decision} — ${DECISIONS[decision - 1]}</h4>${decision > 1 ? `<div class="branch-tabs">${TRAJECTORIES.map(branch => `<button type="button" data-branch="${branch}" class="${nav.branch === branch ? 'selected' : ''}">${branch[0].toUpperCase() + branch.slice(1)}</button>`).join('')}</div>` : ''}<div class="scene-editor" data-step-id="${id}"><label>SCENE<textarea name="text" rows="6">${esc(step.text)}</textarea></label><label>HINT<textarea name="hint">${esc(step.hint)}</textarea></label><label>EXACT FIDELITY TARGET<select name="fidelityTargetKey"><option value="">No exact fidelity target</option>${fidelity.map(target => `<option value="${esc(targetKey(target))}"${selected(targetKey(target), step.meta.fidelityTargetKey)}>${esc(targetKey(target))} — ${esc(target.description)}</option>`).join('')}</select></label><div class="choice-cards">${RATINGS.map(({ key }, index) => choiceCard(step.choices[key], index, decision)).join('')}</div></div></section>
-  <section class="builder-section endings-editor"><h3>Mission Endings</h3><div class="ending-cards">${ENDINGS.map(key => `<fieldset data-ending="${key}"><legend>${key}</legend><label>Narrative outcome<textarea name="text">${esc(mission.endings[key]?.text)}</textarea></label><label>Wizard reaction<textarea name="wizard">${esc(mission.endings[key]?.wizard)}</textarea></label></fieldset>`).join('')}</div></section><div class="save-bar"><button id="save-mission-draft" class="primary" type="button">Save Draft</button><div><button id="preview-saved-draft" type="button" data-case-code="${esc(workspace.case.case_code)}" data-mission-type="${esc(selection.mission_type)}" data-slot-number="${Number(selection.slot_number)}"${saved ? '' : ' disabled'}>Preview Saved Draft</button><small>${saved ? 'Preview uses the last saved version. Unsaved changes are not included.' : 'Save this mission before previewing.'}</small></div><p id="mission-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
+  const branchLabels = {
+    supported: ['After the 10-point path','Student/classroom is in the strongest current state'],
+    wobbly: ['After the 5-point path','Something helped, but an important ingredient was missed'],
+    escalated: ['After the 0-point path','The previous response made the situation harder']
+  };
+  const sceneOrder = [
+    { decision:1, branch:'supported' },
+    ...[2,3,4,5].flatMap(number => TRAJECTORIES.map(branch => ({ decision:number, branch })))
+  ];
+  const sceneIndex = sceneOrder.findIndex(item => item.decision===decision && item.branch===nav.branch);
+  return `<section class="mission-builder simple-mission-builder" data-case-id="${esc(workspace.case.id)}">
+    <header>
+      <div><p class="eyebrow">EDITING ${esc(group.label.toUpperCase())} MISSION ${Number(selection.slot_number)}</p><h2>${esc(mission.title || `${group.label} Mission ${selection.slot_number}`)}</h2></div>
+      <div class="mission-builder-status"><strong>${progress.completeScenes}/13 scenes</strong><span>${progress.completeChoices}/39 choices complete</span></div>
+    </header>
+
+    <details class="simple-case-reference">
+      <summary>Case reference</summary>
+      <div class="simple-case-reference-body">
+        <p><strong>Student alias:</strong> ${esc(workspace.case.student_alias)}${workspace.primary_function ? ` · <strong>Function:</strong> ${esc(workspace.primary_function)}` : ''}</p>
+        <p><strong>Approved fidelity targets:</strong></p>
+        <ul>${fidelity.map(target => `<li><code>${esc(targetKey(target))}</code> ${esc(target.description)}</li>`).join('') || '<li>None returned.</li>'}</ul>
+      </div>
+    </details>
+
+    <section class="simple-mission-basics">
+      <label>MISSION TITLE<input name="title" value="${esc(mission.title)}" placeholder="A short situation-based title"></label>
+      <label>ROUTINE / LOCATION<input name="routine" value="${esc(mission.routine)}" placeholder="e.g., Centers, independent work, transition"></label>
+    </section>
+
+    <section class="builder-section decision-editor simple-decision-editor">
+      <div class="simple-decision-heading">
+        <div><p class="eyebrow">STEP ${decision} OF 5</p><h3>${DECISIONS[decision - 1]}</h3></div>
+        <nav class="decision-tabs" aria-label="Mission decisions">${DECISIONS.map((label, index) => {
+          const number=index+1;
+          const ids=number===1?['d1_start']:TRAJECTORIES.map(branch=>stepId(number,branch));
+          const started=ids.some(key=>isStarted(mission.steps[key]));
+          return `<button type="button" data-decision="${number}" class="${decision===number?'selected':''}"><strong>${number}</strong><small>${started?'Started':'Blank'}</small></button>`;
+        }).join('')}</nav>
+      </div>
+
+      ${decision > 1 ? `<div class="branch-tabs simple-branch-tabs">${TRAJECTORIES.map(branch => `<button type="button" data-branch="${branch}" class="${nav.branch===branch?'selected':''}"><strong>${branchLabels[branch][0]}</strong><small>${branchLabels[branch][1]}</small></button>`).join('')}</div>` : ''}
+
+      <div class="scene-editor simple-scene-editor" data-step-id="${id}">
+        <label class="scene-field">SCENE<textarea name="text" rows="7" placeholder="What is happening in the classroom right now?">${esc(step.text)}</textarea></label>
+        <label>HINT<textarea name="hint" rows="2" placeholder="A useful cue that does not give away the answer">${esc(step.hint)}</textarea></label>
+        <label>EXACT PLAN STEP PRACTICED <span class="optional-label">Optional</span>
+          <select name="fidelityTargetKey">
+            <option value="">No exact fidelity target for this decision</option>
+            ${fidelity.map(target => `<option value="${esc(targetKey(target))}"${selected(targetKey(target), step.meta.fidelityTargetKey)}>${esc(target.description)}</option>`).join('')}
+          </select>
+          <small>Use this only when the decision is a true opportunity to perform that exact teacher action.</small>
+        </label>
+
+        <div class="simple-choice-intro"><strong>What could the teacher do?</strong><span>Write three believable choices. The teacher should have to think.</span></div>
+        <div class="choice-cards">${RATINGS.map(({ key }, index) => choiceCard(step.choices[key], index)).join('')}</div>
+      </div>
+
+      <div class="simple-step-nav">
+        <button type="button" class="quiet" data-simple-prev${sceneIndex<=0?' disabled':''}>← Previous scene</button>
+        <span>${decision===1?'Opening scene':decision===5?'Final decision':`Decision ${decision} · ${branchLabels[nav.branch][0]}`}</span>
+        <button type="button" class="quiet" data-simple-next${sceneIndex>=sceneOrder.length-1?' disabled':''}>Next scene →</button>
+      </div>
+    </section>
+
+    <div class="save-bar simple-save-bar">
+      <button id="save-mission-draft" class="primary" type="button">Save Mission</button>
+      <button id="preview-saved-draft" type="button" data-case-code="${esc(workspace.case.case_code)}" data-mission-type="${esc(selection.mission_type)}" data-slot-number="${Number(selection.slot_number)}"${saved?'':' disabled'}>Play Saved Mission</button>
+      <p id="mission-save-message" class="message" role="status">${esc(message)}</p>
+    </div>
+  </section>`;
 }
 function renderPublishedReview(published = {}) {
   const content = published.protected_content || {}, map = published.resource_map || {}, checklist = published.checklist || {}, orientation = checklist.intervention_orientation || {}, statuses = checklistStatuses('intervention_orientation');
@@ -273,53 +342,36 @@ const authoringBriefField = (label, value) => `<div class="authoring-brief-field
 export function renderAuthoringBrief(workspace) {
   const context = workspace?.intake_context || {};
   const fidelity = targets(workspace);
-  const sourceTime = context.source_updated_at ? dateLabel(context.source_updated_at) : '';
-  return `<section class="builder-section authoring-brief" aria-labelledby="authoring-brief-title">
-    <div class="authoring-brief-heading">
-      <div><p class="eyebrow">RESEARCHER AUTHORING BRIEF</p><h2 id="authoring-brief-title">Build from the plan, write from the classroom</h2></div>
-      <span class="authoring-source-chip">${sourceTime ? `Case context updated ${esc(sourceTime)}` : 'Case context loaded'}</span>
-    </div>
-    <p class="authoring-source-rule"><strong>Source-of-truth rule:</strong> the approved BSP/BIP and finalized fidelity targets govern the game. Intake information below is supplemental classroom context. If they conflict, use the BSP/BIP.</p>
+  return `<details class="builder-section authoring-brief compact-authoring-reference">
+    <summary><strong>Case context for writing missions</strong><span>Open only when you need a reminder from the intake/BSP review.</span></summary>
     <div class="authoring-brief-grid">
-      <section>
-        <h3>Behavior pathway</h3>
+      <section><h3>Behavior</h3>
         ${authoringBriefField('Target behavior', context.target_behavior)}
-        ${authoringBriefField('Observable topography', context.behavior_topography)}
-        ${authoringBriefField('Primary function', context.primary_function || workspace?.primary_function)}
+        ${authoringBriefField('Function', context.primary_function || workspace?.primary_function)}
         ${authoringBriefField('Replacement behavior', context.replacement_behavior)}
         ${authoringBriefField('Desired behavior', context.desired_behavior)}
       </section>
-      <section>
-        <h3>Plan actions</h3>
+      <section><h3>Plan</h3>
         ${authoringBriefField('Prevent', context.prevention_strategies)}
         ${authoringBriefField('Teach', context.teaching_strategies)}
         ${authoringBriefField('Reinforce', context.reinforcement_system)}
         ${authoringBriefField('Respond', context.response_strategy)}
-        ${context.has_crisis_plan ? authoringBriefField('Crisis / safety', context.crisis_plan) : '<div class="authoring-no-crisis"><strong>No formal crisis plan recorded.</strong><span>High-intensity missions may not invent crisis or safety procedures.</span></div>'}
       </section>
-      <section>
-        <h3>Classroom reality</h3>
-        ${authoringBriefField('Typical settings / routines', context.typical_settings)}
-        ${authoringBriefField('Common triggers', context.common_triggers)}
-        ${authoringBriefField('What usually follows behavior', context.typical_consequences)}
-        ${authoringBriefField('What staff do now', context.current_staff_responses)}
-        ${authoringBriefField('Requested practice situations', context.requested_scenarios)}
+      <section><h3>Real classroom context</h3>
+        ${authoringBriefField('Routines/settings', context.typical_settings)}
+        ${authoringBriefField('Triggers', context.common_triggers)}
+        ${authoringBriefField('Current staff responses', context.current_staff_responses)}
+        ${authoringBriefField('Requested scenarios', context.requested_scenarios)}
       </section>
-      <section>
-        <h3>Personalization fuel</h3>
-        ${authoringBriefField('Strengths / interests', context.student_strengths)}
-        ${authoringBriefField('Known reinforcers / preferences', context.preferred_items_activities)}
-        ${authoringBriefField('Preference assessment notes', context.preference_assessment_notes)}
+      <section><h3>Personalization</h3>
+        ${authoringBriefField('Strengths/interests', context.student_strengths)}
+        ${authoringBriefField('Reinforcers/preferences', context.preferred_items_activities)}
         ${authoringBriefField('Additional context', context.additional_context)}
-        ${authoringBriefField('Grade', context.grade_level)}
       </section>
     </div>
-    <div class="authoring-fidelity-brief">
-      <div><h3>Approved fidelity targets</h3><p>These are the observable teacher behaviors the mission bank is ultimately rehearsing. Link a decision only when the exact target is a defensible scoring criterion.</p></div>
-      <ul>${fidelity.map(target => `<li><code>${esc(targetKey(target))}</code><span>${esc(target.description)}</span><small>${esc(target.domain)}</small></li>`).join('') || '<li>No active fidelity targets returned for this case.</li>'}</ul>
-    </div>
-    <div class="authoring-design-cues"><strong>Design cue:</strong><span>Turn current staff habits into plausible 5- and 0-point choices, use real routines for scenario variety, make the function pressure visible, and carry each consequence into the next scene.</span></div>
-  </section>`;
+    <div class="authoring-fidelity-brief"><div><h3>Approved fidelity targets</h3><p>The mission bank should rehearse these across realistic classroom situations.</p></div><ul>${fidelity.map(target => `<li><code>${esc(targetKey(target))}</code><span>${esc(target.description)}</span></li>`).join('') || '<li>No active fidelity targets returned.</li>'}</ul></div>
+    <p class="authoring-source-rule"><strong>Source of truth:</strong> the approved BSP/BIP and finalized fidelity targets govern the game. Intake information is supplemental context.</p>
+  </details>`;
 }
 export function renderGameSetup(setup, message = '') {
   return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2><p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
@@ -335,7 +387,7 @@ function renderResourceBlock(block, index) {
 }
 export function renderResourceMap(resources, message = '') {
   const warning = hasUnsupportedResourceBlocks(resources) ? '<p class="error-message" role="alert">Unsupported legacy Resource Map content was found. It remains preserved until explicitly removed and replaced.</p>' : '';
-  return `<section class="builder-section resource-map-builder"><h2>Resource Map</h2><p class="privacy-warning">${privacyWarning}</p>${warning}${Object.entries(RESOURCE_SECTIONS).map(([key, [title, helper]]) => { const section = resources.sections[key], started = section.blocks.length > 0; return `<details class="resource-section" data-section-key="${key}"><summary><strong>${title}</strong><span>${started ? 'Started' : 'Not started'}</span></summary><p>${helper}</p><div class="resource-blocks">${section.blocks.map(renderResourceBlock).join('')}</div><label>Add Block<select data-add-block><option value="">Choose block type…</option><option value="paragraph">Paragraph</option><option value="heading">Heading</option><option value="list">Bullet List</option><option value="definitionList">Definition List</option><option value="callout">Callout</option></select></label></details>`; }).join('')}<div class="save-bar"><button id="save-resource-map" class="primary" type="button">Save Resource Map Draft</button><p id="resource-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
+  return `<details class="builder-section resource-map-builder compact-secondary-builder"><summary><strong>Resources / Resource Map</strong><span>Open when you are ready to review the teacher reference pages.</span></summary><div class="secondary-builder-body"><p class="privacy-warning">${privacyWarning}</p>${warning}${Object.entries(RESOURCE_SECTIONS).map(([key, [title, helper]]) => { const section = resources.sections[key], started = section.blocks.length > 0; return `<details class="resource-section" data-section-key="${key}"><summary><strong>${title}</strong><span>${started ? 'Started' : 'Not started'}</span></summary><p>${helper}</p><div class="resource-blocks">${section.blocks.map(renderResourceBlock).join('')}</div><label>Add Block<select data-add-block><option value="">Choose block type…</option><option value="paragraph">Paragraph</option><option value="heading">Heading</option><option value="list">Bullet List</option><option value="definitionList">Definition List</option><option value="callout">Callout</option></select></label></details>`; }).join('')}<div class="save-bar"><button id="save-resource-map" class="primary" type="button">Save Resource Map Draft</button><p id="resource-save-message" class="message" role="status">${esc(message)}</p></div></div></details>`;
 }
 export function renderFullDraftCheck(workspace, check) {
   const ready = check?.ready === true;
@@ -351,23 +403,85 @@ export function renderProtectedPublishing(workspace, check, published = {}, publ
 }
 export function fullDraftPreviewUrl(caseCode) { return `../game/?${new URLSearchParams({ qa_case: caseCode, qa_full_draft: '1' })}`; }
 export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '', setupDraft, resourceDraft, setupMessage = '', resourceMessage = '', fullDraftCheck = null, publishResult = null) {
-  const authoring = workspace ? `${renderAuthoringBrief(workspace)}${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}${renderProtectedPublishing(workspace, fullDraftCheck, published, publishResult)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
-  return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Build the individualized intervention game</h1><p>BRIEF → AUTHOR → QUALITY CHECK → PREVIEW → PUBLISH</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
+  const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderAuthoringBrief(workspace)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}${renderProtectedPublishing(workspace, fullDraftCheck, published, publishResult)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
+  return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Build the game</h1><p>BIP BRIEFING → MISSIONS → PLAY TEST → PUBLISH</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
 }
 
 export function captureMission(root, mission, nav) {
   const one = name => root.querySelector(`[name="${name}"]`);
-  for (const name of ['id', 'title', 'routine', 'focus']) if (one(name)) mission[name] = one(name).value;
-  mission.authoringMeta = { centralTension: one('centralTension')?.value || '', tone: one('tone')?.value || '', functionPressureContext: one('functionPressureContext')?.value || '', activeBipComponents: [...root.querySelectorAll('[name="activeBipComponents"]:checked')].map(input => input.value), qualityReview: { behavioral: Boolean(one('qualityBehavioralReview')?.checked), gameDesign: Boolean(one('qualityGameDesignReview')?.checked) } };
-  mission.functionPressure = [...root.querySelectorAll('[name="functionPressure"] option:checked')].map(option => option.value);
-  mission.bipTargets = [...root.querySelectorAll('[name="bipTargets"]:checked')].map(input => input.value);
+  if (one('title')) mission.title = one('title').value;
+  if (one('routine')) mission.routine = one('routine').value;
+
   const editor = root.querySelector('.scene-editor');
   if (editor) {
-    const step = mission.steps[editor.dataset.stepId]; step.text = editor.querySelector('[name="text"]').value; step.hint = editor.querySelector('[name="hint"]').value;
-    const exact = editor.querySelector('[name="fidelityTargetKey"]').value; step.meta = exact ? { ...step.meta, fidelityTargetKey: exact } : Object.fromEntries(Object.entries(step.meta || {}).filter(([key]) => key !== 'fidelityTargetKey'));
-    editor.querySelectorAll('.choice-card').forEach((card, index) => { const { key, score } = RATINGS[index], item = step.choices[key]; for (const name of ['text', 'consequence', 'wizard', 'feedback']) item[name] = card.querySelector(`[name="${name}"]`).value; item.meta = Object.fromEntries(['bipComponent', 'mechanism', 'errorType', 'function'].map(name => [name, card.querySelector(`[name="${name}"]`).value])); item.score = score; if (nav.decision < 5) { item.next = nextStepId(nav.decision, card.querySelector('[name="trajectory"]').value); delete item.ending; } else { item.next = null; item.ending = card.querySelector('[name="ending"]').value; } });
+    const step = mission.steps[editor.dataset.stepId];
+    step.text = editor.querySelector('[name="text"]').value;
+    step.hint = editor.querySelector('[name="hint"]').value;
+
+    const exact = editor.querySelector('[name="fidelityTargetKey"]').value;
+    step.meta = exact
+      ? { ...(step.meta || {}), fidelityTargetKey: exact }
+      : Object.fromEntries(Object.entries(step.meta || {}).filter(([key]) => key !== 'fidelityTargetKey'));
+
+    const domain = exact ? exact.split('_')[0] : '';
+    const component = ({ proactive:'Prevent', teaching:'Teach', reinforcement:'Reinforce', response:'Respond', crisis:'Crisis' })[domain] || '';
+    const functionValue = canonicalFunction(mission.functionPressure?.[0]) || 'unclear';
+    const scoreTrajectory = { 10:'supported', 5:'wobbly', 0:'escalated' };
+    const wizardDefaults = {
+      10: 'YES. That matched the plan at the moment it mattered.',
+      5: 'Close call. Helpful idea — but an important ingredient is still missing.',
+      0: 'That response is understandable, but it drifts from the individualized plan.'
+    };
+
+    editor.querySelectorAll('.choice-card').forEach((card, index) => {
+      const { key, score } = RATINGS[index];
+      const item = step.choices[key];
+      item.text = card.querySelector('[name="text"]').value;
+      item.consequence = card.querySelector('[name="consequence"]').value;
+      item.feedback = card.querySelector('[name="feedback"]').value;
+      item.wizard = item.wizard?.trim() || wizardDefaults[score];
+      item.score = score;
+      item.meta = {
+        ...(item.meta || {}),
+        bipComponent: item.meta?.bipComponent || component,
+        mechanism: item.meta?.mechanism?.trim() || item.text.trim(),
+        errorType: score === 10
+          ? 'none'
+          : (item.meta?.errorType && item.meta.errorType !== 'none'
+            ? item.meta.errorType
+            : score === 5 ? 'missed_active_ingredient' : 'other_needs_review'),
+        function: item.meta?.function || functionValue
+      };
+      if (nav.decision < 5) {
+        item.next = nextStepId(nav.decision, scoreTrajectory[score]);
+        delete item.ending;
+      } else {
+        item.next = null;
+        delete item.ending;
+      }
+    });
   }
-  root.querySelectorAll('[data-ending]').forEach(card => { mission.endings[card.dataset.ending] = { text: card.querySelector('[name="text"]').value, wizard: card.querySelector('[name="wizard"]').value }; });
+
+  const linkedTargets = [...new Set(
+    Object.values(mission.steps || {})
+      .map(step => step?.meta?.fidelityTargetKey)
+      .filter(Boolean)
+  )];
+  mission.bipTargets = linkedTargets;
+
+  const linkedComponents = [...new Set(
+    linkedTargets
+      .map(key => ({ proactive:'Prevent', teaching:'Teach', reinforcement:'Reinforce', response:'Respond', crisis:'Crisis' })[String(key).split('_')[0]])
+      .filter(Boolean)
+  )];
+  mission.authoringMeta = {
+    ...(mission.authoringMeta || {}),
+    activeBipComponents: linkedComponents
+  };
+
+  if ((!mission.functionPressure || !mission.functionPressure.length) && linkedTargets.length) {
+    mission.functionPressure = ['unclear'];
+  }
   return mission;
 }
 

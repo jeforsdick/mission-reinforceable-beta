@@ -2,8 +2,8 @@ import { accountState, antecedentContext, normalizeTargets, readinessForCase } f
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, studyWideAttention, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs?v=20261004-history-polish-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261005-function-pressure';
-import { validateFullDraft } from './game-draft-validator.mjs?v=20261005-function-pressure';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261005-simple-authoring';
+import { validateFullDraft } from './game-draft-validator.mjs?v=20261005-simple-authoring';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
@@ -688,6 +688,22 @@ function bindMissionBuilder() {
   }));
   document.querySelectorAll('[data-decision]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); state.missionNav.decision = Number(button.dataset.decision); state.missionNav.branch = 'supported'; redrawGameCreation(); }));
   document.querySelectorAll('[data-branch]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); state.missionNav.branch = button.dataset.branch; redrawGameCreation(); }));
+
+  const sceneOrder = [
+    { decision:1, branch:'supported' },
+    ...[2,3,4,5].flatMap(decision => ['supported','wobbly','escalated'].map(branch => ({ decision, branch })))
+  ];
+  const moveSimpleScene = direction => {
+    preserveAllAuthoringForms();
+    const currentIndex = sceneOrder.findIndex(item => item.decision===state.missionNav.decision && item.branch===state.missionNav.branch);
+    const nextIndex = Math.max(0,Math.min(sceneOrder.length-1,currentIndex+direction));
+    state.missionNav = { ...sceneOrder[nextIndex] };
+    redrawGameCreation();
+    document.querySelector('.simple-decision-editor')?.scrollIntoView({ behavior:'smooth', block:'start' });
+  };
+  document.querySelector('[data-simple-prev]')?.addEventListener('click',()=>moveSimpleScene(-1));
+  document.querySelector('[data-simple-next]')?.addEventListener('click',()=>moveSimpleScene(1));
+
   $('#save-mission-draft')?.addEventListener('click', saveMissionDraft);
 }
 function bindPublishedReview() {
