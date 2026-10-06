@@ -132,6 +132,7 @@ function canonicalQualityMission(value) {
     step.text = decision === 1 ? 'It is a busy classroom routine with competing teacher demands. The student shows an early, observable signal before the target behavior begins. Another learner needs help at the same time, so the teacher must decide whether to use the individualized support now or rely on a reasonable classroom response that misses an active ingredient.' : 'The prior teacher response changed the student state and the classroom workload. The student now shows a clear, observable response while another demand competes for the teacher’s attention. The next choice can improve the trajectory, keep it wobbly, or make the situation harder.';
     step.hint = 'Use the current student state, behavioral function, timing, and exact plan action.';
     for (const choice of Object.values(step.choices)) {
+      choice.text = `Professional teacher action scored ${choice.score} for decision ${decision}`;
       choice.next = decision < 5 ? `d${decision + 1}_${nextBranch(choice.score)}` : null;
       if (decision === 5) choice.ending = choice.score === 10 ? 'STRONG' : choice.score === 5 ? 'MIXED' : 'FRAGILE'; else delete choice.ending;
     }
