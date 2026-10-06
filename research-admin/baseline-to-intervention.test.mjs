@@ -68,17 +68,19 @@ const startAcl=migration.slice(
 assert.match(startAcl,/grant execute on function public\.research_admin_start_intervention[\s\S]*to service_role/);
 assert.doesNotMatch(startAcl,/to authenticated/);
 
-const api=fs.readFileSync(new URL('../api/research-admin-start-intervention.js',import.meta.url),'utf8');
+const api=fs.readFileSync(new URL('../api/research-admin-communication-readiness.js',import.meta.url),'utf8');
+assert.match(api,/body\.action === 'start_intervention'/);
 assert.match(api,/TEACHER_REMINDER_SYSTEM_ENABLED/);
 assert.match(api,/research_admin_start_intervention/);
-assert.match(api,/target_actor_id:actor\.id/);
+assert.match(api,/target_actor_id: actor\.id/);
 
 const admin=fs.readFileSync(new URL('./admin.js',import.meta.url),'utf8');
 const startHandler=admin.slice(
   admin.indexOf("$('#start-intervention-form')"),
   admin.indexOf("$('#phase-form')")
 );
-assert.match(startHandler,/research-admin-start-intervention/);
+assert.match(startHandler,/research-admin-communication-readiness/);
+assert.match(startHandler,/action:'start_intervention'/);
 assert.doesNotMatch(startHandler,/research_admin_record_phase/);
 
 console.log('Baseline -> Intervention launch safeguards passed.');
