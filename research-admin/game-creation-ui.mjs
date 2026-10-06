@@ -165,12 +165,12 @@ export function blankMission(caseCode, type, slot) {
     const ids = decision === 1 ? ['d1_start'] : TRAJECTORIES.map(branch => stepId(decision, branch));
     for (const id of ids) RATINGS.forEach(({ key }, index) => { steps[id].choices[key].next = nextStepId(decision, TRAJECTORIES[index]); delete steps[id].choices[key].ending; });
   }
-  return { id: defaultMissionId(caseCode, type, slot), title: '', expectedSteps: 5, start: 'd1_start', focus: '', routine: '', functionPressure: [], bipTargets: [], authoringMeta: { centralTension: '', activeBipComponents: [] }, endings: Object.fromEntries(ENDINGS.map(key => [key, { text: '', wizard: '' }])), steps };
+  return { id: defaultMissionId(caseCode, type, slot), title: '', expectedSteps: 5, start: 'd1_start', focus: '', routine: '', functionPressure: [], bipTargets: [], authoringMeta: { centralTension: '', tone: '', activeBipComponents: [], qualityReview: { behavioral: false, gameDesign: false } }, endings: Object.fromEntries(ENDINGS.map(key => [key, { text: '', wizard: '' }])), steps };
 }
 export function normalizeMission(value, caseCode, type, slot) {
   const base = blankMission(caseCode, type, slot);
   if (!value || typeof value !== 'object' || Array.isArray(value)) return base;
-  const mission = { ...base, ...structuredClone(value), authoringMeta: { ...base.authoringMeta, ...(value.authoringMeta || {}), centralTension: value.authoringMeta?.centralTension ?? value.centralTension ?? '', activeBipComponents: value.authoringMeta?.activeBipComponents ?? value.activeBipComponents ?? [] }, endings: { ...base.endings, ...(value.endings || {}) }, steps: { ...base.steps } };
+  const mission = { ...base, ...structuredClone(value), authoringMeta: { ...base.authoringMeta, ...(value.authoringMeta || {}), centralTension: value.authoringMeta?.centralTension ?? value.centralTension ?? '', tone: value.authoringMeta?.tone ?? value.tone ?? '', activeBipComponents: value.authoringMeta?.activeBipComponents ?? value.activeBipComponents ?? [], qualityReview: { ...base.authoringMeta.qualityReview, ...(value.authoringMeta?.qualityReview || {}) } }, endings: { ...base.endings, ...(value.endings || {}) }, steps: { ...base.steps } };
   delete mission.centralTension; delete mission.activeBipComponents;
   mission.functionPressure = (value.functionPressure || []).map(canonicalFunction);
   for (const [id, template] of Object.entries(base.steps)) {
@@ -199,9 +199,35 @@ const targetKey = target => target.target_key || target.key;
 const targets = workspace => workspace?.active_fidelity_targets || workspace?.fidelity_targets || [];
 const dateLabel = value => value ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value)) : '';
 const isStarted = step => Boolean(step?.text || step?.hint || step?.meta?.fidelityTargetKey || Object.values(step?.choices || {}).some(item => item.text || item.consequence || item.wizard || item.feedback || Object.values(item.meta || {}).some(Boolean)));
+const missionSceneEntries = mission => Object.entries(mission?.steps || {}).filter(([id]) => /^d[1-5]_(?:start|supported|wobbly|escalated)$/.test(id));
+const choiceIsComplete = choice => Boolean(
+  choice?.text?.trim()
+  && choice?.consequence?.trim()
+  && choice?.wizard?.trim()
+  && choice?.feedback?.trim()
+  && choice?.meta?.bipComponent
+  && choice?.meta?.mechanism?.trim()
+  && choice?.meta?.errorType
+  && choice?.meta?.function
+);
+export function missionAuthoringProgress(mission) {
+  const scenes = missionSceneEntries(mission);
+  const completeScenes = scenes.filter(([,step]) =>
+    step?.text?.trim()
+    && step?.hint?.trim()
+    && Object.values(step?.choices || {}).length === 3
+    && Object.values(step?.choices || {}).every(choiceIsComplete)
+  ).length;
+  const choices = scenes.flatMap(([,step]) => Object.values(step?.choices || {}));
+  const completeChoices = choices.filter(choiceIsComplete).length;
+  const fidelityLinks = scenes.filter(([,step]) => step?.meta?.fidelityTargetKey).length;
+  const reviews = Number(mission?.authoringMeta?.qualityReview?.behavioral === true)
+    + Number(mission?.authoringMeta?.qualityReview?.gameDesign === true);
+  return { scenes: scenes.length, completeScenes, choices: choices.length, completeChoices, fidelityLinks, reviews };
+}
 
 export function renderMissionBank(workspace, selection) {
-  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `Draft${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
+  return `<section class="mission-bank" aria-labelledby="mission-bank-title"><h2 id="mission-bank-title">MISSION BANK</h2>${TYPES.map(group => `<section class="mission-bank-group"><h3>${group.label} Missions</h3>${group.type === 'crisis' && !workspace.has_crisis_plan ? '<p class="crisis-label"><strong>Formal crisis plan not present.</strong><br>Do not author crisis procedures that are not in the approved plan. Elevated, safe scenarios may be drafted only within the Mission Authoring Standard.</p>' : ''}<div class="mission-slots">${Array.from({ length: group.count }, (_, index) => { const slot = index + 1, row = latestDraft(workspace, group.type, slot), mission = missionFromDraft(row), active = selection?.mission_type === group.type && selection?.slot_number === slot; return `<button type="button" class="mission-slot${active ? ' selected' : ''}" data-mission-type="${group.type}" data-slot-number="${slot}" aria-pressed="${active}"><strong>${group.label} ${slot}</strong>${mission?.title ? `<span>${esc(mission.title)}</span>` : ''}<small>${row ? `${mission?.authoringMeta?.qualityReview?.behavioral && mission?.authoringMeta?.qualityReview?.gameDesign ? 'Draft · reviewed' : 'Draft · quality review pending'}${row.created_at ? ` · saved ${esc(dateLabel(row.created_at))}` : ''}` : 'Not started'}</small></button>`; }).join('')}</div></section>`).join('')}</section>`;
 }
 const textField = (label, name, value, extra = '') => `<label>${label}<input ${extra} name="${name}" value="${esc(value)}"></label>`;
 const selectOptions = (values, value, empty = 'Select…') => `<option value="">${empty}</option>${values.map(item => { const option = typeof item === 'string' ? { value: item, label: item } : item; return `<option value="${esc(option.value)}"${selected(option.value, value)}>${esc(option.label)}</option>`; }).join('')}`;
@@ -218,10 +244,16 @@ export function draftPreviewUrl(caseCode, type, slot) {
 export function renderMissionBuilder(workspace, selection, mission, nav = { decision: 1, branch: 'supported' }, message = '') {
   if (!selection || !mission) return '<section class="mission-builder-empty"><h2>Mission Builder</h2><p>Select a mission slot to begin.</p></section>';
   const group = TYPES.find(item => item.type === selection.mission_type), decision = nav.decision, id = stepId(decision, nav.branch), step = mission.steps[id], fidelity = targets(workspace), saved = Boolean(latestDraft(workspace, selection.mission_type, selection.slot_number));
-  return `<section class="mission-builder" data-case-id="${esc(workspace.case.id)}"><header><div><p class="eyebrow">EDITING MISSION</p><h2>${group.label} ${selection.slot_number}</h2></div><div class="authoring-links"><a href="../docs/MISSION_AUTHORING_STANDARD.md" target="_blank" rel="noopener">Mission Authoring Standard</a><a href="../docs/examples/FICTIONAL_CASE_AUTHORING_EXAMPLE.md" target="_blank" rel="noopener">Fictional Training Examples</a></div></header><p class="privacy-warning">Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.</p>
+  const progress = missionAuthoringProgress(mission);
+  return `<section class="mission-builder" data-case-id="${esc(workspace.case.id)}"><header><div><p class="eyebrow">EDITING MISSION</p><h2>${group.label} ${selection.slot_number}</h2></div><div class="authoring-links"><a href="../docs/MISSION_AUTHORING_STANDARD.md" target="_blank" rel="noopener">Mission Authoring Standard</a><a href="../docs/examples/FICTIONAL_CASE_AUTHORING_EXAMPLE.md" target="_blank" rel="noopener">Fictional Training Examples</a></div></header><div class="mission-progress-strip"><div><span>Scenes complete</span><strong>${progress.completeScenes}/13</strong></div><div><span>Choices complete</span><strong>${progress.completeChoices}/39</strong></div><div><span>Exact fidelity links</span><strong>${progress.fidelityLinks}</strong></div><div><span>Quality reviews</span><strong>${progress.reviews}/2</strong></div></div><p class="privacy-warning">Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.</p>
   <aside class="case-context"><h3>Case context</h3><dl><div><dt>Case code</dt><dd>${esc(workspace.case.case_code)}</dd></div><div><dt>Student alias</dt><dd>${esc(workspace.case.student_alias)}</dd></div>${workspace.primary_function ? `<div><dt>Primary function</dt><dd>${esc(workspace.primary_function)}</dd></div>` : ''}</dl><strong>Active fidelity targets</strong><ul>${fidelity.map(target => `<li><code>${esc(targetKey(target))}</code> ${esc(target.description)}</li>`).join('') || '<li>None returned for this case.</li>'}</ul></aside>
-  <section class="builder-section mission-setup"><h3>Mission Setup</h3><div class="builder-grid">${textField('MISSION ID', 'id', mission.id, 'pattern="[A-Za-z0-9_-]+" required')}${textField('MISSION TITLE', 'title', mission.title)}<label>MISSION TYPE<input value="${group.label}" readonly></label>${textField('ROUTINE / LOCATION', 'routine', mission.routine)}${textField('CENTRAL TENSION', 'centralTension', mission.authoringMeta.centralTension)}<label>FUNCTION PRESSURE<select name="functionPressure" multiple>${FUNCTIONS.map(option => `<option value="${option.value}"${mission.functionPressure.includes(option.value) ? ' selected' : ''}>${esc(option.label)}</option>`).join('')}</select></label><fieldset><legend>ACTIVE BIP COMPONENTS</legend>${COMPONENTS.map(value => `<label><input type="checkbox" name="activeBipComponents" value="${value}"${checked(mission.authoringMeta.activeBipComponents.includes(value))}> ${value}</label>`).join('')}</fieldset><label class="wide">MISSION AUTHORING FOCUS / DESIGN GOAL<textarea name="focus">${esc(mission.focus)}</textarea></label></div><p><small>Central tension and active BIP components are retained under <code>authoringMeta</code>; runtime mission fields remain canonical.</small></p></section>
-  <section class="builder-section bip-targets"><h3>Fidelity Target Opportunities</h3><p>Select only active, approved targets expected somewhere in this mission.</p>${fidelity.map(target => `<label class="target-option"><input type="checkbox" name="bipTargets" value="${esc(targetKey(target))}"${checked(mission.bipTargets.includes(targetKey(target)))}><span><code>${esc(targetKey(target))}</code><strong>${esc(target.description)}</strong><small>${esc(target.domain)}</small></span></label>`).join('') || '<p>No active targets are available.</p>'}</section>
+  <section class="builder-section mission-setup"><h3>Mission Setup</h3><p class="mission-setup-helper">Complete the design card before writing branches. The mission should be difficult because of a real classroom discrimination—not because the wording is tricky.</p><div class="builder-grid">${textField('MISSION ID', 'id', mission.id, 'pattern="[A-Za-z0-9_-]+" required')}${textField('MISSION TITLE', 'title', mission.title)}<label>MISSION TYPE<input value="${group.label}" readonly></label>${textField('ROUTINE / LOCATION', 'routine', mission.routine)}${textField('CENTRAL TENSION', 'centralTension', mission.authoringMeta.centralTension)}${textField('EMOTIONAL / NARRATIVE TONE', 'tone', mission.authoringMeta.tone)}<label>FUNCTION PRESSURE<select name="functionPressure" multiple>${FUNCTIONS.map(option => `<option value="${option.value}"${mission.functionPressure.includes(option.value) ? ' selected' : ''}>${esc(option.label)}</option>`).join('')}</select><small>Select the function(s) that make this classroom moment behaviorally difficult.</small></label><fieldset><legend>ACTIVE BIP COMPONENTS</legend>${COMPONENTS.map(value => `<label><input type="checkbox" name="activeBipComponents" value="${value}"${checked(mission.authoringMeta.activeBipComponents.includes(value))}> ${value}</label>`).join('')}</fieldset><label class="wide">MISSION AUTHORING FOCUS / DESIGN GOAL<textarea name="focus">${esc(mission.focus)}</textarea><small>What discrimination should make this mission hard? Example: distinguish a kind but delayed response from the exact plan action needed now.</small></label></div>
+  <fieldset class="mission-quality-review"><legend>MISSION QUALITY REVIEW</legend>
+    <label><input type="checkbox" name="qualityBehavioralReview"${checked(mission.authoringMeta.qualityReview?.behavioral)}> <span><strong>Behavioral accuracy reviewed</strong><small>Every 10 is supported by the BSP; every 5 is defensibly incomplete; every 0 is realistic plan drift. Function, timing, contingency, replacement behavior, and safety all match the source plan.</small></span></label>
+    <label><input type="checkbox" name="qualityGameDesignReview"${checked(mission.authoringMeta.qualityReview?.gameDesign)}> <span><strong>Game design reviewed</strong><small>All three choices feel plausible at first glance; the 5 is tempting; the 0 is realistic rather than silly; consequences change later scenes; recovery is possible; and the mission feels like one classroom story rather than five quiz questions.</small></span></label>
+  </fieldset>
+  <p><small>These review confirmations are required by the Full Draft quality gate. They are authoring metadata only and are never shown to the teacher.</small></p></section>
+    <section class="builder-section bip-targets"><h3>Fidelity Target Opportunities</h3><p>Select only active, approved targets expected somewhere in this mission.</p>${fidelity.map(target => `<label class="target-option"><input type="checkbox" name="bipTargets" value="${esc(targetKey(target))}"${checked(mission.bipTargets.includes(targetKey(target)))}><span><code>${esc(targetKey(target))}</code><strong>${esc(target.description)}</strong><small>${esc(target.domain)}</small></span></label>`).join('') || '<p>No active targets are available.</p>'}</section>
   <section class="builder-section decision-editor"><h3>Decisions</h3><nav class="decision-tabs">${DECISIONS.map((label, index) => { const number = index + 1, ids = number === 1 ? ['d1_start'] : TRAJECTORIES.map(branch => stepId(number, branch)), started = ids.some(key => isStarted(mission.steps[key])); return `<button type="button" data-decision="${number}" class="${decision === number ? 'selected' : ''}">Decision ${number}<small>${started ? 'Started' : 'Missing'}</small></button>`; }).join('')}</nav><h4>Decision ${decision} — ${DECISIONS[decision - 1]}</h4>${decision > 1 ? `<div class="branch-tabs">${TRAJECTORIES.map(branch => `<button type="button" data-branch="${branch}" class="${nav.branch === branch ? 'selected' : ''}">${branch[0].toUpperCase() + branch.slice(1)}</button>`).join('')}</div>` : ''}<div class="scene-editor" data-step-id="${id}"><label>SCENE<textarea name="text" rows="6">${esc(step.text)}</textarea></label><label>HINT<textarea name="hint">${esc(step.hint)}</textarea></label><label>EXACT FIDELITY TARGET<select name="fidelityTargetKey"><option value="">No exact fidelity target</option>${fidelity.map(target => `<option value="${esc(targetKey(target))}"${selected(targetKey(target), step.meta.fidelityTargetKey)}>${esc(targetKey(target))} — ${esc(target.description)}</option>`).join('')}</select></label><div class="choice-cards">${RATINGS.map(({ key }, index) => choiceCard(step.choices[key], index, decision)).join('')}</div></div></section>
   <section class="builder-section endings-editor"><h3>Mission Endings</h3><div class="ending-cards">${ENDINGS.map(key => `<fieldset data-ending="${key}"><legend>${key}</legend><label>Narrative outcome<textarea name="text">${esc(mission.endings[key]?.text)}</textarea></label><label>Wizard reaction<textarea name="wizard">${esc(mission.endings[key]?.wizard)}</textarea></label></fieldset>`).join('')}</div></section><div class="save-bar"><button id="save-mission-draft" class="primary" type="button">Save Draft</button><div><button id="preview-saved-draft" type="button" data-case-code="${esc(workspace.case.case_code)}" data-mission-type="${esc(selection.mission_type)}" data-slot-number="${Number(selection.slot_number)}"${saved ? '' : ' disabled'}>Preview Saved Draft</button><small>${saved ? 'Preview uses the last saved version. Unsaved changes are not included.' : 'Save this mission before previewing.'}</small></div><p id="mission-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
 }
@@ -233,6 +265,62 @@ function renderPublishedReview(published = {}) {
   return `<section class="published-game-review builder-section"><h2>Published Game Review</h2><p>This reviews the currently published protected game; it does not publish mission drafts.</p>${content.present ? `<p><strong>Reviewing protected version v${version}</strong></p><button id="preview-protected-game" class="primary" type="button" data-case-code="${esc(published.case_code)}" data-content-version="${version}">Preview Published Version (v${version})</button><p><small>QA Preview is researcher testing only. It loads current protected version v${version}, records that game content version in QA telemetry, and does not activate teacher access or count as participant study data.</small></p><div class="launch-reviews">${reviews.map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" data-content-version="${version}" ${done ? 'disabled' : ''}><span>${label} · v${version}</span><strong>${done ? 'Complete ✓' : 'Needs review'}</strong></button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '<p class="needs">No published protected game is available to preview or review yet.</p>'}<h3>Teacher preparation</h3><p>Record the existing intervention orientation requirement here.</p>${orientationCard}</section>`;
 }
 const privacyWarning = 'Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.';
+const authoringBriefValue = value => typeof value === 'string' && value.trim()
+  ? `<p>${esc(value)}</p>`
+  : '<p class="authoring-brief-empty">Not provided.</p>';
+const authoringBriefField = (label, value) => `<div class="authoring-brief-field"><span>${esc(label)}</span>${authoringBriefValue(value)}</div>`;
+
+export function renderAuthoringBrief(workspace) {
+  const context = workspace?.intake_context || {};
+  const fidelity = targets(workspace);
+  const sourceTime = context.source_updated_at ? dateLabel(context.source_updated_at) : '';
+  return `<section class="builder-section authoring-brief" aria-labelledby="authoring-brief-title">
+    <div class="authoring-brief-heading">
+      <div><p class="eyebrow">RESEARCHER AUTHORING BRIEF</p><h2 id="authoring-brief-title">Build from the plan, write from the classroom</h2></div>
+      <span class="authoring-source-chip">${sourceTime ? `Case context updated ${esc(sourceTime)}` : 'Case context loaded'}</span>
+    </div>
+    <p class="authoring-source-rule"><strong>Source-of-truth rule:</strong> the approved BSP/BIP and finalized fidelity targets govern the game. Intake information below is supplemental classroom context. If they conflict, use the BSP/BIP.</p>
+    <div class="authoring-brief-grid">
+      <section>
+        <h3>Behavior pathway</h3>
+        ${authoringBriefField('Target behavior', context.target_behavior)}
+        ${authoringBriefField('Observable topography', context.behavior_topography)}
+        ${authoringBriefField('Primary function', context.primary_function || workspace?.primary_function)}
+        ${authoringBriefField('Replacement behavior', context.replacement_behavior)}
+        ${authoringBriefField('Desired behavior', context.desired_behavior)}
+      </section>
+      <section>
+        <h3>Plan actions</h3>
+        ${authoringBriefField('Prevent', context.prevention_strategies)}
+        ${authoringBriefField('Teach', context.teaching_strategies)}
+        ${authoringBriefField('Reinforce', context.reinforcement_system)}
+        ${authoringBriefField('Respond', context.response_strategy)}
+        ${context.has_crisis_plan ? authoringBriefField('Crisis / safety', context.crisis_plan) : '<div class="authoring-no-crisis"><strong>No formal crisis plan recorded.</strong><span>High-intensity missions may not invent crisis or safety procedures.</span></div>'}
+      </section>
+      <section>
+        <h3>Classroom reality</h3>
+        ${authoringBriefField('Typical settings / routines', context.typical_settings)}
+        ${authoringBriefField('Common triggers', context.common_triggers)}
+        ${authoringBriefField('What usually follows behavior', context.typical_consequences)}
+        ${authoringBriefField('What staff do now', context.current_staff_responses)}
+        ${authoringBriefField('Requested practice situations', context.requested_scenarios)}
+      </section>
+      <section>
+        <h3>Personalization fuel</h3>
+        ${authoringBriefField('Strengths / interests', context.student_strengths)}
+        ${authoringBriefField('Known reinforcers / preferences', context.preferred_items_activities)}
+        ${authoringBriefField('Preference assessment notes', context.preference_assessment_notes)}
+        ${authoringBriefField('Additional context', context.additional_context)}
+        ${authoringBriefField('Grade', context.grade_level)}
+      </section>
+    </div>
+    <div class="authoring-fidelity-brief">
+      <div><h3>Approved fidelity targets</h3><p>These are the observable teacher behaviors the mission bank is ultimately rehearsing. Link a decision only when the exact target is a defensible scoring criterion.</p></div>
+      <ul>${fidelity.map(target => `<li><code>${esc(targetKey(target))}</code><span>${esc(target.description)}</span><small>${esc(target.domain)}</small></li>`).join('') || '<li>No active fidelity targets returned for this case.</li>'}</ul>
+    </div>
+    <div class="authoring-design-cues"><strong>Design cue:</strong><span>Turn current staff habits into plausible 5- and 0-point choices, use real routines for scenario variety, make the function pressure visible, and carry each consequence into the next scene.</span></div>
+  </section>`;
+}
 export function renderGameSetup(setup, message = '') {
   return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2><p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
 }
@@ -263,14 +351,14 @@ export function renderProtectedPublishing(workspace, check, published = {}, publ
 }
 export function fullDraftPreviewUrl(caseCode) { return `../game/?${new URLSearchParams({ qa_case: caseCode, qa_full_draft: '1' })}`; }
 export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '', setupDraft, resourceDraft, setupMessage = '', resourceMessage = '', fullDraftCheck = null, publishResult = null) {
-  const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}${renderProtectedPublishing(workspace, fullDraftCheck, published, publishResult)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
-  return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Author mission drafts</h1><p>AUTHOR → SAVE DRAFT</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
+  const authoring = workspace ? `${renderAuthoringBrief(workspace)}${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}${renderProtectedPublishing(workspace, fullDraftCheck, published, publishResult)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
+  return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Build the individualized intervention game</h1><p>BRIEF → AUTHOR → QUALITY CHECK → PREVIEW → PUBLISH</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
 }
 
 export function captureMission(root, mission, nav) {
   const one = name => root.querySelector(`[name="${name}"]`);
   for (const name of ['id', 'title', 'routine', 'focus']) if (one(name)) mission[name] = one(name).value;
-  mission.authoringMeta = { centralTension: one('centralTension')?.value || '', activeBipComponents: [...root.querySelectorAll('[name="activeBipComponents"]:checked')].map(input => input.value) };
+  mission.authoringMeta = { centralTension: one('centralTension')?.value || '', tone: one('tone')?.value || '', activeBipComponents: [...root.querySelectorAll('[name="activeBipComponents"]:checked')].map(input => input.value), qualityReview: { behavioral: Boolean(one('qualityBehavioralReview')?.checked), gameDesign: Boolean(one('qualityGameDesignReview')?.checked) } };
   mission.functionPressure = [...root.querySelectorAll('[name="functionPressure"] option:checked')].map(option => option.value);
   mission.bipTargets = [...root.querySelectorAll('[name="bipTargets"]:checked')].map(input => input.value);
   const editor = root.querySelector('.scene-editor');
