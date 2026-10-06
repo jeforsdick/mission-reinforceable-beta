@@ -52,7 +52,7 @@ async function issueSecureWeeklyUrl(participant, context) {
 }
 
 module.exports = async function handler(request, response) {
-  if (request.method === 'POST' && request.body?.action === 'send_game_login') return sendGameLogin(request, response);
+  if (request.method === 'POST' && ['send_game_login','send_account_setup'].includes(request.body?.action)) return sendGameLogin(request, response);
   if (request.method === 'POST') {
     try {
       const actor = await authorize(request);
@@ -112,7 +112,7 @@ module.exports = async function handler(request, response) {
     const actor = await authorize(request);
     const caseId = request.query?.case_id;
     if (caseId && !UUID_PATTERN.test(caseId)) return json(response, 400, { error: 'Invalid case.' });
-    let latest = null, participantCode = null;
+    let latest = null, resultAccountSetup = null, participantCode = null;
     let weeklyEmail = null;
     if (caseId) {
       const participantResponse = await supabaseFetch(`/rest/v1/participants?case_id=eq.${encodeURIComponent(caseId)}&select=participant_code&limit=2`);
@@ -120,8 +120,12 @@ module.exports = async function handler(request, response) {
       const participants = await participantResponse.json();
       if (participants.length !== 1 || !participants[0].participant_code) throw Object.assign(new Error('Case participant not found'), { status: 404 });
       participantCode = participants[0].participant_code;
-      const auditResponse = await supabaseFetch(`/rest/v1/research_intervention_launch_events?case_id=eq.${caseId}&action=in.(game_login_email_sent,game_login_email_failed)&select=action,recorded_at&order=recorded_at.desc&limit=1`);
-      if (auditResponse.ok) latest = (await auditResponse.json())[0] || null;
+      const auditResponse = await supabaseFetch(`/rest/v1/research_intervention_launch_events?case_id=eq.${caseId}&action=in.(game_login_email_sent,game_login_email_failed,account_setup_email_sent,account_setup_email_failed)&select=action,recorded_at&order=recorded_at.desc&limit=20`);
+      if (auditResponse.ok) {
+        const auditRows = await auditResponse.json();
+        latest = auditRows.find(row => row.action.startsWith('game_login_email_')) || null;
+        resultAccountSetup = auditRows.find(row => row.action.startsWith('account_setup_email_')) || null;
+      }
       const participant = await weeklyParticipant(caseId);
       let summary = null, summaryReason = null;
       try { summary = await loadWeeklySummary(caseId, supabaseFetch); } catch (error) { summaryReason = error.message; }
@@ -148,6 +152,7 @@ module.exports = async function handler(request, response) {
       qualtrics_measures: measureConfiguration(participantCode)
     };
     if (weeklyEmail) result.weekly_email = weeklyEmail;
+    if (resultAccountSetup) result.account_setup_email_status = { outcome: resultAccountSetup.action === 'account_setup_email_sent' ? 'sent' : 'failed', recorded_at: resultAccountSetup.recorded_at };
     if (latest) result.game_login_email_status = { outcome: latest.action === 'game_login_email_sent' ? 'sent' : 'failed', recorded_at: latest.recorded_at };
     return json(response, 200, result);
   } catch (error) {
