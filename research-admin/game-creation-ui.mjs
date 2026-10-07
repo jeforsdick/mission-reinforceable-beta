@@ -150,6 +150,18 @@ export function nextStepId(decision, trajectory) {
   if (decision < 1 || decision > 4 || !TRAJECTORIES.includes(trajectory)) return null;
   return stepId(decision + 1, trajectory);
 }
+export function defaultNextTrajectory(incomingTrajectory, score) {
+  const incoming = String(incomingTrajectory || 'start');
+  const value = Number(score);
+  if (incoming === 'escalated') return value >= 10 ? 'wobbly' : 'escalated';
+  if (value >= 10) return 'supported';
+  if (value >= 5) return 'wobbly';
+  return 'escalated';
+}
+function trajectoryFromNext(next) {
+  const value = String(next || '');
+  return TRAJECTORIES.find(branch => value.endsWith(`_${branch}`)) || '';
+}
 const choice = score => ({ text: '', consequence: '', wizard: '', feedback: '', score, next: score === 10 ? 'd2_supported' : score === 5 ? 'd2_wobbly' : 'd2_escalated', meta: { bipComponent: '', mechanism: '', errorType: '', function: '' } });
 const scene = decision => ({ text: '', hint: '', meta: {}, choices: Object.fromEntries(RATINGS.map(({ key, score }) => [key, { ...choice(score), next: decision === 5 ? null : undefined, ending: decision === 5 ? (score === 10 ? 'STRONG' : score === 5 ? 'MIXED' : 'FRAGILE') : undefined }])) });
 
@@ -163,7 +175,13 @@ export function blankMission(caseCode, type, slot) {
   for (let decision = 2; decision <= 5; decision += 1) for (const branch of TRAJECTORIES) steps[stepId(decision, branch)] = scene(decision);
   for (let decision = 1; decision <= 4; decision += 1) {
     const ids = decision === 1 ? ['d1_start'] : TRAJECTORIES.map(branch => stepId(decision, branch));
-    for (const id of ids) RATINGS.forEach(({ key }, index) => { steps[id].choices[key].next = nextStepId(decision, TRAJECTORIES[index]); delete steps[id].choices[key].ending; });
+    for (const id of ids) {
+      const incoming = decision === 1 ? 'start' : TRAJECTORIES.find(branch => id.endsWith(`_${branch}`)) || 'start';
+      RATINGS.forEach(({ key, score }) => {
+        steps[id].choices[key].next = nextStepId(decision, defaultNextTrajectory(incoming, score));
+        delete steps[id].choices[key].ending;
+      });
+    }
   }
   return { id: defaultMissionId(caseCode, type, slot), title: '', expectedSteps: 5, start: 'd1_start', focus: '', routine: '', functionPressure: [], bipTargets: [], authoringMeta: { centralTension: '', tone: '', functionPressureContext: '', activeBipComponents: [], qualityReview: { behavioral: false, gameDesign: false } }, endings: Object.fromEntries(ENDINGS.map(key => [key, { text: '', wizard: '' }])), steps };
 }
@@ -226,19 +244,27 @@ export function renderMissionBank(workspace, selection) {
 }
 const textField = (label, name, value, extra = '') => `<label>${label}<input ${extra} name="${name}" value="${esc(value)}"></label>`;
 const selectOptions = (values, value, empty = 'Select…') => `<option value="">${empty}</option>${values.map(item => { const option = typeof item === 'string' ? { value: item, label: item } : item; return `<option value="${esc(option.value)}"${selected(option.value, value)}>${esc(option.label)}</option>`; }).join('')}`;
-function choiceCard(item, index) {
+function choiceCard(item, index, decision) {
   const rating = RATINGS[index];
   const helper = rating.score === 10
     ? 'Best match to the individualized plan in this moment.'
     : rating.score === 5
     ? 'Reasonable and tempting, but missing or mistiming an important ingredient.'
     : 'A realistic response that drifts from the individualized plan.';
+  const currentTrajectory = trajectoryFromNext(item.next);
+  const routing = decision < 5 ? `<label class="choice-routing">NEXT CLASSROOM STATE
+      <select name="trajectory">
+        ${TRAJECTORIES.map(branch => `<option value="${branch}"${selected(branch, currentTrajectory)}>${branch[0].toUpperCase() + branch.slice(1)}</option>`).join('')}
+      </select>
+      <small>Separate from score: choose what would plausibly happen next given the current classroom state and this response.</small>
+    </label>` : '';
   return `<fieldset class="choice-card simple-choice score-${rating.score}" data-choice="${rating.key}">
     <legend><strong>${rating.score}</strong> — ${rating.label}</legend>
     <small class="choice-helper">${helper}</small>
     <label>TEACHER RESPONSE<textarea name="text" rows="3">${esc(item.text)}</textarea></label>
     <label>WHAT HAPPENS NEXT?<textarea name="consequence" rows="3">${esc(item.consequence)}</textarea></label>
     <label>WHY DOES THIS SCORE FIT?<textarea name="feedback" rows="3">${esc(item.feedback)}</textarea></label>
+    ${routing}
   </fieldset>`;
 }
 export function draftPreviewUrl(caseCode, type, slot) {
@@ -255,9 +281,9 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
   const saved = Boolean(latestDraft(workspace, selection.mission_type, selection.slot_number));
   const progress = missionAuthoringProgress(mission);
   const branchLabels = {
-    supported: ['After the 10-point path','Student/classroom is in the strongest current state'],
-    wobbly: ['After the 5-point path','Something helped, but an important ingredient was missed'],
-    escalated: ['After the 0-point path','The previous response made the situation harder']
+    supported: ['Supported state','The current classroom state is relatively regulated and plan support is working'],
+    wobbly: ['Wobbly state','Some support is working, but difficulty or uncertainty is still present'],
+    escalated: ['Escalated state','The situation is harder; a strong response may begin recovery without erasing what already happened']
   };
   const sceneOrder = [
     { decision:1, branch:'supported' },
@@ -309,7 +335,7 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
         </label>
 
         <div class="simple-choice-intro"><strong>What could the teacher do?</strong><span>Write three believable choices. The teacher should have to think.</span></div>
-        <div class="choice-cards">${RATINGS.map(({ key }, index) => choiceCard(step.choices[key], index)).join('')}</div>
+        <div class="choice-cards">${RATINGS.map(({ key }, index) => choiceCard(step.choices[key], index, decision)).join('')}</div>
       </div>
 
       <div class="simple-step-nav">
@@ -487,7 +513,7 @@ export function captureMission(root, mission, nav) {
     const domain = exact ? exact.split('_')[0] : '';
     const component = ({ proactive:'Prevent', teaching:'Teach', reinforcement:'Reinforce', response:'Respond', crisis:'Crisis' })[domain] || '';
     const functionValue = canonicalFunction(mission.functionPressure?.[0]) || 'unclear';
-    const scoreTrajectory = { 10:'supported', 5:'wobbly', 0:'escalated' };
+    const incomingTrajectory = nav.decision === 1 ? 'start' : nav.branch;
     const wizardDefaults = {
       10: 'YES. That matched the plan at the moment it mattered.',
       5: 'Close call. Helpful idea — but an important ingredient is still missing.',
@@ -514,11 +540,13 @@ export function captureMission(root, mission, nav) {
         function: item.meta?.function || functionValue
       };
       if (nav.decision < 5) {
-        item.next = nextStepId(nav.decision, scoreTrajectory[score]);
+        const selectedTrajectory = card.querySelector('[name="trajectory"]')?.value
+          || defaultNextTrajectory(incomingTrajectory, score);
+        item.next = nextStepId(nav.decision, selectedTrajectory);
         delete item.ending;
       } else {
         item.next = null;
-        delete item.ending;
+        item.ending = item.ending || (score === 10 ? 'STRONG' : score === 5 ? 'MIXED' : 'FRAGILE');
       }
     });
   }
