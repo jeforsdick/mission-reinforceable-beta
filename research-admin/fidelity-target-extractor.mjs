@@ -8,7 +8,7 @@ const DOMAIN_SOURCE_FIELDS = {
   crisis: ['crisis_plan']
 };
 
-const OBSERVABLE_VERBS = /\b(give|provide|show|post|display|use|offer|prompt|model|teach|practice|remind|praise|reinforce|award|deliver|redirect|remain|stay|contact|call|notify|ignore|wait|follow|allow|present|review|check|signal|tell|ask|point|gesture|guide|remove|reduce|break|pause|return)\b/i;
+const OBSERVABLE_VERBS = /\b(give|provide|show|post|display|keep|use|offer|prompt|model|teach|practice|remind|praise|reinforce|award|deliver|redirect|remain|stay|contact|call|notify|ignore|wait|follow|allow|present|review|check|signal|tell|ask|point|gesture|guide|remove|reduce|break|pause|return)\b/i;
 const VAGUE_ONLY = /^(?:prompt|reinforce|redirect|support|praise|remind|teach|model|ignore|wait|use visuals?|token board|premack(?: principle)?|behavior momentum)$/i;
 const PHYSICAL_INTERVENTION = /\b(physical(?:ly)?|restraint|mandt|hold|block(?:ing)?|seclusion)\b/i;
 
@@ -124,6 +124,7 @@ function rawTargets(row,domain){
       const description=normalizeObservable(item.description);
       return {
         description,
+        source:'submitted',
         needs_review:VAGUE_ONLY.test(description),
         review_note:VAGUE_ONLY.test(description)?'Submitted plan step is too vague to score reliably without more context.':''
       };
@@ -164,7 +165,7 @@ function narrativeTargets(row,domain){
       if(!fitsDomain(sentence,domain)) continue;
       for(const atomic of atomicSentences(sentence,domain)){
         const candidate=candidateFromSentence(atomic,domain);
-        if(candidate?.include) out.push(candidate);
+        if(candidate?.include) out.push({ ...candidate, source:'plan_context' });
       }
     }
   }
@@ -178,6 +179,9 @@ function canonical(value){
 function similar(a,b){
   const A=canonical(a),B=canonical(b);
   if(!A||!B) return false;
+  const tokenA=/\b(token|star)\b/.test(A),tokenB=/\b(token|star)\b/.test(B);
+  const praiseA=/\bpraise\b/.test(A),praiseB=/\bpraise\b/.test(B);
+  if((tokenA&&praiseB)||(tokenB&&praiseA)) return false;
   if(A===B||A.includes(B)||B.includes(A)) return true;
   const aw=new Set(A.split(' ').filter(w=>w.length>3));
   const bw=new Set(B.split(' ').filter(w=>w.length>3));
@@ -219,7 +223,8 @@ export function extractFidelityTargets(row={}){
     const raw=rawTargets(row,domain);
     const narrative=narrativeTargets(row,domain);
     let items=[...raw,...narrative];
-    if(domain==='teaching') items.push(...teachingConnections(row,raw));
+    if(narrative.length>=2) items=items.filter(item=>!(item.source==='submitted' && /\band\b/i.test(item.description)));
+    if(domain==='teaching') items.push(...teachingConnections(row,raw).map(item=>({ ...item, source:'connected_context' })));
     if(domain==='crisis' && row.has_crisis_plan!==true) items=[];
     items=dedupe(items);
 
