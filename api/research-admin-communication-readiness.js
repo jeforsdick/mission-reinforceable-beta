@@ -35,10 +35,23 @@ async function weeklyContext(participant) {
   const phasesResponse = await supabaseFetch(`/rest/v1/research_case_phase_events?case_id=eq.${encodeURIComponent(participant.case_id)}&select=id,phase,effective_date,recorded_at&order=effective_date.asc,recorded_at.asc,id.asc`);
   if (!phasesResponse.ok) throw Object.assign(new Error('Intervention week could not be loaded'), { status: 502 });
   const current = weeklyCheckin.interventionWeekContext(await phasesResponse.json(), denverDate());
-  const checkinsResponse = await supabaseFetch('/rest/v1/rpc/research_admin_weekly_checkins', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id }) });
-  if (!checkinsResponse.ok) throw Object.assign(new Error('Weekly administration status could not be loaded'), { status: 502 });
-  const checkins = await checkinsResponse.json();
-  return { current, checkins, administration: current ? checkins.find(row => row.week_start === current.week_start) || null : null };
+  let administration = null;
+  if (current) {
+    const checkinResponse = await supabaseFetch(
+      `/rest/v1/participant_weekly_checkins?participant_id=eq.${encodeURIComponent(participant.id)}&case_id=eq.${encodeURIComponent(participant.case_id)}&week_start=eq.${encodeURIComponent(current.week_start)}&select=week_start,week_end,link_issued_at,completed_at,qa_mode&limit=2`
+    );
+    if (!checkinResponse.ok) throw Object.assign(new Error('Weekly administration status could not be loaded'), { status: 502 });
+    const rows = await checkinResponse.json();
+    if (rows.length > 1) throw Object.assign(new Error('Weekly administration status is ambiguous'), { status: 409 });
+    if (rows.length === 1) {
+      administration = {
+        ...rows[0],
+        expected: true,
+        status: rows[0].completed_at ? 'complete' : rows[0].link_issued_at ? 'link_issued' : 'due'
+      };
+    }
+  }
+  return { current, administration };
 }
 
 async function issueSecureWeeklyUrl(participant, context) {
