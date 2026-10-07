@@ -318,7 +318,7 @@ function markAwayIntervals(intervals,fromElapsed,toElapsed) {
   }
   return marked;
 }
-function startCollectionState(record,fidelityOutcomes={}) {
+function startCollectionState(record,fidelityOutcomes={},fidelityOpportunities=[]) {
   const savedElapsed=Math.min(REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
   const parsedStart=Date.parse(record?.started_at||"");
   const startedAtMs=Number.isFinite(parsedStart) ? parsedStart : Date.now()-(savedElapsed*1000);
@@ -335,6 +335,7 @@ function startCollectionState(record,fidelityOutcomes={}) {
     endedAt:new Date(startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString(),
     fidelityScores:{...(record?.fidelity_scores||{})},
     fidelityOutcomes:{...(fidelityOutcomes||{})},
+    fidelityOpportunities:[...(fidelityOpportunities||record?.fidelity_opportunities||[])],
     intervals,
     continuing:false,
     notObserved:false,
@@ -353,9 +354,12 @@ async function beginCollection() {
     record=result.data;
     currentPacket.record=record;
   }
-  const outcomeResult=await client.rpc("research_observer_get_fidelity_outcomes",{target_slot_id:currentPacket.slot.id});
-  if (outcomeResult.error) { $("start-error").textContent="Could not load saved desired-outcome ratings. Please try again."; return; }
-  collection=startCollectionState(record,outcomeResult.data||{});
+  const [outcomeResult,opportunityResult]=await Promise.all([
+    client.rpc("research_observer_get_fidelity_outcomes",{target_slot_id:currentPacket.slot.id}),
+    client.rpc("research_observer_get_fidelity_opportunities",{target_slot_id:currentPacket.slot.id})
+  ]);
+  if (outcomeResult.error || opportunityResult.error) { $("start-error").textContent="Could not load saved fidelity data. Please try again."; return; }
+  collection=startCollectionState(record,outcomeResult.data||{},opportunityResult.data||[]);
   $("session-preflight").hidden=true;
   $("review-view").hidden=true;
   $("submitted-view").hidden=true;
@@ -480,7 +484,8 @@ function queueSave() {
 }
 async function saveDraft() {
   if (!collection || currentPacket.record?.status==="submitted") return true;
-  const [result,outcomeResult]=await Promise.all([
+  syncFidelityRollups(false);
+  const [result,outcomeResult,opportunityResult]=await Promise.all([
     client.rpc("research_observer_save_observation_draft",{
       target_slot_id:currentPacket.slot.id,
       target_fidelity_scores:collection.fidelityScores,
@@ -490,9 +495,13 @@ async function saveDraft() {
     client.rpc("research_observer_save_fidelity_outcomes",{
       target_slot_id:currentPacket.slot.id,
       target_fidelity_outcomes:collection.fidelityOutcomes
+    }),
+    client.rpc("research_observer_save_fidelity_opportunities",{
+      target_slot_id:currentPacket.slot.id,
+      target_fidelity_opportunities:collection.fidelityOpportunities
     })
   ]);
-  const hasError=Boolean(result.error||outcomeResult.error);
+  const hasError=Boolean(result.error||outcomeResult.error||opportunityResult.error);
   if (!hasError) collection.savedElapsed=Math.max(collection.savedElapsed,elapsedSeconds());
   const awayNote=!hasError && collection.awayMarked>0
     ? ` · ${collection.awayMarked} interval${collection.awayMarked===1?"":"s"} marked Not observed while away`
