@@ -684,12 +684,30 @@ function gameCreationPanel(data) {
 function redrawGameCreation(scrollToMissionBuilder = false) {
   const panel = $('#game-creation-panel');
   if (!panel) return;
+
+  const resourceBuilderWasOpen = Boolean(panel.querySelector('.resource-map-builder')?.open);
+  const focusedResourceSection = document.activeElement?.closest?.('.resource-section') || null;
+  const resourceAnchorKey = focusedResourceSection?.dataset.sectionKey || null;
+  const resourceAnchorTop = focusedResourceSection?.getBoundingClientRect().top ?? null;
+
   state.resourceOpenSections = captureResourceOpenSections(panel);
   panel.innerHTML = gameCreationPanel(state.readiness);
   bindMissionBuilder();
   bindSetupAndResources();
   bindPublishedReview();
+
+  const refreshedResourceBuilder = panel.querySelector('.resource-map-builder');
+  if (refreshedResourceBuilder && resourceBuilderWasOpen) refreshedResourceBuilder.open = true;
   restoreResourceOpenSections(panel, state.resourceOpenSections);
+
+  if (resourceAnchorKey && Number.isFinite(resourceAnchorTop)) {
+    window.requestAnimationFrame(() => {
+      const refreshedAnchor = panel.querySelector(`.resource-section[data-section-key="${resourceAnchorKey}"]`);
+      if (!refreshedAnchor) return;
+      window.scrollBy(0, refreshedAnchor.getBoundingClientRect().top - resourceAnchorTop);
+    });
+  }
+
   if (scrollToMissionBuilder) document.querySelector('.mission-builder')?.scrollIntoView({
     behavior: 'smooth',
     block: 'start'
