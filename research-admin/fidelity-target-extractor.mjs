@@ -41,7 +41,7 @@ function normalizeObservable(value){
   s=s.replace(/^If\s+([^,]+),\s*(?:the\s+)?(?:teacher|BHA|staff)\s+(?:is\s+to\s+|will\s+|should\s+)?/i,'If $1, ');
   s=s.replace(/^When\s+([^,]+),\s*(?:the\s+)?(?:teacher|BHA|staff)\s+(?:is\s+to\s+|will\s+|should\s+)?/i,'When $1, ');
   s=s.replace(/^After\s+([^,]+),\s*(?:the\s+)?(?:teacher|BHA|staff)\s+(?:is\s+to\s+|will\s+|should\s+)?/i,'After $1, ');
-  s=s.replace(/^Visual schedule is posted in the classroom$/i,'Keep the visual schedule posted in the classroom');
+  s=s.replace(/^(?:A |The )?visual schedule is posted in the classroom$/i,'Keep the visual schedule posted in the classroom');
   s=s.replace(/^Teacher gives class as a whole/i,'Give the class');
   s=s.replace(/^BHA prompts/i,'Prompt');
   s=s.replace(/^BHA will remind/i,'Remind');
@@ -140,14 +140,32 @@ function fitsDomain(sentence,domain){
   return false;
 }
 
+function atomicSentences(sentence,domain){
+  const s=text(sentence);
+  if(domain==='reinforcement'){
+    const shared=s.match(/^(.*?\b(?:staff|teacher|BHA)\s+give)\s+(.+?)\s+and\s+(specific praise|verbal praise|praise)$/i);
+    if(shared) return [shared[1]+' '+shared[2],shared[1]+' '+shared[3]];
+  }
+  if(domain==='response'){
+    const conditional=s.match(/^((?:When|If|After|Before|During)\s+.+?,\s*)(?:staff|teacher|BHA)\s+(.+)$/i);
+    if(conditional){
+      const actions=conditional[2].split(/\s+and\s+(?=(?:attempt|remain|stay|redirect|contact|call|notify|ignore|wait|return|follow)\b)/i);
+      if(actions.length>1) return actions.map(action=>conditional[1]+'staff '+action);
+    }
+  }
+  return [s];
+}
+
 function narrativeTargets(row,domain){
   const fields=DOMAIN_SOURCE_FIELDS[domain]||[];
   const out=[];
   for(const field of fields){
     for(const sentence of splitPlanText(row?.[field])){
       if(!fitsDomain(sentence,domain)) continue;
-      const candidate=candidateFromSentence(sentence,domain);
-      if(candidate?.include) out.push(candidate);
+      for(const atomic of atomicSentences(sentence,domain)){
+        const candidate=candidateFromSentence(atomic,domain);
+        if(candidate?.include) out.push(candidate);
+      }
     }
   }
   return out;
