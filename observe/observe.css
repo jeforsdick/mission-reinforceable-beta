@@ -350,3 +350,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--obs-purple);outline:3
  .training-opportunity-buttons{grid-template-columns:1fr}
  .training-opportunity-event,.review-opportunity-event{grid-template-columns:1fr}
 }
+
+.walkthrough-opportunity-example{grid-column:1/-1;display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;padding:7px 8px;border:1px solid var(--obs-border);border-radius:8px;background:#f8f9fb;font-size:.7rem}
+.walkthrough-opportunity-example>span{padding:3px 6px;border-radius:999px;background:var(--obs-purple-soft);color:var(--obs-purple);font-weight:900}
+.walkthrough-add-opportunity{grid-column:1/-1;min-height:32px;border:1px dashed var(--obs-purple)!important;border-radius:8px!important;background:#faf7ff!important;color:var(--obs-purple)!important;font-weight:900}
