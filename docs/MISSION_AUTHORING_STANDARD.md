@@ -211,6 +211,12 @@ For internal authoring, branches may be conceptualized as:
 
 These are trajectories, not fixed endings. Movement can occur in both directions: `ESCALATED → WOBBLY → SUPPORTED` and `SUPPORTED → WOBBLY`.
 
+**Score and next narrative state are separate decisions.** The 10/5/0 score describes how well the teacher action aligns with the BSP in that moment. The `next` field describes what classroom state plausibly follows from the **incoming state plus that action**.
+
+Do not automatically map every 10 to `SUPPORTED`, every 5 to `WOBBLY`, and every 0 to `ESCALATED`. For example, a strong plan-aligned response during an already escalated situation may reasonably move the story only to `WOBBLY`; it should not erase the escalation that already occurred. Likewise, a less-optimal response may leave the current state unchanged rather than always worsening it.
+
+The author must choose each transition based on the simulated classroom consequence. Branches may converge later, but only after the consequences of prior decisions have been meaningfully carried forward.
+
 ## 7. Difficulty Standard
 
 Start hard. Difficulty should come from **behavioral discrimination**, not confusing wording or trick questions. All three options should initially appear plausible to a competent educator.
