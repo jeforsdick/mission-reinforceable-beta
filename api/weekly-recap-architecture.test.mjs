@@ -57,7 +57,7 @@ test('weekly test delivery sends only to the signed-in research admin',async()=>
     if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',case_id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',participant_code:'MR-998',is_test:true,auth_user_id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc'}]};
     if(String(url).includes('/profiles?id=eq.cccccccc'))return {ok:true,json:async()=>[{display_name:'Pat Example'}]};
     if(String(url).includes('/research_case_phase_events?'))return {ok:true,json:async()=>[{id:'phase-1',phase:'intervention',effective_date:'2026-09-07',recorded_at:'2026-09-01T00:00:00Z'}]};
-    if(String(url).includes('/rpc/research_admin_weekly_checkins'))return {ok:true,json:async()=>[{week_start:'2026-09-07',week_end:'2026-09-11',link_issued_at:null,completed_at:null}]};
+    if(String(url).includes('/participant_weekly_checkins?'))return {ok:true,json:async()=>[{week_start:'2026-09-07',week_end:'2026-09-11',link_issued_at:null,completed_at:null,qa_mode:true}]};
     if(String(url).includes('/rpc/research_admin_generate_weekly_checkin'))return {ok:true,json:async()=>null};
     if(String(url).includes('/rpc/research_admin_weekly_game_summary'))return {ok:true,json:async()=>({missions_completed:1,days_practiced:1,mission_mix:{daily:1,mystery:0,crisis:0},xp_available:false})};
     if(url==='https://api.resend.com/emails'){sent.push(JSON.parse(options.body));return {ok:true,json:async()=>({id:'msg-1'})};}
