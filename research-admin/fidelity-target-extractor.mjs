@@ -48,6 +48,7 @@ function normalizeObservable(value){
   s=s.replace(/^BHA is to remain/i,'Remain');
   s=s.replace(/^BHA is to contact/i,'Contact');
   s=s.replace(/^Staff will not/i,'Do not');
+  s=s.replace(/^Gives\b/i,'Give').replace(/^Prompts\b/i,'Prompt').replace(/^Models\b/i,'Model').replace(/^Reminds\b/i,'Remind').replace(/^Redirects\b/i,'Redirect').replace(/^Contacts\b/i,'Contact').replace(/^Provides\b/i,'Provide').replace(/^Uses\b/i,'Use').replace(/^Offers\b/i,'Offer');
   return text(s);
 }
 
@@ -129,11 +130,22 @@ function rawTargets(row,domain){
     });
 }
 
+function fitsDomain(sentence,domain){
+  const s=text(sentence).toLowerCase();
+  if(domain==='proactive') return /visual|schedule|transition warning|warning|pre[- ]?correct|choice|first.?then|antecedent|before|environment|task smaller|offer|provide/.test(s);
+  if(domain==='teaching') return /prompt|model|teach|practice|rehears|request|ask for|replacement|communicat|break card|calm/.test(s);
+  if(domain==='reinforcement') return /reinfor|praise|token|star|reward|prize|menu|attention|preferred|earn|award/.test(s) && !(/prompt/.test(s) && /ask for|request|replacement|break/.test(s));
+  if(domain==='response') return /redirect|remain|eyesight|ignore|respond|return|contact|call|follow|wait|de[- ]?escal|calm/.test(s);
+  if(domain==='crisis') return /principal|authorit|safety|emergency|crisis|leave school property|off school property|parent/.test(s);
+  return false;
+}
+
 function narrativeTargets(row,domain){
   const fields=DOMAIN_SOURCE_FIELDS[domain]||[];
   const out=[];
   for(const field of fields){
     for(const sentence of splitPlanText(row?.[field])){
+      if(!fitsDomain(sentence,domain)) continue;
       const candidate=candidateFromSentence(sentence,domain);
       if(candidate?.include) out.push(candidate);
     }
@@ -156,6 +168,19 @@ function similar(a,b){
   return shared/Math.min(aw.size,bw.size)>=0.75;
 }
 
+function wordStems(value){
+  return canonical(value).split(' ').filter(w=>w.length>2).map(w=>w.replace(/(ing|ed|es|s)$/,''));
+}
+function shortCoveredByRicher(shortItem,items){
+  const words=wordStems(shortItem.description);
+  if(words.length>5) return false;
+  return items.some(other=>{
+    if(other===shortItem || text(other.description).length<=text(shortItem.description).length) return false;
+    const otherWords=new Set(wordStems(other.description));
+    const shared=words.filter(w=>otherWords.has(w)).length;
+    return shared>=Math.min(2,words.length);
+  });
+}
 function dedupe(items){
   const out=[];
   for(const item of items){
@@ -167,7 +192,7 @@ function dedupe(items){
     }
     out.push({...item});
   }
-  return out;
+  return out.filter(item=>!shortCoveredByRicher(item,out));
 }
 
 export function extractFidelityTargets(row={}){
