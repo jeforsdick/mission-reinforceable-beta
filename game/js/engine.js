@@ -23,7 +23,7 @@ Your job is to choose responses that follow the plan:
 Avoid public correction, arguing, threats, or making the task feel bigger.`;
   const DEFAULT_HINT_PROMPT = 'Stuck? Ask the wizard for a plan hint.';
   const DEFAULT_BSP_HINT = 'Jordan’s plan focuses on small writing steps, help or break requests, and quick reinforcement for returning to the task.';
-  const UNCONFIGURED_BIP_BRIEFING = 'BIP Briefing is not configured for this game.';
+  const UNCONFIGURED_BIP_BRIEFING = 'Mission Briefing is not configured for this game.';
 
   function getChoiceArray(step) {
     const entries = Object.entries(step.choices || {}).map(([key, value]) => Object.assign({ key }, value));
@@ -552,14 +552,35 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     modalMode = 'briefing';
     const modal = MR.$('#wizard-modal');
     const img = MR.$('#wizard-modal-img');
+    const exit = MR.$('#wizard-modal-exit');
     modal.dataset.mode = 'briefing';
-    MR.$('#wizard-modal-title').textContent = 'BIP Briefing';
+    MR.$('#wizard-modal-title').textContent = 'Mission Briefing';
     hideRichFeedbackContent();
     MR.$('#wizard-modal-text').textContent = text;
     img.src = MR.asset('wizardGuide') || MR.asset('wizardThink');
     img.className = 'wizard-modal-img briefing';
     MR.$('#wizard-modal-continue').textContent = 'Start Mission';
+    if (exit) exit.hidden = false;
     modal.hidden = false;
+  }
+
+  function beginMissionAfterBriefing() {
+    if (!current) return;
+    current.telemetryStartedAt = new Date().toISOString();
+    current.telemetrySessionInsert = startRelationalTelemetry(current);
+    if (MR.SessionTimer && MR.SessionTimer.start) MR.SessionTimer.start();
+    if (MR.audio && MR.audio.startBgm) MR.audio.startBgm();
+    playAudioCue('missionStart', 0.26);
+  }
+
+  function exitBriefing() {
+    if (modalMode !== 'briefing') return false;
+    hideWizardFeedback();
+    modalMode = 'feedback';
+    current = null;
+    pendingNext = null;
+    pendingEnding = null;
+    return true;
   }
 
   function hideRichFeedbackContent() {
@@ -595,6 +616,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     img.src = sprite.src;
     img.className = `wizard-modal-img ${sprite.cls}`;
     MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission' : pendingEnding ? 'See Mission Outcome' : 'Complete Mission';
+    const exit = MR.$('#wizard-modal-exit');
+    if (exit) exit.hidden = true;
     modal.hidden = false;
   }
 
@@ -613,6 +636,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     img.src = MR.asset(outcomeWizard.asset) || MR.asset('wizardGuide');
     img.className = `wizard-modal-img ${outcomeWizard.cls}`;
     MR.$('#wizard-modal-continue').textContent = 'View Results';
+    const exit = MR.$('#wizard-modal-exit');
+    if (exit) exit.hidden = true;
     modal.hidden = false;
   }
 
@@ -620,6 +645,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const modal = MR.$('#wizard-modal');
     modal.hidden = true;
     modal.dataset.mode = '';
+    const exit = MR.$('#wizard-modal-exit');
+    if (exit) exit.hidden = true;
   }
 
   function continueAfterFeedback() {
@@ -631,6 +658,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       return;
     }
     if (modalMode === 'briefing') {
+      beginMissionAfterBriefing();
       modalMode = 'feedback';
       return;
     }
@@ -689,9 +717,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       result = {
         level: 'practice',
         title: 'Keep Practicing',
-        message: 'Some choices moved away from the plan. Review the feedback, revisit the BIP Briefing, and try again.',
+        message: 'Some choices moved away from the plan. Review the feedback, revisit the Mission Briefing, and try again.',
         summary: 'Additional practice can help strengthen plan-aligned responding.',
-        actions: config.feedback.actionLow || '<p>Review the BIP Briefing and focus on calm, plan-aligned responses.</p>'
+        actions: config.feedback.actionLow || '<p>Review the Mission Briefing and focus on calm, plan-aligned responses.</p>'
       };
     }
 
@@ -969,11 +997,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       };
       pendingNext = null;
       pendingEnding = null;
-      current.telemetrySessionInsert = startRelationalTelemetry(current);
+      current.telemetrySessionInsert = null;
       current.stepId = current.mission.start || Object.keys(current.mission.steps || {})[0];
-      if (MR.SessionTimer && MR.SessionTimer.start) MR.SessionTimer.start();
-      if (MR.audio && MR.audio.startBgm) MR.audio.startBgm();
-      playAudioCue('missionStart', 0.26);
       MR.setScreen('play');
       renderStep();
       const firstStep = current.mission.steps[current.stepId];
@@ -986,6 +1011,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     },
 
     continueAfterFeedback,
+    exitBriefing,
 
     showStoredRunDetails(run) {
       renderResults(run, { playCompletion: false });
