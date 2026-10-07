@@ -432,7 +432,7 @@ function syncFidelityRollups(resolveNoOpportunity=false) {
     }
     const allImplemented=events.every((event)=>event.implementation==="implemented");
     collection.fidelityScores[target.id]=allImplemented?"implemented":"not_implemented";
-    if (events.every((event)=>event.desired_outcome)) {
+    if (allImplemented && events.every((event)=>event.desired_outcome)) {
       collection.fidelityOutcomes[target.id]=events.some((event)=>event.desired_outcome==="no")
         ?"no":events.some((event)=>event.desired_outcome==="unclear")?"unclear":"yes";
     } else delete collection.fidelityOutcomes[target.id];
@@ -579,6 +579,7 @@ function finishCollection() {
   collection.savedElapsed=REAL_SESSION.durationSeconds;
   collection.endedAt=new Date(collection.startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString();
   finalizeCompletedIntervals();
+  syncFidelityRollups(true);
   saveDraft();
   $("collection-view").hidden=true;
   $("review-view").hidden=false;
@@ -636,6 +637,10 @@ function updateReviewSummary() {
 }
 async function submitObservation() {
   $("review-error").textContent="";
+  syncFidelityRollups(true);
+  const opportunitySummary=opportunityFidelity();
+  if (opportunitySummary.total===0) { $("review-error").textContent="Record at least one fidelity opportunity before submitting."; return; }
+  if (opportunitySummary.pendingOutcome>0) { $("review-error").textContent="Rate the desired outcome for every recorded opportunity before submitting."; return; }
   const targets=currentPacket.fidelity_targets||[];
   const missing=targets.filter((target)=>!collection.fidelityScores[target.id]);
   if (missing.length) {
