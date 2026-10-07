@@ -11,7 +11,7 @@ import {
 } from "./training-cases.mjs";
 
 const INTERVAL_SECONDS = 15;
-const STORAGE_KEY = "mr-observer-training-module-v5";
+const STORAGE_KEY = "mr-observer-training-module-v6";
 const SUPABASE_URL = "https://vyiwwwmcoahwkgiictmc.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W";
 const SOURCE_ENVIRONMENT = location.hostname === "missionreinforceable.com" || location.hostname === "www.missionreinforceable.com" ? "production" : "preview";
@@ -48,13 +48,14 @@ let youtubeApiPromise = null;
 let timerHandle = null;
 let lastPromptedInterval = -1;
 let pendingOutcomeItemId = null;
+let pendingOutcomeEventId = null;
 let audioContext = null;
 let videoIsPlaying = false;
 let ignoreEndedUntilPlaying = false;
 
 function blankModuleState(observer) {
   return {
-    version: 5,
+    version: 6,
     observer,
     screen: "module",
     module: {
@@ -83,7 +84,7 @@ function loadState() {
   try {
     if (!activeStorageKey) return null;
     const parsed = JSON.parse(localStorage.getItem(activeStorageKey) || "null");
-    if (!parsed || parsed.version !== 5) return null;
+    if (!parsed || parsed.version !== 6) return null;
     parsed.module ||= {};
     parsed.attempts ||= { nora: null, kai: null };
     parsed.feedback ||= { nora: null };
@@ -140,7 +141,7 @@ async function syncCachedAttempts() {
         observer_name: state.observer,
         case_id: caseId,
         attempt_type: attempt.attemptType || (caseId === "nora" ? "practice" : "qualification"),
-        module_version: "v5",
+        module_version: "v6",
         case_version: 1,
         started_at: attempt.startedAt || null,
         submitted_at: attempt.submittedAt,
@@ -149,6 +150,7 @@ async function syncCachedAttempts() {
         intervals: attempt.intervals || [],
         fidelity_scores: attempt.fidelityScores || {},
         fidelity_outcomes: attempt.fidelityOutcomes || {},
+        fidelity_opportunities: attempt.fidelityOpportunities || [],
         notes: attempt.notes || null,
         teacher_fidelity_agreement: roundedPercent(agreement?.percent),
         desired_outcome_agreement: roundedPercent(agreement?.outcomePercent),
@@ -838,67 +840,87 @@ function fidelityTargets() {
   return currentCase()?.fidelityTargets || [];
 }
 
+function trainingOpportunityId() {
+  return crypto.randomUUID ? crypto.randomUUID() : "opp-"+Date.now()+"-"+Math.random().toString(36).slice(2);
+}
+function trainingOpportunitiesFor(itemId) {
+  const attempt=currentAttempt();
+  return (attempt?.fidelityOpportunities||[]).filter((event)=>event.target_id===itemId).sort((a,b)=>a.elapsed_seconds-b.elapsed_seconds);
+}
+function syncTrainingRollups(resolveNoOpportunity=false) {
+  const attempt=currentAttempt();
+  if (!attempt) return;
+  for (const item of fidelityTargets()) {
+    const events=trainingOpportunitiesFor(item.id);
+    if (!events.length) {
+      if (resolveNoOpportunity) attempt.fidelityScores[item.id]="no_opportunity";
+      else delete attempt.fidelityScores[item.id];
+      delete attempt.fidelityOutcomes[item.id];
+      continue;
+    }
+    const allImplemented=events.every((event)=>event.implementation==="implemented");
+    attempt.fidelityScores[item.id]=allImplemented?"implemented":"not_implemented";
+    if (allImplemented && events.every((event)=>event.desired_outcome)) {
+      attempt.fidelityOutcomes[item.id]=events.some((event)=>event.desired_outcome==="no")
+        ?"no":events.some((event)=>event.desired_outcome==="unclear")?"unclear":"yes";
+    } else delete attempt.fidelityOutcomes[item.id];
+  }
+}
 function renderFidelity() {
-  const attempt = currentAttempt();
-  const targets = fidelityTargets();
-
-  els["fidelity-list"].innerHTML = targets.map((item, index) => {
-    const score = attempt.fidelityScores[item.id] || "";
-    const outcome = attempt.fidelityOutcomes[item.id] || "";
-    const outcomeLabel = outcome === "yes" ? "Outcome: Yes" : outcome === "no" ? "Outcome: No" : outcome === "unclear" ? "Outcome: Not clear" : "";
-    return `
-      <div class="training-fidelity-row">
-        <div class="training-fidelity-copy" title="${item.full.replaceAll('"',"&quot;")}">
-          <span class="target-area">${item.area}</span>
-          <strong>${index + 1}. ${item.short}</strong>
-          <small>${item.detail}</small>
-          ${outcomeLabel ? `<button class="outcome-badge" type="button" data-outcome-edit="${item.id}">${outcomeLabel}</button>` : ""}
-        </div>
-        <button type="button" class="fidelity-choice ${score === "implemented" ? "selected" : ""}" data-fidelity-choice="${item.id}" data-score="implemented">Implemented<br>as Written</button>
-        <button type="button" class="fidelity-choice not-implemented ${score === "not_implemented" ? "selected" : ""}" data-fidelity-choice="${item.id}" data-score="not_implemented">Not Implemented<br>as Written</button>
-      </div>
-    `;
+  const attempt=currentAttempt();
+  const targets=fidelityTargets();
+  els["fidelity-list"].innerHTML=targets.map((item,index)=>{
+    const events=trainingOpportunitiesFor(item.id);
+    const showScoring=!events.length || attempt.pendingOpportunityTarget===item.id;
+    const eventRows=events.map((event)=>{
+      const outcome=event.desired_outcome;
+      const outcomeLabel=outcome==="yes"?"Desired outcome: Yes":outcome==="no"?"Desired outcome: No":outcome==="unclear"?"Desired outcome: Not clear":"Desired outcome: rate now";
+      return '<div class="training-opportunity-event"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong><button type="button" class="outcome-badge" data-outcome-edit="'+event.event_id+'" data-target-id="'+item.id+'">'+outcomeLabel+'</button></div>';
+    }).join("");
+    const scoring=showScoring ? '<div class="training-opportunity-entry"><small>'+(events.length?"New opportunity · timestamp is added when scored":"Opportunity 1")+'</small><div class="training-opportunity-buttons"><button type="button" class="fidelity-choice" data-fidelity-choice="'+item.id+'" data-score="implemented">Implemented<br>as Written</button><button type="button" class="fidelity-choice not-implemented" data-fidelity-choice="'+item.id+'" data-score="not_implemented">Not Implemented<br>as Written</button></div></div>' : "";
+    return '<div class="training-fidelity-row opportunity-training-row"><div class="training-fidelity-copy" title="'+item.full.replaceAll('"',"&quot;")+'"><span class="target-area">'+item.area+'</span><strong>'+(index+1)+'. '+item.short+'</strong><small>'+item.detail+'</small><small>'+(events.length?events.length+" opportunity"+(events.length===1?"":"ies")+" recorded":"No opportunity recorded yet")+'</small></div><div class="training-opportunity-side">'+eventRows+scoring+(events.length&&!showScoring?'<button type="button" class="training-add-opportunity" data-add-training-opportunity="'+item.id+'">+ Add another opportunity</button>':"")+'</div></div>';
   }).join("");
-
-  const scored = targets.filter((item) => Boolean(attempt.fidelityScores[item.id])).length;
-  els["fidelity-progress"].textContent = `${scored}/${targets.length}`;
+  const total=(attempt?.fidelityOpportunities||[]).length;
+  const pending=(attempt?.fidelityOpportunities||[]).filter((event)=>!event.desired_outcome).length;
+  els["fidelity-progress"].textContent=total ? total+" opportunit"+(total===1?"y":"ies")+(pending?" · "+pending+" outcome rating(s) needed":"") : "0 opportunities";
 }
-
 function hideOutcomePrompt() {
-  pendingOutcomeItemId = null;
-  els["outcome-prompt"].hidden = true;
+  pendingOutcomeItemId=null;
+  pendingOutcomeEventId=null;
+  els["outcome-prompt"].hidden=true;
 }
-
-function showOutcomePrompt(itemId) {
-  const item = fidelityTargets().find((target) => target.id === itemId);
+function showOutcomePrompt(itemId,eventId) {
+  const item=fidelityTargets().find((target)=>target.id===itemId);
   if (!item) return;
-  pendingOutcomeItemId = itemId;
-  els["outcome-prompt-item"].textContent = item.short;
-  els["outcome-prompt-definition"].textContent = `Desired outcome: ${item.desiredOutcome}`;
-  els["outcome-prompt"].hidden = false;
+  pendingOutcomeItemId=itemId;
+  pendingOutcomeEventId=eventId;
+  els["outcome-prompt-item"].textContent=item.short;
+  els["outcome-prompt-definition"].textContent="Desired outcome: "+item.desiredOutcome;
+  els["outcome-prompt"].hidden=false;
 }
-
-function scoreFidelity(itemId, score) {
-  const attempt = currentAttempt();
-  const item = fidelityTargets().find((target) => target.id === itemId);
-  if (!attempt || !item) return;
-  attempt.fidelityScores[itemId] = score;
-  if (score !== "implemented") delete attempt.fidelityOutcomes[itemId];
+function scoreFidelity(itemId,score) {
+  const attempt=currentAttempt();
+  const item=fidelityTargets().find((target)=>target.id===itemId);
+  if (!attempt||!item) return;
+  const event={event_id:trainingOpportunityId(),target_id:itemId,elapsed_seconds:Math.max(0,Math.floor(Number(attempt.videoTime)||0)),implementation:score,desired_outcome:null};
+  attempt.fidelityOpportunities.push(event);
+  attempt.pendingOpportunityTarget=null;
+  syncTrainingRollups(false);
   saveState();
   renderFidelity();
-  if (score === "implemented") showOutcomePrompt(itemId);
-  else if (pendingOutcomeItemId === itemId) hideOutcomePrompt();
+  showOutcomePrompt(itemId,event.event_id);
 }
-
 function saveOutcome(choice) {
-  const attempt = currentAttempt();
-  if (!attempt || !pendingOutcomeItemId) return;
-  attempt.fidelityOutcomes[pendingOutcomeItemId] = choice;
+  const attempt=currentAttempt();
+  if (!attempt||!pendingOutcomeEventId) return;
+  const event=(attempt.fidelityOpportunities||[]).find((item)=>item.event_id===pendingOutcomeEventId);
+  if (!event) return;
+  event.desired_outcome=choice;
+  syncTrainingRollups(false);
   saveState();
   hideOutcomePrompt();
   renderFidelity();
 }
-
 function initializeAttempt() {
   const caseData = currentCase();
   if (!caseData) return;
@@ -921,6 +943,8 @@ function initializeAttempt() {
     intervals: Array(caseIntervalCount(caseData)).fill(null),
     fidelityScores: {},
     fidelityOutcomes: {},
+    fidelityOpportunities: [],
+    pendingOpportunityTarget: null,
     notes: "",
     videoTime: 0,
     continuingBehavior: false,
