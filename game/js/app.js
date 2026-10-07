@@ -190,6 +190,15 @@
       MR.audio.playSfx('click', 0.24);
       MR.engine.continueAfterFeedback();
     });
+    const briefingExit = MR.$('#wizard-modal-exit');
+    if (briefingExit) {
+      briefingExit.addEventListener('click', () => {
+        MR.audio.playSfx('click', 0.24);
+        if (!MR.engine.exitBriefing()) return;
+        renderHome();
+        MR.setScreen('home');
+      });
+    }
     MR.$('#wizard-modal-img').addEventListener('click', () => {
       if (!window.matchMedia('(max-width: 700px)').matches) return;
       if (MR.$('#wizard-modal').hidden) return;
