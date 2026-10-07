@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import fs f
 const require=createRequire(import.meta.url);const adminHandler=require('./research-admin-study-day-status');
 const migration=fs.readFileSync(new URL('../supabase/migrations/20260824070000_external_weekly_qualtrics_checkins.sql',import.meta.url),'utf8');
 const authorizationFix=fs.readFileSync(new URL('../supabase/migrations/20260825000000_fix_weekly_checkin_generation_authorization.sql',import.meta.url),'utf8');
+const qaFlagFix=fs.readFileSync(new URL('../supabase/migrations/20261007080000_weekly_qa_uses_test_flag.sql',import.meta.url),'utf8');
 function response(){return {statusCode:0,status(code){this.statusCode=code;return this;},json(body){this.body=body;return this;},setHeader(){}};}
 test('schema stores administration metadata but no Qualtrics answers',()=>{assert.match(migration,/participant_weekly_checkins/);assert.doesNotMatch(migration,/target_behavior_rating|replacement_behavior_rating|social_validity|teacher_comment|survey_answer/);assert.match(migration,/raw tokens are never persisted/i);});
 test('completion is idempotent and stamps both records',()=>{assert.match(migration,/coalesce\(token_row\.completed_at,now\(\)\)/);assert.match(migration,/completed_at=coalesce\(completed_at,completion_time\)/);});
@@ -18,7 +19,7 @@ test('MR-998 Research Admin QA generates a hashed weekly token without email',as
  const originalEnvironment={url:process.env.SUPABASE_URL,key:process.env.SUPABASE_SERVICE_ROLE_KEY,qualtrics:process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL};
  process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_SERVICE_ROLE_KEY='service-secret';process.env.WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL='https://granite.qualtrics.com/jfe/form/SV_weekly';
  const calls=[];
- global.fetch=async(url,options={})=>{calls.push({url:String(url),options});if(String(url).endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:'admin-id'})};if(String(url).includes('/profiles?'))return {ok:true,json:async()=>[{id:'admin-id',role:'research_admin',active:true}]};if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'11111111-1111-4111-8111-111111111111',case_id:'22222222-2222-4222-8222-222222222222',participant_code:'MR-998',cases:{case_code:'CASE-998'}}]};if(String(url).endsWith('/rpc/research_admin_generate_weekly_checkin'))return {ok:true,json:async()=>null};if(String(url).endsWith('/rpc/research_admin_weekly_checkins'))return {ok:true,json:async()=>[{week_start:'2026-08-17'},{week_start:'2026-08-24'}]};throw new Error(`Unexpected request: ${url}`);};
+ global.fetch=async(url,options={})=>{calls.push({url:String(url),options});if(String(url).endsWith('/auth/v1/user'))return {ok:true,json:async()=>({id:'admin-id'})};if(String(url).includes('/profiles?'))return {ok:true,json:async()=>[{id:'admin-id',role:'research_admin',active:true}]};if(String(url).includes('/participants?'))return {ok:true,json:async()=>[{id:'11111111-1111-4111-8111-111111111111',case_id:'22222222-2222-4222-8222-222222222222',participant_code:'MR-998',is_test:true,cases:{case_code:'CASE-998'}}]};if(String(url).endsWith('/rpc/research_admin_generate_weekly_checkin'))return {ok:true,json:async()=>null};if(String(url).includes('/research_case_phase_events?'))return {ok:true,json:async()=>[{id:'phase-1',phase:'intervention',effective_date:'2026-08-17',recorded_at:'2026-08-17T00:00:00Z'}]};throw new Error(`Unexpected request: ${url}`);};
  try{
   const result=response();await adminHandler({method:'POST',headers:{authorization:'Bearer admin-token','x-forwarded-proto':'https','x-forwarded-host':'qa.mission.example'},body:{action:'generate_weekly_qa',case_id:'22222222-2222-4222-8222-222222222222',week_start:'2026-08-24'}},result);
   assert.equal(result.statusCode,200);assert.equal(result.body.email_sent,false);const qualtrics=new URL(result.body.qualtrics_url);assert.equal(qualtrics.origin,'https://granite.qualtrics.com');assert.equal(qualtrics.searchParams.get('participant_code'),'MR-998');assert.equal(qualtrics.searchParams.get('week_number'),'2');assert.equal(qualtrics.searchParams.size,3);assert.match(result.body.completion_test_url,/^https:\/\/qa\.mission\.example\/weekly-checkin-complete\/\?token=/);
@@ -27,6 +28,13 @@ test('MR-998 Research Admin QA generates a hashed weekly token without email',as
   global.fetch=originalFetch;for(const [name,value] of [['SUPABASE_URL',originalEnvironment.url],['SUPABASE_SERVICE_ROLE_KEY',originalEnvironment.key],['WEEKLY_TEACHER_CHECKIN_QUALTRICS_URL',originalEnvironment.qualtrics]])if(value===undefined)delete process.env[name];else process.env[name]=value;
  }
 });
+
+test('weekly QA mode follows participants.is_test rather than a hard-coded participant code',()=>{
+ assert.match(qaFlagFix,/select p\.is_test[\s\S]*into is_qa/);
+ assert.doesNotMatch(qaFlagFix,/target_code\s*=\s*'MR-998'|participant_code\s*=\s*'MR-998'/);
+ assert.match(qaFlagFix,/auth\.role\(\) <> 'service_role'/);
+});
+
 test('weekly listing still rejects a browser request that is not a Research Admin',async()=>{
  const result=response();await adminHandler({method:'POST',headers:{},body:{action:'history',case_id:'22222222-2222-4222-8222-222222222222'}},result);assert.equal(result.statusCode,401);assert.deepEqual(result.body,{error:'Authentication required'});
 });
