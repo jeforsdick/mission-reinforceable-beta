@@ -949,3 +949,28 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
   .simple-save-bar{align-items:stretch;flex-direction:column}
   .simple-save-bar .message{margin-left:0}
 }
+
+
+/* Automatic BSP-to-fidelity draft review */
+.target-extraction-summary {
+  margin: 12px 0 16px;
+  color: var(--muted);
+}
+.target-row.target-needs-review {
+  padding: 12px;
+  border: 1px solid rgba(176, 111, 36, .32);
+  border-radius: 12px;
+  background: #fff9ef;
+}
+.target-review-note {
+  grid-column: 2;
+  display: block;
+  margin-top: -6px;
+  color: #8a5526;
+  font-size: .76rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+@media (max-width: 650px) {
+  .target-review-note { grid-column: 1; margin-top: 2px; }
+}
