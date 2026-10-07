@@ -376,6 +376,67 @@ export function renderAuthoringBrief(workspace) {
 export function renderGameSetup(setup, message = '') {
   return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2><p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
 }
+
+const FIDELITY_DOMAIN_LABELS = {
+  proactive: 'Prevent',
+  teaching: 'Teach',
+  reinforcement: 'Reinforce',
+  response: 'Respond',
+  crisis: 'Crisis'
+};
+function linkedFidelityTargetKeys(workspace) {
+  const keys = new Set();
+  for (const row of workspace?.missions || workspace?.mission_drafts || []) {
+    const mission = row?.mission || row?.mission_json || row?.draft || row?.content || {};
+    for (const step of Object.values(mission?.steps || {})) {
+      const key = step?.meta?.fidelityTargetKey;
+      if (key) keys.add(key);
+    }
+  }
+  return keys;
+}
+function fidelityTargetEditorRow(target, linked = false) {
+  const key = target?.target_key || '';
+  const domain = target?.domain || 'proactive';
+  const options = Object.entries(FIDELITY_DOMAIN_LABELS).map(([value,label]) =>
+    `<option value="${value}"${value===domain?' selected':''}>${label}</option>`
+  ).join('');
+  return `<div class="case-fidelity-target-row" data-target-key="${esc(key)}">
+    <div class="case-fidelity-target-meta">
+      <code>${key ? esc(key) : 'NEW'}</code>
+      <select name="domain" aria-label="Fidelity target domain"${key ? ' disabled' : ''}>${options}</select>
+      ${linked ? '<span class="target-linked-badge">Linked in mission</span>' : ''}
+    </div>
+    <textarea name="description" rows="2" aria-label="Fidelity target description">${esc(target?.description)}</textarea>
+    <button type="button" class="quiet remove-case-fidelity-target"${linked ? ' disabled title="Relink the mission before deactivating this target."' : ''}>${linked ? 'Linked' : 'Remove'}</button>
+  </div>`;
+}
+export function renderFidelityTargetEditor(workspace) {
+  const fidelity = targets(workspace);
+  const linked = linkedFidelityTargetKeys(workspace);
+  return `<details class="builder-section fidelity-target-editor" open>
+    <summary><strong>Final Fidelity Targets</strong><span>Clean these before writing missions.</span></summary>
+    <div class="fidelity-target-editor-body">
+      <p>These are the final observable teacher actions used for fidelity scoring and exact mission links. Edit wording, remove duplicates, or add a missing action here. Existing target codes stay stable.</p>
+      <p class="neutral-note"><strong>Mission-link protection:</strong> once a saved mission uses a target, that target cannot be removed until the mission is relinked.</p>
+      <div id="case-fidelity-target-list">
+        ${fidelity.map(target => fidelityTargetEditorRow(target, linked.has(targetKey(target)))).join('')}
+      </div>
+      <div class="case-fidelity-add">
+        <label>New target domain
+          <select id="new-case-fidelity-domain">
+            ${Object.entries(FIDELITY_DOMAIN_LABELS).map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}
+          </select>
+        </label>
+        <button id="add-case-fidelity-target" type="button">+ Add target</button>
+      </div>
+      <div class="save-bar">
+        <button id="save-case-fidelity-targets" class="primary" type="button">Save Final Targets</button>
+        <p id="fidelity-target-save-message" class="message" role="status"></p>
+      </div>
+    </div>
+  </details>`;
+}
 function renderResourceBlock(block, index) {
   const controls = `<div class="resource-block-controls"><button type="button" data-block-action="up" aria-label="Move block up">Move Up</button><button type="button" data-block-action="down" aria-label="Move block down">Move Down</button><button type="button" data-block-action="remove" aria-label="Remove block">Remove Block</button></div>`;
   if (!block || typeof block !== 'object' || !RESOURCE_BLOCK_TYPES.has(block.type)) return `<article class="resource-block unsupported" data-block-index="${index}"><p class="error-message"><strong>Unsupported saved block.</strong> This content is preserved until you remove it and replace it with a supported block.</p>${controls}</article>`;
@@ -403,7 +464,7 @@ export function renderProtectedPublishing(workspace, check, published = {}, publ
 }
 export function fullDraftPreviewUrl(caseCode) { return `../game/?${new URLSearchParams({ qa_case: caseCode, qa_full_draft: '1' })}`; }
 export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '', setupDraft, resourceDraft, setupMessage = '', resourceMessage = '', fullDraftCheck = null, publishResult = null) {
-  const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderAuthoringBrief(workspace)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}${renderProtectedPublishing(workspace, fullDraftCheck, published, publishResult)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
+  const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderFidelityTargetEditor(workspace)}${renderAuthoringBrief(workspace)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}${renderProtectedPublishing(workspace, fullDraftCheck, published, publishResult)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
   return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Build the game</h1><p>BIP BRIEFING → MISSIONS → PLAY TEST → PUBLISH</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
 }
 
