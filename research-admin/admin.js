@@ -728,6 +728,9 @@ function preserveAllAuthoringForms() {
 }
 function bindSetupAndResources() {
   $('#save-game-setup')?.addEventListener('click', saveGameSetup);
+  $('#save-case-fidelity-targets')?.addEventListener('click', saveCaseFidelityTargets);
+  $('#add-case-fidelity-target')?.addEventListener('click', addCaseFidelityTargetRow);
+  document.querySelectorAll('.remove-case-fidelity-target:not(:disabled)').forEach(button=>button.addEventListener('click',()=>button.closest('.case-fidelity-target-row')?.remove()));
   $('#save-resource-map')?.addEventListener('click', saveResourceMap);
   $('#check-full-draft')?.addEventListener('click', checkFullDraft);
   $('#publish-protected-version')?.addEventListener('click', publishProtectedVersion);
@@ -814,6 +817,67 @@ async function saveGameSetup() {
   const reloadError = await reloadAuthoringWorkspace(); if (reloadError) { message.textContent = `Game setup saved, but the workspace could not reload: ${reloadError.message}`; return; }
   state.setupDraft = setupFromWorkspace(state.authoringWorkspace); state.setupMessage = 'Game setup saved.'; state.fullDraftCheck = null; redrawGameCreation();
 }
+function fidelityTargetRowsPayload() {
+  return [...document.querySelectorAll('.case-fidelity-target-row')].map(row => ({
+    target_key: row.dataset.targetKey || null,
+    domain: row.querySelector('[name="domain"]')?.value || '',
+    description: row.querySelector('[name="description"]')?.value?.trim() || ''
+  }));
+}
+function addCaseFidelityTargetRow() {
+  const domain = $('#new-case-fidelity-domain')?.value || 'proactive';
+  const label = ({proactive:'Prevent',teaching:'Teach',reinforcement:'Reinforce',response:'Respond',crisis:'Crisis'})[domain] || domain;
+  const row = document.createElement('div');
+  row.className = 'case-fidelity-target-row';
+  row.dataset.targetKey = '';
+  row.innerHTML = `
+    <div class="case-fidelity-target-meta">
+      <code>NEW</code>
+      <select name="domain" aria-label="Fidelity target domain">
+        ${['proactive','teaching','reinforcement','response','crisis'].map(value=>`<option value="${value}"${value===domain?' selected':''}>${({proactive:'Prevent',teaching:'Teach',reinforcement:'Reinforce',response:'Respond',crisis:'Crisis'})[value]}</option>`).join('')}
+      </select>
+    </div>
+    <textarea name="description" rows="2" aria-label="Fidelity target description" placeholder="One observable teacher action"></textarea>
+    <button type="button" class="quiet remove-case-fidelity-target">Remove</button>
+  `;
+  row.querySelector('.remove-case-fidelity-target')?.addEventListener('click',()=>row.remove());
+  $('#case-fidelity-target-list')?.appendChild(row);
+  row.querySelector('textarea')?.focus();
+  $('#fidelity-target-save-message').textContent = `New ${label} target added. Write the observable action, then save.`;
+}
+async function saveCaseFidelityTargets() {
+  preserveAllAuthoringForms();
+  const button = $('#save-case-fidelity-targets');
+  const message = $('#fidelity-target-save-message');
+  const targets = fidelityTargetRowsPayload();
+  if (!targets.length) { message.textContent = 'Keep at least one target in each required domain.'; return; }
+  const blank = targets.find(item=>!item.description);
+  if (blank) { message.textContent = 'Every target needs an observable teacher action before saving.'; return; }
+
+  button.disabled = true;
+  message.textContent = 'Saving final targets…';
+  const { data, error } = await state.client.rpc('research_admin_save_case_fidelity_targets', {
+    target_case_id: state.authoringWorkspace.case.id,
+    target_targets: targets
+  });
+  if (error) {
+    button.disabled = false;
+    message.textContent = error.message;
+    return;
+  }
+
+  const reloadError = await reloadAuthoringWorkspace();
+  if (reloadError) {
+    button.disabled = false;
+    message.textContent = `Targets saved, but the workspace could not reload: ${reloadError.message}`;
+    return;
+  }
+  state.fullDraftCheck = null;
+  redrawGameCreation();
+  const refreshed = $('#fidelity-target-save-message');
+  if (refreshed) refreshed.textContent = `Final targets saved (${Array.isArray(data) ? data.length : targets.length} active).`;
+}
+
 async function saveResourceMap() {
   preserveAllAuthoringForms(); const button = $('#save-resource-map'), message = $('#resource-save-message'); button.disabled = true; message.textContent = 'Saving…';
   const { error } = await state.client.rpc('research_admin_save_resource_map_draft', { target_case_id: state.authoringWorkspace.case.id, target_resources: state.resourceDraft });
