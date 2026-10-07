@@ -39,15 +39,17 @@ module.exports = async function handler(request, response) {
     await server.authorize(request);
     const body = request.body || {};
     if (!UUID.test(body.case_id || '') || !['history', 'generate_qa', 'generate_weekly_qa'].includes(body.action)) return server.json(response, 400, { error: 'Invalid request' });
-    const participants = await rows(`/rest/v1/participants?case_id=eq.${encodeURIComponent(body.case_id)}&select=id,case_id,participant_code,cases!inner(case_code)&limit=1`);
+    const participants = await rows(`/rest/v1/participants?case_id=eq.${encodeURIComponent(body.case_id)}&select=id,case_id,participant_code,is_test,cases!inner(case_code)&limit=1`);
     if (participants.length !== 1) return server.json(response, 404, { error: 'Participant not found' });
     const participant = participants[0];
     if (body.action === 'generate_weekly_qa') {
-      if (participant.participant_code !== 'MR-998' || !/^\d{4}-\d{2}-\d{2}$/.test(body.week_start || '')) return server.json(response, 403, { error: 'Weekly check-in QA is restricted to MR-998.' });
+      if (!participant.is_test || !/^\d{4}-\d{2}-\d{2}$/.test(body.week_start || '')) return server.json(response, 403, { error: 'Weekly check-in QA is restricted to explicitly marked test participants.' });
       const raw = weekly.createRawToken(), tokenHash = weekly.hashToken(raw);
       const rpc = await server.supabaseFetch('/rest/v1/rpc/research_admin_generate_weekly_checkin', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id, target_week_start: body.week_start, target_token_hash: tokenHash }) });
       if (!rpc.ok) return server.json(response, 409, { error: 'Weekly check-in could not be generated' });
-      const weeklyRows = await rows('/rest/v1/rpc/research_admin_weekly_checkins', { method: 'POST', body: JSON.stringify({ target_participant_id: participant.id, target_case_id: participant.case_id }) });
+      const phaseHistory = await rows(`/rest/v1/research_case_phase_events?case_id=eq.${encodeURIComponent(participant.case_id)}&select=id,phase,effective_date,recorded_at&order=effective_date.asc,recorded_at.asc,id.asc`);
+      const period = weekly.resolvedInterventionPeriod(phaseHistory, dateParts(new Date(), TIMEZONE));
+      const weeklyRows = period ? weekly.eligibleInterventionWeeks(period.start, period.end) : [];
       const origin = requestOrigin(request);
       const weekNumber = weekly.interventionWeekNumber(weeklyRows, body.week_start);
       if (!weekNumber) return server.json(response, 409, { error: 'Intervention week could not be resolved' });
