@@ -21,14 +21,20 @@
         const {error:updateError}=await client.auth.updateUser({password});
         if(updateError){button.disabled=false;invalid();return;}
         form.reset();form.hidden=true;
-        const [{data:observerAccount},{data:participant}]=await Promise.all([
+        const [{data:observerAccount},{data:participant},{data:profile}]=await Promise.all([
           client.from('research_observer_accounts').select('observer_id').eq('auth_user_id',session.user.id).eq('active',true).maybeSingle(),
-          client.from('participants').select('id,active,case_id').eq('auth_user_id',session.user.id).maybeSingle()
+          client.from('participants').select('id,active,case_id').eq('auth_user_id',session.user.id).maybeSingle(),
+          client.from('profiles').select('role,active').eq('id',session.user.id).maybeSingle()
         ]);
         const observerReady=Boolean(observerAccount?.observer_id);
         if(observerReady){
           status.textContent='Password created. Opening your Observer Account…';
           setTimeout(()=>location.replace('/observer/'),900);
+          return;
+        }
+        if(profile?.role==='coach'||profile?.role==='research_admin'){
+          status.textContent='Password created. Opening your Coaching Dashboard…';
+          setTimeout(()=>location.replace('/coach-dashboard/'),900);
           return;
         }
         if(participant && participant.active!==true){

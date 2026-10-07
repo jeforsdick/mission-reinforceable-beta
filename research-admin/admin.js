@@ -223,7 +223,7 @@ async function openDetail(id, preferredTab = null) {
       ${row.has_crisis_plan ? section('Crisis / Safety Plan', [field('Crisis / Safety Plan', row.crisis_plan, true)]) : ''}
       ${section('Contextual Information', [field('Where the behavior typically occurs', row.typical_settings, true), ...antecedentContext(row).map(item => field(item.label, item.value, true)), field('What typically happens after the behavior', row.typical_consequences, true), field('How staff usually respond right now', row.current_staff_responses, true), field('Situations requested for the game', row.requested_scenarios, true), field('Anything else we should know', row.additional_context, true)])}
       <section class="panel notice"><p class="eyebrow">Fidelity Targets</p><strong>Check these against the BIP/BSP before case setup.</strong><p>Each target should be one observable teacher action.</p><div id="targets">${targets.map(target => `<label class="target-row"><span>${escapeHtml(target.target_key)}</span><input data-domain="${target.domain}" data-order="${target.sort_order}" value="${escapeHtml(target.description)}" aria-label="${target.target_key}"><span class="print-target">${escapeHtml(target.description)}</span></label>`).join('')}</div></section>
-      <section id="intake-accounts" class="panel no-print"><p class="eyebrow">Accounts</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher', converted)}${accountBox('Coach Account', row.coach_email, coach, 'coach', converted)}<p>Nothing here sends an email.</p></section>
+      <section id="intake-accounts" class="panel no-print"><p class="eyebrow">Launch Accounts</p><p>Create these only after the game is published. Creating an account links it to this case and sends that person a secure password-setup email.</p>${accountBox('Teacher Account', row.teacher_email, teacher, 'teacher', converted)}${accountBox('Coach Account', row.coach_email, coach, 'coach', converted)}</section>
       ${converted ? '' : provisionPanel(row, teacher, coach)}${reviewActions(row)}`;
     const intakeContent = state.editingIntake && canEditIntake ? editIntakeForm(row, teacher, coach) : normalIntakeContent;
     state.intakeMessage = '';
@@ -270,8 +270,29 @@ function testPasswordEligible(converted, email) {
   return eligiblePair && /@testemail\.com$/i.test(email || '');
 }
 function accountBox(label, email, result, type, converted) {
-  const passwordControl = result.ready && type === 'teacher' && testPasswordEligible(converted, email) ? `<details class="test-password-control"><summary>SET TEST PASSWORD</summary><form id="test-password-form"><label>New test password<input name="password" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><label>Confirm test password<input name="confirmation" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><button class="primary" type="submit">Set Test Password</button><small>Demo account only. No email is sent.</small><p id="test-password-result" role="status"></p></form></details>` : '';
-  return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${result.ready ? 'ready' : 'needs'}">${result.ready ? 'Ready' : 'No account yet'}</span>${result.ready && type === 'teacher' ? '<button class="primary qa-link" type="button">Create Test Login Link</button><small>QA only. No email is sent.</small>' : !result.ready ? `<button class="primary create-account" data-type="${type}" type="button">Create ${type === 'teacher' ? 'Teacher' : 'Coach'} Account</button>` : ''}${type === 'teacher' ? `<div id="qa-result"></div>${passwordControl}` : ''}</div>`;
+  const profileId=result.profileId||null;
+  const linked=type==='teacher'
+    ? Boolean(profileId&&converted?.participant?.auth_user_id===profileId)
+    : Boolean(profileId&&converted?.coach?.coach_user_id===profileId);
+  const gamePublished=converted?.protected_content?.present===true;
+  const passwordControl = linked && type === 'teacher' && testPasswordEligible(converted, email) ? `<details class="test-password-control"><summary>SET TEST PASSWORD</summary><form id="test-password-form"><label>New test password<input name="password" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><label>Confirm test password<input name="confirmation" type="password" minlength="12" maxlength="64" autocomplete="new-password" required></label><button class="primary" type="submit">Set Test Password</button><small>Demo account only. No email is sent.</small><p id="test-password-result" role="status"></p></form></details>` : '';
+  let action='';
+  let statusLabel='No account yet';
+  let statusClass='needs';
+  if(linked){
+    statusLabel='Ready & linked';
+    statusClass='ready';
+    if(type==='teacher') action='<button class="primary qa-link" type="button">Create Test Login Link</button><small>QA only. No email is sent.</small>';
+  }else if(!converted){
+    action='<small>Approve the intake, prepare the case, and publish the game before creating this account.</small>';
+  }else if(!gamePublished){
+    statusLabel=result.ready?'Account exists · not linked':'No account yet';
+    action='<button class="primary create-account" type="button" disabled>Create '+(type==='teacher'?'Teacher':'Coach')+' Account</button><small>Available after the game is published.</small>';
+  }else{
+    statusLabel=result.ready?'Account exists · ready to link':'No account yet';
+    action=`<button class="primary create-account" data-type="${type}" type="button">${result.ready?'Link':'Create'} ${type === 'teacher' ? 'Teacher' : 'Coach'} Account & Send Setup Email</button>`;
+  }
+  return `<div class="account"><strong>${label}</strong><br><small>${escapeHtml(email)}</small><br><span class="${statusClass}">${escapeHtml(statusLabel)}</span>${action}${type === 'teacher' ? `<div id="qa-result"></div>${passwordControl}` : ''}</div>`;
 }
 function reviewActions(row) { return row.status === 'submitted' ? `<section class="panel no-print"><h2>Intake decision</h2><p>Approval does not provision a case, activate gameplay, enable reminders, or send email.</p><div class="actions"><button id="approve" class="primary">Approve intake</button><button id="decline" class="primary decline">Decline intake</button></div><p id="action-message" class="message" aria-live="polite"></p></section>` : `<section class="panel no-print"><h2>Intake decision</h2><p id="action-message" class="success-message" role="status">${escapeHtml(state.intakeDecisionMessage || '')}</p><p>Current status: <strong>${escapeHtml(row.status)}</strong></p></section>`; }
 function bindDetail() {
@@ -577,17 +598,16 @@ async function setLegacyTestPassword(event) {
 function reviewedTargets() {
   return Array.from(document.querySelectorAll('#targets input')).map(input => ({ domain: input.dataset.domain, description: input.value.trim() })).filter(item => item.description);
 }
-function provisionPanel(row, teacher, coach) {
-  if (row.status !== 'approved') return '<section class="panel no-print"><h2>Set Up Study Case</h2><p class="needs">Approve this intake before setting up the case.</p></section>';
-  const disabled = !teacher.ready || !coach.ready;
-  return `<section class="panel notice no-print"><h2>Set Up Study Case</h2><p>Create the study ID, student alias, and final fidelity targets. The game and reminders stay off.</p><form id="provision-form"><label>Study ID <small>— Example: MR-001</small><input id="study-id" name="study_id" required pattern="MR-[0-9]{3}" autocomplete="off"></label><label>Case code <small>— filled from Study ID</small><input id="case-code" name="case_code" required pattern="CASE-[0-9]{3}" autocomplete="off"></label><label>Student game alias <small>— Example: Kai</small><input id="student-alias" name="student_alias" required autocomplete="off"></label><small>Use a pseudonym. Do not enter the student's full name.</small><button class="primary" ${disabled ? 'disabled' : ''}>Set Up Study Case</button><p id="provision-message" class="message" aria-live="polite"></p></form><p class="off">Case setup only. Game and reminders stay off.</p></section>`;
+function provisionPanel(row) {
+  if (row.status !== 'approved') return '<section class="panel no-print"><h2>Prepare Case & Game</h2><p class="needs">Approve this intake before preparing the case.</p></section>';
+  return `<section class="panel notice no-print"><h2>Prepare Case & Game</h2><p>Create the study ID, student alias, and final fidelity targets first. Teacher and coach accounts come later, after the game is published.</p><form id="provision-form"><label>Study ID <small>— Example: MR-001</small><input id="study-id" name="study_id" required pattern="MR-[0-9]{3}" autocomplete="off"></label><label>Case code <small>— filled from Study ID</small><input id="case-code" name="case_code" required pattern="CASE-[0-9]{3}" autocomplete="off"></label><label>Student game alias <small>— Example: Kai</small><input id="student-alias" name="student_alias" required autocomplete="off"></label><small>Use a pseudonym. Do not enter the student's full name.</small><label class="check-option"><input name="is_test" type="checkbox"> QA / test case — exclude from dissertation outcomes</label><button class="primary">Prepare Case</button><p id="provision-message" class="message" aria-live="polite"></p></form><p class="off">Preparing the case does not create accounts, send email, activate the game, or enable reminders.</p></section>`;
 }
 async function provisionCase(event) {
   event.preventDefault();
-  if (!window.confirm('Set up this study case? The game and reminders will stay off.')) return;
+  if (!window.confirm('Prepare this case? No accounts or emails will be created yet, and game access/reminders will stay off.')) return;
   const form = new FormData(event.currentTarget); const button = event.currentTarget.querySelector('button'); button.disabled = true;
-  const args = { target_request_id: state.selected.request_id, study_id: String(form.get('study_id')).trim(), new_case_code: String(form.get('case_code')).trim(), student_game_alias: String(form.get('student_alias')).trim(), reviewed_targets: reviewedTargets() };
-  const { data, error } = await state.client.rpc('provision_intake_case', args);
+  const args = { target_request_id: state.selected.request_id, study_id: String(form.get('study_id')).trim(), new_case_code: String(form.get('case_code')).trim(), student_game_alias: String(form.get('student_alias')).trim(), reviewed_targets: reviewedTargets(), target_is_test: form.has('is_test') };
+  const { data, error } = await state.client.rpc('provision_intake_case_v2', args);
   if (error) { $('#provision-message').textContent = error.message; button.disabled = false; return; }
   const caseId = data?.[0]?.case_id;
   state.selected.status = 'converted'; state.selected.converted_case_id = caseId;
