@@ -211,6 +211,34 @@
     </span>
   </button>
 
+  <button id="demo-feedback-open" class="demo-feedback-open" type="button">Give Feedback</button>
+  <div id="demo-feedback-modal" class="demo-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="demo-feedback-title" hidden>
+    <button class="demo-feedback-backdrop" type="button" aria-label="Close feedback form"></button>
+    <section class="demo-feedback-card">
+      <button id="demo-feedback-close" class="demo-feedback-close" type="button" aria-label="Close feedback form">&times;</button>
+      <p class="demo-feedback-kicker">Public Demo</p>
+      <h2 id="demo-feedback-title">Give Feedback</h2>
+      <p>See something confusing, broken, or worth keeping? Tell us! Your feedback helps improve Mission: Reinforceable.</p>
+      <form id="demo-feedback-form">
+        <label>What kind of feedback?
+          <select name="category" required>
+            <option value="idea">I have an idea</option>
+            <option value="confusing">Something was confusing</option>
+            <option value="bug">Something looked broken</option>
+            <option value="liked">Something I liked</option>
+            <option value="other">Other</option>
+          </select>
+        </label>
+        <label>What would you like us to know?
+          <textarea name="message" rows="5" maxlength="2000" required placeholder="Tell us what you noticed..."></textarea>
+        </label>
+        <label class="demo-feedback-hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+        <button class="pixel-btn green-btn demo-feedback-submit" type="submit">Send Feedback</button>
+        <p id="demo-feedback-status" class="demo-feedback-status" role="status"></p>
+      </form>
+    </section>
+  </div>
+
   <script src="js/utils.js"></script>
   <script src="js/session-timer.js"></script>
   <script src="js/storage.js"></script>
@@ -222,5 +250,6 @@
   <script src="js/resources.js?v=20260630-strategy-map"></script>
   <script src="js/demo-app.js?v=20261007-mission-briefing-1"></script>
   <script src="js/fit-screen.js"></script>
+  <script src="../demo-game/demo-feedback.js?v=20261007-1"></script>
 </body>
 </html>
