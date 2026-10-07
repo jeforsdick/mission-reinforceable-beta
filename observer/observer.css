@@ -126,3 +126,20 @@ button{font:inherit}.primary-button,.secondary-button,.text-button{border:0;bord
 .hub-card{display:flex;flex-direction:column;align-items:flex-start}
 .hub-card .button-link{margin-top:auto}
 @media(max-width:760px){.observer-home-grid{grid-template-columns:1fr}.observer-account-nav a{flex:1;text-align:center}}
+
+
+.opportunity-fidelity-item{align-items:start}
+.opportunity-fidelity-item small{display:block;margin-top:5px;color:var(--muted);font-size:.72rem}
+.opportunity-entry{display:grid;gap:6px;padding:9px;border:1px dashed #cbb9e3;border-radius:10px;background:#fcfaff}
+.opportunity-entry>small{color:var(--purple);font-weight:850}
+.opportunity-timeline{display:grid;gap:6px}
+.opportunity-event{display:grid;grid-template-columns:auto minmax(145px,.7fr) minmax(250px,1.3fr) auto;gap:7px;align-items:center;padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:#f8f9fb}
+.opportunity-event>strong{font-size:.74rem;color:var(--navy)}
+.opportunity-time{padding:3px 6px!important;border-radius:999px;background:var(--purple-soft);color:var(--purple)!important;font-size:.65rem!important;font-weight:900!important}
+.opportunity-remove{width:30px;height:30px;border:1px solid #d8dde4;border-radius:7px;background:#fff;color:#7b8794;font-weight:900;cursor:pointer}
+.add-opportunity{width:100%;min-height:38px;border:1px dashed var(--purple);border-radius:9px;background:#faf7ff;color:var(--purple);font-weight:900;cursor:pointer}
+@media(max-width:700px){
+  .opportunity-event{grid-template-columns:auto 1fr auto}
+  .opportunity-event .fidelity-outcome-actions{grid-column:1/-1}
+  .opportunity-entry .fidelity-buttons{grid-template-columns:1fr}
+}
