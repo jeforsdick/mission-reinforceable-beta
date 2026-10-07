@@ -336,6 +336,7 @@ function startCollectionState(record,fidelityOutcomes={},fidelityOpportunities=[
     fidelityScores:{...(record?.fidelity_scores||{})},
     fidelityOutcomes:{...(fidelityOutcomes||{})},
     fidelityOpportunities:[...(fidelityOpportunities||record?.fidelity_opportunities||[])],
+    pendingOpportunityTarget:null,
     intervals,
     continuing:false,
     notObserved:false,
@@ -445,6 +446,7 @@ function opportunityFidelity() {
 }
 function addFidelityOpportunity(targetId,implementation) {
   collection.fidelityOpportunities.push({event_id:opportunityId(),target_id:targetId,elapsed_seconds:elapsedSeconds(),implementation,desired_outcome:null});
+  collection.pendingOpportunityTarget=null;
   syncFidelityRollups(false);
   renderFidelity();
   queueSave();
@@ -484,21 +486,24 @@ function renderFidelity() {
       '<button type="button" class="opportunity-remove" data-opportunity-remove="'+event.event_id+'" aria-label="Remove this opportunity">×</button>' +
       '</div>'
     ).join("");
+    const showScoring=!events.length || collection.pendingOpportunityTarget===target.id;
+    const scoring=showScoring
+      ? '<div class="opportunity-entry"><small>'+(events.length?"New opportunity · timestamp will be added when scored":"Opportunity 1")+'</small><div class="fidelity-buttons">' +
+        '<button type="button" data-opportunity-target="'+target.id+'" data-implementation="implemented">Implemented as Written</button>' +
+        '<button type="button" data-opportunity-target="'+target.id+'" data-implementation="not_implemented">Not Implemented as Written</button>' +
+        '</div></div>'
+      : '';
     return '<article class="fidelity-item opportunity-fidelity-item">' +
       '<div><span>'+escapeHtml(target.domain||"Fidelity")+'</span><strong>'+escapeHtml(target.description)+'</strong><small>'+
       (events.length?implemented+"/"+events.length+" opportunities implemented as written":"No opportunity recorded yet")+'</small></div>' +
-      '<div class="fidelity-response"><div class="fidelity-buttons">' +
-      '<button type="button" data-opportunity-target="'+target.id+'" data-implementation="implemented">Implemented as Written</button>' +
-      '<button type="button" data-opportunity-target="'+target.id+'" data-implementation="not_implemented">Not Implemented as Written</button>' +
-      '</div><div class="opportunity-timeline">'+rows+'</div>' +
-      (events.length?'<button type="button" class="add-opportunity" data-add-opportunity="'+target.id+'">+ Add another opportunity</button>':'') +
+      '<div class="fidelity-response">'+rows+scoring +
+      (events.length&&!showScoring?'<button type="button" class="add-opportunity" data-add-opportunity="'+target.id+'">+ Add another opportunity</button>':'') +
       '</div></article>';
   }).join("");
   document.querySelectorAll("[data-opportunity-target]").forEach((button)=>button.addEventListener("click",()=>addFidelityOpportunity(button.dataset.opportunityTarget,button.dataset.implementation)));
   document.querySelectorAll("[data-add-opportunity]").forEach((button)=>button.addEventListener("click",()=>{
-    const targetId=button.dataset.addOpportunity;
-    const item=document.querySelector('[data-opportunity-target="'+targetId+'"]')?.closest(".fidelity-item");
-    item?.scrollIntoView({behavior:"smooth",block:"nearest"});
+    collection.pendingOpportunityTarget=button.dataset.addOpportunity;
+    renderFidelity();
   }));
   document.querySelectorAll("[data-opportunity-outcome]").forEach((button)=>button.addEventListener("click",()=>setFidelityOpportunityOutcome(button.dataset.opportunityOutcome,button.dataset.outcome)));
   document.querySelectorAll("[data-opportunity-remove]").forEach((button)=>button.addEventListener("click",()=>removeFidelityOpportunity(button.dataset.opportunityRemove)));
