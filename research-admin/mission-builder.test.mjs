@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { ERROR_TYPES, blankMission, defaultMissionId, draftPreviewUrl, latestDraft, nextStepId, normalizeMission, renderGameCreation, renderMissionBank, renderMissionBuilder, resetMissionAuthoringState, stepId } from './game-creation-ui.mjs';
+import { ERROR_TYPES, blankMission, defaultMissionId, defaultNextTrajectory, draftPreviewUrl, latestDraft, nextStepId, normalizeMission, renderGameCreation, renderMissionBank, renderMissionBuilder, resetMissionAuthoringState, stepId } from './game-creation-ui.mjs';
 const { validateStructure } = createRequire(import.meta.url)('../scripts/structural-content-validator.js');
 
 const workspace = { case:{id:'case-1',case_code:'CASE-998',student_alias:'Star'}, has_crisis_plan:false, fidelity_targets:[{target_key:'proactive_01',description:'Give attention',domain:'Prevent'}], missions:[{mission_type:'daily',slot_number:1,created_at:'2026-08-21T17:30:00Z',mission:{id:'EXISTING',title:'Circle Time',steps:{}}}], resource_draft:{revision_id:'r1'} };
@@ -9,6 +9,37 @@ const workspace = { case:{id:'case-1',case_code:'CASE-998',student_alias:'Star'}
 test('mission bank renders all slots and maps Mystery to wild',()=>{const html=renderMissionBank(workspace);assert.equal((html.match(/data-mission-type="daily"/g)||[]).length,10);assert.equal((html.match(/data-mission-type="wild"/g)||[]).length,5);assert.equal((html.match(/data-mission-type="crisis"/g)||[]).length,5);assert.match(html,/Mystery 1/);assert.match(html,/Formal crisis plan not present/);});
 test('existing slot resolves latest mission while new slot gets deterministic blank runtime object',()=>{assert.equal(latestDraft(workspace,'daily',1).mission.id,'EXISTING');assert.equal(latestDraft(workspace,'daily',2),undefined);const rpcWorkspace={...workspace,mission_drafts:undefined,missions:workspace.missions};assert.equal(latestDraft(rpcWorkspace,'daily',1).mission.id,'EXISTING');const mission=blankMission(workspace.case.case_code,'wild',2);assert.equal(mission.id,'CASE998_M02');assert.equal(defaultMissionId('CASE-998','crisis',1),'CASE998_C01');assert.equal(mission.expectedSteps,5);assert.equal(mission.start,'d1_start');assert.equal(Object.keys(mission.steps).length,13);});
 test('decision IDs and next trajectories are controlled and valid',()=>{assert.equal(stepId(1),'d1_start');assert.equal(nextStepId(1,'supported'),'d2_supported');assert.equal(nextStepId(3,'wobbly'),'d4_wobbly');assert.equal(nextStepId(4,'escalated'),'d5_escalated');assert.equal(nextStepId(5,'supported'),null);});
+test('default routing preserves classroom state and makes recovery gradual',()=>{
+  assert.equal(defaultNextTrajectory('start',10),'supported');
+  assert.equal(defaultNextTrajectory('start',5),'wobbly');
+  assert.equal(defaultNextTrajectory('start',0),'escalated');
+  assert.equal(defaultNextTrajectory('wobbly',10),'supported');
+  assert.equal(defaultNextTrajectory('wobbly',5),'wobbly');
+  assert.equal(defaultNextTrajectory('escalated',10),'wobbly');
+  assert.equal(defaultNextTrajectory('escalated',5),'escalated');
+  assert.equal(defaultNextTrajectory('escalated',0),'escalated');
+  const mission=blankMission(workspace.case.case_code,'daily',2);
+  assert.equal(mission.steps.d2_escalated.choices.A.next,'d3_wobbly');
+  assert.equal(mission.steps.d2_escalated.choices.B.next,'d3_escalated');
+  assert.equal(mission.steps.d2_escalated.choices.C.next,'d3_escalated');
+});
+test('builder exposes choice-specific next classroom state instead of deriving routing from score',()=>{
+  const mission=blankMission(workspace.case.case_code,'daily',2);
+  mission.steps.d2_escalated.choices.A.next='d3_escalated';
+  const html=renderMissionBuilder(workspace,{mission_type:'daily',slot_number:2},mission,{decision:2,branch:'escalated'});
+  assert.equal((html.match(/name="trajectory"/g)||[]).length,3);
+  assert.match(html,/NEXT CLASSROOM STATE/);
+  assert.match(html,/Separate from score/);
+  assert.match(html,/value="escalated" selected/);
+  assert.match(html,/Escalated state/);
+  assert.doesNotMatch(html,/After the 10-point path/);
+});
+test('normalization preserves authored next-state routing even when it differs from score',()=>{
+  const mission=normalizeMission({steps:{d2_escalated:{choices:{A:{score:10,next:'d3_escalated'}}}}},workspace.case.case_code,'daily',1);
+  assert.equal(mission.steps.d2_escalated.choices.A.score,10);
+  assert.equal(mission.steps.d2_escalated.choices.A.next,'d3_escalated');
+});
+
 test('builder has setup, approved target controls, branches, fixed scores, endings, and no editable score',()=>{const mission=blankMission(workspace.case.case_code,'daily',2);const html=renderMissionBuilder(workspace,{mission_type:'daily',slot_number:2},mission,{decision:2,branch:'wobbly'});for(const label of ['MISSION ID','MISSION TITLE','MISSION TYPE','ROUTINE / LOCATION','CENTRAL TENSION','FUNCTION PRESSURE','ACTIVE BIP COMPONENTS','MISSION AUTHORING FOCUS / DESIGN GOAL'])assert.match(html,new RegExp(label));assert.match(html,/proactive_01/);assert.doesNotMatch(html,/name="fidelityTargetKey"[^>]*type="text"/);assert.match(html,/Supported/);assert.match(html,/Wobbly/);assert.match(html,/Escalated/);assert.equal((html.match(/class="choice-card"/g)||[]).length,3);assert.match(html,/type="hidden" name="score" value="10"/);assert.doesNotMatch(html,/type="number"/);assert.match(html,/Mission Endings/);});
 test('consequence keeps its runtime name while Error Type uses every controlled option',()=>{const html=renderMissionBuilder(workspace,{mission_type:'daily',slot_number:2},blankMission(workspace.case.case_code,'daily',2));assert.match(html,/WHAT HAPPENS NEXT\?[\s\S]*name="consequence"/);assert.doesNotMatch(html,/IMMEDIATE MODELED CONSEQUENCE/);assert.match(html,/ERROR TYPE<select name="errorType">/);assert.doesNotMatch(html,/ERROR TYPE<input/);for(const option of ERROR_TYPES){assert.match(html,new RegExp(`value="${option.value}"`));}});
 test('legacy Error Types normalize and unknown values remain selectable',()=>{for(const [legacy,canonical] of [['missed active ingredient','missed_active_ingredient'],['missed prevention opportunity','missed_prevention_opportunity'],['missed teaching opportunity','missed_teaching_opportunity'],['missed reinforcement opportunity','missed_reinforcement_opportunity'],['delayed reinforcement','timing_or_delay'],['reinforcement delayed','timing_or_delay'],['reinforces target pattern','reinforces_target_pattern']]){const mission=normalizeMission({steps:{d1_start:{choices:{A:{meta:{errorType:legacy}}}}}},workspace.case.case_code,'daily',1);assert.equal(mission.steps.d1_start.choices.A.meta.errorType,canonical);}const custom=normalizeMission({steps:{d1_start:{choices:{A:{meta:{errorType:'case specific old value'}}}}}},workspace.case.case_code,'daily',1);assert.equal(custom.steps.d1_start.choices.A.meta.errorType,'case specific old value');assert.match(renderMissionBuilder(workspace,{mission_type:'daily',slot_number:2},custom),/Existing specific value: case specific old value/);});
