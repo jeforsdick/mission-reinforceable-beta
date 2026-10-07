@@ -587,53 +587,25 @@ function finishCollection() {
   renderReview();
 }
 function renderReview(noteOverride) {
+  syncFidelityRollups(true);
   const targets=currentPacket.fidelity_targets||[];
   const noteValue=noteOverride===undefined ? (currentPacket.record?.observation_note||"") : noteOverride;
   $("review-fidelity-list").innerHTML=targets.map((target)=>{
-    const score=collection.fidelityScores[target.id]||"";
-    const outcome=collection.fidelityOutcomes[target.id]||"";
-    return `<article class="review-item">
-      <strong>${escapeHtml(target.description)}</strong>
-      <div class="review-controls">
-        <select data-review-target="${target.id}">
-          <option value="">Choose score</option>
-          <option value="implemented"${score==="implemented"?" selected":""}>Implemented as Written</option>
-          <option value="not_implemented"${score==="not_implemented"?" selected":""}>Not Implemented as Written</option>
-          <option value="no_opportunity"${score==="no_opportunity"?" selected":""}>No Opportunity</option>
-        </select>
-        ${score==="implemented" ? `<div class="review-outcome-prompt ${outcome?"complete":""}">
-          <strong>Desired outcome on behavior?</strong>
-          <div class="fidelity-outcome-actions">
-            <button type="button" data-review-outcome-target="${target.id}" data-outcome="yes" class="${outcome==="yes"?"selected":""}">Yes</button>
-            <button type="button" data-review-outcome-target="${target.id}" data-outcome="no" class="${outcome==="no"?"selected":""}">No</button>
-            <button type="button" data-review-outcome-target="${target.id}" data-outcome="unclear" class="${outcome==="unclear"?"selected":""}">Not clear</button>
-          </div>
-        </div>` : ""}
-      </div>
-    </article>`;
+    const events=opportunitiesFor(target.id);
+    const implemented=events.filter((event)=>event.implementation==="implemented").length;
+    const rows=events.length?events.map((event)=>
+      '<div class="review-opportunity-row"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong><span>Desired outcome: '+(event.desired_outcome==="yes"?"Yes":event.desired_outcome==="no"?"No":event.desired_outcome==="unclear"?"Not clear":"Not rated")+'</span></div>'
+    ).join(""):'<small>No opportunity occurred during this observation.</small>';
+    return '<article class="review-item opportunity-review-item"><div><strong>'+escapeHtml(target.description)+'</strong><small>'+(events.length?implemented+"/"+events.length+" opportunities implemented as written":"No opportunity")+'</small></div><div class="review-opportunity-list">'+rows+'</div></article>';
   }).join("");
-  document.querySelectorAll("[data-review-target]").forEach((select)=>select.addEventListener("change",()=>{
-    const note=$("observation-note").value;
-    if (select.value) collection.fidelityScores[select.dataset.reviewTarget]=select.value;
-    else delete collection.fidelityScores[select.dataset.reviewTarget];
-    if (select.value!=="implemented") delete collection.fidelityOutcomes[select.dataset.reviewTarget];
-    renderReview(note);
-    queueSave();
-  }));
-  document.querySelectorAll("[data-review-outcome-target]").forEach((button)=>button.addEventListener("click",()=>{
-    const note=$("observation-note").value;
-    collection.fidelityOutcomes[button.dataset.reviewOutcomeTarget]=button.dataset.outcome;
-    renderReview(note);
-    queueSave();
-  }));
   $("observation-note").value=noteValue;
   updateReviewSummary();
 }
 function updateReviewSummary() {
   const fidelity=calculateFidelity(collection.fidelityScores);
   const behavior=calculateStudentBehavior(collection.intervals);
-  $("review-fidelity-percent").textContent=fidelity.percent==null?"—":`${fidelity.percent.toFixed(1)}%`;
-  $("review-behavior-percent").textContent=behavior.percent==null?"—":`${behavior.percent.toFixed(1)}%`;
+  $("review-fidelity-percent").textContent=fidelity.percent==null?"—":fidelity.percent.toFixed(1)+"%";
+  $("review-behavior-percent").textContent=behavior.percent==null?"—":behavior.percent.toFixed(1)+"%";
 }
 async function submitObservation() {
   $("review-error").textContent="";
