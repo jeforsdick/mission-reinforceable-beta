@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import {
   REAL_SESSION,
   calculateFidelity,
@@ -72,4 +73,32 @@ test("fidelity IOA is item-by-item", () => {
 test("clock formatter uses mm:ss", () => {
   assert.equal(formatClock(1800), "30:00");
   assert.equal(formatClock(65), "01:05");
+});
+
+
+test("live observer preserves repeated timestamped fidelity opportunities", () => {
+  const live = fs.readFileSync(new URL("../observer/observer.js", import.meta.url), "utf8");
+  assert.match(live, /fidelityOpportunities/);
+  assert.match(live, /\+ Add another opportunity/);
+  assert.match(live, /Implemented as Written/);
+  assert.match(live, /Not Implemented as Written/);
+  assert.match(live, /desired_outcome/);
+  assert.match(live, /elapsed_seconds:elapsedSeconds\(\)/);
+});
+
+test("training teaches and stores repeated fidelity opportunities", () => {
+  const training = fs.readFileSync(new URL("./observe.js", import.meta.url), "utf8");
+  const page = fs.readFileSync(new URL("./index.html", import.meta.url), "utf8");
+  assert.match(training, /fidelityOpportunities/);
+  assert.match(training, /\+ Add another opportunity/);
+  assert.match(training, /elapsed_seconds:Math\.max/);
+  assert.match(page, /score every opportunity/i);
+  assert.match(page, /desired outcome occurred/i);
+});
+
+test("opportunity migration is backward compatible", () => {
+  const migration = fs.readFileSync(new URL("../supabase/migrations/20261007093000_fidelity_opportunity_timeline.sql", import.meta.url), "utf8");
+  assert.match(migration, /add column if not exists fidelity_opportunities jsonb not null default '\[\]'::jsonb/);
+  assert.match(migration, /research_observer_save_fidelity_opportunities/);
+  assert.doesNotMatch(migration, /update public\.research_observation_records_v2[\s\S]*status='submitted'/i);
 });

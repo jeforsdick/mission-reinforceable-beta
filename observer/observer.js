@@ -318,7 +318,7 @@ function markAwayIntervals(intervals,fromElapsed,toElapsed) {
   }
   return marked;
 }
-function startCollectionState(record,fidelityOutcomes={}) {
+function startCollectionState(record,fidelityOutcomes={},fidelityOpportunities=[]) {
   const savedElapsed=Math.min(REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
   const parsedStart=Date.parse(record?.started_at||"");
   const startedAtMs=Number.isFinite(parsedStart) ? parsedStart : Date.now()-(savedElapsed*1000);
@@ -335,6 +335,8 @@ function startCollectionState(record,fidelityOutcomes={}) {
     endedAt:new Date(startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString(),
     fidelityScores:{...(record?.fidelity_scores||{})},
     fidelityOutcomes:{...(fidelityOutcomes||{})},
+    fidelityOpportunities:[...(fidelityOpportunities||record?.fidelity_opportunities||[])],
+    pendingOpportunityTarget:null,
     intervals,
     continuing:false,
     notObserved:false,
@@ -353,9 +355,12 @@ async function beginCollection() {
     record=result.data;
     currentPacket.record=record;
   }
-  const outcomeResult=await client.rpc("research_observer_get_fidelity_outcomes",{target_slot_id:currentPacket.slot.id});
-  if (outcomeResult.error) { $("start-error").textContent="Could not load saved desired-outcome ratings. Please try again."; return; }
-  collection=startCollectionState(record,outcomeResult.data||{});
+  const [outcomeResult,opportunityResult]=await Promise.all([
+    client.rpc("research_observer_get_fidelity_outcomes",{target_slot_id:currentPacket.slot.id}),
+    client.rpc("research_observer_get_fidelity_opportunities",{target_slot_id:currentPacket.slot.id})
+  ]);
+  if (outcomeResult.error || opportunityResult.error) { $("start-error").textContent="Could not load saved fidelity data. Please try again."; return; }
+  collection=startCollectionState(record,outcomeResult.data||{},opportunityResult.data||[]);
   $("session-preflight").hidden=true;
   $("review-view").hidden=true;
   $("submitted-view").hidden=true;
@@ -409,42 +414,99 @@ function stopTimer() {
   if (timer) clearInterval(timer);
   timer=null;
 }
+function opportunityId() {
+  return crypto.randomUUID ? crypto.randomUUID() : "opp-"+Date.now()+"-"+Math.random().toString(36).slice(2);
+}
+function opportunitiesFor(targetId) {
+  return (collection?.fidelityOpportunities||[]).filter((event)=>event.target_id===targetId).sort((a,b)=>a.elapsed_seconds-b.elapsed_seconds);
+}
+function syncFidelityRollups(resolveNoOpportunity=false) {
+  if (!collection) return;
+  for (const target of currentPacket.fidelity_targets||[]) {
+    const events=opportunitiesFor(target.id);
+    if (!events.length) {
+      if (resolveNoOpportunity) collection.fidelityScores[target.id]="no_opportunity";
+      else delete collection.fidelityScores[target.id];
+      delete collection.fidelityOutcomes[target.id];
+      continue;
+    }
+    const allImplemented=events.every((event)=>event.implementation==="implemented");
+    collection.fidelityScores[target.id]=allImplemented?"implemented":"not_implemented";
+    if (allImplemented && events.every((event)=>event.desired_outcome)) {
+      collection.fidelityOutcomes[target.id]=events.some((event)=>event.desired_outcome==="no")
+        ?"no":events.some((event)=>event.desired_outcome==="unclear")?"unclear":"yes";
+    } else delete collection.fidelityOutcomes[target.id];
+  }
+}
+function opportunityFidelity() {
+  const events=collection?.fidelityOpportunities||[];
+  const implemented=events.filter((event)=>event.implementation==="implemented").length;
+  const pendingOutcome=events.filter((event)=>!event.desired_outcome).length;
+  return {total:events.length,implemented,pendingOutcome,percent:events.length?(implemented/events.length)*100:null};
+}
+function addFidelityOpportunity(targetId,implementation) {
+  collection.fidelityOpportunities.push({event_id:opportunityId(),target_id:targetId,elapsed_seconds:elapsedSeconds(),implementation,desired_outcome:null});
+  collection.pendingOpportunityTarget=null;
+  syncFidelityRollups(false);
+  renderFidelity();
+  queueSave();
+}
+function setFidelityOpportunityOutcome(eventId,outcome) {
+  const event=(collection.fidelityOpportunities||[]).find((item)=>item.event_id===eventId);
+  if (!event) return;
+  event.desired_outcome=outcome;
+  syncFidelityRollups(false);
+  renderFidelity();
+  queueSave();
+}
+function removeFidelityOpportunity(eventId) {
+  collection.fidelityOpportunities=(collection.fidelityOpportunities||[]).filter((item)=>item.event_id!==eventId);
+  syncFidelityRollups(false);
+  renderFidelity();
+  queueSave();
+}
 function renderFidelity() {
   const targets=currentPacket.fidelity_targets||[];
-  const scored=targets.filter((t)=>collection.fidelityScores[t.id]).length;
-  $("fidelity-progress").textContent=`${scored}/${targets.length} scored`;
+  const totals=opportunityFidelity();
+  $("fidelity-progress").textContent=totals.total
+    ? totals.implemented+"/"+totals.total+" opportunities implemented as written"+(totals.pendingOutcome?" · "+totals.pendingOutcome+" outcome rating(s) needed":"")
+    : "No opportunities recorded yet";
   $("fidelity-list").innerHTML=targets.map((target)=> {
-    const score=collection.fidelityScores[target.id];
-    const outcome=collection.fidelityOutcomes[target.id]||"";
-    return `<article class="fidelity-item">
-      <div><span>${escapeHtml(target.domain||"Fidelity")}</span><strong>${escapeHtml(target.description)}</strong></div>
-      <div class="fidelity-response">
-        <div class="fidelity-buttons">
-          <button type="button" data-target="${target.id}" data-score="implemented" class="${score==="implemented"?"selected":""}">Implemented as Written</button>
-          <button type="button" data-target="${target.id}" data-score="not_implemented" class="${score==="not_implemented"?"selected":""}">Not Implemented as Written</button>
-        </div>
-        ${score==="implemented" ? `<div class="fidelity-outcome-prompt">
-          <strong>Did it have the desired outcome on behavior?</strong>
-          <div class="fidelity-outcome-actions">
-            <button type="button" data-outcome-target="${target.id}" data-outcome="yes" class="${outcome==="yes"?"selected":""}">Yes</button>
-            <button type="button" data-outcome-target="${target.id}" data-outcome="no" class="${outcome==="no"?"selected":""}">No</button>
-            <button type="button" data-outcome-target="${target.id}" data-outcome="unclear" class="${outcome==="unclear"?"selected":""}">Not clear</button>
-          </div>
-        </div>` : ""}
-      </div>
-    </article>`;
+    const events=opportunitiesFor(target.id);
+    const implemented=events.filter((event)=>event.implementation==="implemented").length;
+    const rows=events.map((event)=>
+      '<div class="opportunity-event">' +
+      '<span class="opportunity-time">+'+formatClock(event.elapsed_seconds)+'</span>' +
+      '<strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong>' +
+      '<div class="fidelity-outcome-actions">' +
+      '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="yes" class="'+(event.desired_outcome==="yes"?"selected":"")+'">Desired Outcome: Yes</button>' +
+      '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="no" class="'+(event.desired_outcome==="no"?"selected":"")+'">No</button>' +
+      '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="unclear" class="'+(event.desired_outcome==="unclear"?"selected":"")+'">Not clear</button>' +
+      '</div>' +
+      '<button type="button" class="opportunity-remove" data-opportunity-remove="'+event.event_id+'" aria-label="Remove this opportunity">×</button>' +
+      '</div>'
+    ).join("");
+    const showScoring=!events.length || collection.pendingOpportunityTarget===target.id;
+    const scoring=showScoring
+      ? '<div class="opportunity-entry"><small>'+(events.length?"New opportunity · timestamp will be added when scored":"Opportunity 1")+'</small><div class="fidelity-buttons">' +
+        '<button type="button" data-opportunity-target="'+target.id+'" data-implementation="implemented">Implemented as Written</button>' +
+        '<button type="button" data-opportunity-target="'+target.id+'" data-implementation="not_implemented">Not Implemented as Written</button>' +
+        '</div></div>'
+      : '';
+    return '<article class="fidelity-item opportunity-fidelity-item">' +
+      '<div><span>'+escapeHtml(target.domain||"Fidelity")+'</span><strong>'+escapeHtml(target.description)+'</strong><small>'+
+      (events.length?implemented+"/"+events.length+" opportunities implemented as written":"No opportunity recorded yet")+'</small></div>' +
+      '<div class="fidelity-response">'+rows+scoring +
+      (events.length&&!showScoring?'<button type="button" class="add-opportunity" data-add-opportunity="'+target.id+'">+ Add another opportunity</button>':'') +
+      '</div></article>';
   }).join("");
-  document.querySelectorAll(".fidelity-buttons button").forEach((button)=>button.addEventListener("click",()=>{
-    collection.fidelityScores[button.dataset.target]=button.dataset.score;
-    if (button.dataset.score!=="implemented") delete collection.fidelityOutcomes[button.dataset.target];
+  document.querySelectorAll("[data-opportunity-target]").forEach((button)=>button.addEventListener("click",()=>addFidelityOpportunity(button.dataset.opportunityTarget,button.dataset.implementation)));
+  document.querySelectorAll("[data-add-opportunity]").forEach((button)=>button.addEventListener("click",()=>{
+    collection.pendingOpportunityTarget=button.dataset.addOpportunity;
     renderFidelity();
-    queueSave();
   }));
-  document.querySelectorAll("[data-outcome-target]").forEach((button)=>button.addEventListener("click",()=>{
-    collection.fidelityOutcomes[button.dataset.outcomeTarget]=button.dataset.outcome;
-    renderFidelity();
-    queueSave();
-  }));
+  document.querySelectorAll("[data-opportunity-outcome]").forEach((button)=>button.addEventListener("click",()=>setFidelityOpportunityOutcome(button.dataset.opportunityOutcome,button.dataset.outcome)));
+  document.querySelectorAll("[data-opportunity-remove]").forEach((button)=>button.addEventListener("click",()=>removeFidelityOpportunity(button.dataset.opportunityRemove)));
 }
 function setMode(which) {
   if (which==="continuing") {
@@ -480,7 +542,8 @@ function queueSave() {
 }
 async function saveDraft() {
   if (!collection || currentPacket.record?.status==="submitted") return true;
-  const [result,outcomeResult]=await Promise.all([
+  syncFidelityRollups(false);
+  const [result,outcomeResult,opportunityResult]=await Promise.all([
     client.rpc("research_observer_save_observation_draft",{
       target_slot_id:currentPacket.slot.id,
       target_fidelity_scores:collection.fidelityScores,
@@ -490,9 +553,13 @@ async function saveDraft() {
     client.rpc("research_observer_save_fidelity_outcomes",{
       target_slot_id:currentPacket.slot.id,
       target_fidelity_outcomes:collection.fidelityOutcomes
+    }),
+    client.rpc("research_observer_save_fidelity_opportunities",{
+      target_slot_id:currentPacket.slot.id,
+      target_fidelity_opportunities:collection.fidelityOpportunities
     })
   ]);
-  const hasError=Boolean(result.error||outcomeResult.error);
+  const hasError=Boolean(result.error||outcomeResult.error||opportunityResult.error);
   if (!hasError) collection.savedElapsed=Math.max(collection.savedElapsed,elapsedSeconds());
   const awayNote=!hasError && collection.awayMarked>0
     ? ` · ${collection.awayMarked} interval${collection.awayMarked===1?"":"s"} marked Not observed while away`
@@ -512,6 +579,7 @@ function finishCollection() {
   collection.savedElapsed=REAL_SESSION.durationSeconds;
   collection.endedAt=new Date(collection.startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString();
   finalizeCompletedIntervals();
+  syncFidelityRollups(true);
   saveDraft();
   $("collection-view").hidden=true;
   $("review-view").hidden=false;
@@ -519,56 +587,32 @@ function finishCollection() {
   renderReview();
 }
 function renderReview(noteOverride) {
+  syncFidelityRollups(true);
   const targets=currentPacket.fidelity_targets||[];
   const noteValue=noteOverride===undefined ? (currentPacket.record?.observation_note||"") : noteOverride;
   $("review-fidelity-list").innerHTML=targets.map((target)=>{
-    const score=collection.fidelityScores[target.id]||"";
-    const outcome=collection.fidelityOutcomes[target.id]||"";
-    return `<article class="review-item">
-      <strong>${escapeHtml(target.description)}</strong>
-      <div class="review-controls">
-        <select data-review-target="${target.id}">
-          <option value="">Choose score</option>
-          <option value="implemented"${score==="implemented"?" selected":""}>Implemented as Written</option>
-          <option value="not_implemented"${score==="not_implemented"?" selected":""}>Not Implemented as Written</option>
-          <option value="no_opportunity"${score==="no_opportunity"?" selected":""}>No Opportunity</option>
-        </select>
-        ${score==="implemented" ? `<div class="review-outcome-prompt ${outcome?"complete":""}">
-          <strong>Desired outcome on behavior?</strong>
-          <div class="fidelity-outcome-actions">
-            <button type="button" data-review-outcome-target="${target.id}" data-outcome="yes" class="${outcome==="yes"?"selected":""}">Yes</button>
-            <button type="button" data-review-outcome-target="${target.id}" data-outcome="no" class="${outcome==="no"?"selected":""}">No</button>
-            <button type="button" data-review-outcome-target="${target.id}" data-outcome="unclear" class="${outcome==="unclear"?"selected":""}">Not clear</button>
-          </div>
-        </div>` : ""}
-      </div>
-    </article>`;
+    const events=opportunitiesFor(target.id);
+    const implemented=events.filter((event)=>event.implementation==="implemented").length;
+    const rows=events.length?events.map((event)=>
+      '<div class="review-opportunity-row"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong><span>Desired outcome: '+(event.desired_outcome==="yes"?"Yes":event.desired_outcome==="no"?"No":event.desired_outcome==="unclear"?"Not clear":"Not rated")+'</span></div>'
+    ).join(""):'<small>No opportunity occurred during this observation.</small>';
+    return '<article class="review-item opportunity-review-item"><div><strong>'+escapeHtml(target.description)+'</strong><small>'+(events.length?implemented+"/"+events.length+" opportunities implemented as written":"No opportunity")+'</small></div><div class="review-opportunity-list">'+rows+'</div></article>';
   }).join("");
-  document.querySelectorAll("[data-review-target]").forEach((select)=>select.addEventListener("change",()=>{
-    const note=$("observation-note").value;
-    if (select.value) collection.fidelityScores[select.dataset.reviewTarget]=select.value;
-    else delete collection.fidelityScores[select.dataset.reviewTarget];
-    if (select.value!=="implemented") delete collection.fidelityOutcomes[select.dataset.reviewTarget];
-    renderReview(note);
-    queueSave();
-  }));
-  document.querySelectorAll("[data-review-outcome-target]").forEach((button)=>button.addEventListener("click",()=>{
-    const note=$("observation-note").value;
-    collection.fidelityOutcomes[button.dataset.reviewOutcomeTarget]=button.dataset.outcome;
-    renderReview(note);
-    queueSave();
-  }));
   $("observation-note").value=noteValue;
   updateReviewSummary();
 }
 function updateReviewSummary() {
   const fidelity=calculateFidelity(collection.fidelityScores);
   const behavior=calculateStudentBehavior(collection.intervals);
-  $("review-fidelity-percent").textContent=fidelity.percent==null?"—":`${fidelity.percent.toFixed(1)}%`;
-  $("review-behavior-percent").textContent=behavior.percent==null?"—":`${behavior.percent.toFixed(1)}%`;
+  $("review-fidelity-percent").textContent=fidelity.percent==null?"—":fidelity.percent.toFixed(1)+"%";
+  $("review-behavior-percent").textContent=behavior.percent==null?"—":behavior.percent.toFixed(1)+"%";
 }
 async function submitObservation() {
   $("review-error").textContent="";
+  syncFidelityRollups(true);
+  const opportunitySummary=opportunityFidelity();
+  if (opportunitySummary.total===0) { $("review-error").textContent="Record at least one fidelity opportunity before submitting."; return; }
+  if (opportunitySummary.pendingOutcome>0) { $("review-error").textContent="Rate the desired outcome for every recorded opportunity before submitting."; return; }
   const targets=currentPacket.fidelity_targets||[];
   const missing=targets.filter((target)=>!collection.fidelityScores[target.id]);
   if (missing.length) {
