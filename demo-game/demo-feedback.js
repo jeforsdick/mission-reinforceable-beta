@@ -37,29 +37,26 @@
       if(message.length<3){status.textContent='Please add a little more detail.';return;}
       button.disabled=true;
       button.textContent='Sending...';
-      try{
-        const response=await fetch('/api/demo-feedback',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            category:String(data.get('category')||'other'),
-            message,
-            website:String(data.get('website')||''),
-            screen:activeScreen(),
-            page:location.pathname
-          })
-        });
-        const body=await response.json().catch(()=>({}));
-        if(!response.ok)throw new Error(body.error||'Feedback could not be sent.');
-        form.reset();
-        status.textContent='Thank you! Your feedback was sent.';
-        button.textContent='Sent ✓';
-        window.setTimeout(()=>{setOpen(false);button.disabled=false;button.textContent='Send Feedback';status.textContent='';},1400);
-      }catch(error){
-        status.textContent=error.message||'Feedback could not be sent. Please try again.';
-        button.disabled=false;
-        button.textContent='Send Feedback';
-      }
+      const category=String(data.get('category')||'other');
+      const screen=activeScreen();
+      const subject='Mission: Reinforceable Demo Feedback — '+category;
+      const body=[
+        'Hi Jess,',
+        '',
+        'I tried the Mission: Reinforceable public demo and wanted to share some feedback:',
+        '',
+        message,
+        '',
+        'Feedback type: '+category,
+        'Demo screen: '+screen,
+        'Page: '+location.pathname
+      ].join('\n');
+      const mailto='mailto:jess.olson@utah.edu?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+      form.reset();
+      status.textContent='Opening your email app with your feedback filled in...';
+      button.textContent='Opening...';
+      window.location.href=mailto;
+      window.setTimeout(()=>{button.disabled=false;button.textContent='Send Feedback';status.textContent='';},1200);
     });
   }
   document.addEventListener('DOMContentLoaded',init);
