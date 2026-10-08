@@ -415,8 +415,8 @@ export function renderGameSetup(setup, message = '') {
   return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2>
     <div class="game-setup-field">
       <label>Home mission banner
-        <input id="classroom-label" name="classroomLabel" maxlength="60" value="${esc(setup?.classroomLabel)}" placeholder="e.g., Katlyn's Mission">
-        <small>This replaces the generic “Participant Mission” plaque on the teacher home screen. Use the teacher’s first name + “Mission” (for example, <strong>Katlyn's Mission</strong>).</small>
+        <input id="classroom-label" name="classroomLabel" maxlength="60" value="${esc(setup?.classroomLabel)}" placeholder="e.g., Teacher's Mission">
+        <small>This replaces the generic “Participant Mission” plaque on the teacher home screen. Use the teacher’s first name + “Mission” (for example, <strong>Teacher's Mission</strong>).</small>
       </label>
     </div>
     <p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
