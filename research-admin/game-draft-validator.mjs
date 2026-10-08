@@ -2,7 +2,7 @@ const TYPES = Object.freeze({ daily: { label: 'Daily', count: 10 }, wild: { labe
 const ENDINGS = new Set(['STRONG', 'MIXED', 'FRAGILE']);
 const KEY_PATTERN = /^(proactive|teaching|reinforcement|response|crisis)_\d{2}$/;
 const COMPONENTS = new Set(['Prevent', 'Teach', 'Reinforce', 'Respond', 'Crisis']);
-const ERROR_TYPES = new Set(['none', 'missed_prevention_opportunity', 'missed_teaching_opportunity', 'missed_reinforcement_opportunity', 'missed_active_ingredient', 'timing_or_delay', 'contingency_mismatch', 'function_mismatch', 'reinforces_target_pattern', 'vague_or_nonspecific_response', 'public_or_attention_heavy_correction', 'other_needs_review']);
+const ERROR_TYPES = new Set(['none', 'missed_prevention_opportunity', 'missed_teaching_opportunity', 'missed_reinforcement_opportunity', 'missed_active_ingredient', 'partial_implementation', 'missed_response_step', 'missed_crisis_step', 'timing_or_delay', 'contingency_mismatch', 'function_mismatch', 'reinforces_target_pattern', 'vague_or_nonspecific_response', 'public_or_attention_heavy_correction', 'plan_drift', 'other_needs_review']);
 const FUNCTIONS = new Set(['attention', 'escape', 'tangible', 'automatic', 'multiple', 'unclear']);
 export const RESOURCE_SECTIONS = Object.freeze({ bip: 'BIP at a Glance', functionForest: 'Function Forest', prevention: 'Prevention Palace', replacement: 'Replacement Reservoir', reinforcement: 'Reinforcement Ridge', errorCorrection: 'Error Correction Canyon', library: 'BSP Library', coaching: 'Coaching Cottage', fidelity: 'Fidelity Fortress' });
 const ALLOWED_BLOCKS = new Set(['paragraph', 'heading', 'list', 'definitionList', 'callout']);
@@ -197,7 +197,7 @@ export function validateFullDraft(input) {
 
       const nextStates = choices.map(choice => choice?.next).filter(Boolean);
       if (isCanonicalAuthoringMission && nextStates.length && new Set(nextStates).size < 2) {
-        issue('MISSION QUALITY', 'blocking', 'All three choices lead to the same next state. Branching must visibly change the classroom trajectory.', `${stepPath} → Branching`, missionAction);
+        issue('MISSION QUALITY', 'warning', 'Review: all three choices lead to the same next state. This can be intentional when the modeled consequences differ but the classroom state label reasonably stays the same.', `${stepPath} → Branching`, missionAction);
       }
 
       for (const choice of choices) {
@@ -232,7 +232,7 @@ export function validateFullDraft(input) {
         const step = mission.steps?.[`d${decision}_supported`];
         return Object.values(step?.choices || {}).some(choice => choice?.score === 0 && choice?.next && !choice.next.endsWith('_supported'));
       });
-      if (!canWorsen) issue('MISSION QUALITY', 'blocking', 'The supported trajectory cannot meaningfully worsen after a poor choice; keep later decisions consequential.', `${missionPath} → Branching`, missionAction);
+      if (!canWorsen) issue('MISSION QUALITY', 'warning', 'Review: the supported trajectory never changes to a lower state after a 0-point choice. This can be appropriate when plan drift does not immediately worsen regulation; confirm the modeled consequences still make the cost of the choice clear.', `${missionPath} → Branching`, missionAction);
     }
   }
 

@@ -148,12 +148,41 @@ test('canonical authoring quality gate accepts a reviewed mission with meaningfu
   assert.equal(report.categories['MISSION QUALITY'].errors.length, 0); assert.equal(report.ready, true);
 });
 
-test('canonical authoring quality gate blocks fake branching and impossible recovery', () => {
+test('canonical authoring quality gate warns on same-state branching but still blocks impossible recovery', () => {
   const value = workspace(); const target = canonicalQualityMission(value);
   for (const choice of Object.values(target.steps.d2_supported.choices)) choice.next = 'd3_supported';
   for (const decision of [2,3,4]) for (const choice of Object.values(target.steps[`d${decision}_escalated`].choices)) choice.next = `d${decision + 1}_escalated`;
-  const errors = validateFullDraft(value).categories['MISSION QUALITY'].errors.map(item => item.message);
-  assert(errors.some(message => /same next state/i.test(message))); assert(errors.some(message => /never offers a meaningful recovery path/i.test(message)));
+  const report = validateFullDraft(value);
+  const errors = report.categories['MISSION QUALITY'].errors.map(item => item.message);
+  const warnings = report.categories['MISSION QUALITY'].warnings.map(item => item.message);
+  assert(warnings.some(message => /same next state/i.test(message)));
+  assert(errors.some(message => /never offers a meaningful recovery path/i.test(message)));
+});
+
+test('same-state branches and calm supported plan drift are review warnings rather than publish blockers', () => {
+  const value = workspace(); const target = canonicalQualityMission(value);
+  for (const choice of Object.values(target.steps.d2_supported.choices)) choice.next = 'd3_supported';
+  for (const decision of [2,3,4]) target.steps[`d${decision}_supported`].choices.C.next = `d${decision + 1}_supported`;
+  const report = validateFullDraft(value);
+  assert.equal(report.ready, true);
+  const warnings = report.categories['MISSION QUALITY'].warnings.map(item => item.message).join('\n');
+  assert.match(warnings, /same next state/i);
+  assert.match(warnings, /never changes to a lower state/i);
+});
+
+test('extended saved error taxonomy used by authored missions is accepted', () => {
+  const value = workspace(); const target = canonicalQualityMission(value);
+  const errorTypes = ['partial_implementation', 'missed_response_step', 'missed_crisis_step', 'plan_drift'];
+  const choices = [
+    target.steps.d1_start.choices.B,
+    target.steps.d1_start.choices.C,
+    target.steps.d2_supported.choices.B,
+    target.steps.d2_supported.choices.C
+  ];
+  choices.forEach((choice, index) => { choice.meta.errorType = errorTypes[index]; });
+  const report = validateFullDraft(value);
+  assert.equal(report.categories['MISSION STRUCTURE'].errors.some(item => /error-type metadata/i.test(item.message)), false);
+  assert.equal(report.ready, true);
 });
 
 test('canonical authoring bank cannot publish if an approved fidelity target is never rehearsed', () => {
