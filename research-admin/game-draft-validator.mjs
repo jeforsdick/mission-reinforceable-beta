@@ -18,7 +18,11 @@ const canonicalDecisionNumber = stepId => {
   const match = /^d([1-5])_(start|supported|wobbly|escalated)$/.exec(stepId);
   return match && ((match[1] === '1' && match[2] === 'start') || (match[1] !== '1' && match[2] !== 'start')) ? Number(match[1]) : null;
 };
-const supportedSetup = setup => ({ schemaVersion: 1, bipBriefing: typeof setup?.bipBriefing === 'string' ? setup.bipBriefing : '' });
+const supportedSetup = setup => ({
+  schemaVersion: 1,
+  classroomLabel: typeof setup?.classroomLabel === 'string' ? setup.classroomLabel : '',
+  bipBriefing: typeof setup?.bipBriefing === 'string' ? setup.bipBriefing : ''
+});
 
 export function buildFullDraftSnapshot(workspace) {
   const root = Array.isArray(workspace) ? workspace[0] : workspace || {};
@@ -43,7 +47,7 @@ export function buildFullDraftPayload(workspace, publishedConfig = {}) {
   if (!snapshot.resourceRevisionExists) throw new Error('No saved Resource Map draft exists for Full Draft QA.');
   const setup = snapshot.setup || {};
   return {
-    config: Object.assign(Object.fromEntries(Object.entries(publishedConfig).filter(([key]) => key !== 'weeklyTeacherReport')), { studentAlias: snapshot.studentAlias, bipBriefing: setup.bipBriefing || '' }),
+    config: Object.assign(Object.fromEntries(Object.entries(publishedConfig).filter(([key]) => key !== 'weeklyTeacherReport')), { studentAlias: snapshot.studentAlias, classroomLabel: setup.classroomLabel || '', bipBriefing: setup.bipBriefing || '' }),
     resources: { ...structuredClone(snapshot.resources), studentAlias: snapshot.studentAlias },
     daily_missions: snapshot.missions.daily.map(item => item.mission), wildcard_missions: snapshot.missions.wild.map(item => item.mission), crisis_missions: snapshot.missions.crisis.map(item => item.mission), version: null
   };
@@ -120,6 +124,7 @@ export function validateFullDraft(input) {
   const issue = (category, severity, message, path = '', action = null) => categories[category][severity === 'blocking' ? 'errors' : 'warnings'].push({ severity, message, path, action });
   const setup = snapshot.setup || {};
   if (!snapshot.setupRevisionExists) issue('GAME SETUP', 'blocking', 'Add and save Game Setup.', 'Game Setup', { type: 'setup' });
+  if (!substantive(setup.classroomLabel)) issue('GAME SETUP', 'blocking', 'Add and save the teacher-facing home mission banner.', 'Game Setup → Home mission banner', { type: 'setup' });
   if (!substantive(setup.bipBriefing)) issue('GAME SETUP', 'blocking', 'Add and save a BIP Briefing.', 'Game Setup → BIP Briefing', { type: 'setup' });
   const plainGroups = {};
   for (const [type, spec] of Object.entries(TYPES)) {
