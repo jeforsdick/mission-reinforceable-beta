@@ -3,8 +3,8 @@ import { extractFidelityTargets, extractionSummary } from './fidelity-target-ext
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, studyWideAttention, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs?v=20261004-history-polish-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261007-stateful-branching-1';
-import { validateFullDraft } from './game-draft-validator.mjs?v=20261005-simple-authoring';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261008-game-banner-review-guidance-1';
+import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
@@ -716,8 +716,9 @@ function redrawGameCreation(scrollToMissionBuilder = false) {
 function captureSetupAndResourceForms() {
   const root = $('#game-creation-panel');
   if (!root) return;
-  if (state.setupDraft && $('#bip-briefing')) {
-    state.setupDraft.bipBriefing = $('#bip-briefing').value;
+  if (state.setupDraft) {
+    if ($('#classroom-label')) state.setupDraft.classroomLabel = $('#classroom-label').value.trim();
+    if ($('#bip-briefing')) state.setupDraft.bipBriefing = $('#bip-briefing').value;
   }
   if (state.resourceDraft) captureResourceMap(root, state.resourceDraft);
 }

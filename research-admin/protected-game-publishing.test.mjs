@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { draftRevisionManifest, renderGameCreation, sameDraftRevisionManifest } from './game-creation-ui.mjs';
 
 const sql = fs.readFileSync(new URL('../supabase/migrations/20260824000000_protected_game_publishing.sql', import.meta.url), 'utf8');
+const bannerSql = fs.readFileSync(new URL('../supabase/migrations/20261008224747_add_teacher_facing_mission_banner.sql', import.meta.url), 'utf8');
 const admin = fs.readFileSync(new URL('./admin.js', import.meta.url), 'utf8');
 const ui = fs.readFileSync(new URL('./game-creation-ui.mjs', import.meta.url), 'utf8');
 const signoffs = fs.readFileSync(new URL('../supabase/migrations/20260819020000_research_admin_cleanup_2a.sql', import.meta.url), 'utf8');
@@ -24,6 +25,13 @@ test('publish validates canonical source and stores the exact revision manifest'
   assert.match(sql, /source_setup_revision_id[\s\S]*source_resource_revision_id[\s\S]*source_mission_revision_manifest/);
   assert.match(sql, /'contentSource','supabase-protected','shuffleChoices',true/);
   for (const forbidden of ['resultEndpoint', 'missionFiles', 'resourcesFile', 'game_folder', 'weeklyTeacherReport']) assert.doesNotMatch(sql, new RegExp(forbidden));
+});
+
+test('publishing requires and carries the teacher-facing mission banner into protected config', () => {
+  assert.match(bannerSql, /setup_row\.setup->>'classroomLabel'/);
+  assert.match(bannerSql, /teacher-facing mission banner is required/);
+  assert.match(bannerSql, /'classroomLabel'[\s\S]*setup_row\.setup->>'classroomLabel'/);
+  assert.match(bannerSql, /'contentSource'[\s\S]*'supabase-protected'/);
 });
 
 test('publishing has no launch, communication, study, or telemetry side effects', () => {
