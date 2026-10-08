@@ -129,7 +129,11 @@ export function restoreResourceOpenSections(root, keys = []) {
 
 export function setupFromWorkspace(workspace) {
   const setup = workspace?.setup_draft?.setup || workspace?.latest_setup_draft?.setup || {};
-  return { schemaVersion: 1, bipBriefing: typeof setup.bipBriefing === 'string' ? setup.bipBriefing : '' };
+  return {
+    schemaVersion: 1,
+    classroomLabel: typeof setup.classroomLabel === 'string' ? setup.classroomLabel : '',
+    bipBriefing: typeof setup.bipBriefing === 'string' ? setup.bipBriefing : ''
+  };
 }
 export function normalizeResourceMap(value) {
   const source = value?.sections && typeof value.sections === 'object' ? value.sections : {};
@@ -359,9 +363,13 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
 function renderPublishedReview(published = {}) {
   const content = published.protected_content || {}, map = published.resource_map || {}, checklist = published.checklist || {}, orientation = checklist.intervention_orientation || {}, statuses = checklistStatuses('intervention_orientation');
   const version = Number(content.version) || 0;
-  const reviews = [['resource_behavior_review', 'Behavior Review', map.behavior_reviewed], ['resource_privacy_review', 'Privacy Review', map.privacy_reviewed], ['resource_qa_preview', 'QA Preview Review', map.qa_previewed]];
+  const reviews = [
+    ['resource_behavior_review', 'Behavior Review', map.behavior_reviewed, 'Confirm the published teacher-facing behavior content matches the approved BSP/BIP and fidelity targets. Check the Resource Map, mission choices, feedback, and crisis content for anything that adds, changes, or contradicts the plan.'],
+    ['resource_privacy_review', 'Privacy Review', map.privacy_reviewed, 'Confirm the published version uses the approved student alias and only minimum-necessary information. Check that there are no student full names or IDs, family information, diagnoses or medication information, unnecessary school identifiers, or internal researcher notes.'],
+    ['resource_qa_preview', 'QA Preview Review', map.qa_previewed, 'Open Preview Published Version and use it like a teacher: check the home screen/banner, Mission Briefing, Resources, mission start, choices/branching, feedback, results/progress, and navigation. Mark complete when this published version looks and works as intended.']
+  ];
   const orientationCard = `<form class="checklist-card checklist-form orientation-form" data-key="intervention_orientation"><strong class="checklist-card-label">MR intervention orientation</strong><div class="checklist-card-controls"><select name="status" aria-label="Status for MR intervention orientation">${statuses.map(status => `<option value="${status}"${selected(status, orientation.status || 'pending')}>${status.replaceAll('_', ' ')}</option>`).join('')}</select><input name="status_date" type="date" required value="${esc(orientation.status_date || denverToday())}" aria-label="MR intervention orientation status date"></div><input class="checklist-card-note" name="note" maxlength="1000" value="${esc(orientation.brief_note || '')}" aria-label="Optional note for MR intervention orientation" placeholder="Note"><button class="quiet checklist-card-save">Save orientation</button></form>`;
-  return `<section class="published-game-review builder-section"><h2>Published Game Review</h2><p>This reviews the currently published protected game; it does not publish mission drafts.</p>${content.present ? `<p><strong>Reviewing protected version v${version}</strong></p><button id="preview-protected-game" class="primary" type="button" data-case-code="${esc(published.case_code)}" data-content-version="${version}">Preview Published Version (v${version})</button><p><small>QA Preview is researcher testing only. It loads current protected version v${version}, records that game content version in QA telemetry, and does not activate teacher access or count as participant study data.</small></p><div class="launch-reviews">${reviews.map(([type, label, done]) => `<button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" data-content-version="${version}" ${done ? 'disabled' : ''}><span>${label} · v${version}</span><strong>${done ? 'Complete ✓' : 'Needs review'}</strong></button>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '<p class="needs">No published protected game is available to preview or review yet.</p>'}<h3>Teacher preparation</h3><p>Record the existing intervention orientation requirement here.</p>${orientationCard}</section>`;
+  return `<section class="published-game-review builder-section"><h2>Published Game Review</h2><p>This reviews the currently published protected game; it does not publish mission drafts.</p>${content.present ? `<p><strong>Reviewing protected version v${version}</strong></p><button id="preview-protected-game" class="primary" type="button" data-case-code="${esc(published.case_code)}" data-content-version="${version}">Preview Published Version (v${version})</button><p><small>QA Preview is researcher testing only. It loads current protected version v${version}, records that game content version in QA telemetry, and does not activate teacher access or count as participant study data.</small></p><div class="launch-reviews">${reviews.map(([type, label, done, explanation]) => `<div class="published-review-item"><button class="signoff-action ${done ? 'signed' : ''}" type="button" data-review-type="${type}" data-content-version="${version}" ${done ? 'disabled' : ''}><span>${label} · v${version}</span><strong>${done ? 'Complete ✓' : 'Needs review'}</strong></button><p><strong>What to do:</strong> ${esc(explanation)}</p></div>`).join('')}<p id="signoff-message" class="message" aria-live="polite"></p></div>` : '<p class="needs">No published protected game is available to preview or review yet.</p>'}<h3>Teacher preparation</h3><p>Record the existing intervention orientation requirement here.</p>${orientationCard}</section>`;
 }
 const privacyWarning = 'Use the approved student alias and minimum-necessary plan information. Do not enter student full names, student IDs, diagnoses, parent information, medication information, or unnecessary identifying information.';
 const authoringBriefValue = value => typeof value === 'string' && value.trim()
@@ -404,7 +412,14 @@ export function renderAuthoringBrief(workspace) {
   </details>`;
 }
 export function renderGameSetup(setup, message = '') {
-  return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2><p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
+  return `<section class="builder-section game-setup" aria-labelledby="game-setup-title"><p class="eyebrow">GAME SETUP</p><h2 id="game-setup-title">Game Setup</h2>
+    <div class="game-setup-field">
+      <label>Home mission banner
+        <input id="classroom-label" name="classroomLabel" maxlength="60" value="${esc(setup?.classroomLabel)}" placeholder="e.g., Katlyn's Mission">
+        <small>This replaces the generic “Participant Mission” plaque on the teacher home screen. Use the teacher’s first name + “Mission” (for example, <strong>Katlyn's Mission</strong>).</small>
+      </label>
+    </div>
+    <p><strong>BIP Briefing shown before missions</strong></p><p>This is the short case-specific plan summary shown immediately before a teacher begins a mission.</p><p class="privacy-warning">${privacyWarning}</p><label>BIP Briefing<textarea id="bip-briefing" name="bipBriefing" rows="7">${esc(setup?.bipBriefing)}</textarea><small>Write a brief, teacher-friendly reminder of the function and the most important plan actions. Use the approved student alias only.</small></label><div class="save-bar"><button id="save-game-setup" class="primary" type="button">Save Game Setup</button><p id="setup-save-message" class="message" role="status">${esc(message)}</p></div></section>`;
 }
 
 const FIDELITY_DOMAIN_LABELS = {
