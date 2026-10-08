@@ -21,12 +21,16 @@ export const ERROR_TYPES = [
   { value: 'missed_teaching_opportunity', label: 'Missed teaching opportunity' },
   { value: 'missed_reinforcement_opportunity', label: 'Missed reinforcement opportunity' },
   { value: 'missed_active_ingredient', label: 'Missed active ingredient' },
+  { value: 'partial_implementation', label: 'Partial implementation' },
+  { value: 'missed_response_step', label: 'Missed response step' },
+  { value: 'missed_crisis_step', label: 'Missed crisis step' },
   { value: 'timing_or_delay', label: 'Timing / delay' },
   { value: 'contingency_mismatch', label: 'Contingency mismatch' },
   { value: 'function_mismatch', label: 'Function mismatch' },
   { value: 'reinforces_target_pattern', label: 'Reinforces target pattern' },
   { value: 'vague_or_nonspecific_response', label: 'Vague / non-specific response' },
   { value: 'public_or_attention_heavy_correction', label: 'Public / attention-heavy correction' },
+  { value: 'plan_drift', label: 'Plan drift' },
   { value: 'other_needs_review', label: 'Other / needs review' },
 ];
 export const DECISIONS = ['The Setup', 'The Pressure', 'The Pivot', 'The Consequence', 'The Finish'];
