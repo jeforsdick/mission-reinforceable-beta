@@ -77,51 +77,73 @@ function formatOrientationEmail({ teacherName, gameUrl }) {
   if (!safeGameUrl) throw new Error('A valid teacher game URL is required for orientation email.');
   const orientationUrl = new URL('/orientation', safeGameUrl).toString();
   const assets = setupAssets();
-  const subject = 'Mission: Reinforceable — Get Ready for Your Adventure';
+  const subject = 'Mission: Reinforceable — Your Adventure Starts Today!';
   const text = [
     'Hi ' + name + '!',
     '',
-    'Your Mission: Reinforceable adventure is almost ready! Each game is created around your student’s behavior support plan.',
+    'Your Mission: Reinforceable adventure is almost ready!',
     '',
-    '1. CREATE YOUR PASSWORD',
-    'Look for the separate Mission: Reinforceable account-setup email and use its secure link to create your password. If you have already done that, you are all set.',
+    'Before we meet today, here are a couple of quick things to do:',
+    '',
+    '1. SET UP YOUR ACCOUNT',
+    'You should have received a separate email from Mission: Reinforceable (missions@mail.missionreinforceable.com) with a Create Your Password button. Follow that link to set up your login.',
     '',
     '2. WATCH THE ORIENTATION (OPTIONAL)',
-    'Take a quick tour of the missions, Wizard, Resources, and Progress:',
-    orientationUrl,
+    'Take a few minutes to explore how your personalized game works!',
+    'Watch Your Game Orientation: ' + orientationUrl,
     '',
-    '3. MEET WITH JESS',
-    'We will walk through the parts of your student’s plan represented in the game, answer questions, and make sure you are comfortable getting started.',
+    '3. MEET WITH JESS!',
+    'We’ll go over the parts of your student’s behavior support plan represented in your game, answer questions, and make sure you’re ready to get started.',
     '',
-    'You do not need to start playing yet. Jess will let you know when your game is available.',
-    'When it is time, sign in at: ' + safeGameUrl,
+    'After our meeting, you’ll be able to sign in and start playing once your game is activated!',
+    'Teacher Login: ' + safeGameUrl.toString(),
     '',
-    'Questions? Contact Jess at jess.olson@utah.edu.',
-    'Mission: Reinforceable'
+    'See you soon!',
+    '',
+    'Jess',
+    'Mission: Reinforceable',
+    '',
+    'Questions? Contact Jess at jess.olson@utah.edu.'
   ].join('\n');
+
+  const button = (href, label, color) =>
+    '<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td bgcolor="' + color +
+    '" style="background:' + color + ';border:3px solid #d9a638;">' +
+    '<a href="' + escapeHtml(href) +
+    '" style="display:inline-block;padding:13px 19px;color:#fff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:bold;line-height:22px;">' +
+    label + ' &#8594;</a></td></tr></table>';
+
   const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
     '<body style="margin:0;padding:0;background:#f4f1f7;font-family:Arial,Helvetica,sans-serif;color:#302826;">' +
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f4f1f7;"><tr><td align="center" style="padding:20px 10px;">' +
     '<table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#fffdf8;border:1px solid #ded7e3;">' +
     '<tr><td><img src="' + escapeHtml(assets.emailHeader) + '" width="600" alt="Mission: Reinforceable" style="display:block;width:100%;max-width:600px;height:auto;border:0;"></td></tr>' +
-    '<tr><td align="center" style="padding:10px 16px;background:#60388c;color:#fff;font-family:Courier New,Courier,monospace;font-size:14px;font-weight:bold;letter-spacing:1px;">YOUR ADVENTURE IS ALMOST READY</td></tr>' +
+    '<tr><td align="center" style="padding:10px 16px;background:#60388c;color:#fff;font-family:Courier New,Courier,monospace;font-size:14px;font-weight:bold;letter-spacing:1px;">YOUR ADVENTURE STARTS TODAY!</td></tr>' +
     '<tr><td style="padding:24px 22px 18px;font-size:16px;line-height:24px;">' +
-    '<h1 style="margin:0 0 12px;color:#49362d;font-family:Courier New,Courier,monospace;font-size:23px;line-height:30px;">Hey, ' + escapeHtml(name) + '!</h1>' +
-    '<p style="margin:0;">Your Mission: Reinforceable adventure is almost ready! Your game is designed around your student’s individualized behavior support plan.</p></td></tr>' +
-    '<tr><td style="padding:0 22px 20px;">' +
-    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fff4d8;border:2px solid #49362d;"><tr><td style="padding:17px;color:#302826;font-size:15px;line-height:23px;">' +
-    '<strong style="color:#49362d;">1. Create your password</strong><p style="margin:7px 0 0;">Look for your separate account-setup email and follow its secure password link. Already created your password? You’re all set!</p>' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td width="44" valign="middle"><img src="' + escapeHtml(assets.heart) + '" width="32" height="32" alt="" style="display:block;border:0;"></td>' +
+    '<td valign="middle"><h1 style="margin:0;color:#49362d;font-family:Courier New,Courier,monospace;font-size:23px;line-height:30px;">Hi, ' + escapeHtml(name) + '!</h1></td></tr></table>' +
+    '<p style="margin:14px 0 9px;">Your Mission: Reinforceable adventure is almost ready!</p>' +
+    '<p style="margin:0;">Before we meet today, here are a couple of quick things to do:</p></td></tr>' +
+    '<tr><td style="padding:0 22px 18px;">' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fff4d8;border:2px solid #49362d;"><tr><td style="padding:17px;font-size:15px;line-height:23px;color:#302826;">' +
+    '<strong style="color:#49362d;">1. Set up your account</strong>' +
+    '<p style="margin:7px 0 0;">You should have received a separate email from Mission: Reinforceable (<strong>missions@mail.missionreinforceable.com</strong>) with a <strong>Create Your Password</strong> button. Follow that link to set up your login.</p>' +
     '</td></tr></table></td></tr>' +
-    '<tr><td style="padding:0 22px 20px;">' +
+    '<tr><td style="padding:0 22px 18px;">' +
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f1eafa;border:2px solid #76509a;"><tr><td style="padding:17px;color:#302826;font-size:15px;line-height:23px;">' +
-    '<strong style="color:#553078;">2. Watch the orientation (optional)</strong><p style="margin:7px 0 15px;">Get a quick tour of the missions, Wizard, Resources, and Progress.</p>' +
-    '<table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td bgcolor="#60388c" style="background:#60388c;border:2px solid #d9a638;"><a href="' + escapeHtml(orientationUrl) + '" style="display:inline-block;padding:12px 20px;color:#fff;text-decoration:none;font-weight:bold;">WATCH ORIENTATION &#8594;</a></td></tr></table>' +
+    '<strong style="color:#553078;">2. Watch the orientation (optional)</strong>' +
+    '<p style="margin:7px 0 15px;">Take a few minutes to explore how your personalized game works!</p>' +
+    button(orientationUrl, 'WATCH YOUR GAME ORIENTATION', '#60388c') +
     '</td></tr></table></td></tr>' +
-    '<tr><td style="padding:0 22px 22px;font-size:15px;line-height:23px;">' +
-    '<strong style="color:#49362d;">3. Meet with Jess</strong><p style="margin:7px 0 0;">We’ll go over the parts of your student’s plan featured in the game, answer questions, and make sure you feel ready.</p>' +
-    '<p style="margin:16px 0 0;"><strong>No need to start playing yet.</strong> Jess will tell you when your game is available. When it is time, <a href="' + escapeHtml(safeGameUrl.toString()) + '" style="color:#60388c;">sign in here</a>.</p>' +
-    '</td></tr>' +
-    '<tr><td style="padding:16px 22px;border-top:1px solid #ded7e3;color:#746b78;font-size:12px;line-height:18px;">Questions? Contact Jess at <a href="mailto:jess.olson@utah.edu" style="color:#60388c;">jess.olson@utah.edu</a>.</td></tr>' +
+    '<tr><td style="padding:0 22px 20px;">' +
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fffdf8;border:2px solid #d9a638;"><tr><td style="padding:17px;color:#302826;font-size:15px;line-height:23px;">' +
+    '<strong style="color:#49362d;">3. Meet with Jess!</strong>' +
+    '<p style="margin:7px 0 0;">We’ll go over the parts of your student’s behavior support plan represented in your game, answer questions, and make sure you’re ready to get started.</p>' +
+    '<p style="margin:13px 0 15px;">After our meeting, you’ll be able to sign in and start playing <strong>once your game is activated!</strong></p>' +
+    button(safeGameUrl.toString(), 'TEACHER LOGIN', '#9a3040') +
+    '</td></tr></table></td></tr>' +
+    '<tr><td style="padding:0 22px 20px;font-size:15px;line-height:23px;color:#49362d;">See you soon!<p style="margin:9px 0 0;">Jess<br>Mission: Reinforceable</p></td></tr>' +
+    '<tr><td style="padding:14px 22px;border-top:1px solid #ded7e3;font-size:12px;line-height:18px;color:#746b78;">Questions? Contact Jess at <a href="mailto:jess.olson@utah.edu" style="color:#60388c;">jess.olson@utah.edu</a>.</td></tr>' +
     '</table></td></tr></table></body></html>';
   return { subject, text, html };
 }
