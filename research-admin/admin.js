@@ -3,7 +3,7 @@ import { extractFidelityTargets, extractionSummary } from './fidelity-target-ext
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs?v=20261004-history-polish-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261008-consolidated-publishing-1';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261009-teacher-launch-1';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
@@ -672,7 +672,7 @@ function gameCreationPanel(data) {
   const source = state.publishedSource;
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged = Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
-  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged };
+  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged, teacher_email: state.selected?.teacher_email || '', teacher_account_linked: Boolean(state.accounts.teacher?.profileId && data.participant?.auth_user_id === state.accounts.teacher.profileId), participant_is_test: data.participant?.is_test === true || state.participantReadiness?.is_test === true, email_enabled: state.communications?.game_login_email_enabled === true, phase: state.caseOperations?.current_phase || 'prebaseline' };
   return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.publishResult);
 }
 
@@ -778,6 +778,47 @@ function bindMissionBuilder() {
   $('#save-mission-draft')?.addEventListener('click', saveMissionDraft);
 }
 function bindPublishedReview() {
+
+  $('#launch-go-publish')?.addEventListener('click', () => {
+    const target = document.querySelector('.full-draft-check') || document.querySelector('.published-game-review');
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  $('#launch-go-access')?.addEventListener('click', () => {
+    selectCaseTab('operations');
+    const details = $('#participant-setup-details');
+    if (details) details.open = true;
+    ($('#activate-game-access') || details || $('#operations-game-ready'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  $('#launch-create-account')?.addEventListener('click', event => {
+    const email = state.selected?.teacher_email || 'the linked teacher';
+    if (!window.confirm('Create or link the teacher account and email a secure password-setup link to ' + email + '?\n\nThis will not activate the game or reminders.')) return;
+    createAccount('teacher', event.currentTarget);
+  });
+  $('#launch-resend-setup')?.addEventListener('click', async event => {
+    const email = state.selected?.teacher_email || 'the linked teacher';
+    if (!window.confirm('Resend the password-setup email to ' + email + '?\n\nThis sends another secure link. It will not activate gameplay.')) return;
+    const button = event.currentTarget, message = $('#teacher-launch-message');
+    button.disabled = true; message.textContent = 'Sending password-setup email…';
+    try {
+      await adminApi('/api/research-admin-communication-readiness', { action: 'send_account_setup', case_id: state.readiness.case.id, request_id: crypto.randomUUID() });
+      message.textContent = 'Password-setup email accepted for delivery through Resend.';
+    } catch (error) {
+      message.textContent = 'Account email not sent: ' + error.message;
+    } finally { button.disabled = false; }
+  });
+  $('#launch-send-orientation')?.addEventListener('click', async event => {
+    const email = state.selected?.teacher_email || 'the linked teacher';
+    if (!window.confirm('Send the optional Mission: Reinforceable orientation email to ' + email + '?\n\nThis does not activate game access or daily reminders.')) return;
+    const button = event.currentTarget, message = $('#teacher-launch-message');
+    button.disabled = true; message.textContent = 'Sending orientation email…';
+    try {
+      await adminApi('/api/research-admin-communication-readiness', { action: 'send_orientation', case_id: state.readiness.case.id, request_id: crypto.randomUUID() });
+      message.textContent = 'Orientation email accepted for delivery through Resend. No game access was changed.';
+    } catch (error) {
+      message.textContent = 'Orientation email not sent: ' + error.message;
+      button.disabled = false;
+    }
+  });
   $('#preview-protected-game')?.addEventListener('click', event => window.open(`../game/?qa_case=${encodeURIComponent(event.currentTarget.dataset.caseCode)}`, '_blank', 'noopener'));
   $('#preview-saved-draft')?.addEventListener('click', event => {
     const button = event.currentTarget;
