@@ -1,0 +1,78 @@
+
+/* Intervention monitoring: outcomes first; supplemental work is disclosed on demand. */
+.intervention-monitor-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 20px;background:#f8f6fc;border:1px solid #e6dfef;border-radius:13px}
+.intervention-monitor-heading h2{font-size:1.48rem;margin:4px 0}
+.intervention-monitor-heading p:last-child{margin:3px 0 0;color:var(--muted);font-size:.82rem}
+.intervention-monitor-status{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.intervention-monitor-status span{font-size:.72rem;font-weight:850;white-space:nowrap;padding:5px 10px;border-radius:999px;background:#eeeef2;color:#575b6a}
+.intervention-monitor-status .active{background:#e6f3ec;color:#286750}
+.intervention-monitor-status .inactive{background:#eeeef2;color:#626879}
+.intervention-monitor-alert,.intervention-qa-note{font-size:.8rem;padding:10px 12px;border-radius:9px;margin:10px 0 0}
+.intervention-monitor-alert{background:#fff3e5;border:1px solid #edd4a8;color:#704d21}
+.intervention-qa-note{background:#f2f0f7;color:#544472}
+.intervention-observation-focused{margin-top:12px;box-shadow:none}
+.intervention-observation-focused .intervention-observation-heading h2{font-size:1.2rem;margin:4px 0}
+.intervention-observation-focused .intervention-observation-heading>div{min-width:0}
+.intervention-observation-focused .intervention-observation-heading>div p:last-child{font-size:.78rem}
+.intervention-observation-focused #open-weekly-observation-schedule{font-size:.75rem;padding:9px 12px;white-space:nowrap}
+.intervention-data-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:16px 0 12px}
+.intervention-data-kpis>div{min-width:0;background:#f7f6f2;border:1px solid #ece9df;border-radius:11px;padding:13px}
+.intervention-data-kpis span,.intervention-data-kpis strong,.intervention-data-kpis small{display:block}
+.intervention-data-kpis span{color:#666f7c;font-size:.7rem;font-weight:800}
+.intervention-data-kpis strong{color:var(--navy);font-size:1.25rem;line-height:1.3;margin-top:5px;font-variant-numeric:tabular-nums}
+.intervention-data-kpis small{color:#737b86;font-size:.64rem;margin-top:4px}
+.intervention-criterion-progress{font-size:.77rem;color:#5c6473;border-left:3px solid #d3aa3e;background:#fcfaf4;padding:9px 12px;margin:0 0 16px}
+.intervention-criterion-progress strong{color:#394354}
+.intervention-schedule-disclosure{border:1px solid var(--line);border-radius:10px;background:#fbfaf7;margin:0 0 19px}
+.intervention-schedule-disclosure>summary{padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.intervention-schedule-disclosure>summary strong{font-size:.81rem;color:var(--navy)}
+.intervention-schedule-disclosure>summary span{font-size:.71rem;color:var(--muted);text-align:right}
+.intervention-schedule-disclosure[open]>summary{border-bottom:1px solid var(--line)}
+.intervention-schedule-disclosure>.routine-strip{margin:13px 14px}
+.intervention-schedule-disclosure>.case-observation-slot-grid{margin:0 14px 14px}
+.intervention-history-heading{margin:0 0 9px}
+.intervention-history-heading h3{font-size:.99rem;color:var(--navy);margin:0}
+.intervention-history-heading h3 span{font-weight:650;color:var(--muted)}
+.intervention-history-heading p{margin:4px 0 0;color:var(--muted);font-size:.73rem}
+.intervention-observations-list .compact-observation-history{margin-top:0}
+.intervention-older-observations{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+.intervention-older-observations>summary{cursor:pointer;font-weight:850;color:var(--purple);font-size:.77rem;padding:5px}
+.intervention-older-observations[open]>.compact-observation-history{margin-top:10px}
+.intervention-secondary-section{display:grid;gap:10px;margin-top:17px}
+.intervention-secondary-heading{margin:0 0 2px}
+.intervention-secondary-heading h3{margin:0;color:var(--navy);font-size:1.01rem}
+.intervention-secondary-heading p{font-size:.76rem;color:var(--muted);margin:4px 0 0}
+.intervention-detail-drawer{border:1px solid var(--line);border-radius:11px;background:#fff}
+.intervention-detail-drawer>summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 15px}
+.intervention-detail-drawer>summary>span:first-child{display:grid;gap:3px}
+.intervention-detail-drawer>summary strong{font-size:.85rem;color:#263957}
+.intervention-detail-drawer>summary small{font-size:.7rem;color:var(--muted)}
+.intervention-drawer-state{font-size:.71rem;color:#755e88;text-align:right}
+.intervention-detail-drawer[open]>summary{border-bottom:1px solid var(--line);background:#fbfafc}
+.intervention-detail-drawer>p,.intervention-detail-drawer>.coaching-work,.intervention-detail-drawer>.intervention-weekly-report-content,.intervention-detail-drawer>.intervention-control-drawer-content,.intervention-detail-drawer>.intervention-fidelity-disclosure,.intervention-detail-drawer>.intervention-delivery-warning{margin:12px 15px}
+.intervention-weekly-report-content p{font-size:.78rem}
+.intervention-report-configuration{color:var(--muted)}
+.intervention-weekly-report-list{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.intervention-weekly-report-list li{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.76rem;border-top:1px solid var(--line);padding:8px 0}
+.intervention-weekly-report-list li:first-child{border-top:0}
+.intervention-weekly-report-list li span{font-weight:800;color:#68707c}
+.intervention-weekly-report-list li small{color:var(--muted)}
+.intervention-coaching-drawer .coaching-work{max-width:1000px}
+.intervention-coaching-drawer .coaching-work>p:first-child{display:none}
+.intervention-coaching-drawer .coaching-work form{padding-top:6px}
+.intervention-events-reminder{border:1px solid #efd3a4;background:#fffaf1;border-radius:10px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.79rem}
+.intervention-control-drawer-content{padding-top:0}
+.intervention-control-drawer-content>.neutral-note{font-size:.75rem;margin:0 0 12px}
+.intervention-control-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.intervention-control-item{border:1px solid var(--line);border-radius:10px;background:#fcfbf8;padding:13px}
+.intervention-control-item h4{color:var(--navy);font-size:.88rem;margin:0 0 5px}
+.intervention-control-item p{color:var(--muted);font-size:.72rem;margin:4px 0 9px}
+.intervention-control-item strong{font-size:.78rem}
+.intervention-control-item button{font-size:.72rem;padding:8px 11px;max-width:100%;white-space:normal}
+.intervention-technical-drawer .intervention-delivery-warning{border:1px solid #eed6a4;border-radius:8px;background:#fffaf1;color:#76561d;padding:9px;font-size:.75rem}
+.intervention-fidelity-disclosure{border:1px solid var(--line);border-radius:10px;background:#faf9fb}
+.intervention-fidelity-disclosure>summary{padding:12px;cursor:pointer;color:var(--purple);font-size:.78rem;font-weight:850}
+.intervention-fidelity-disclosure>.procedural-fidelity{border-radius:10px;border:1px solid var(--line);border-top:3px solid var(--gold);box-shadow:none;margin:12px}
+@media(max-width:960px){.intervention-data-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.intervention-control-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.intervention-monitor-heading,.intervention-observation-focused .intervention-observation-heading{flex-direction:column;align-items:flex-start}.intervention-monitor-status{justify-content:flex-start}.intervention-observation-focused #open-weekly-observation-schedule{white-space:normal}.intervention-data-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.intervention-schedule-disclosure>summary,.intervention-detail-drawer>summary{align-items:flex-start;flex-direction:column}.intervention-schedule-disclosure>summary span,.intervention-drawer-state{text-align:left}.intervention-events-reminder{align-items:flex-start;flex-direction:column}.intervention-schedule-disclosure>.routine-strip,.intervention-schedule-disclosure>.case-observation-slot-grid{grid-template-columns:1fr}}
+@media(max-width:380px){.intervention-data-kpis{grid-template-columns:1fr}}
