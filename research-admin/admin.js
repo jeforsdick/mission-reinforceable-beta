@@ -673,7 +673,7 @@ function gameCreationPanel(data) {
   const source = state.publishedSource;
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged = Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
-  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged, teacher_email: state.selected?.teacher_email || '', teacher_account_linked: Boolean(state.accounts.teacher?.profileId && data.participant?.auth_user_id === state.accounts.teacher.profileId), participant_is_test: data.participant?.is_test === true || state.participantReadiness?.is_test === true, email_enabled: state.communications?.game_login_email_enabled === true, phase: state.caseOperations?.current_phase || 'prebaseline', qa_game_access_enabled: state.qaGameAccess?.qa_access_enabled === true, qa_email_enabled: state.qaGameAccess?.qa_email_enabled === true };
+  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged, teacher_email: state.selected?.teacher_email || '', teacher_account_linked: Boolean(state.accounts.teacher?.profileId && data.participant?.auth_user_id === state.accounts.teacher.profileId), participant_is_test: data.participant?.is_test === true || state.participantReadiness?.is_test === true, email_enabled: state.communications?.game_login_email_enabled === true, phase: state.caseOperations?.current_phase || 'prebaseline', qa_game_access_enabled: state.qaGameAccess?.qa_access_enabled === true, qa_email_enabled: state.qaGameAccess?.qa_email_enabled === true, qa_email_start_date: state.qaGameAccess?.qa_email_start_date || null };
   return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.publishResult);
 }
 
@@ -793,7 +793,7 @@ function bindPublishedReview() {
   });
   $('#launch-toggle-qa-email')?.addEventListener('click', async event => {
     const enabling=event.currentTarget.dataset.enabled!=='true';
-    if(!window.confirm((enabling?'Enable':'Disable')+' QA-only daily prompt and Friday recap emails for this teacher?\n\nThese are sent by separate QA cron jobs. Production reminders and study phases remain untouched.')) return;
+    if(!window.confirm((enabling?'Enable':'Disable')+' QA-only daily prompt and Friday recap emails for this teacher?\n\nQA emails use the existing daily and Friday cron schedules, but are isolated from dissertation recipients. Automatic sending starts next Monday by default; send-now tests are separate. No study phase changes.')) return;
     await operationRpc('research_admin_set_qa_email_delivery',{
       target_case_id:state.readiness.case.id,target_enabled:enabling
     },'case',enabling?'QA email delivery enabled.':'QA email delivery disabled.');
