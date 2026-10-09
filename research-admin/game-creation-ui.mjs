@@ -505,9 +505,47 @@ export function renderFullDraftCheck(workspace, check) {
   return `<section class="builder-section full-draft-check"><p class="eyebrow">CHECK &amp; PREVIEW FULL DRAFT</p><h2>Check &amp; Preview Full Draft</h2><p>Check the latest saved Game Setup, Resource Map, and mission drafts before previewing the complete game.</p><p><strong>Current Draft uses your latest saved setup, Resource Map, and missions. Unsaved changes are not included. Published Game shows the last protected version, not new draft edits.</strong></p><div class="actions"><button id="check-full-draft" class="primary" type="button">Check Full Draft</button><button id="preview-full-draft" type="button" data-case-code="${esc(workspace.case.case_code)}"${ready ? '' : ' disabled'}>Preview Current Draft Game</button></div><p id="full-draft-message" class="message" role="status"></p>${report}</section>`;
 }
 export function fullDraftPreviewUrl(caseCode) { return `../game/?${new URLSearchParams({ qa_case: caseCode, qa_full_draft: '1' })}`; }
+export function renderTeacherLaunchActions(published = {}) {
+  const content = published.protected_content || {};
+  const reviews = published.resource_map || {};
+  const hasPublished = content.present === true;
+  const hasChanges = published.draft_changed === true;
+  const signed = reviews.behavior_reviewed === true && reviews.privacy_reviewed === true && reviews.qa_previewed === true;
+  const versionReady = hasPublished && !hasChanges && signed;
+  const linked = published.teacher_account_linked === true;
+  const isTest = published.participant_is_test === true;
+  const orientationAllowed = isTest || published.phase === 'intervention';
+  const emailsEnabled = published.email_enabled === true;
+  const canCreateAccount = versionReady && emailsEnabled;
+  const canResendSetup = canCreateAccount && !['intervention', 'maintenance', 'complete'].includes(published.phase);
+  const canSendOrientation = canCreateAccount && linked && orientationAllowed;
+  const caseVersion = hasPublished ? 'v' + Number(content.version) : 'Not published';
+  const gameStatus = !hasPublished ? 'Publish the game first.' :
+    hasChanges ? 'Your current drafts contain unpublished changes.' :
+    !signed ? 'Finish the three reviews for ' + caseVersion + '.' : caseVersion + ' published and reviewed.';
+  const showPublishedReviews = hasPublished && !hasChanges && !signed;
+  const reviewAction = showPublishedReviews ? 'Go to Published Reviews' : 'Go to Check &amp; Publish';
+  const target = published.teacher_email ? '<small>Recipient: ' + esc(published.teacher_email) + '</small>' : '';
+  const setupButton = linked
+    ? '<button type="button" class="quiet" id="launch-resend-setup"' + (canResendSetup ? '' : ' disabled') + '>Resend Password Setup Email</button>' + (!canResendSetup && published.phase === 'intervention' ? '<small>After Intervention starts, use Send Game Login from Communications.</small>' : '')
+    : '<button type="button" class="primary" id="launch-create-account"' + (canCreateAccount ? '' : ' disabled') + '>Create Teacher Account &amp; Send Setup Email</button>';
+  const message = !emailsEnabled ? '<p class="needs">Email delivery is not configured. Check Teacher Account & Communications.</p>' : '';
+  return '<section class="builder-section teacher-launch-actions" id="teacher-launch-actions" aria-labelledby="teacher-launch-title">' +
+    '<p class="eyebrow">PUBLISH &amp; INVITE</p><h2 id="teacher-launch-title">' + (isTest ? 'Launch a QA Teacher' : 'Teacher Launch') + '</h2>' +
+    '<p>Use these steps in order. Each email is sent only when you click its button. Publishing and emailing never activate game access.</p>' +
+    '<div class="teacher-launch-steps">' +
+    '<div class="teacher-launch-step"><strong>1. Publish and review the game</strong><p>' + esc(gameStatus) + '</p><button type="button" class="quiet" id="launch-go-publish" data-target="' + (showPublishedReviews ? 'reviews' : 'draft') + '">' + reviewAction + '</button></div>' +
+    '<div class="teacher-launch-step"><strong>2. Account setup email</strong><p>' + (linked ? 'Teacher account created and linked.' : 'Create the teacher login and email a secure password-setup link.') + '</p>' + target + setupButton + '</div>' +
+    '<div class="teacher-launch-step"><strong>3. Orientation email</strong><p>Send a separate, optional video tour and a reminder to meet with Jess. No game access is enabled.</p><button type="button" class="primary" id="launch-send-orientation"' + (canSendOrientation ? '' : ' disabled') + '>Send Orientation Email</button>' +
+      (!orientationAllowed ? '<small>For actual dissertation participants, the platform orientation starts during Intervention.</small>' : '') + '</div>' +
+    '<div class="teacher-launch-step"><strong>4. Game access</strong><p>After account setup and orientation, use the existing Game Access control. Normal intervention readiness safeguards still apply, including to QA cases.</p><button type="button" class="quiet" id="launch-go-access">Open Game Access Controls</button></div>' +
+    '</div>' + message + '<p id="teacher-launch-message" class="message" role="status" aria-live="polite"></p>' +
+    '</section>';
+}
+
 export function renderGameCreation(workspace, selection, mission, nav, message = '', published = {}, loadError = '', setupDraft, resourceDraft, setupMessage = '', resourceMessage = '', fullDraftCheck = null, publishResult = null) {
   const authoring = workspace ? `${renderGameSetup(setupDraft || setupFromWorkspace(workspace), setupMessage)}${renderFidelityTargetEditor(workspace)}${renderAuthoringBrief(workspace)}${renderMissionBank(workspace, selection)}${renderMissionBuilder(workspace, selection, mission, nav, message)}${renderResourceMap(resourceDraft || resourcesFromWorkspace(workspace), resourceMessage)}${renderFullDraftCheck(workspace, fullDraftCheck)}` : `<section class="builder-section"><h2>Mission authoring workspace unavailable</h2><p class="error-message">Game authoring could not load: ${esc(loadError || 'Unknown workspace error')}. Confirm the browser-authoring migration is applied, then reload. No local-file fallback was used.</p></section>`;
-  return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Build the game</h1><p>BIP BRIEFING → MISSIONS → PLAY TEST → PUBLISH</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${authoring}${renderPublishedReview(published, workspace, fullDraftCheck, publishResult)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
+  return `<section id="game-creation" class="panel browser-authoring"><div class="game-creation-heading"><div><p class="eyebrow">GAME CREATION</p><h1>Build the game</h1><p>BIP BRIEFING → MISSIONS → PLAY TEST → PUBLISH</p></div><button id="back-to-game-ready" class="quiet" type="button">Back to Game Ready</button></div>${workspace ? renderTeacherLaunchActions(published) : ""}${authoring}${renderPublishedReview(published, workspace, fullDraftCheck, publishResult)}<p class="legacy-note">Legacy local build instructions remain available in documentation during the transition.</p></section>`;
 }
 
 export function captureMission(root, mission, nav) {
