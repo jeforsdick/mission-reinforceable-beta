@@ -2,11 +2,11 @@ import { accountState, antecedentContext, readinessForCase } from './admin-model
 import { extractFidelityTargets, extractionSummary } from './fidelity-target-extractor.mjs?v=20261007-full-bsp-1';
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
-import { renderOperations } from './operations-ui.mjs?v=20261004-history-polish-1';
+import { renderOperations } from './operations-ui.mjs?v=20261009-intervention-focus-1';
 import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261009-independent-qa-2';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
-import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
+import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs?v=20261009-intervention-focus-1';
 import { renderFullObservation } from './observation-full-view-ui.mjs?v=20261009-observation-review-1';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';

@@ -142,12 +142,11 @@ function compactObservationHistory(rows,phase,e){
    </article>`;
  }).join('')}</div>`;
 }
-function renderInterventionObservationWorkspace(item,e){
+function renderInterventionObservationWorkspace(item,e) {
  const data=item.observation_data||{},setup=(data.setups||[])[0],schedule=data.schedule||null,observers=data.observers||[];
  const rows=(data.observations||[]).filter(x=>x.phase==='intervention');
- const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date)));
- const latest=completed[0];
- const week=denverWeek();
+ const completed=[...rows].filter(x=>x.summary_revision_id).sort((a,b)=>String(b.observation_date).localeCompare(String(a.observation_date))||Number(b.session_number||0)-Number(a.session_number||0));
+ const latest=completed[0],week=denverWeek();
  const slots=(data.schedule_slots||[]).filter(slot=>slot.observation_date>=week.monday&&slot.observation_date<=week.sunday).sort((a,b)=>String(a.observation_date).localeCompare(String(b.observation_date)));
  const target=Number(schedule?.weekly_target_days||3);
  const assigned=slots.filter(slot=>slot.primary_observer_id&&!['cancelled','needs_reschedule'].includes(slot.status)).length;
@@ -156,11 +155,9 @@ function renderInterventionObservationWorkspace(item,e){
  const completedCount=Math.max(completeSlots,completedThisWeek);
  const reschedules=slots.filter(slot=>slot.status==='needs_reschedule').length;
  const plannedIoa=slots.filter(slot=>['formal_ioa','calibration_and_ioa'].includes(slot.secondary_role)&&slot.status!=='cancelled').length;
- const ioaThisWeek=completed.filter(x=>x.observation_date>=week.monday&&x.observation_date<=week.sunday&&x.ioa).length;
  let consecutive90=0;
  for(const row of completed){if(Number(row.teacher_fidelity_percent)>=90)consecutive90++;else break;}
- const scheduleRoutine=schedule?.routine_label||setup?.target_routine||'Routine not configured';
- const scheduleTime=schedule?`${timeLabel(schedule.routine_start_time)}–${timeLabel(schedule.routine_end_time)}`:'Time not set';
+ const routine=schedule?.routine_label||setup?.target_routine||'Not configured',scheduledTime=schedule?`${timeLabel(schedule.routine_start_time)}–${timeLabel(schedule.routine_end_time)}`:'Time not set';
  const slotCards=slots.length?slots.map(slot=>{
    const secondary=slot.secondary_observer_id?`<span>${e(secondaryRoleLabel(slot.secondary_role))}: <strong>${e(observerDisplay(observers,slot.secondary_observer_id))}</strong></span>`:'';
    return `<article class="case-observation-slot ${e(slot.status)}">
@@ -169,38 +166,32 @@ function renderInterventionObservationWorkspace(item,e){
      ${secondary}
      ${slot.status==='needs_reschedule'?`<small>${e(slot.reschedule_reason||'Needs reschedule')}</small>`:''}
    </article>`;
- }).join(''):`<p class="empty-admin-state">No observation days are assigned for this week yet.</p>`;
- const primaryOptions=observers.filter(mayAssignPrimary);
- const secondaryOptions=observers.filter(mayAssignSecondary);
- const manualForm=item.current_phase==='intervention'?newObservationForm(item,setup,primaryOptions,secondaryOptions,e,{id:'record-intervention-observation-form',heading:'Administrative Manual Entry'}):'';
- return `<section class="intervention-observation-hub">
+ }).join(''):'<p class="empty-admin-state">No observation days assigned this week.</p>';
+ const manualForm=item.current_phase==='intervention'?newObservationForm(item,setup,observers.filter(mayAssignPrimary),observers.filter(mayAssignSecondary),e,{id:'record-intervention-observation-form',heading:'Administrative Manual Entry'}):'';
+ const recent=completed.slice(0,3),older=completed.slice(3);
+ return `<section class="intervention-observation-hub intervention-observation-focused">
    <div class="intervention-observation-heading">
-     <div><p class="eyebrow">Classroom Observations</p><h3>Observation Status</h3><p>30-minute sessions in the identified routine · target approximately 3 different school days per week.</p></div>
+     <div><p class="eyebrow">Primary outcomes</p><h2>Classroom Observations</h2><p>Teacher BSP fidelity and student target behavior during the selected classroom routine.</p></div>
      <button id="open-weekly-observation-schedule" class="quiet" type="button">Manage Weekly Schedule</button>
    </div>
-   <div class="routine-strip"><div><span>Routine</span><strong>${e(scheduleRoutine)}</strong></div><div><span>Observation time</span><strong>${e(scheduleTime)}</strong></div></div>
-   <div class="intervention-observation-kpis">
-     <div><span>This week</span><strong>${completedCount}/${target}</strong><small>completed</small></div>
-     <div><span>Assigned</span><strong>${assigned}/${target}</strong><small>different days</small></div>
-     <div><span>Reschedule</span><strong>${reschedules}</strong><small>owed this week</small></div>
-     <div><span>IOA planned</span><strong>${plannedIoa}</strong><small>${ioaThisWeek} completed this week</small></div>
-     <div><span>Cumulative IOA</span><strong>${pct(data.coverage?.percent||0)}</strong><small>${data.coverage?.ioa||0} of ${data.coverage?.completed||0}</small></div>
+   <div class="intervention-data-kpis">
+     <div><span>Latest teacher fidelity</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong><small>${latest?e(dateLabel(latest.observation_date)):'No completed observations'}</small></div>
+     <div><span>Latest student behavior</span><strong>${pct(latest?.student_target_behavior_percent)}</strong><small>Partial-interval recording</small></div>
+     <div><span>Observed this week</span><strong>${completedCount}/${target}</strong><small>Completed · ${assigned} scheduled</small></div>
+     <div><span>IOA coverage</span><strong>${pct(data.coverage?.percent??0)}</strong><small>${data.coverage?.ioa||0} of ${data.coverage?.completed||0} observations</small></div>
    </div>
-   <div class="case-weekly-observation-schedule"><h4>This Week's Sessions</h4><div class="case-observation-slot-grid">${slotCards}</div></div>
-   <div class="intervention-latest-data">
-     <h4>Latest Data</h4>
-     <div class="latest-data-grid">
-       <div><span>Teacher fidelity</span><strong>${pct(latest?.teacher_fidelity_percent)}</strong></div>
-       <div><span>Student target behavior</span><strong>${pct(latest?.student_target_behavior_percent)}</strong></div>
-       <div><span>Maintenance criterion progress</span><strong>${Math.min(consecutive90,3)}/3</strong><small>consecutive sessions ≥90%</small></div>
-       <div><span>Total intervention observations</span><strong>${completed.length}</strong></div>
-     </div>
-   </div>
-   <details class="intervention-observation-history">
-     <summary>Observation History (${completed.length})</summary>
-     ${compactObservationHistory(rows,'intervention',e)}
+   <p class="intervention-criterion-progress"><strong>Fidelity maintenance criterion:</strong> ${Math.min(consecutive90,3)}/3 consecutive observations at ≥90%. Minimum intervention exposure, trend, and visual analysis are reviewed before any phase change.</p>
+   <details class="intervention-schedule-disclosure">
+     <summary><strong>This week's observation schedule</strong><span>${assigned} assigned · ${completedCount} completed${reschedules?` · ${reschedules} to reschedule`:''}${plannedIoa?` · ${plannedIoa} IOA planned`:''}</span></summary>
+     <div class="routine-strip"><div><span>Routine</span><strong>${e(routine)}</strong></div><div><span>Observation time</span><strong>${e(scheduledTime)}</strong></div></div>
+     <div class="case-observation-slot-grid">${slotCards}</div>
    </details>
-   ${manualForm?`<details class="admin-observation-fallback"><summary>Administrative fallback: enter a completed observation manually</summary><p class="neutral-note">Use only if a completed observation cannot be submitted or linked through the observer workflow.</p>${manualForm}</details>`:''}
+   <section class="intervention-observations-list" aria-label="Completed intervention observations">
+     <div class="intervention-history-heading"><div><h3>Completed Observations <span>(${completed.length})</span></h3><p>Open any observation to review every fidelity component and all recorded 15-second intervals.</p></div></div>
+     ${compactObservationHistory(recent,'intervention',e)}
+     ${older.length?`<details class="intervention-older-observations"><summary>Show ${older.length} earlier observation${older.length===1?'':'s'}</summary>${compactObservationHistory(older,'intervention',e)}</details>`:''}
+   </section>
+   ${manualForm?`<details class="admin-observation-fallback"><summary>Administrative fallback · enter a completed observation</summary><p class="neutral-note">Only use this if a completed observation cannot be submitted or linked through the observer portal.</p>${manualForm}</details>`:''}
  </section>`;
 }
 
