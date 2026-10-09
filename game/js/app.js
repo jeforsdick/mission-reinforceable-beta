@@ -294,8 +294,8 @@
         MR.setScreen('home');
       };
       MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
-      document.body.classList.toggle('qa-preview', assignment.qaMode === true);
-      MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true;
+      document.body.classList.toggle('qa-preview', assignment.qaMode === true && assignment.qaParticipant !== true);
+      MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true || assignment.qaParticipant === true;
       const draftBanner = MR.$('#draft-qa-preview-banner');
       draftBanner.hidden = !(assignment.qaDraft || assignment.fullDraftQa);
       if (assignment.qaDraft) {
