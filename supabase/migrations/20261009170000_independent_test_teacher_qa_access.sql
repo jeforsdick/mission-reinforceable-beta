@@ -152,7 +152,7 @@ GRANT EXECUTE ON FUNCTION public.research_admin_set_qa_game_access(uuid,boolean)
 CREATE OR REPLACE FUNCTION public.research_admin_qa_game_access_status(target_case_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
-AS $
+AS $$
 DECLARE result jsonb;
 BEGIN
   IF NOT public.is_research_admin() THEN
@@ -169,7 +169,7 @@ BEGIN
   WHERE c.id=target_case_id;
   RETURN coalesce(result,'{}'::jsonb);
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.research_admin_qa_game_access_status(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.research_admin_qa_game_access_status(uuid) TO authenticated;
 
@@ -211,7 +211,7 @@ CREATE POLICY "Research admins read QA email setting events"
 CREATE OR REPLACE FUNCTION public.research_admin_set_qa_email_delivery(target_case_id uuid,target_enabled boolean,target_start_date date DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
-AS $
+AS $$
 DECLARE target public.participants%ROWTYPE;
 BEGIN
  IF NOT public.is_research_admin() THEN RAISE EXCEPTION 'research admin required' USING ERRCODE='42501'; END IF;
@@ -238,7 +238,7 @@ BEGIN
  VALUES(target.id,target_case_id,target_enabled,(SELECT auth.uid()));
  RETURN (SELECT jsonb_build_object('qa_email_enabled',p.qa_email_enabled,'qa_email_start_date',p.qa_email_start_date) FROM public.participants p WHERE p.id=target.id);
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean,date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean,date) TO authenticated;
 
