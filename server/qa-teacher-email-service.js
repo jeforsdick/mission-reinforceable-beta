@@ -29,12 +29,12 @@ function weekNumberSinceFirstAccess(recordedAt,date) {
   const current = new Date(mondayFor(date) + 'T12:00:00Z');
   return Math.max(1,Math.floor((current - start) / (7*24*60*60*1000)) + 1);
 }
-function configurationReady() {
+function configurationReady(kind) {
   return Boolean(
     process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
     && process.env.RESEND_API_KEY && process.env.TEACHER_REMINDER_FROM_EMAIL
     && process.env.TEACHER_GAME_URL && process.env.CRON_SECRET
-  ) && weeklyCheckin.qualtricsConfiguration().configured;
+  ) && (kind!==KINDS.WEEKLY || weeklyCheckin.qualtricsConfiguration().configured);
 }
 async function db(path,options={}) {
   const result = await supabaseFetch(path,options);
@@ -133,7 +133,7 @@ async function sendToCandidate(candidate,kind,date) {
 }
 async function deliver(kind,{caseId=null,manual=false,now=new Date()}={}) {
   if(!Object.values(KINDS).includes(kind)) throw new Error('Unknown QA email type.');
-  if(!configurationReady()) throw new Error('QA email provider and survey configuration incomplete.');
+  if(!configurationReady(kind)) throw new Error('QA email provider and survey configuration incomplete.');
   const date=denverDate(now);
   const friday=new Date(date+'T12:00:00Z').getUTCDay()===5;
   if(!manual && (kind===KINDS.DAILY && !isEligibleStudyDay(date) || kind===KINDS.WEEKLY && !friday)) {
