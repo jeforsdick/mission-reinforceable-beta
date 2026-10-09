@@ -144,6 +144,30 @@ $$;
 REVOKE ALL ON FUNCTION public.research_admin_set_qa_game_access(uuid,boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.research_admin_set_qa_game_access(uuid,boolean) TO authenticated;
 
+
+CREATE OR REPLACE FUNCTION public.research_admin_qa_game_access_status(target_case_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO ''
+AS $
+DECLARE result jsonb;
+BEGIN
+  IF NOT public.is_research_admin() THEN
+    RAISE EXCEPTION 'research admin required' USING ERRCODE='42501';
+  END IF;
+  SELECT jsonb_build_object(
+    'is_test',p.is_test,'qa_access_enabled',p.qa_game_access_enabled,
+    'account_linked',p.auth_user_id IS NOT NULL,'case_active',c.active,
+    'participant_active',p.active,
+    'is_qa_case',p.is_test AND NOT c.active AND NOT p.active AND c.archived_at IS NULL
+  ) INTO result
+  FROM public.participants p JOIN public.cases c ON c.id=p.case_id
+  WHERE c.id=target_case_id;
+  RETURN coalesce(result,'{}'::jsonb);
+END;
+$;
+REVOKE ALL ON FUNCTION public.research_admin_qa_game_access_status(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.research_admin_qa_game_access_status(uuid) TO authenticated;
+
 -- Narrow read access to this authenticated invited test teacher's case.
 DROP POLICY IF EXISTS "Invited QA teachers read their test case" ON public.cases;
 CREATE POLICY "Invited QA teachers read their test case" ON public.cases
