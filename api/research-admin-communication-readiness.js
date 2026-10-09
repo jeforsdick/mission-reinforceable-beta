@@ -4,6 +4,7 @@ const { authorize, json, supabaseFetch, UUID_PATTERN } = require('./research-adm
 const { configuration } = require('../server/game-login-email');
 const sendGameLogin = require('../server/research-admin-send-game-login');
 const sendOrientation = require('../server/research-admin-send-orientation');
+const { KINDS, deliver: deliverQaEmail } = require('../server/qa-teacher-email-service');
 const weeklyCheckin = require('../server/weekly-checkin-service');
 const { measureConfiguration } = require('../server/qualtrics-measures');
 const { denverDate, loadWeeklySummary } = require('../server/weekly-recap-service');
@@ -73,6 +74,14 @@ module.exports = async function handler(request, response) {
       const actor = await authorize(request);
       const body = request.body || {};
       if (!UUID_PATTERN.test(body.case_id || '')) return json(response, 400, { error: 'Invalid case.' });
+      if (['send_qa_daily', 'send_qa_weekly'].includes(body.action)) {
+        if (Object.keys(body).sort().join(',') !== 'action,case_id') {
+          return json(response, 400, { error: 'Exactly action and case_id are required for QA sends.' });
+        }
+        const kind = body.action === 'send_qa_daily' ? KINDS.DAILY : KINDS.WEEKLY;
+        const result = await deliverQaEmail(kind, { caseId:body.case_id,manual:true });
+        return json(response, result.failed ? 502 : 200, result);
+      }
       if (body.action === 'start_intervention') {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(body.effective_date || '')) return json(response, 400, { error: 'Valid intervention start date is required.' });
         if (typeof body.baseline_pattern_reviewed !== 'boolean' || typeof body.recent_series_reviewed !== 'boolean' || typeof body.orientation_completed !== 'boolean') {

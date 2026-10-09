@@ -3,7 +3,7 @@ import { extractFidelityTargets, extractionSummary } from './fidelity-target-ext
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs?v=20261004-history-polish-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261009-teacher-launch-1';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261009-independent-qa-2';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
@@ -12,7 +12,7 @@ import { renderParticipantReadiness } from './participant-readiness.mjs';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W';
-const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, testCases: [], baselineProbeEvents: [], showArchivedCases: false, showTestCases: false, selected: null, accounts: {}, communications: { teacher_reminder_system_enabled: false, game_login_email_enabled: false }, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null, validatedRevisionManifest: null, publishResult: null, publishedSource: null };
+const state = { client: null, intakes: [], operations: { cases: [], study_wide_tasks: [] }, testCases: [], baselineProbeEvents: [], showArchivedCases: false, showTestCases: false, selected: null, accounts: {}, communications: { teacher_reminder_system_enabled: false, game_login_email_enabled: false }, qaGameAccess: {}, qaLink: '', authoringWorkspace: null, missionSelection: null, missionDraft: null, missionNav: { decision: 1, branch: 'supported' }, missionMessage: '', setupDraft: null, resourceDraft: null, setupMessage: '', resourceMessage: '', resourceOpenSections: [], fullDraftCheck: null, validatedRevisionManifest: null, publishResult: null, publishedSource: null };
 const $ = selector => document.querySelector(selector);
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const formatDate = value => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : '—';
@@ -639,6 +639,12 @@ async function loadReadiness(requestId) {
   observationData.schedule=observationSchedule||null;
   observationData.schedule_slots=observationSlots||[];
   const {data:participantReadiness,error:participantReadinessError}=await state.client.rpc('research_admin_participant_readiness',{target_case_id:data.case.id});if(participantReadinessError)throw participantReadinessError;state.participantReadiness=participantReadiness;
+  state.qaGameAccess = {};
+  if (participantReadiness?.is_test === true) {
+    const { data: qaGameAccess, error: qaGameAccessError } = await state.client.rpc('research_admin_qa_game_access_status', { target_case_id:data.case.id });
+    if (qaGameAccessError) throw qaGameAccessError;
+    state.qaGameAccess = qaGameAccess || {};
+  }
   const participantId=fidelity.participant_id; const {data:weeklyCheckins,error:weeklyError}=await state.client.rpc('research_admin_weekly_checkins',{target_participant_id:participantId,target_case_id:data.case.id}); if(weeklyError)throw weeklyError;
   const { data: authoring, error: authoringError } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: data.case.id });
   state.authoringWorkspace = authoringError ? null : authoring;
@@ -667,7 +673,7 @@ function gameCreationPanel(data) {
   const source = state.publishedSource;
   const publishedManifest=source&&{setup_revision_id:source.source_setup_revision_id,resource_revision_id:source.source_resource_revision_id,missions:source.source_mission_revision_manifest};
   const draftChanged = Boolean(source&&manifest&&!sameDraftRevisionManifest(manifest,publishedManifest));
-  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged, teacher_email: state.selected?.teacher_email || '', teacher_account_linked: Boolean(state.accounts.teacher?.profileId && data.participant?.auth_user_id === state.accounts.teacher.profileId), participant_is_test: data.participant?.is_test === true || state.participantReadiness?.is_test === true, email_enabled: state.communications?.game_login_email_enabled === true, phase: state.caseOperations?.current_phase || 'prebaseline' };
+  const published = { protected_content: data.protected_content, resource_map: data.resource_map, checklist: state.caseOperations?.checklist, case_code: state.authoringWorkspace.case.case_code, draft_changed: draftChanged, teacher_email: state.selected?.teacher_email || '', teacher_account_linked: Boolean(state.accounts.teacher?.profileId && data.participant?.auth_user_id === state.accounts.teacher.profileId), participant_is_test: data.participant?.is_test === true || state.participantReadiness?.is_test === true, email_enabled: state.communications?.game_login_email_enabled === true, phase: state.caseOperations?.current_phase || 'prebaseline', qa_game_access_enabled: state.qaGameAccess?.qa_access_enabled === true, qa_email_enabled: state.qaGameAccess?.qa_email_enabled === true, qa_email_start_date: state.qaGameAccess?.qa_email_start_date || null };
   return renderGameCreation(state.authoringWorkspace, state.missionSelection, state.missionDraft, state.missionNav, state.missionMessage, published, state.authoringLoadError, state.setupDraft, state.resourceDraft, state.setupMessage, state.resourceMessage, state.fullDraftCheck, state.publishResult);
 }
 
@@ -778,6 +784,41 @@ function bindPublishedReview() {
     const target = event.currentTarget.dataset.target === 'reviews' ? document.querySelector('.published-game-review') : (document.querySelector('.full-draft-check') || document.querySelector('.published-game-review'));
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+  $('#launch-toggle-qa-access')?.addEventListener('click', async event => {
+    const enabling=event.currentTarget.dataset.enabled!=='true';
+    if(!window.confirm((enabling?'Enable':'Disable')+' independent QA gameplay for this test teacher?\n\nThis does not change Intervention phase, dissertation data, or production reminders.')) return;
+    await operationRpc('research_admin_set_qa_game_access',{
+      target_case_id:state.readiness.case.id,target_enabled:enabling
+    },'case',enabling?'QA game access enabled.':'QA game access disabled.');
+  });
+  $('#launch-toggle-qa-email')?.addEventListener('click', async event => {
+    const enabling=event.currentTarget.dataset.enabled!=='true';
+    if(!window.confirm((enabling?'Enable':'Disable')+' QA-only daily prompt and Friday recap emails for this teacher?\n\nQA emails use the existing daily and Friday cron schedules, but are isolated from dissertation recipients. Automatic sending starts next Monday by default; send-now tests are separate. No study phase changes.')) return;
+    await operationRpc('research_admin_set_qa_email_delivery',{
+      target_case_id:state.readiness.case.id,target_enabled:enabling
+    },'case',enabling?'QA email delivery enabled.':'QA email delivery disabled.');
+  });
+  async function sendQaEmail(button,type) {
+    const email=state.selected?.teacher_email||'this QA teacher';
+    if(!window.confirm('Send the '+(type==='daily'?'daily mission prompt':'weekly quest recap with its survey link')+
+      ' to '+email+' now?\n\nThis is QA only; it cannot count as a dissertation reminder or weekly report.'))return;
+    const message=$('#teacher-launch-message');
+    button.disabled=true;
+    message.textContent='Sending QA '+type+' email...';
+    try{
+      const result=await adminApi('/api/research-admin-communication-readiness',{
+        action:type==='daily'?'send_qa_daily':'send_qa_weekly',case_id:state.readiness.case.id
+      });
+      message.textContent=result.sent===1
+        ?'QA '+type+' email accepted and recorded by Resend.'
+        :result.skipped>0?'This QA '+type+' email was already sent for the current study date/week.'
+        :'QA email could not be sent. See the delivery check.';
+    }catch(error){
+      message.textContent='QA email not sent: '+error.message;
+    }finally{button.disabled=false;}
+  }
+  $('#launch-send-qa-daily')?.addEventListener('click',event=>sendQaEmail(event.currentTarget,'daily'));
+  $('#launch-send-qa-weekly')?.addEventListener('click',event=>sendQaEmail(event.currentTarget,'weekly'));
   $('#launch-go-access')?.addEventListener('click', () => {
     selectCaseTab('operations');
     const details = $('#participant-setup-details');

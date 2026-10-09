@@ -294,8 +294,8 @@
         MR.setScreen('home');
       };
       MR.$('#study-id').textContent = `Study ID: ${MR.participantCode}`;
-      document.body.classList.toggle('qa-preview', assignment.qaMode === true);
-      MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true;
+      document.body.classList.toggle('qa-preview', assignment.qaMode === true && assignment.qaParticipant !== true);
+      MR.$('#qa-preview-banner').hidden = assignment.qaMode !== true || assignment.qaParticipant === true;
       const draftBanner = MR.$('#draft-qa-preview-banner');
       draftBanner.hidden = !(assignment.qaDraft || assignment.fullDraftQa);
       if (assignment.qaDraft) {
@@ -303,7 +303,11 @@
         draftBanner.textContent = `DRAFT QA PREVIEW — ${label} ${assignment.qaDraft.slot} · Not published`;
       }
       if (assignment.fullDraftQa) draftBanner.textContent = 'FULL DRAFT QA PREVIEW · Not published';
-      MR.$('#back-to-research-admin').hidden = assignment.qaMode !== true;
+      if (assignment.qaParticipant === true) {
+        const qaLabel = MR.$('#qa-preview-banner strong');
+        if (qaLabel) qaLabel.textContent = 'QA TEACHER TEST — NOT DISSERTATION DATA';
+      }
+      MR.$('#back-to-research-admin').hidden = assignment.qaMode !== true || assignment.qaParticipant === true;
       MR.setScreen('loading');
       MR.telemetryContext.fidelityTargets = await loadFidelityTargetLookup(assignment.case.id);
       await loadAssignedGame(assignment);
