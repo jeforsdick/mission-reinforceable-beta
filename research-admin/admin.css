@@ -1000,3 +1000,15 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
   .case-fidelity-add{align-items:stretch;flex-direction:column}
   .case-fidelity-add select,.case-fidelity-add button{width:100%}
 }
+
+/* Case-specific teacher QA launch actions */
+.teacher-launch-actions { background: #fbfafc; }
+.teacher-launch-actions .teacher-launch-steps { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:18px; }
+.teacher-launch-actions .teacher-launch-step { border:1px solid #dfd8e7;border-radius:10px;background:#fff;padding:15px;min-width:0; }
+.teacher-launch-actions .teacher-launch-step strong { display:block;color:#182746;margin-bottom:6px; }
+.teacher-launch-actions .teacher-launch-step p { font-size:.92rem;line-height:1.45;margin:4px 0 12px; }
+.teacher-launch-actions .teacher-launch-step small { display:block;overflow-wrap:anywhere;color:#5e5870;margin:0 0 10px; }
+.teacher-launch-actions .teacher-launch-step button { max-width:100%;white-space:normal;text-align:center; }
+.teacher-launch-actions .teacher-launch-step button:disabled { opacity:.55;cursor:not-allowed; }
+.teacher-launch-actions #teacher-launch-message { margin-top:14px; }
+@media(max-width:700px){ .teacher-launch-actions .teacher-launch-steps { grid-template-columns:1fr; } }
