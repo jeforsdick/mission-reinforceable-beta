@@ -185,6 +185,7 @@
       studentAlias: published?.config?.studentAlias || workspace.case?.student_alias || assignment.case.student_alias
     });
     if (typeof setup.bipBriefing === 'string' && setup.bipBriefing.trim()) config.bipBriefing = setup.bipBriefing;
+    if (typeof setup.classroomLabel === 'string') config.classroomLabel = setup.classroomLabel.trim();
     const content = {
       config,
       resources: draftResources || published?.resources || null,
@@ -213,7 +214,7 @@
     const rows = workspace.missions || workspace.mission_drafts || workspace.latest_mission_drafts || [];
     const group = type => rows.filter(row => row.mission_type === type).sort((a, b) => Number(a.slot_number) - Number(b.slot_number)).map(missionFromWorkspaceRow).filter(Boolean);
     return {
-      config: Object.assign(Object.fromEntries(Object.entries(published?.config || {}).filter(([key]) => key !== 'weeklyTeacherReport')), { studentAlias: alias, bipBriefing: setup.bipBriefing || '' }),
+      config: Object.assign(Object.fromEntries(Object.entries(published?.config || {}).filter(([key]) => key !== 'weeklyTeacherReport')), { studentAlias: alias, bipBriefing: setup.bipBriefing || '', classroomLabel: typeof setup.classroomLabel === 'string' ? setup.classroomLabel.trim() : '' }),
       resources: Object.assign({}, resources, { studentAlias: alias }),
       daily_missions: group('daily'), wildcard_missions: group('wild'), crisis_missions: group('crisis'), version: null
     };
