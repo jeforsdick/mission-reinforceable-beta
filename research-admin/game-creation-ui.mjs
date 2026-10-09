@@ -526,6 +526,27 @@ export function renderTeacherLaunchActions(published = {}) {
   const showPublishedReviews = hasPublished && !hasChanges && !signed;
   const reviewAction = showPublishedReviews ? 'Go to Published Reviews' : 'Go to Check &amp; Publish';
   const target = published.teacher_email ? '<small>Recipient: ' + esc(published.teacher_email) + '</small>' : '';
+  const qaAccessEnabled = published.qa_game_access_enabled === true;
+  const qaEmailEnabled = published.qa_email_enabled === true;
+  const qaEligible = versionReady && linked;
+  const accessControls = isTest
+    ? '<div class="teacher-launch-step"><strong>4. QA game access</strong><p>' +
+      (qaAccessEnabled ? 'QA gameplay is enabled. Your friend can sign in with her own teacher account and play published missions. No dissertation phase changes or production reminders.' :
+      'Enable independent testing without starting Intervention or recording an orientation meeting.') +
+      '</p><button type="button" class="' + (qaAccessEnabled ? 'quiet' : 'primary') + '" id="launch-toggle-qa-access" data-enabled="' +
+      (qaAccessEnabled ? 'true' : 'false') + '"' + (!qaEligible ? ' disabled' : '') + '>' +
+      (qaAccessEnabled ? 'Disable QA Gameplay' : 'Enable QA Gameplay') + '</button></div>' +
+      '<div class="teacher-launch-step"><strong>5. QA daily prompts &amp; Friday recaps</strong>' +
+      '<p>Separately opt in to automatic QA emails. These reuse our branded teacher templates, include only QA usage data, and never join dissertation reporting.</p>' +
+      '<p><strong>' + (qaEmailEnabled ? 'QA emails enabled' : 'QA emails disabled') + '</strong> · Daily: eligible weekday mornings · Recap: Friday afternoon (Denver)</p>' +
+      '<button type="button" class="' + (qaEmailEnabled ? 'quiet' : 'primary') + '" id="launch-toggle-qa-email" data-enabled="' +
+      (qaEmailEnabled ? 'true' : 'false') + '"' + (!qaAccessEnabled ? ' disabled' : '') + '>' +
+      (qaEmailEnabled ? 'Disable QA Emails' : 'Enable QA Daily + Friday Emails') + '</button>' +
+      '<div class="actions"><button type="button" class="quiet" id="launch-send-qa-daily"' + (!qaEmailEnabled ? ' disabled' : '') +
+      '>Send QA Daily Email Now</button><button type="button" class="quiet" id="launch-send-qa-weekly"' +
+      (!qaEmailEnabled ? ' disabled' : '') + '>Send QA Weekly Recap Now</button></div>' +
+      '<small>Manual sends respect one email per case/date/type. A weekly recap includes the secure teacher-report link.</small></div>'
+    : '<div class="teacher-launch-step"><strong>4. Game access</strong><p>Use the existing Intervention launch checks and access controls after completing study baseline and orientation requirements.</p><button type="button" class="quiet" id="launch-go-access">Open Game Access Controls</button></div>';
   const setupButton = linked
     ? '<button type="button" class="quiet" id="launch-resend-setup"' + (canResendSetup ? '' : ' disabled') + '>Resend Password Setup Email</button>' + (!canResendSetup && published.phase === 'intervention' ? '<small>After Intervention starts, use Send Game Login from Communications.</small>' : '')
     : '<button type="button" class="primary" id="launch-create-account"' + (canCreateAccount ? '' : ' disabled') + '>Create Teacher Account &amp; Send Setup Email</button>';
@@ -538,7 +559,7 @@ export function renderTeacherLaunchActions(published = {}) {
     '<div class="teacher-launch-step"><strong>2. Account setup email</strong><p>' + (linked ? 'Teacher account created and linked.' : 'Create the teacher login and email a secure password-setup link.') + '</p>' + target + setupButton + '</div>' +
     '<div class="teacher-launch-step"><strong>3. Orientation email</strong><p>Send a separate, optional video tour and a reminder to meet with Jess. No game access is enabled.</p><button type="button" class="primary" id="launch-send-orientation"' + (canSendOrientation ? '' : ' disabled') + '>Send Orientation Email</button>' +
       (!orientationAllowed ? '<small>For actual dissertation participants, the platform orientation starts during Intervention.</small>' : '') + '</div>' +
-    '<div class="teacher-launch-step"><strong>4. Game access</strong><p>After account setup and orientation, use the existing Game Access control. Normal intervention readiness safeguards still apply, including to QA cases.</p><button type="button" class="quiet" id="launch-go-access">Open Game Access Controls</button></div>' +
+    accessControls +
     '</div>' + message + '<p id="teacher-launch-message" class="message" role="status" aria-live="polite"></p>' +
     '</section>';
 }
