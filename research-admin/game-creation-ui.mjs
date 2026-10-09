@@ -528,6 +528,7 @@ export function renderTeacherLaunchActions(published = {}) {
   const target = published.teacher_email ? '<small>Recipient: ' + esc(published.teacher_email) + '</small>' : '';
   const qaAccessEnabled = published.qa_game_access_enabled === true;
   const qaEmailEnabled = published.qa_email_enabled === true;
+  const qaStartDate = typeof published.qa_email_start_date === 'string' ? published.qa_email_start_date : null;
   const qaEligible = versionReady && linked;
   const accessControls = isTest
     ? '<div class="teacher-launch-step"><strong>4. QA game access</strong><p>' +
@@ -539,6 +540,7 @@ export function renderTeacherLaunchActions(published = {}) {
       '<div class="teacher-launch-step"><strong>5. QA daily prompts &amp; Friday recaps</strong>' +
       '<p>Separately opt in to automatic QA emails. These reuse our branded teacher templates, include only QA usage data, and never join dissertation reporting.</p>' +
       '<p><strong>' + (qaEmailEnabled ? 'QA emails enabled' : 'QA emails disabled') + '</strong> · Daily: eligible weekday mornings · Recap: Friday afternoon (Denver)</p>' +
+      (qaEmailEnabled && qaStartDate ? '<p><strong>Automatic QA emails begin: ' + esc(qaStartDate) + '</strong>. Manual send-now tests are available earlier.</p>' : '<small>Automatic QA emails begin next Monday by default; no immediate Friday recap.</small>') +
       '<button type="button" class="' + (qaEmailEnabled ? 'quiet' : 'primary') + '" id="launch-toggle-qa-email" data-enabled="' +
       (qaEmailEnabled ? 'true' : 'false') + '"' + (!qaAccessEnabled ? ' disabled' : '') + '>' +
       (qaEmailEnabled ? 'Disable QA Emails' : 'Enable QA Daily + Friday Emails') + '</button>' +
