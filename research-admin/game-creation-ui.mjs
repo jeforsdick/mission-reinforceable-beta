@@ -523,6 +523,8 @@ export function renderTeacherLaunchActions(published = {}) {
   const gameStatus = !hasPublished ? 'Publish the game first.' :
     hasChanges ? 'Your current drafts contain unpublished changes.' :
     !signed ? 'Finish the three reviews for ' + caseVersion + '.' : caseVersion + ' published and reviewed.';
+  const showPublishedReviews = hasPublished && !hasChanges && !signed;
+  const reviewAction = showPublishedReviews ? 'Go to Published Reviews' : 'Go to Check &amp; Publish';
   const target = published.teacher_email ? '<small>Recipient: ' + esc(published.teacher_email) + '</small>' : '';
   const setupButton = linked
     ? '<button type="button" class="quiet" id="launch-resend-setup"' + (canResendSetup ? '' : ' disabled') + '>Resend Password Setup Email</button>' + (!canResendSetup && published.phase === 'intervention' ? '<small>After Intervention starts, use Send Game Login from Communications.</small>' : '')
@@ -532,7 +534,7 @@ export function renderTeacherLaunchActions(published = {}) {
     '<p class="eyebrow">PUBLISH &amp; INVITE</p><h2 id="teacher-launch-title">' + (isTest ? 'Launch a QA Teacher' : 'Teacher Launch') + '</h2>' +
     '<p>Use these steps in order. Each email is sent only when you click its button. Publishing and emailing never activate game access.</p>' +
     '<div class="teacher-launch-steps">' +
-    '<div class="teacher-launch-step"><strong>1. Publish and review the game</strong><p>' + esc(gameStatus) + '</p><button type="button" class="quiet" id="launch-go-publish">Go to Check &amp; Publish</button></div>' +
+    '<div class="teacher-launch-step"><strong>1. Publish and review the game</strong><p>' + esc(gameStatus) + '</p><button type="button" class="quiet" id="launch-go-publish" data-target="' + (showPublishedReviews ? 'reviews' : 'draft') + '">' + reviewAction + '</button></div>' +
     '<div class="teacher-launch-step"><strong>2. Account setup email</strong><p>' + (linked ? 'Teacher account created and linked.' : 'Create the teacher login and email a secure password-setup link.') + '</p>' + target + setupButton + '</div>' +
     '<div class="teacher-launch-step"><strong>3. Orientation email</strong><p>Send a separate, optional video tour and a reminder to meet with Jess. No game access is enabled.</p><button type="button" class="primary" id="launch-send-orientation"' + (canSendOrientation ? '' : ' disabled') + '>Send Orientation Email</button>' +
       (!orientationAllowed ? '<small>For actual dissertation participants, the platform orientation starts during Intervention.</small>' : '') + '</div>' +
