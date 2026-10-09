@@ -774,8 +774,8 @@ function bindMissionBuilder() {
 }
 function bindPublishedReview() {
 
-  $('#launch-go-publish')?.addEventListener('click', () => {
-    const target = document.querySelector('.full-draft-check') || document.querySelector('.published-game-review');
+  $('#launch-go-publish')?.addEventListener('click', event => {
+    const target = event.currentTarget.dataset.target === 'reviews' ? document.querySelector('.published-game-review') : (document.querySelector('.full-draft-check') || document.querySelector('.published-game-review'));
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   $('#launch-go-access')?.addEventListener('click', () => {
