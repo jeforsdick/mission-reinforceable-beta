@@ -42,7 +42,7 @@ async function db(path,options={}) {
   if(!result.ok) throw new Error('QA mail database request failed');
   return content;
 }
-async function getCandidates(date) {
+async function getCandidates(date,manual=false) {
   const candidates = await db('/rest/v1/rpc/eligible_qa_teacher_emails',{method:'POST',body:'{}'});
   const ready = [];
   for (const candidate of candidates || []) {
@@ -50,7 +50,7 @@ async function getCandidates(date) {
       + '&case_id=eq.' + encodeURIComponent(candidate.case_id)
       + '&is_test=eq.true&qa_game_access_enabled=eq.true&qa_email_enabled=eq.true&select=qa_email_start_date&limit=1');
     const startDate=rows?.[0]?.qa_email_start_date;
-    if(startDate && startDate<=date) ready.push(candidate);
+    if(startDate && (manual || startDate<=date)) ready.push(candidate);
   }
   return ready;
 }
@@ -155,7 +155,7 @@ async function deliver(kind,{caseId=null,manual=false,now=new Date()}={}) {
   if(!manual && (kind===KINDS.DAILY && !isEligibleStudyDay(date) || kind===KINDS.WEEKLY && !friday)) {
     return {eligible:false,study_date:date,sent:0,skipped:0,failed:0};
   }
-  const eligible=await getCandidates(date);
+  const eligible=await getCandidates(date,manual);
   const candidates=caseId?eligible.filter(c=>c.case_id===caseId):eligible;
   if(caseId && candidates.length!==1) throw new Error('QA email requires an opted-in, reviewed test teacher with QA game access.');
   const result={eligible:true,study_date:date,sent:0,skipped:0,failed:0};
