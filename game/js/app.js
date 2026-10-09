@@ -303,7 +303,11 @@
         draftBanner.textContent = `DRAFT QA PREVIEW — ${label} ${assignment.qaDraft.slot} · Not published`;
       }
       if (assignment.fullDraftQa) draftBanner.textContent = 'FULL DRAFT QA PREVIEW · Not published';
-      MR.$('#back-to-research-admin').hidden = assignment.qaMode !== true;
+      if (assignment.qaParticipant === true) {
+        const qaLabel = MR.$('#qa-preview-banner strong');
+        if (qaLabel) qaLabel.textContent = 'QA TEACHER TEST — NOT DISSERTATION DATA';
+      }
+      MR.$('#back-to-research-admin').hidden = assignment.qaMode !== true || assignment.qaParticipant === true;
       MR.setScreen('loading');
       MR.telemetryContext.fidelityTargets = await loadFidelityTargetLookup(assignment.case.id);
       await loadAssignedGame(assignment);
