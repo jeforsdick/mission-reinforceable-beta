@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mission: Reinforceable</title>
   <link rel="icon" href="../favicon.png" />
-  <link rel="stylesheet" href="css/styles.css?v=20261008-briefing-position-2" />
+  <link rel="stylesheet" href="css/styles.css?v=20261009-mobile-briefing-and-password-1" />
   <style>
     @media (min-width: 701px) {
       .home-panel { margin-top: -135px; }
@@ -31,6 +31,12 @@
           <label for="login-password">Password</label>
           <input id="login-password" name="password" type="password" autocomplete="current-password" required />
           <button id="login-submit" class="pixel-btn green-btn" type="submit">Enter the Mission</button>
+          <button id="forgot-password-toggle" class="forgot-password-toggle" type="button" aria-controls="password-recovery-panel" aria-expanded="false">Forgot your password?</button>
+          <div id="password-recovery-panel" class="password-recovery-panel" hidden>
+            <p>Enter your account email above, then request a secure password-reset email.</p>
+            <button id="password-recovery-send" class="pixel-btn green-btn" type="button">Email Me a Reset Link</button>
+            <p id="password-recovery-status" role="status" aria-live="polite"></p>
+          </div>
           <p id="login-error" class="login-error" role="alert" aria-live="assertive"></p>
         </form>
       </div>
@@ -243,7 +249,7 @@
   <script src="js/utils.js"></script>
   <script src="js/study-date.js"></script>
   <script src="js/study-calendar.js"></script>
-  <script src="js/auth.js?v=20261009-qa-teacher-signin-3"></script>
+  <script src="js/auth.js?v=20261009-password-recovery-1"></script>
   <script src="js/session-timer.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/protected-content.js?v=20260819-cleanup-3b"></script>
