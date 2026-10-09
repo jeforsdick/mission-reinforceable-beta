@@ -24,6 +24,46 @@
     MR.setScreen('login');
   }
 
+  function wirePasswordRecovery(supabaseClient) {
+    const toggle = MR.$('#forgot-password-toggle');
+    const panel = MR.$('#password-recovery-panel');
+    const send = MR.$('#password-recovery-send');
+    const status = MR.$('#password-recovery-status');
+    const emailField = MR.$('#login-email');
+    if (!toggle || !panel || !send || !status || !emailField) return;
+
+    toggle.addEventListener('click', () => {
+      panel.hidden = !panel.hidden;
+      toggle.setAttribute('aria-expanded', String(!panel.hidden));
+      if (!panel.hidden) emailField.focus();
+    });
+
+    send.addEventListener('click', async () => {
+      const email = String(emailField.value || '').trim();
+      if (!email || !emailField.checkValidity()) {
+        status.textContent = 'Please enter your valid account email above first.';
+        emailField.focus();
+        return;
+      }
+
+      send.disabled = true;
+      status.textContent = 'Requesting your password-reset email…';
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: 'https://www.missionreinforceable.com/set-password/'
+        });
+        if (error) throw error;
+        // Never disclose whether an email address has a teacher account.
+        status.textContent = 'If this email has an account, a password-reset email is on its way. Check your inbox and junk folder. If the link is invalid, contact the research team for help.';
+      } catch (error) {
+        console.warn('Teacher password-reset request was unsuccessful.', error.message);
+        status.textContent = 'We could not request a reset email right now. Please try again in a little while, or contact the research team.';
+      } finally {
+        send.disabled = false;
+      }
+    });
+  }
+
   function waitForLogin(supabaseClient) {
     return new Promise(resolve => {
       const form = MR.$('#login-form');
@@ -51,6 +91,7 @@
       });
 
       showLogin();
+      wirePasswordRecovery(supabaseClient);
       MR.$('#login-email').focus();
     });
   }
