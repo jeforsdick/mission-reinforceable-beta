@@ -87,6 +87,7 @@ async function provisionObserverAccount(actor, observerId) {
 async function handler(request, response) {
   if (server.methodGuard(request, response)) return;
   let createdUserId = null;
+  let completedAccountAndEmail = false;
   try {
     const actor = await server.authorize(request);
     const keys = Object.keys(request.body || {});
@@ -156,11 +157,27 @@ async function handler(request, response) {
       }
     }
 
-    await server.audit(actor.id, `${type}_account_created`, row.request_id);
-    await server.audit(actor.id, `${type}_account_setup_email_sent`, row.request_id);
-    return server.json(response, createdUserId ? 201 : 200, { ready: true, created: Boolean(createdUserId), linked: true, setup_email_sent: true });
+    // A participant-linked account and Resend-accepted email are already real
+    // at this point. An audit-write failure must not falsely report that setup
+    // failed or trigger deletion of the newly created authentication user.
+    completedAccountAndEmail = true;
+    let auditWarning = false;
+    try {
+      await server.audit(actor.id, `${type}_account_created`, row.request_id);
+      await server.audit(actor.id, `${type}_account_setup_email_sent`, row.request_id);
+    } catch (auditError) {
+      auditWarning = true;
+      console.error('Account setup completed but onboarding audit failed:', auditError.message);
+    }
+    return server.json(response, createdUserId ? 201 : 200, {
+      ready: true,
+      created: Boolean(createdUserId),
+      linked: true,
+      setup_email_sent: true,
+      ...(auditWarning ? { audit_warning: true } : {})
+    });
   } catch (error) {
-    if (createdUserId) await server.supabaseFetch(`/auth/v1/admin/users/${encodeURIComponent(createdUserId)}`, { method: 'DELETE' }).catch(() => {});
+    if (createdUserId && !completedAccountAndEmail) await server.supabaseFetch(`/auth/v1/admin/users/${encodeURIComponent(createdUserId)}`, { method: 'DELETE' }).catch(() => {});
     return server.json(response, error.status || 500, { error: error.status ? error.message : 'Account creation failed safely' });
   }
 }
