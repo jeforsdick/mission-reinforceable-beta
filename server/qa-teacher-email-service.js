@@ -55,9 +55,9 @@ async function getCandidates(date) {
   return ready;
 }
 async function firstQaAccessAt(caseId) {
-  const list = await db('/rest/v1/research_qa_game_access_events?case_id=eq.'+
-    encodeURIComponent(caseId)+'&enabled=eq.true&select=recorded_at&order=recorded_at.asc&limit=1');
-  return list?.[0]?.recorded_at || null;
+  const rows=await db('/rest/v1/participants?case_id=eq.'+encodeURIComponent(caseId)
+    +'&is_test=eq.true&select=qa_email_start_date&limit=1');
+  return rows?.[0]?.qa_email_start_date || null;
 }
 async function hasCompletedQaMissionToday(candidate,date) {
   const sessions = await db('/rest/v1/game_sessions?participant_id=eq.'+
