@@ -3,6 +3,7 @@
 const { authorize, json, supabaseFetch, UUID_PATTERN } = require('./research-admin-server');
 const { configuration } = require('../server/game-login-email');
 const sendGameLogin = require('../server/research-admin-send-game-login');
+const sendOrientation = require('../server/research-admin-send-orientation');
 const weeklyCheckin = require('../server/weekly-checkin-service');
 const { measureConfiguration } = require('../server/qualtrics-measures');
 const { denverDate, loadWeeklySummary } = require('../server/weekly-recap-service');
@@ -66,6 +67,7 @@ async function issueSecureWeeklyUrl(participant, context) {
 
 module.exports = async function handler(request, response) {
   if (request.method === 'POST' && ['send_game_login','send_account_setup'].includes(request.body?.action)) return sendGameLogin(request, response);
+  if (request.method === 'POST' && request.body?.action === 'send_orientation') return sendOrientation(request, response);
   if (request.method === 'POST') {
     try {
       const actor = await authorize(request);
