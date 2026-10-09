@@ -6,6 +6,8 @@ ALTER TABLE public.participants
   ADD COLUMN IF NOT EXISTS qa_game_access_enabled boolean NOT NULL DEFAULT false;
 ALTER TABLE public.participants
   ADD COLUMN IF NOT EXISTS qa_email_enabled boolean NOT NULL DEFAULT false;
+ALTER TABLE public.participants
+  ADD COLUMN IF NOT EXISTS qa_email_start_date date;
 
 CREATE TABLE IF NOT EXISTS public.research_qa_game_access_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -158,6 +160,7 @@ BEGIN
   END IF;
   SELECT jsonb_build_object(
     'is_test',p.is_test,'qa_access_enabled',p.qa_game_access_enabled,'qa_email_enabled',p.qa_email_enabled,
+    'qa_email_start_date',p.qa_email_start_date,
     'account_linked',p.auth_user_id IS NOT NULL,'case_active',c.active,
     'participant_active',p.active,
     'is_qa_case',p.is_test AND NOT c.active AND NOT p.active AND c.archived_at IS NULL
@@ -205,7 +208,7 @@ CREATE POLICY "Research admins read QA email setting events"
   ON public.research_qa_email_setting_events FOR SELECT TO authenticated
   USING ((SELECT public.is_research_admin()));
 
-CREATE OR REPLACE FUNCTION public.research_admin_set_qa_email_delivery(target_case_id uuid,target_enabled boolean)
+CREATE OR REPLACE FUNCTION public.research_admin_set_qa_email_delivery(target_case_id uuid,target_enabled boolean,target_start_date date DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
 AS $
@@ -219,17 +222,25 @@ BEGIN
    OR (SELECT count(*) FROM public.participants p WHERE p.case_id=target_case_id)<>1 THEN
    RAISE EXCEPTION 'An inactive and explicitly marked QA participant is required' USING ERRCODE='55000';
  END IF;
+ IF target_enabled AND target_start_date IS NOT NULL AND target_start_date < (now() AT TIME ZONE 'America/Denver')::date THEN
+   RAISE EXCEPTION 'QA email start date cannot be in the past' USING ERRCODE='22023';
+ END IF;
  IF target_enabled AND (target.qa_game_access_enabled IS NOT TRUE OR target.auth_user_id IS NULL) THEN
    RAISE EXCEPTION 'Enable the linked QA teacher game access first' USING ERRCODE='55000';
  END IF;
- UPDATE public.participants SET qa_email_enabled=target_enabled WHERE id=target.id;
+ UPDATE public.participants SET
+   qa_email_enabled=target_enabled,
+   qa_email_start_date=CASE WHEN target_enabled THEN coalesce(target_start_date,
+     (now() AT TIME ZONE 'America/Denver')::date + ((8-extract(isodow from (now() AT TIME ZONE 'America/Denver')::date)::integer) % 7))
+    ELSE qa_email_start_date END
+ WHERE id=target.id;
  INSERT INTO public.research_qa_email_setting_events(participant_id,case_id,enabled,actor)
  VALUES(target.id,target_case_id,target_enabled,(SELECT auth.uid()));
- RETURN jsonb_build_object('qa_email_enabled',target_enabled);
+ RETURN (SELECT jsonb_build_object('qa_email_enabled',p.qa_email_enabled,'qa_email_start_date',p.qa_email_start_date) FROM public.participants p WHERE p.id=target.id);
 END;
 $;
-REVOKE ALL ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean) TO authenticated;
+REVOKE ALL ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean,date) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean,date) TO authenticated;
 
 -- Disabling QA play automatically disables QA mail, while never touching
 -- production reminder settings, intervention phases, or dissertation data.
