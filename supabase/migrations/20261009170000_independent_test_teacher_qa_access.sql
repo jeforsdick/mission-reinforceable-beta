@@ -4,6 +4,8 @@
 
 ALTER TABLE public.participants
   ADD COLUMN IF NOT EXISTS qa_game_access_enabled boolean NOT NULL DEFAULT false;
+ALTER TABLE public.participants
+  ADD COLUMN IF NOT EXISTS qa_email_enabled boolean NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS public.research_qa_game_access_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -130,7 +132,7 @@ BEGIN
       RAISE EXCEPTION 'Complete all three current-version game reviews first.' USING ERRCODE='55000';
     END IF;
   END IF;
-  UPDATE public.participants SET qa_game_access_enabled=target_enabled
+  UPDATE public.participants SET qa_game_access_enabled=target_enabled, qa_email_enabled=CASE WHEN target_enabled THEN qa_email_enabled ELSE false END
     WHERE id=target.id;
   INSERT INTO public.research_qa_game_access_events
     (case_id,participant_id,enabled,actor)
@@ -155,7 +157,7 @@ BEGIN
     RAISE EXCEPTION 'research admin required' USING ERRCODE='42501';
   END IF;
   SELECT jsonb_build_object(
-    'is_test',p.is_test,'qa_access_enabled',p.qa_game_access_enabled,
+    'is_test',p.is_test,'qa_access_enabled',p.qa_game_access_enabled,'qa_email_enabled',p.qa_email_enabled,
     'account_linked',p.auth_user_id IS NOT NULL,'case_active',c.active,
     'participant_active',p.active,
     'is_qa_case',p.is_test AND NOT c.active AND NOT p.active AND c.archived_at IS NULL
@@ -168,6 +170,69 @@ $;
 REVOKE ALL ON FUNCTION public.research_admin_qa_game_access_status(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.research_admin_qa_game_access_status(uuid) TO authenticated;
 
+
+-- QA mail is an opt-in channel, independent of dissertation reminders.
+CREATE TABLE IF NOT EXISTS public.qa_teacher_email_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  participant_id uuid NOT NULL REFERENCES public.participants(id) ON DELETE RESTRICT,
+  case_id uuid NOT NULL REFERENCES public.cases(id) ON DELETE RESTRICT,
+  email_type text NOT NULL CHECK (email_type IN ('daily','weekly')),
+  study_date date NOT NULL,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','failed')),
+  attempt_count integer NOT NULL DEFAULT 1 CHECK (attempt_count BETWEEN 1 AND 3),
+  provider_message_id text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (participant_id,email_type,study_date)
+);
+ALTER TABLE public.qa_teacher_email_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Research admins read QA email events" ON public.qa_teacher_email_events;
+CREATE POLICY "Research admins read QA email events"
+  ON public.qa_teacher_email_events FOR SELECT TO authenticated
+  USING ((SELECT public.is_research_admin()));
+
+CREATE TABLE IF NOT EXISTS public.research_qa_email_setting_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  participant_id uuid NOT NULL REFERENCES public.participants(id) ON DELETE RESTRICT,
+  case_id uuid NOT NULL REFERENCES public.cases(id) ON DELETE RESTRICT,
+  enabled boolean NOT NULL,
+  actor uuid NOT NULL REFERENCES public.profiles(id) ON DELETE RESTRICT,
+  recorded_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.research_qa_email_setting_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Research admins read QA email setting events" ON public.research_qa_email_setting_events;
+CREATE POLICY "Research admins read QA email setting events"
+  ON public.research_qa_email_setting_events FOR SELECT TO authenticated
+  USING ((SELECT public.is_research_admin()));
+
+CREATE OR REPLACE FUNCTION public.research_admin_set_qa_email_delivery(target_case_id uuid,target_enabled boolean)
+RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO ''
+AS $
+DECLARE target public.participants%ROWTYPE;
+BEGIN
+ IF NOT public.is_research_admin() THEN RAISE EXCEPTION 'research admin required' USING ERRCODE='42501'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtext(target_case_id::text));
+ SELECT p.* INTO target FROM public.participants p JOIN public.cases c ON c.id=p.case_id
+ WHERE c.id=target_case_id AND c.active IS FALSE AND c.archived_at IS NULL FOR UPDATE OF p;
+ IF NOT FOUND OR target.is_test IS NOT TRUE OR target.active IS TRUE
+   OR (SELECT count(*) FROM public.participants p WHERE p.case_id=target_case_id)<>1 THEN
+   RAISE EXCEPTION 'An inactive and explicitly marked QA participant is required' USING ERRCODE='55000';
+ END IF;
+ IF target_enabled AND (target.qa_game_access_enabled IS NOT TRUE OR target.auth_user_id IS NULL) THEN
+   RAISE EXCEPTION 'Enable the linked QA teacher game access first' USING ERRCODE='55000';
+ END IF;
+ UPDATE public.participants SET qa_email_enabled=target_enabled WHERE id=target.id;
+ INSERT INTO public.research_qa_email_setting_events(participant_id,case_id,enabled,actor)
+ VALUES(target.id,target_case_id,target_enabled,(SELECT auth.uid()));
+ RETURN jsonb_build_object('qa_email_enabled',target_enabled);
+END;
+$;
+REVOKE ALL ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.research_admin_set_qa_email_delivery(uuid,boolean) TO authenticated;
+
+-- Disabling QA play automatically disables QA mail, while never touching
+-- production reminder settings, intervention phases, or dissertation data.
 -- Narrow read access to this authenticated invited test teacher's case.
 DROP POLICY IF EXISTS "Invited QA teachers read their test case" ON public.cases;
 CREATE POLICY "Invited QA teachers read their test case" ON public.cases
