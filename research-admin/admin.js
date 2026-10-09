@@ -7,6 +7,7 @@ import { captureMission, captureResourceMap, captureResourceOpenSections, draftP
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
+import { renderFullObservation } from './observation-full-view-ui.mjs?v=20261009-observation-review-1';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';
 
@@ -400,6 +401,47 @@ function bindObserverTeam(){
  $('#training-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_record_observer_training',{target_observer_id:f.get('observer_id'),target_event_type:f.get('event_type'),target_event_date:f.get('event_date'),target_teacher_fidelity_agreement:Number(f.get('teacher')),target_student_behavior_agreement:Number(f.get('student')),target_brief_note:f.get('note')||null},'home');});
 }
 function bindObservationControls(caseId){
+ document.querySelectorAll('.od-view-button').forEach(button=>button.addEventListener('click',async()=>{
+   const id=button.dataset.observation;
+   const panel=button.parentElement.querySelector('.od-container[data-observation="'+id+'"]');
+   if(!panel)return;
+   if(!panel.hidden){
+     panel.hidden=true;
+     button.setAttribute('aria-expanded','false');
+     button.textContent='View full observation';
+     return;
+   }
+   panel.id='od-detail-'+id;
+   button.setAttribute('aria-controls',panel.id);
+   button.setAttribute('aria-expanded','true');
+   button.textContent='Hide full observation';
+   panel.hidden=false;
+   if(panel.dataset.loaded==='true')return;
+   panel.classList.add('od-loading');
+   panel.textContent='Loading full observation, including fidelity and interval records…';
+   button.disabled=true;
+   try{
+     const {data,error}=await state.client.rpc('research_admin_observation_details',{target_observation_id:id});
+     if(error)throw error;
+     panel.classList.remove('od-loading');
+     panel.innerHTML=renderFullObservation(data)+'<button type="button" class="quiet od-close">Close full observation</button>';
+     panel.querySelector('.od-close')?.addEventListener('click',()=>{
+       button.click();
+       button.scrollIntoView({behavior:'smooth',block:'center'});
+     });
+     panel.dataset.loaded='true';
+   }catch(error){
+     panel.classList.remove('od-loading');
+     panel.innerHTML='';
+     const message=document.createElement('p');
+     message.className='od-error';
+     message.textContent='Could not load the full observation: '+(error?.message||'Please try again.');
+     panel.appendChild(message);
+   }finally{
+     button.disabled=false;
+   }
+ }));
+
  $('#observation-setup-form')?.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(event.currentTarget);operationRpc('research_admin_save_observation_setup',{target_case_id:caseId,target_routine:f.get('routine'),target_behavior_definition:f.get('definition'),target_change_note:f.get('change_note')||null});});
  $('#edit-observation-setup')?.addEventListener('click',()=>{$('#observation-setup-form').hidden=false;$('#observation-setup-form').scrollIntoView({behavior:'smooth',block:'center'});});
  document.querySelectorAll('.record-observation-form').forEach(form=>{const fields=form.querySelector('.ioa-fields'),required=[...fields.querySelectorAll('select,input[type="number"]')];form.querySelectorAll('[name="ioa_collected"]').forEach(input=>input.addEventListener('change',()=>{const selected=form.querySelector('[name="ioa_collected"]:checked').value==='yes';fields.hidden=!selected;required.forEach(field=>{field.required=selected;if(!selected)field.value='';});}));form.querySelector('[name="date"]').addEventListener('change',event=>{const date=event.target.value,phase=(state.caseOperations?.phase_history||[]).filter(x=>x.effective_date<=date).sort((a,b)=>b.effective_date.localeCompare(a.effective_date)||b.recorded_at.localeCompare(a.recorded_at))[0]?.phase;form.querySelector('.phase-helper strong').textContent=phase?phase[0].toUpperCase()+phase.slice(1):'Not determinable';});form.addEventListener('submit',event=>{event.preventDefault();const f=new FormData(form),payload=recordPayload(form);operationRpc('research_admin_record_classroom_observation_summary',{target_case_id:caseId,target_observation_date:f.get('date'),target_primary_observer_id:f.get('primary'),target_secondary_observer_id:f.get('secondary')||null,target_start_time:f.get('start')||null,target_end_time:f.get('end')||null,target_observation_note:f.get('note')||null,target_ioa_note:f.get('ioa_note')||null,target_teacher_fidelity_percent:payload.teacher_fidelity_percent,target_student_target_behavior_percent:payload.student_target_behavior_percent,target_teacher_fidelity_ioa_percent:payload.teacher_fidelity_ioa_percent,target_student_behavior_ioa_percent:payload.student_behavior_ioa_percent});});});
