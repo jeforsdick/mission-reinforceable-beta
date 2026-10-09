@@ -16,3 +16,5 @@ const countIntervals = r => {
   totals.observable=totals.occurred+totals.absent;
   return totals;
 };
+
+export {esc,pct,clock,stamp,dateLabel,timeLabel,words,intervalLabel,intervalClass,countIntervals};
