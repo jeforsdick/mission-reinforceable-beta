@@ -354,6 +354,25 @@
           fullDraftQa
         };
       }
+      // Invited QA teachers use their own Supabase account and the protected
+      // published game, but never enter the dissertation intervention pathway.
+      // This server-side RPC returns an assignment only when a research admin
+      // deliberately enabled QA access for this exact test teacher/case.
+      const { data: qaAssignments, error: qaAccessError } = await supabaseClient.rpc('test_participant_game_assignment');
+      if (qaAccessError) throw new Error(`Unable to check QA game access: ${qaAccessError.message}`);
+      if (!Array.isArray(qaAssignments) || qaAssignments.length > 1) throw new Error('QA game assignment could not be uniquely resolved.');
+      if (qaAssignments.length === 1) {
+        const qa = qaAssignments[0];
+        return {
+          user,
+          qaMode: true,
+          qaParticipant: true,
+          participant: { id: qa.participant_id, participant_code: qa.participant_code, is_test: true, active: false },
+          case: { id: qa.case_id, case_code: qa.case_code, student_alias: qa.student_alias, active: false },
+          qaDraft: null,
+          fullDraftQa: false
+        };
+      }
       if (!hasCurrentStudyDaySignIn(user)) {
         await localSignOut(supabaseClient);
         const currentUser = await waitForLogin(supabaseClient);
