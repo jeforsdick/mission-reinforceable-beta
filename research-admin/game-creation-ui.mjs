@@ -516,16 +516,17 @@ export function renderTeacherLaunchActions(published = {}) {
   const isTest = published.participant_is_test === true;
   const orientationAllowed = isTest || published.phase === 'intervention';
   const emailsEnabled = published.email_enabled === true;
-  const canSendSetup = versionReady && emailsEnabled;
-  const canSendOrientation = canSendSetup && linked && orientationAllowed;
+  const canCreateAccount = versionReady && emailsEnabled;
+  const canResendSetup = canCreateAccount && !['intervention', 'maintenance', 'complete'].includes(published.phase);
+  const canSendOrientation = canCreateAccount && linked && orientationAllowed;
   const caseVersion = hasPublished ? 'v' + Number(content.version) : 'Not published';
   const gameStatus = !hasPublished ? 'Publish the game first.' :
     hasChanges ? 'Your current drafts contain unpublished changes.' :
     !signed ? 'Finish the three reviews for ' + caseVersion + '.' : caseVersion + ' published and reviewed.';
   const target = published.teacher_email ? '<small>Recipient: ' + esc(published.teacher_email) + '</small>' : '';
   const setupButton = linked
-    ? '<button type="button" class="quiet" id="launch-resend-setup"' + (canSendSetup ? '' : ' disabled') + '>Resend Password Setup Email</button>'
-    : '<button type="button" class="primary" id="launch-create-account"' + (canSendSetup ? '' : ' disabled') + '>Create Teacher Account &amp; Send Setup Email</button>';
+    ? '<button type="button" class="quiet" id="launch-resend-setup"' + (canResendSetup ? '' : ' disabled') + '>Resend Password Setup Email</button>' + (!canResendSetup && published.phase === 'intervention' ? '<small>After Intervention starts, use Send Game Login from Communications.</small>' : '')
+    : '<button type="button" class="primary" id="launch-create-account"' + (canCreateAccount ? '' : ' disabled') + '>Create Teacher Account &amp; Send Setup Email</button>';
   const message = !emailsEnabled ? '<p class="needs">Email delivery is not configured. Check Teacher Account & Communications.</p>' : '';
   return '<section class="builder-section teacher-launch-actions" id="teacher-launch-actions" aria-labelledby="teacher-launch-title">' +
     '<p class="eyebrow">PUBLISH &amp; INVITE</p><h2 id="teacher-launch-title">' + (isTest ? 'Launch a QA Teacher' : 'Teacher Launch') + '</h2>' +
