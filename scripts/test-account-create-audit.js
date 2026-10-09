@@ -53,7 +53,7 @@ test('successful linked teacher account and sent email remain successful if the 
   const moduleMock = { exports: {} };
   const sandbox = {
     module: moduleMock,
-    require: p => p.includes('research-admin-server') ? api : {
+    require: p => p.includes('research-admin-server') ? api : p.includes('password-setup-link') ? { passwordSetupLandingLink: ()=> 'https://www.missionreinforceable.com/set-password/#token_hash='+ 'a'.repeat(64)+'&type=recovery' } : {
       configuration: () => ({enabled:true,setupUrl:'https://example.org/set-password/',from:'missions@example.org'}),
       formatAccountSetupEmail: () => ({subject:'Setup',text:'Hi',html:'<p>Hi</p>'})
     },
