@@ -326,12 +326,6 @@ function bindDetail() {
   $('.qa-link')?.addEventListener('click', generateQaLink);
   $('#test-password-form')?.addEventListener('submit', setTestPassword);
   $('.generate-weekly-checkin')?.addEventListener('click', generateWeeklyCheckin);
-  $('#preview-protected-game')?.addEventListener('click', event => {
-    // Preview Game is QA only. This does not turn the game on or count as study data.
-    const caseCode = event.currentTarget.dataset.caseCode;
-    window.open(`../game/?qa_case=${encodeURIComponent(caseCode)}`, '_blank', 'noopener');
-  });
-  document.querySelectorAll('.signoff-action:not(:disabled)').forEach(button => button.addEventListener('click', recordSignoff));
   $('#fidelity-scope')?.addEventListener('change', renderFidelityForm);
   $('#fidelity-date')?.addEventListener('change', loadFidelityEvidence);
   $('#fidelity-form')?.addEventListener('submit', submitFidelityReview);
@@ -348,6 +342,7 @@ function bindDetail() {
   $('#download-case-pdf')?.addEventListener('click', openCaseReport);
   bindMissionBuilder();
   bindSetupAndResources();
+  bindPublishedReview();
   if ($('#fidelity-form-wrap')) renderFidelityForm();
 }
 
