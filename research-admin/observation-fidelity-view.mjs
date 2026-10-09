@@ -1,1 +1,1 @@
-export const sample = 'ok';
+export const sample = 'updated';
