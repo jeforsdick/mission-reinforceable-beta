@@ -1,6 +1,7 @@
 'use strict';
 const server = require('./research-admin-server');
 const { configuration, formatAccountSetupEmail, formatCoachAccountSetupEmail } = require('../server/game-login-email');
+const { passwordSetupLandingLink } = require('../server/password-setup-link');
 
 async function observerRow(observerId) {
   if (!server.UUID_PATTERN.test(observerId || '')) throw Object.assign(new Error('Invalid observer'), { status: 400 });
@@ -127,9 +128,10 @@ async function handler(request, response) {
     const linkResponse = await server.supabaseFetch('/auth/v1/admin/generate_link', { method: 'POST', body: JSON.stringify({ type: 'recovery', email, redirect_to: config.setupUrl }) });
     const linkBody = await linkResponse.json().catch(() => null);
     if (!linkResponse.ok || !linkBody?.action_link) throw Object.assign(new Error('Password setup link could not be generated.'), { status: 502 });
+    const setupLink = passwordSetupLandingLink(linkBody, config.setupUrl, process.env.SUPABASE_URL);
     const message = type === 'teacher'
-      ? formatAccountSetupEmail({ teacherName: name, teacherEmail: email, actionLink: linkBody.action_link })
-      : formatCoachAccountSetupEmail({ coachName: name, coachEmail: email, actionLink: linkBody.action_link });
+      ? formatAccountSetupEmail({ teacherName: name, teacherEmail: email, actionLink: setupLink })
+      : formatCoachAccountSetupEmail({ coachName: name, coachEmail: email, actionLink: setupLink });
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': `account-create/${row.request_id}/${type}` },

@@ -2,6 +2,7 @@
 
 const { authorize, json, methodGuard, normalizeEmail, supabaseFetch, UUID_PATTERN } = require('../api/research-admin-server');
 const { configuration, formatAccountSetupEmail, formatGameLoginEmail } = require('./game-login-email');
+const { passwordSetupLandingLink } = require('./password-setup-link');
 
 async function rows(path) {
   const response = await supabaseFetch(path);
@@ -90,8 +91,9 @@ module.exports = async function handler(request, response) {
       method: 'POST',
       body: JSON.stringify({ type: 'recovery', email, redirect_to: config.setupUrl })
     });
-    const link = await linkResponse.json().catch(() => null), actionLink = link?.action_link;
-    if (!linkResponse.ok || !actionLink) throw Object.assign(new Error('Password setup link generation failed.'), { failure: 'auth_link_generation_failed' });
+    const link = await linkResponse.json().catch(() => null);
+    if (!linkResponse.ok || !link?.action_link) throw Object.assign(new Error('Password setup link generation failed.'), { failure: 'auth_link_generation_failed' });
+    const actionLink = passwordSetupLandingLink(link, config.setupUrl, process.env.SUPABASE_URL);
 
     const message = mode === 'setup'
       ? formatAccountSetupEmail({ teacherName: profile.display_name, teacherEmail: email, actionLink })
