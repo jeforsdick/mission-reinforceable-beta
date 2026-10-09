@@ -3,7 +3,7 @@ import { extractFidelityTargets, extractionSummary } from './fidelity-target-ext
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs?v=20261004-history-polish-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261008-qa-preview-clarity-1';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261008-consolidated-publishing-1';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs';
@@ -730,8 +730,6 @@ function bindSetupAndResources() {
   $('#save-resource-map')?.addEventListener('click', saveResourceMap);
   $('#check-full-draft')?.addEventListener('click', checkFullDraft);
   $('#publish-protected-version')?.addEventListener('click', publishProtectedVersion);
-  $('#preview-published-version')?.addEventListener('click', event => window.open(`../game/?qa_case=${encodeURIComponent(event.currentTarget.dataset.caseCode)}`, '_blank', 'noopener'));
-  $('#continue-published-review')?.addEventListener('click', () => document.querySelector('.published-game-review')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   $('#preview-full-draft')?.addEventListener('click', event => window.open(fullDraftPreviewUrl(event.currentTarget.dataset.caseCode), '_blank', 'noopener'));
   document.querySelectorAll('[data-check-nav="setup"]').forEach(button => button.addEventListener('click', () => $('.game-setup')?.scrollIntoView({ behavior: 'smooth', block: 'start' })));
   document.querySelectorAll('[data-check-mission-type]').forEach(button => button.addEventListener('click', () => document.querySelector(`.mission-slot[data-mission-type="${button.dataset.checkMissionType}"][data-slot-number="${button.dataset.checkSlot}"]`)?.click()));
