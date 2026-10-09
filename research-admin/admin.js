@@ -806,8 +806,8 @@ function bindPublishedReview() {
     button.disabled=true;
     message.textContent='Sending QA '+type+' email...';
     try{
-      const result=await adminApi('/api/research-admin-qa-email',{
-        action:type==='daily'?'send_daily':'send_weekly',case_id:state.readiness.case.id
+      const result=await adminApi('/api/research-admin-communication-readiness',{
+        action:type==='daily'?'send_qa_daily':'send_qa_weekly',case_id:state.readiness.case.id
       });
       message.textContent=result.sent===1
         ?'QA '+type+' email accepted and recorded by Resend.'
