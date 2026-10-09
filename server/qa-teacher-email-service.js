@@ -50,6 +50,13 @@ async function firstQaAccessAt(caseId) {
     encodeURIComponent(caseId)+'&enabled=eq.true&select=recorded_at&order=recorded_at.asc&limit=1');
   return list?.[0]?.recorded_at || null;
 }
+async function hasCompletedQaMissionToday(candidate,date) {
+  const sessions = await db('/rest/v1/game_sessions?participant_id=eq.'+
+    encodeURIComponent(candidate.participant_id)+'&case_id=eq.'+
+    encodeURIComponent(candidate.case_id)+'&qa_mode=eq.true&status=eq.completed'+
+    '&select=ended_at&order=ended_at.desc&limit=100');
+  return sessions.some(row=>row.ended_at && denverDate(new Date(row.ended_at))===date);
+}
 async function claim(candidate,kind,date) {
   const result = await db('/rest/v1/rpc/claim_qa_teacher_email_event',{
     method:'POST',
@@ -144,6 +151,10 @@ async function deliver(kind,{caseId=null,manual=false,now=new Date()}={}) {
   if(caseId && candidates.length!==1) throw new Error('QA email requires an opted-in, reviewed test teacher with QA game access.');
   const result={eligible:true,study_date:date,sent:0,skipped:0,failed:0};
   for(const candidate of candidates){
+    if(kind===KINDS.DAILY && !manual && await hasCompletedQaMissionToday(candidate,date)){
+      result.skipped++;
+      continue;
+    }
     const delivery=await sendToCandidate(candidate,kind,date);
     if(delivery.outcome==='sent') result.sent++;
     else if(delivery.outcome==='failed')result.failed++;
