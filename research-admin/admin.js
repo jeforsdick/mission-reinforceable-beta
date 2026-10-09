@@ -1,8 +1,8 @@
 import { accountState, antecedentContext, readinessForCase } from './admin-model.mjs';
 import { extractFidelityTargets, extractionSummary } from './fidelity-target-extractor.mjs?v=20261007-full-bsp-1';
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
-import { attentionForCase, studyWideAttention, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
-import { renderOperations, renderStudyWideTasks } from './operations-ui.mjs?v=20261004-history-polish-1';
+import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
+import { renderOperations } from './operations-ui.mjs?v=20261004-history-polish-1';
 import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261008-game-banner-review-guidance-1';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
@@ -47,9 +47,7 @@ function attentionGroups() {
     kind:'Case',
     reasons:attentionForCase(item)
   })).filter(group=>group.reasons.length);
-  const studyReasons=studyWideAttention(state.operations.study_wide_tasks||[]);
   const groups=[...caseGroups];
-  if (studyReasons.length) groups.push({label:'Study-wide',kind:'Study',reasons:studyReasons});
 
   const activeIntakes=state.intakes.filter(row=>['submitted','approved'].includes(row.status));
   activeIntakes.forEach(row=>groups.push({
@@ -102,7 +100,6 @@ function renderHome() {
 
 function renderStudyOverview() {
   const {archived}=partitionDashboardCases(state.operations.cases);
-  const studyTasks=state.operations.study_wide_tasks||[];
   const visibleCases=visibleDashboardCases(
     state.operations.cases,
     state.testCases,
@@ -161,7 +158,6 @@ function renderStudyOverview() {
       }).join('')
     : '<div class="attention-clear quiet-clear"><strong>No study cases in this view.</strong><span>Use the QA or archived filters if you are looking for a test or historical case.</span></div>';
 
-  $('#study-wide-tasks').innerHTML=renderStudyWideTasks(studyTasks,escapeHtml);
   $('#observer-team').innerHTML=renderObserverTeam(state.observationData||{observers:[]},escapeHtml);
   const realStudyIds=new Set(currentRealCases().map(item=>item.study_id).filter(Boolean));
   $('#study-ioa').innerHTML=renderStudyIoaSummary(state.observationData||{},escapeHtml,realStudyIds);
@@ -171,7 +167,6 @@ function renderStudyOverview() {
     if(intake) openDetail(intake.request_id,'operations');
   }));
   document.querySelectorAll('.legacy-test-password-form').forEach(form=>form.addEventListener('submit',setLegacyTestPassword));
-  bindTaskControls(null,'#study-task-form');
   bindObserverTeam();
 }
 
