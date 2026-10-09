@@ -79,7 +79,7 @@ async function updateEvent(id,values) {
 async function compose(candidate,kind,date) {
   if(kind===KINDS.DAILY) {
     const body=buildMissionReminderEmail(process.env.TEACHER_GAME_URL,candidate.teacher_name);
-    return {...body,subject:'[QA] '+body.subject};
+    return body;
   }
   if(kind!==KINDS.WEEKLY) throw new Error('Unknown QA email kind');
   const monday=mondayFor(date), friday=fridayFor(date);
@@ -105,7 +105,7 @@ async function compose(candidate,kind,date) {
     summary,weeklyQualtricsUrl:secureUrl,
     teacherName:candidate.teacher_name,assetOrigin:process.env.TEACHER_GAME_URL
   });
-  return {...body,subject:'[QA] '+body.subject};
+  return body;
 }
 async function sendToCandidate(candidate,kind,date) {
   const claimed=await claim(candidate,kind,kind===KINDS.WEEKLY?fridayFor(date):date);
