@@ -7,14 +7,27 @@ const test = require('node:test');
 const vm = require('node:vm');
 const { formatOrientationEmail } = require('../server/game-login-email');
 
-test('orientation message uses real site URLs and provides no live password token', () => {
+test('orientation message follows meeting-day onboarding with two working site buttons', () => {
   const email = formatOrientationEmail({ teacherName: 'Sample Teacher', gameUrl: 'https://missionreinforceable.com/game/' });
-  assert.match(email.subject, /Adventure/);
+  assert.equal(email.subject, 'Mission: Reinforceable — Your Adventure Starts Today!');
+  assert.match(email.text, /Before we meet today/);
+  assert.match(email.text, /missions@mail\.missionreinforceable\.com/);
+  assert.match(email.text, /Create Your Password/);
+  assert.match(email.text, /WATCH THE ORIENTATION \(OPTIONAL\)/);
   assert.match(email.text, /https:\/\/missionreinforceable\.com\/orientation/);
-  assert.match(email.html, /https:\/\/missionreinforceable\.com\/orientation/);
-  assert.match(email.html, /https:\/\/missionreinforceable\.com\/game\//);
-  assert.match(email.text, /optional/i);
+  assert.match(email.text, /After our meeting/);
+  assert.match(email.text, /once your game is activated!/);
+  assert.match(email.text, /https:\/\/missionreinforceable\.com\/game\//);
+
+  assert.match(email.html, /YOUR ADVENTURE STARTS TODAY!/);
+  assert.match(email.html, /missions@mail\.missionreinforceable\.com/);
+  assert.match(email.html, /href="https:\/\/missionreinforceable\.com\/orientation"/);
+  assert.match(email.html, /WATCH YOUR GAME ORIENTATION/);
+  assert.match(email.html, /href="https:\/\/missionreinforceable\.com\/game\/"/);
+  assert.match(email.html, /TEACHER LOGIN/);
+  assert.match(email.html, /once your game is activated!/);
   assert.doesNotMatch(email.text, /\/auth\/v1\/verify/);
+  assert.doesNotMatch(email.html, /href="[^"]*set-password/);
 });
 
 test('orientation content escapes display names in email HTML', () => {
