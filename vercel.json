@@ -11,6 +11,14 @@
     {
       "path": "/api/teacher-daily-prompt-retry",
       "schedule": "0 23 * * 5"
+    },
+    {
+      "path": "/api/qa-teacher-daily-email",
+      "schedule": "0 14 * * 1-5"
+    },
+    {
+      "path": "/api/qa-teacher-weekly-email",
+      "schedule": "0 23 * * 5"
     }
   ]
 }
