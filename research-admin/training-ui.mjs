@@ -1,6 +1,24 @@
+import { TRAINING_CASES } from '../observe/training-cases.mjs';
 const TEAM_OBSERVERS = ["Austen","Casey","Melissa","Kathleen","Jakob"];
 const REFERENCE_OBSERVER = "Jess";
 const PASS_CRITERION = 90;
+
+// Reference comparisons MUST come from the versioned training answer key,
+// not the researcher's most recent (possibly exploratory) practice submission.
+function fixedTrainingReference(caseId) {
+  const trainingCase=TRAINING_CASES[caseId];
+  if(!trainingCase || !Array.isArray(trainingCase.masterIntervals) || !trainingCase.masterIntervals.length) return null;
+  const targets=trainingCase.fidelityTargets||[];
+  return {
+    client_submission_id:'fixed-training-key-v1-'+caseId,
+    case_id:caseId,
+    intervals:[...trainingCase.masterIntervals],
+    fidelity_scores:Object.fromEntries(targets.map(item=>[item.id,item.trainingKey])),
+    fidelity_outcomes:Object.fromEntries(targets.filter(item=>item.trainingOutcomeKey).map(item=>[item.id,item.trainingOutcomeKey])),
+    teacher_fidelity_agreement:100,
+    notes:'Fixed training key. Subsequent practice attempts do not change the reference.'
+  };
+}
 
 function attemptsFor(rows, observer, caseId) {
   return rows
@@ -141,8 +159,8 @@ function attemptHistory(rows, observer, caseId, reference, escapeHtml, {hideAgre
         ${hideAgreement
           ? '<div class="history-pending"><span>Agreement</span><strong>Held for review</strong></div>'
           : `<div><span>Training key</span><strong>${escapeHtml(pct(attempt.teacher_fidelity_agreement))}</strong></div>
-             <div><span>vs Jess student</span><strong>${escapeHtml(reference && reference.client_submission_id !== attempt.client_submission_id ? pct(student?.percent) : "—")}</strong></div>
-             <div><span>vs Jess fidelity</span><strong>${escapeHtml(reference && reference.client_submission_id !== attempt.client_submission_id ? pct(fidelity?.percent) : "—")}</strong></div>`}
+             <div><span>vs reference student</span><strong>${escapeHtml(reference && reference.client_submission_id !== attempt.client_submission_id ? pct(student?.percent) : "—")}</strong></div>
+             <div><span>vs reference fidelity</span><strong>${escapeHtml(reference && reference.client_submission_id !== attempt.client_submission_id ? pct(fidelity?.percent) : "—")}</strong></div>`}
       </article>`;
   }).join("");
 }
@@ -222,8 +240,8 @@ export function renderObserverTrainingDashboard(data={},escapeHtml=(value)=>Stri
   const questions=data.questions||[];
   const rosterRows=data.roster||[];
   const clearanceRows=data.clearances||[];
-  const jessNora=latest(attempts,REFERENCE_OBSERVER,"nora");
-  const jessKai=latest(attempts,REFERENCE_OBSERVER,"kai");
+  const jessNora=fixedTrainingReference("nora");
+  const jessKai=fixedTrainingReference("kai");
 
   const teamNora=TEAM_OBSERVERS.map(o=>latest(attempts,o,"nora"));
   const teamKai=TEAM_OBSERVERS.map(o=>latest(attempts,o,"kai"));
@@ -255,12 +273,12 @@ export function renderObserverTrainingDashboard(data={},escapeHtml=(value)=>Stri
       <div class="training-reference-card">
         <div>
           <p class="eyebrow">Reference Coding</p>
-          <h3>Jess</h3>
+          <h3>Fixed training key</h3>
         </div>
-        <div><span>Nora reference</span><strong>${jessNora ? `Locked · ${jessNora.intervals?.length || 0} intervals` : "Not submitted"}</strong></div>
-        <div><span>Kai reference</span><strong>${jessKai ? `Locked · ${jessKai.intervals?.length || 0} intervals` : "Not submitted"}</strong></div>
+        <div><span>Nora reference</span><strong>${jessNora ? `Fixed key · ${jessNora.intervals?.length || 0} intervals` : "Not submitted"}</strong></div>
+        <div><span>Kai reference</span><strong>${jessKai ? `Fixed key · ${jessKai.intervals?.length || 0} intervals` : "Not submitted"}</strong></div>
         <details class="training-reference-details">
-          <summary>View Jess reference data</summary>
+          <summary>View fixed reference coding</summary>
           <div class="training-detail-grid">
             ${attemptDetail(jessNora,"Nora reference coding",escapeHtml)}
             ${attemptDetail(jessKai,"Kai reference coding",escapeHtml,{hideAgreement:true})}
