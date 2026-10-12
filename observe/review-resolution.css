@@ -1,0 +1,29 @@
+/* Nora/Kai end-of-clip review: usable controls at desktop, laptop, and phone widths. */
+#review-fidelity{display:grid;gap:14px}
+#review-fidelity .review-fidelity-row{display:grid;grid-template-columns:minmax(220px,.62fr) minmax(0,1.38fr);gap:18px;align-items:start;margin:0;padding:18px 0;border-bottom:1px solid var(--obs-border)}
+#review-fidelity .review-fidelity-row:last-child{border-bottom:0}
+.review-target-description{min-width:0}
+.review-target-description strong{font-size:.98rem;line-height:1.35;overflow-wrap:anywhere}
+.review-target-description small{font-size:.82rem;line-height:1.4;overflow-wrap:anywhere}
+.review-target-description .review-rollup{font-size:.76rem;margin-top:10px}
+#review-fidelity .review-opportunity-list{min-width:0;display:grid;gap:12px}
+.review-opportunity-item{min-width:0;border:1px solid #ddd9e9;border-radius:12px;background:#fcfbff;padding:14px 15px}
+.review-opportunity-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:.76rem}
+.review-opportunity-meta>strong{color:var(--obs-navy);font-size:.79rem}
+.review-opportunity-meta>span{color:var(--obs-muted);font-variant-numeric:tabular-nums}
+.review-rating-field{min-width:0;display:block;margin:12px 0 0;padding:0;border:0}
+.review-rating-field legend{display:block;width:100%;padding:0;color:var(--obs-navy);font-size:.79rem;font-weight:850}
+.review-edit-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.review-edit-button{appearance:none;min-height:42px;padding:9px 12px;border:1px solid #c8c6d5;border-radius:9px;background:white;color:var(--obs-navy);font:inherit;font-size:.78rem;font-weight:750;line-height:1.3;cursor:pointer;white-space:normal;text-align:center}
+.review-edit-button:hover{border-color:var(--obs-purple);background:#f7f1fc}
+.review-edit-button.selected{border:2px solid var(--obs-purple);background:var(--obs-purple-soft);color:var(--obs-purple);padding:8px 11px;box-shadow:0 0 0 2px rgba(109,75,179,.07)}
+.review-edit-button:focus-visible,.review-remove-opportunity:focus-visible{outline:3px solid #a891cb;outline-offset:2px}
+.review-outcome-definition{margin:5px 0 4px;font-size:.74rem;line-height:1.45;color:#566577}
+.review-rating-not-needed{color:#606a7c;margin:10px 0 2px;font-size:.73rem}
+.review-remove-opportunity{display:inline-flex;margin:13px 0 0;padding:5px 0;border:0;background:transparent;color:#795366;font-size:.72rem;font-weight:750;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.review-no-opportunity{font-size:.8rem;margin:8px 0;color:#647087}
+.review-card>.review-help{font-size:.86rem;line-height:1.5;color:#566478}
+#review-view .review-warning{scroll-margin-top:80px}
+#review-view .review-actions{margin-bottom:18px}
+@media(max-width:980px){#review-fidelity .review-fidelity-row{grid-template-columns:minmax(0,1fr);gap:10px}.review-opportunity-item{padding:13px}}
+@media(max-width:580px){.review-card{padding:15px}#review-fidelity .review-fidelity-row{padding:13px 0}.review-edit-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.review-rating-field:has([data-review-outcome]) .review-edit-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.review-edit-button{min-width:0;padding:8px 6px;font-size:.71rem}.review-edit-button.selected{padding:7px 5px}.review-opportunity-meta{align-items:flex-start;flex-direction:column;gap:3px}}
