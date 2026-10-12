@@ -9,6 +9,7 @@ import {
   getTrainingCase,
   intervalCountForDuration
 } from "./training-cases.mjs";
+import { unresolvedReviewOutcomes, editReviewOpportunity, renderReviewTarget } from "./review-resolution.mjs";
 
 const INTERVAL_SECONDS = 15;
 const STORAGE_KEY = "mr-observer-training-module-v6";
@@ -881,7 +882,7 @@ function renderFidelity() {
     return '<div class="training-fidelity-row opportunity-training-row"><div class="training-fidelity-copy" title="'+item.full.replaceAll('"',"&quot;")+'"><span class="target-area">'+item.area+'</span><strong>'+(index+1)+'. '+item.short+'</strong><small>'+item.detail+'</small><small>'+(events.length?events.length+" opportunity"+(events.length===1?"":"ies")+" recorded":"No opportunity recorded yet")+'</small></div><div class="training-opportunity-side">'+eventRows+scoring+(events.length&&!showScoring?'<button type="button" class="training-add-opportunity" data-add-training-opportunity="'+item.id+'">+ Add another opportunity</button>':"")+'</div></div>';
   }).join("");
   const total=(attempt?.fidelityOpportunities||[]).length;
-  const pending=(attempt?.fidelityOpportunities||[]).filter((event)=>!event.desired_outcome).length;
+  const pending=(attempt?.fidelityOpportunities||[]).filter((event)=>event.implementation==="implemented"&&!event.desired_outcome).length;
   els["fidelity-progress"].textContent=total ? total+" opportunit"+(total===1?"y":"ies")+(pending?" · "+pending+" outcome rating(s) needed":"") : "0 opportunities";
 }
 function hideOutcomePrompt() {
@@ -908,7 +909,8 @@ function scoreFidelity(itemId,score) {
   syncTrainingRollups(false);
   saveState();
   renderFidelity();
-  showOutcomePrompt(itemId,event.event_id);
+  if(score === "implemented") showOutcomePrompt(itemId,event.event_id);
+  else hideOutcomePrompt();
 }
 function saveOutcome(choice) {
   const attempt=currentAttempt();
@@ -1032,22 +1034,32 @@ function missingFidelityItems() {
 }
 
 function missingOutcomeItems() {
-  const attempt = currentAttempt();
-  return (attempt?.fidelityOpportunities||[]).filter((event)=>!event.desired_outcome);
+  return unresolvedReviewOutcomes(currentAttempt());
 }
 
 function reviewRow(item,index) {
-  const events=trainingOpportunitiesFor(item.id);
-  const score=currentAttempt()?.fidelityScores?.[item.id]||"no_opportunity";
-  const rows=events.length?events.map((event)=>'<div class="review-opportunity-event"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong><span>Desired outcome: '+(event.desired_outcome==="yes"?"Yes":event.desired_outcome==="no"?"No":event.desired_outcome==="unclear"?"Not clear":"Not rated")+'</span></div>').join(""):'<small>No opportunity occurred during this observation.</small>';
-  return '<div class="review-fidelity-row"><div><strong>'+(index+1)+'. '+item.short+'</strong><small>'+item.detail+'</small><span class="review-rollup">Summary: '+(score==="implemented"?"Implemented as Written":score==="not_implemented"?"Not Implemented as Written":"No Opportunity")+'</span></div><div class="review-opportunity-list">'+rows+'</div></div>';
+  const attempt=currentAttempt();
+  return renderReviewTarget(item,index,trainingOpportunitiesFor(item.id),attempt?.fidelityScores?.[item.id]||"no_opportunity");
 }
+
+function refreshReviewFidelity() {
+  const attempt=currentAttempt();
+  if(!attempt || attempt.status!=="review")return;
+  syncTrainingRollups(true);
+  const fidelity=calculateFidelity(attempt.fidelityScores);
+  els["summary-fidelity"].textContent=percentLabel(fidelity.percent);
+  els["summary-fidelity-detail"].textContent=`${fidelity.implemented} implemented / ${fidelity.scoreable} scoreable; ${fidelity.noOpportunity} no opportunity`;
+  els["review-fidelity"].innerHTML=fidelityTargets().map(reviewRow).join("");
+  renderReviewWarning();
+  saveState();
+}
+
 function renderReviewWarning() {
   const missingScores = missingFidelityItems();
   const missingOutcomes = missingOutcomeItems();
   const parts = [];
   if (missingScores.length) parts.push(`${missingScores.length} fidelity item${missingScores.length === 1 ? "" : "s"} still need a score`);
-  if (missingOutcomes.length) parts.push(`${missingOutcomes.length} implemented item${missingOutcomes.length === 1 ? "" : "s"} still need an outcome rating`);
+  if (missingOutcomes.length) parts.push(`${missingOutcomes.length} implemented opportunit${missingOutcomes.length === 1 ? "y" : "ies"} still need an outcome rating`);
 
   els["review-warning"].hidden = parts.length === 0;
   els["review-warning-text"].textContent = parts.length ? parts.join(" and ") + "." : "";
@@ -1078,8 +1090,7 @@ function showReview() {
   els["summary-not-observed"].textContent = `${student.notObserved} not observed`;
   els["summary-duration"].textContent = formatClock(caseData.videoDurationSeconds);
   els["summary-case-name"].textContent = caseData.title;
-  els["review-fidelity"].innerHTML = fidelityTargets().map(reviewRow).join("");
-  renderReviewWarning();
+  refreshReviewFidelity();
   resetScrollPosition();
 }
 
@@ -1487,7 +1498,21 @@ els["observation-notes"].addEventListener("input", (event) => {
 els["mark-remaining-no-opportunity"].addEventListener("click", markRemainingNoOpportunity);
 els["review-back-home"].addEventListener("click", showModule);
 
-els["review-fidelity"].addEventListener("click", () => {});
+els["review-fidelity"].addEventListener("click", (event) => {
+  const button=event.target.closest("button");
+  if(!button || !els["review-fidelity"].contains(button))return;
+  const attempt=currentAttempt();
+  if(!attempt || attempt.status!=="review")return;
+  let changed=false;
+  if(button.hasAttribute("data-review-implementation")){
+    changed=editReviewOpportunity(attempt,button.dataset.reviewImplementation,"implementation",button.dataset.reviewValue);
+  }else if(button.hasAttribute("data-review-outcome")){
+    changed=editReviewOpportunity(attempt,button.dataset.reviewOutcome,"outcome",button.dataset.reviewValue);
+  }else if(button.hasAttribute("data-review-remove")){
+    changed=editReviewOpportunity(attempt,button.dataset.reviewRemove,"remove");
+  }
+  if(changed)refreshReviewFidelity();
+});
 
 els["submit-attempt"].addEventListener("click", submitAttempt);
 
