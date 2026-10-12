@@ -876,7 +876,10 @@ function renderFidelity() {
     const eventRows=events.map((event)=>{
       const outcome=event.desired_outcome;
       const outcomeLabel=outcome==="yes"?"Desired outcome: Yes":outcome==="no"?"Desired outcome: No":outcome==="unclear"?"Desired outcome: Not clear":"Desired outcome: rate now";
-      return '<div class="training-opportunity-event"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong><button type="button" class="outcome-badge" data-outcome-edit="'+event.event_id+'" data-target-id="'+item.id+'">'+outcomeLabel+'</button></div>';
+      const outcomeControl=event.implementation==="implemented"
+        ? '<button type="button" class="outcome-badge" data-outcome-edit="'+event.event_id+'" data-target-id="'+item.id+'">'+outcomeLabel+'</button>'
+        : '<span class="outcome-not-required">Outcome not required</span>';
+      return '<div class="training-opportunity-event"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong>'+outcomeControl+'</div>';
     }).join("");
     const scoring=showScoring ? '<div class="training-opportunity-entry"><small>'+(events.length?"New opportunity · timestamp is added when scored":"Opportunity 1")+'</small><div class="training-opportunity-buttons"><button type="button" class="fidelity-choice" data-fidelity-choice="'+item.id+'" data-score="implemented">Implemented<br>as Written</button><button type="button" class="fidelity-choice not-implemented" data-fidelity-choice="'+item.id+'" data-score="not_implemented">Not Implemented<br>as Written</button></div></div>' : "";
     return '<div class="training-fidelity-row opportunity-training-row"><div class="training-fidelity-copy" title="'+item.full.replaceAll('"',"&quot;")+'"><span class="target-area">'+item.area+'</span><strong>'+(index+1)+'. '+item.short+'</strong><small>'+item.detail+'</small><small>'+(events.length?events.length+" opportunity"+(events.length===1?"":"ies")+" recorded":"No opportunity recorded yet")+'</small></div><div class="training-opportunity-side">'+eventRows+scoring+(events.length&&!showScoring?'<button type="button" class="training-add-opportunity" data-add-training-opportunity="'+item.id+'">+ Add another opportunity</button>':"")+'</div></div>';
@@ -916,7 +919,7 @@ function saveOutcome(choice) {
   const attempt=currentAttempt();
   if (!attempt||!pendingOutcomeEventId) return;
   const event=(attempt.fidelityOpportunities||[]).find((item)=>item.event_id===pendingOutcomeEventId);
-  if (!event) return;
+  if (!event || event.implementation !== "implemented") return;
   event.desired_outcome=choice;
   syncTrainingRollups(false);
   saveState();
