@@ -9,6 +9,7 @@ import {
   getTrainingCase,
   intervalCountForDuration
 } from "./training-cases.mjs";
+import { revealTrainingOpportunity } from "./opportunity-visibility.mjs";
 import { unresolvedReviewOutcomes, editReviewOpportunity, renderReviewTarget } from "./review-resolution.mjs";
 
 const INTERVAL_SECONDS = 15;
@@ -867,10 +868,12 @@ function syncTrainingRollups(resolveNoOpportunity=false) {
     } else delete attempt.fidelityOutcomes[item.id];
   }
 }
-function renderFidelity() {
+function renderFidelity({revealTargetId=null}={}) {
+  const list=els["fidelity-list"];
+  const previousScrollTop=list.scrollTop;
   const attempt=currentAttempt();
   const targets=fidelityTargets();
-  els["fidelity-list"].innerHTML=targets.map((item,index)=>{
+  list.innerHTML=targets.map((item,index)=>{
     const events=trainingOpportunitiesFor(item.id);
     const showScoring=!events.length || attempt.pendingOpportunityTarget===item.id;
     const eventRows=events.map((event)=>{
@@ -882,8 +885,16 @@ function renderFidelity() {
       return '<div class="training-opportunity-event"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong>'+outcomeControl+'</div>';
     }).join("");
     const scoring=showScoring ? '<div class="training-opportunity-entry"><small>'+(events.length?"New opportunity · timestamp is added when scored":"Opportunity 1")+'</small><div class="training-opportunity-buttons"><button type="button" class="fidelity-choice" data-fidelity-choice="'+item.id+'" data-score="implemented">Implemented<br>as Written</button><button type="button" class="fidelity-choice not-implemented" data-fidelity-choice="'+item.id+'" data-score="not_implemented">Not Implemented<br>as Written</button></div></div>' : "";
-    return '<div class="training-fidelity-row opportunity-training-row"><div class="training-fidelity-copy" title="'+item.full.replaceAll('"',"&quot;")+'"><span class="target-area">'+item.area+'</span><strong>'+(index+1)+'. '+item.short+'</strong><small>'+item.detail+'</small><small>'+(events.length?events.length+" opportunity"+(events.length===1?"":"ies")+" recorded":"No opportunity recorded yet")+'</small></div><div class="training-opportunity-side">'+eventRows+scoring+(events.length&&!showScoring?'<button type="button" class="training-add-opportunity" data-add-training-opportunity="'+item.id+'">+ Add another opportunity</button>':"")+'</div></div>';
+    return '<div class="training-fidelity-row opportunity-training-row'+(attempt.pendingOpportunityTarget===item.id?' pending-training-opportunity':'')+'" data-training-target-id="'+item.id+'"><div class="training-fidelity-copy" title="'+item.full.replaceAll('"',"&quot;")+'"><span class="target-area">'+item.area+'</span><strong>'+(index+1)+'. '+item.short+'</strong><small>'+item.detail+'</small><small>'+(events.length?events.length+" opportunity"+(events.length===1?"":"ies")+" recorded":"No opportunity recorded yet")+'</small></div><div class="training-opportunity-side">'+eventRows+scoring+(events.length&&!showScoring?'<button type="button" class="training-add-opportunity" data-add-training-opportunity="'+item.id+'">+ Add another opportunity</button>':"")+'</div></div>';
   }).join("");
+  // Rerendering the list must not jump away from the item being scored.
+  list.scrollTop=previousScrollTop;
+  if(revealTargetId){
+    window.requestAnimationFrame(()=>{
+      if(els["active-view"].hidden || currentAttempt()?.pendingOpportunityTarget!==revealTargetId)return;
+      revealTrainingOpportunity(list,revealTargetId);
+    });
+  }
   const total=(attempt?.fidelityOpportunities||[]).length;
   const pending=(attempt?.fidelityOpportunities||[]).filter((event)=>event.implementation==="implemented"&&!event.desired_outcome).length;
   els["fidelity-progress"].textContent=total ? total+" opportunit"+(total===1?"y":"ies")+(pending?" · "+pending+" outcome rating(s) needed":"") : "0 opportunities";
@@ -1476,9 +1487,10 @@ els["fidelity-list"].addEventListener("click", (event) => {
   if (addButton) {
     const attempt=currentAttempt();
     if (attempt) {
-      attempt.pendingOpportunityTarget=addButton.dataset.addTrainingOpportunity;
+      const itemId=addButton.dataset.addTrainingOpportunity;
+      attempt.pendingOpportunityTarget=itemId;
       saveState();
-      renderFidelity();
+      renderFidelity({revealTargetId:itemId});
     }
     return;
   }
