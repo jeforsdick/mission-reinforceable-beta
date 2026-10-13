@@ -493,3 +493,19 @@ input:focus,select:focus,textarea:focus{border-color:var(--obs-purple);outline:3
     grid-template-columns:1fr!important;
   }
 }
+
+
+/* Keep repeated-opportunity scoring identifiable after dynamic rerenders. */
+.opportunity-training-row.pending-training-opportunity{
+  border-color:#aa89d5;
+  box-shadow:0 0 0 2px rgba(109,75,179,.08);
+}
+.opportunity-training-row.pending-training-opportunity .training-opportunity-entry{
+  background:#f3eafc;
+  border:2px solid #9870c9;
+  scroll-margin-block:110px;
+}
+.opportunity-training-row.pending-training-opportunity .fidelity-choice:focus-visible{
+  outline:3px solid #5d348e;
+  outline-offset:3px;
+}
