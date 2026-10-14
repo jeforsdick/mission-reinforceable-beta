@@ -3,13 +3,14 @@ import { extractFidelityTargets, extractionSummary } from './fidelity-target-ext
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs?v=20261009-intervention-focus-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261009-independent-qa-2';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261014-approved-import-1';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs?v=20261009-intervention-focus-1';
 import { renderFullObservation } from './observation-full-view-ui.mjs?v=20261009-observation-review-1';
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';
+import { reviewApprovedImport, saveApprovedImport } from './approved-draft-import.mjs?v=20261014-1';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W';
@@ -791,6 +792,39 @@ function bindSetupAndResources() {
   document.querySelectorAll('[data-item-remove]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); const card = button.closest('.resource-block'), block = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks[Number(card.dataset.blockIndex)]; block.items.splice(Number(button.closest('.resource-item').dataset.itemIndex), 1); redrawGameCreation(); }));
 }
 function bindMissionBuilder() {
+  $('#import-approved-drafts')?.addEventListener('click', async event => {
+    const button = event.currentTarget;
+    const message = $('#approved-import-message');
+    button.disabled = true;
+    try {
+      const file = $('#approved-import-file')?.files?.[0];
+      if (!file || file.size > 5 * 1024 * 1024) throw new Error('Choose a JSON file smaller than 5 MB.');
+      const payload = JSON.parse(await file.text());
+      const caseId = state.authoringWorkspace.case.id;
+      const readWorkspace = async () => {
+        const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: caseId });
+        if (error) throw error;
+        return data;
+      };
+      const workspace = await readWorkspace();
+      const rows = reviewApprovedImport(payload, workspace);
+      const saved = await saveApprovedImport(rows, workspace, readWorkspace, async row => {
+        const { data, error } = await state.client.rpc('research_admin_save_mission_draft', {
+          target_case_id: caseId, target_mission_type: row.mission_type,
+          target_slot_number: row.slot_number, target_mission: row.mission
+        });
+        if (error) throw error;
+        return data;
+      }, (row, status) => { message.textContent = `${row.mission_type} ${row.slot_number}: ${status}`; });
+      state.authoringWorkspace = await readWorkspace();
+      state.fullDraftCheck = null; state.validatedRevisionManifest = null;
+      state.missionSelection = null; state.missionDraft = null;
+      redrawGameCreation();
+      $('#approved-import-message').textContent = `Import complete: ${saved.length} new revisions saved and verified. Identical existing drafts were retained.`;
+    } catch (error) {
+      message.textContent = `Import stopped: ${error.message}. Any completed saves remain in draft; reload before retrying.`;
+    } finally { button.disabled = false; }
+  });
   $('#back-to-game-ready')?.addEventListener('click', () => { selectCaseTab('operations'); $('#operations-game-ready')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
   document.querySelectorAll('.mission-slot').forEach(button => button.addEventListener('click', () => {
     preserveAllAuthoringForms();
@@ -1178,3 +1212,4 @@ $('#login-form').addEventListener('submit', async event => { event.preventDefaul
 async function signOut() { await state.client?.auth.signOut(); state.intakes = []; show('login-view'); }
 $('#sign-out').addEventListener('click', signOut); $('.sign-out-action').addEventListener('click', signOut); $('#retry').addEventListener('click', start); $('#back-home').addEventListener('click', renderHome); $('#print-intake').addEventListener('click', () => window.print());
 start();
+

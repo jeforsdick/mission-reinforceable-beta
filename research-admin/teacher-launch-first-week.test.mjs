@@ -3,8 +3,8 @@ import fs from 'node:fs';
 
 const loginEmail=fs.readFileSync(new URL('../server/game-login-email.js',import.meta.url),'utf8');
 assert.match(loginEmail,/SETUP_SUBJECT = 'Mission: Reinforceable — Set Up Your Account'/);
-assert.match(loginEmail,/Creating your password does not begin Mission: Reinforceable/);
-assert.match(loginEmail,/Access begins during your scheduled intervention orientation/);
+assert.match(loginEmail,/Creating your password does not start your missions yet/);
+assert.match(loginEmail,/Your game stays locked until the research team begins your intervention/);
 
 const sendService=fs.readFileSync(new URL('../server/research-admin-send-game-login.js',import.meta.url),'utf8');
 assert.match(sendService,/body\.action === 'send_account_setup'/);
