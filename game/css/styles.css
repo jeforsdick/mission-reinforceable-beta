@@ -2688,3 +2688,6 @@ body.qa-preview { padding-top: 4.25rem; }
   margin: 11px 0 0;
   overflow-wrap: anywhere;
 }
+
+/* Preserve authored paragraph spacing in protected Resource Map content. */
+.resources-scroll #resources-content p { white-space: pre-line; }
