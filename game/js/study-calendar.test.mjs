@@ -56,7 +56,7 @@ test('participant gate precedes completion lookup, mission creation, and telemet
   assert.ok(gate >= 0);
   assert.ok(gate < engine.indexOf('await MR.auth.hasCompletedMissionToday()', gate));
   assert.ok(gate < engine.indexOf('const mission = chooseMission(mode)', gate));
-  assert.ok(gate < engine.indexOf('startRelationalTelemetry(current)', gate));
+  assert.match(engine, /function beginMissionAfterBriefing\(\)[\s\S]*startRelationalTelemetry\(current\)/);
   assert.match(index, /id="home-status-bubble"[^>]*hidden[^>]*>No mission today\. Come back on your next school day!</);
 });
 
