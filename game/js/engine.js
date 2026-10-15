@@ -13,6 +13,7 @@
   let pendingNext = null;
   let pendingEnding = null;
   let modalMode = 'feedback';
+  let checkpointStage = null;
 
   const DEFAULT_BETA_BIP_BRIEFING = `Jordan has a hard time during independent writing. When writing feels too big, Jordan may shut down, refuse, or leave the area.
 Your job is to choose responses that follow the plan:
@@ -363,6 +364,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     current.hintOpenedForStep = true;
     playAudioCue('click', 0.18);
     renderWizardHint();
+    checkpoint('question');
   }
 
   function wireWizardHintTrigger() {
@@ -432,6 +434,134 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     root.setAttribute('aria-label', `${hearts} out of ${max} hearts`);
   }
 
+
+  // Browser storage contains choice keys and session IDs only, never protected
+  // behavior-plan scenes, teacher responses, or Wizard feedback text.
+  function checkpoint(stage = checkpointStage) {
+    if (!current || !MR.telemetryContext || !MR.missionResume || !stage) return;
+    checkpointStage = stage;
+    MR.missionResume.save({
+      mode: current.mode,
+      missionId: current.mission.id,
+      sessionId: current.telemetrySessionId,
+      telemetryStartedAt: current.telemetryStartedAt,
+      stage,
+      stepId: current.stepId,
+      answers: current.history.map(item => ({
+        stepId: item.stepId, choiceKey: item.choiceKey,
+        hintOpened: item.hintOpened, hintOpenCount: item.hintOpenCount,
+        timeFromQuestionStartToHintMs: item.timeFromQuestionStartToHintMs,
+        timeFromHintToAnswerMs: item.timeFromHintToAnswerMs,
+        responseTimeMs: item.responseTimeMs
+      })),
+      questionHint: stage === 'question' ? {
+        hintOpened: Boolean(current.hintTracking && current.hintTracking.hintOpened),
+        hintOpenCount: Number(current.hintTracking && current.hintTracking.hintOpenCount || 0),
+        timeFromQuestionStartToHintMs: current.hintTracking && current.hintTracking.timeFromQuestionStartToHintMs
+      } : null,
+      timer: MR.SessionTimer && MR.SessionTimer.snapshot ? MR.SessionTimer.snapshot() : null
+    });
+  }
+
+  function resumableMission() {
+    const saved = MR.missionResume && MR.missionResume.read();
+    if (!saved) return null;
+    const mission = ((MR.pool && MR.pool[saved.mode]) || []).find(item => item.id === saved.missionId);
+    return mission ? { title: mission.title, mode: saved.mode, completed: saved.answers.length } : null;
+  }
+
+  async function resumeSavedMission() {
+    const saved = MR.missionResume && MR.missionResume.read();
+    if (!saved) return false;
+    const mission = ((MR.pool && MR.pool[saved.mode]) || []).find(item => item.id === saved.missionId);
+    if (!mission) { MR.missionResume.clear(); return false; }
+
+    // Use the existing backend session. A completed/unknown session cannot be
+    // resumed, and never receives a second started row.
+    const row = await MR.auth.getMissionSession(saved.sessionId, saved.caseId);
+    if (!row || row.status !== 'started'
+        || row.mode !== saved.mode || row.mission_id !== saved.missionId
+        || row.game_content_version !== saved.gameContentVersion
+        || row.qa_mode !== Boolean(MR.telemetryContext.qaMode)) {
+      MR.missionResume.clear();
+      return false;
+    }
+
+    current = {
+      mode: saved.mode, mission, telemetrySessionId: saved.sessionId,
+      telemetryStartedAt: saved.telemetryStartedAt,
+      telemetrySessionInsert: Promise.resolve(true),
+      stepId: mission.start || 'd1_start', score: 0, maxScore: 0,
+      hearts: Number(MR.teacherConfig.defaultHearts || 5),
+      maxHearts: Number(MR.teacherConfig.defaultHearts || 5),
+      missionSteps: Number(MR.teacherConfig.missionSteps || 5),
+      expectedSteps: expectedStepsForMission(mission),
+      xpMax: Number(MR.teacherConfig.xpMax || 1000),
+      xpMultiplier: Number(MR.teacherConfig.xpMultiplier || 5),
+      history: []
+    };
+    pendingNext = null;
+    pendingEnding = null;
+    checkpointStage = null;
+    try {
+      for (const [index, item] of saved.answers.entries()) {
+        if (item.stepId !== current.stepId ||
+            !mission.steps[current.stepId] ||
+            !mission.steps[current.stepId].choices[item.choiceKey]) throw Error('Saved branch no longer matches this mission.');
+        selectChoice(item.choiceKey, item);
+        if (index < saved.answers.length - 1) {
+          if (!pendingNext) throw Error('Saved mission ended too early.');
+          current.stepId = pendingNext;
+          pendingNext = null;
+        }
+      }
+      if (saved.stage === 'question' && saved.answers.length) {
+        if (!pendingNext) throw Error('Saved question cannot be reached.');
+        current.stepId = pendingNext;
+        pendingNext = null;
+      }
+      if (saved.stage === 'feedback' && !saved.answers.length) throw Error('Feedback has no answer.');
+      if (saved.stage === 'outcome' && (!pendingEnding || saved.answers.length !== 5)) throw Error('Saved ending is missing.');
+      if (!MR.SessionTimer.restore(saved.timer || {})) throw Error('Saved session timer is unavailable.');
+    } catch (error) {
+      console.warn('Saved mission could not be restored:', error);
+      MR.missionResume.clear();
+      current = null;
+      checkpointStage = null;
+      return false;
+    }
+
+    MR.setScreen('play');
+    renderStep();
+    if (saved.stage === 'question') {
+      const hint = saved.questionHint || {};
+      current.hintOpenedForStep = Boolean(hint.hintOpened);
+      current.hintTracking = {
+        questionStartTime: Date.now(), hintOpened: Boolean(hint.hintOpened),
+        hintOpenCount: Number(hint.hintOpenCount || 0),
+        hintOpenedAt: hint.hintOpened ? new Date().toISOString() : null,
+        timeFromQuestionStartToHintMs: hint.timeFromQuestionStartToHintMs ?? null
+      };
+      renderWizardHint();
+    } else if (saved.stage === 'feedback') {
+      const last = current.history[current.history.length - 1];
+      MR.$('.choice-btn').forEach(button => button.disabled = true);
+      showWizardFeedback(mission.steps[last.stepId].choices[last.choiceKey], last.score);
+    } else {
+      showMissionOutcome(pendingEnding);
+    }
+    checkpoint(saved.stage);
+    return true;
+  }
+
+  function leaveMissionToMenu() {
+    if (modalMode === 'briefing') return exitBriefing();
+    if (MR.SessionTimer && MR.SessionTimer.pause) MR.SessionTimer.pause();
+    checkpoint();
+    hideWizardFeedback();
+    return true;
+  }
+
   function renderHUD() {
     if (!current) return;
     const totalSteps = current.expectedSteps || 3;
@@ -481,23 +611,32 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     });
   }
 
-  function selectChoice(choiceKey) {
+  function selectChoice(choiceKey, restoredAnswer = null) {
     const step = current.mission.steps[current.stepId];
     const choice = Object.assign({ key: choiceKey }, step.choices[choiceKey]);
     const score = getScore(choice);
     const maxScore = stepMax(step);
     const heartChange = updateHeartsForChoice(score);
     const answerTime = Date.now();
-    const hintTracking = current.hintTracking || {};
-    const timeFromHintToAnswerMs = hintTracking.hintOpenedAt && hintTracking.timeFromQuestionStartToHintMs != null
+    const hintTracking = restoredAnswer ? {
+      hintOpened: Boolean(restoredAnswer.hintOpened),
+      hintOpenCount: Number(restoredAnswer.hintOpenCount || 0),
+      hintOpenedAt: null,
+      timeFromQuestionStartToHintMs: restoredAnswer.timeFromQuestionStartToHintMs
+    } : current.hintTracking || {};
+    const timeFromHintToAnswerMs = restoredAnswer
+      ? restoredAnswer.timeFromHintToAnswerMs ?? null
+      : hintTracking.hintOpenedAt && hintTracking.timeFromQuestionStartToHintMs != null
       ? Math.max(0, answerTime - Date.parse(hintTracking.hintOpenedAt))
       : null;
-    const responseTimeMs = hintTracking.questionStartTime
+    const responseTimeMs = restoredAnswer
+      ? restoredAnswer.responseTimeMs ?? null
+      : hintTracking.questionStartTime
       ? Math.max(0, answerTime - hintTracking.questionStartTime)
       : null;
     const selectedScore = scoreValue(score);
     const selectedType = choiceTypeForScore(selectedScore);
-    playAudioCue(soundForScore(score));
+    if (!restoredAnswer) playAudioCue(soundForScore(score));
 
     current.score += score;
     current.maxScore += maxScore;
@@ -528,7 +667,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       timeFromQuestionStartToHintMs: hintTracking.timeFromQuestionStartToHintMs != null ? hintTracking.timeFromQuestionStartToHintMs : null,
       timeFromHintToAnswerMs,
       responseTimeMs,
-      hintText: current.hintOpenedForStep ? bspHintForCurrentStep() : '',
+      hintText: hintTracking.hintOpened ? bspHintForCurrentStep() : '',
       bestChoiceKey: bestChoice ? bestChoice.key : '',
       bestChoiceText: bestChoice ? bestChoice.text || '' : '',
       bestAnswerText: bestChoice ? bestChoice.text || '' : '',
@@ -542,9 +681,11 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     pendingNext = nextId && current.mission.steps[nextId] ? nextId : null;
     const isTerminalDecision = !pendingNext && current.history.length === 5;
     pendingEnding = endingForChoice(current.mission, choice, isTerminalDecision);
-    MR.$$('.choice-btn').forEach(button => button.disabled = true);
+    if (restoredAnswer) return;
+    MR.$('.choice-btn').forEach(button => button.disabled = true);
     renderHUD();
     showWizardFeedback(choice, score);
+    checkpoint('feedback');
   }
 
   function showBIPBriefing(text) {
@@ -569,6 +710,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     current.telemetryStartedAt = new Date().toISOString();
     current.telemetrySessionInsert = startRelationalTelemetry(current);
     if (MR.SessionTimer && MR.SessionTimer.start) MR.SessionTimer.start();
+    checkpoint('question');
     if (MR.audio && MR.audio.startBgm) MR.audio.startBgm();
     playAudioCue('missionStart', 0.26);
   }
@@ -637,8 +779,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     img.className = `wizard-modal-img ${outcomeWizard.cls}`;
     MR.$('#wizard-modal-continue').textContent = 'View Results';
     const exit = MR.$('#wizard-modal-exit');
-    if (exit) exit.hidden = true;
+    if (exit) { exit.hidden = false; exit.setAttribute('aria-label', 'Return to mission menu'); }
     modal.hidden = false;
+    checkpoint('outcome');
   }
 
   function hideWizardFeedback() {
@@ -666,6 +809,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       current.stepId = pendingNext;
       pendingNext = null;
       renderStep();
+      checkpoint('question');
     } else if (pendingEnding) {
       const ending = pendingEnding;
       pendingEnding = null;
@@ -928,7 +1072,15 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       showTelemetrySaveFailure();
       return;
     }
-    if (telemetryResult === 'already_completed') return;
+    if (telemetryResult === 'already_completed') {
+      if (MR.missionResume) MR.missionResume.clear();
+      current = null;
+      checkpointStage = null;
+      return;
+    }
+    if (MR.missionResume) MR.missionResume.clear();
+    current = null;
+    checkpointStage = null;
     // Browser-local run history belongs only to unauthenticated public-demo gameplay.
     if (!MR.telemetryContext) MR.storage.saveRun(run);
     renderResults(run);
@@ -960,6 +1112,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   MR.engine = {
     async start(mode) {
       const context = MR.telemetryContext;
+      if (context && !context.qaMode && resumableMission()) return resumeSavedMission();
       if (context && !context.qaMode) {
         if (!context.demoCalendarBypass && !MR.studyCalendar.isEligibleStudyDay()) {
           if (typeof MR.onStudyCalendarBlocked === 'function') MR.onStudyCalendarBlocked();
@@ -977,7 +1130,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
           return false;
         }
       }
+      if (MR.missionResume) MR.missionResume.clear();
       const mission = chooseMission(mode);
+      checkpointStage = null;
       const telemetryStartedAt = new Date().toISOString();
       current = {
         mode,
@@ -1012,6 +1167,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
     continueAfterFeedback,
     exitBriefing,
+    leaveMissionToMenu,
+    resumableMission,
+    resumeSavedMission,
 
     showStoredRunDetails(run) {
       renderResults(run, { playCompletion: false });
@@ -1028,4 +1186,11 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       return MR.storage.getRuns().find(run => run.dateKey === MR.todayKey() && run.mode === 'daily');
     }
   };
+
+  window.addEventListener('pagehide', () => {
+    if (current && checkpointStage) {
+      if (MR.SessionTimer && MR.SessionTimer.pause) MR.SessionTimer.pause();
+      checkpoint();
+    }
+  });
 })();
