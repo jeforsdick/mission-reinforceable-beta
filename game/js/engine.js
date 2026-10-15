@@ -491,7 +491,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     }
 
     current = {
-      mode: saved.mode, mission, telemetrySessionId: saved.sessionId,
+      mode: saved.mode, mission, studyDateKey: saved.studyDate, telemetrySessionId: saved.sessionId,
       telemetryStartedAt: saved.telemetryStartedAt,
       telemetrySessionInsert: Promise.resolve(true),
       stepId: mission.start || 'd1_start', score: 0, maxScore: 0,
@@ -565,6 +565,20 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return true;
   }
 
+  function studyDayExpired() {
+    if (!current || !current.studyDateKey || !MR.studyDate
+        || MR.studyDate.dateKey() === current.studyDateKey) return false;
+    if (MR.missionResume) MR.missionResume.clear();
+    if (MR.SessionTimer && MR.SessionTimer.pause) MR.SessionTimer.pause();
+    hideWizardFeedback();
+    current = null;
+    pendingNext = null;
+    pendingEnding = null;
+    checkpointStage = null;
+    if (typeof MR.onStudyCalendarBlocked === 'function') MR.onStudyCalendarBlocked();
+    return true;
+  }
+
   function renderHUD() {
     if (!current) return;
     const totalSteps = current.expectedSteps || 3;
@@ -615,6 +629,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   function selectChoice(choiceKey, restoredAnswer = null) {
+    if (studyDayExpired()) return;
     const step = current.mission.steps[current.stepId];
     const choice = Object.assign({ key: choiceKey }, step.choices[choiceKey]);
     const score = getScore(choice);
@@ -796,6 +811,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   function continueAfterFeedback() {
+    if (studyDayExpired()) return;
     hideWizardFeedback();
     if (modalMode === 'outcome') {
       pendingEnding = null;
@@ -1019,6 +1035,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   async function finishMission() {
+    if (studyDayExpired()) return;
     const accuracy = current.maxScore ? Math.round((current.score / current.maxScore) * 100) : 0;
     const xp = behaviorXPFor(current.score, current.expectedSteps || 3, current.xpMax);
     const timing = MR.SessionTimer && MR.SessionTimer.stop ? MR.SessionTimer.stop() : null;
@@ -1140,6 +1157,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       current = {
         mode,
         mission,
+        studyDateKey: MR.studyDate && MR.studyDate.dateKey ? MR.studyDate.dateKey() : null,
         telemetrySessionId: telemetryUuid(),
         telemetryStartedAt,
         stepId: null,
