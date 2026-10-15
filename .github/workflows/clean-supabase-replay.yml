@@ -46,5 +46,8 @@ jobs:
       - name: Verify mission navigation and resume behavior
         run: node --test game/js/mission-resume.test.mjs
 
+      - name: Run the complete JavaScript regression suite
+        run: node --test
+
       - name: Replay clean local database
         run: ./scripts/replay-clean-supabase.sh
