@@ -2691,3 +2691,60 @@ body.qa-preview { padding-top: 4.25rem; }
 
 /* Preserve authored paragraph spacing in protected Resource Map content. */
 .resources-scroll #resources-content p { white-space: pre-line; }
+
+
+/* 2026-10-15 QA teacher mobile gameplay: prevent duplicate-looking hint
+   shadows and keep fixed account/sound controls out of choice buttons.
+   Only the active play screen on phone-size viewports is affected. */
+@media (max-width: 700px) {
+  .wizard-hint-wrap .scenario-hint {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  /* The desktop hint highlight drop-shadows rendered glyphs when the
+     mobile hint background is transparent, making every line look doubled. */
+  .wizard-hint-wrap:hover .scenario-hint,
+  .wizard-hint-wrap:focus-visible .scenario-hint,
+  .wizard-hint-wrap.is-open .scenario-hint {
+    filter: none;
+  }
+
+  body:has(#play-screen.is-active) .mr-app {
+    padding-bottom: 8px;
+  }
+
+  /* On the play screen these controls follow the mission in document flow
+     instead of floating over answer choices as the teacher scrolls. */
+  body:has(#play-screen.is-active) .account-stack {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: max-content;
+    max-width: calc(100% - 20px);
+    margin: 12px auto 8px;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  body:has(#play-screen.is-active) .back-to-site-cottage {
+    width: 66px;
+    flex: 0 0 66px;
+  }
+
+  body:has(#play-screen.is-active) .participant-controls {
+    width: auto;
+    max-width: min(200px, 64vw);
+    flex: 0 1 auto;
+  }
+
+  body:has(#play-screen.is-active) .sound-toggle {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    display: flex;
+    width: max-content;
+    margin: 8px auto 18px;
+  }
+}
