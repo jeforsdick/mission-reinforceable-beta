@@ -1115,7 +1115,6 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   MR.engine = {
     async start(mode) {
       const context = MR.telemetryContext;
-      if (context && !context.qaMode && resumableMission()) return resumeSavedMission();
       if (context && !context.qaMode) {
         if (!context.demoCalendarBypass && !MR.studyCalendar.isEligibleStudyDay()) {
           if (typeof MR.onStudyCalendarBlocked === 'function') MR.onStudyCalendarBlocked();
@@ -1132,6 +1131,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
           if (typeof MR.onDailyMissionCompleted === 'function') MR.onDailyMissionCompleted();
           return false;
         }
+        if (resumableMission()) return resumeSavedMission();
       }
       if (MR.missionResume) MR.missionResume.clear();
       const mission = chooseMission(mode);
@@ -1190,10 +1190,12 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     }
   };
 
-  window.addEventListener('pagehide', () => {
-    if (current && checkpointStage) {
-      if (MR.SessionTimer && MR.SessionTimer.pause) MR.SessionTimer.pause();
-      checkpoint();
-    }
-  });
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('pagehide', () => {
+      if (current && checkpointStage) {
+        if (MR.SessionTimer && MR.SessionTimer.pause) MR.SessionTimer.pause();
+        checkpoint();
+      }
+    });
+  }
 })();
