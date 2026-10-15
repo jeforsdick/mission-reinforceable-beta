@@ -1197,5 +1197,18 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         checkpoint();
       }
     });
+    // Returning from the main website via browser Back may restore this tab
+    // from the back/forward cache without running initialization again.
+    window.addEventListener('pageshow', event => {
+      if (!event.persisted || !current || !checkpointStage) return;
+      if (!MR.missionResume || !MR.missionResume.read()) {
+        current = null;
+        checkpointStage = null;
+        if (typeof MR.onStudyCalendarBlocked === 'function') MR.onStudyCalendarBlocked();
+        return;
+      }
+      if (MR.SessionTimer && MR.SessionTimer.resume
+          && document.body && document.body.dataset.screen === 'play') MR.SessionTimer.resume();
+    });
   }
 })();
