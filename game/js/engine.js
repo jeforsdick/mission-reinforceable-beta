@@ -548,7 +548,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       renderWizardHint();
     } else if (saved.stage === 'feedback') {
       const last = current.history[current.history.length - 1];
-      MR.$('.choice-btn').forEach(button => button.disabled = true);
+      MR.$$('.choice-btn').forEach(button => button.disabled = true);
       showWizardFeedback(mission.steps[last.stepId].choices[last.choiceKey], last.score);
     } else {
       showMissionOutcome(pendingEnding);
@@ -685,7 +685,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const isTerminalDecision = !pendingNext && current.history.length === 5;
     pendingEnding = endingForChoice(current.mission, choice, isTerminalDecision);
     if (restoredAnswer) return;
-    MR.$('.choice-btn').forEach(button => button.disabled = true);
+    MR.$$('.choice-btn').forEach(button => button.disabled = true);
     renderHUD();
     showWizardFeedback(choice, score);
     checkpoint('feedback');
