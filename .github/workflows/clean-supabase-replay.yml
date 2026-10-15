@@ -43,5 +43,8 @@ jobs:
           node --test research-admin/multiple-probe-baseline.test.mjs
           node --test research-admin/teacher-launch-first-week.test.mjs
 
+      - name: Verify mission navigation and resume behavior
+        run: node --test game/js/mission-resume.test.mjs
+
       - name: Replay clean local database
         run: ./scripts/replay-clean-supabase.sh
