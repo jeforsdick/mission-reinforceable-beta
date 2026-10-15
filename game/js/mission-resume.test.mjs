@@ -191,3 +191,25 @@ test('browser Back restores active timer only for a valid same-day checkpoint', 
   run.handlers.pageshow({ persisted: true });
   assert.equal(resumes,1,'expired checkpoints must not resume active play');
 });
+
+test('active unfinished mission cannot accept further decisions after Denver study date changes', async()=>{
+  const storage=createStorage(),db=new Map(); db.responses=[];
+  const run=harness(storage,db);
+  await run.MR.engine.start('daily');
+  run.MR.engine.continueAfterFeedback();
+  run.MR.__test.selectChoice('A');
+  assert.equal(run.MR.__test.getCurrent().history.length,1);
+  run.now.date='2026-10-16';
+  run.MR.engine.continueAfterFeedback();
+  assert.equal(run.MR.__test.getCurrent(),null);
+  assert.equal(run.MR.missionResume.read(),null);
+  assert.equal(db.responses.length,0);
+});
+
+test('other game navigation preserves the ongoing session before changing screens',()=>{
+  const app=source('./app.js');
+  const progress=app.match(/#nav-progress'\)\.addEventListener\('click',[\s\S]*?MR\.setScreen\('progress'\)/)?.[0]||'';
+  const resources=app.match(/#nav-resources'\)\.addEventListener\('click',[\s\S]*?MR\.setScreen\('resources'\)/)?.[0]||'';
+  assert.match(progress,/MR\.engine\.leaveMissionToMenu\(\)/);
+  assert.match(resources,/MR\.engine\.leaveMissionToMenu\(\)/);
+});
