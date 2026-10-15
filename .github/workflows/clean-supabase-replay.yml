@@ -46,8 +46,17 @@ jobs:
       - name: Verify mission navigation and resume behavior
         run: node --test game/js/mission-resume.test.mjs
 
-      - name: Run all teacher-game regression tests
-        run: node --test game/js/*.test.mjs
+      - name: Run navigation, game integrity, and dose-lock regression tests
+        run: |
+          node --test \
+            game/js/mission-resume.test.mjs \
+            game/js/daily-mission-lock.test.mjs \
+            game/js/study-calendar.test.mjs \
+            game/js/telemetry-integrity.test.mjs \
+            game/js/fidelity-target-linkage.test.mjs \
+            game/js/protected-choice-shuffling.test.mjs \
+            game/js/rich-mission-feedback.test.mjs \
+            game/js/home-status-message.test.mjs
 
       - name: Replay clean local database
         run: ./scripts/replay-clean-supabase.sh
