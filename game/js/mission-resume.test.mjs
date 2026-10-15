@@ -80,15 +80,16 @@ function harness(storage, db, options = {}) {
     async completeTelemetrySession(id) { db.get(id).status='completed'; },
     async insertTelemetryResponses(rows) { db.responses.push(...rows); }
   };
-  const globals = { window:null, document:{hidden:false,addEventListener(){}}, localStorage:storage,
+  const handlers = {};
+  const globals = { window:null, document:{hidden:false,body:{dataset:{screen:'play'}},addEventListener(){}}, localStorage:storage,
     console, Date, Math, Uint8Array, setTimeout, clearTimeout, MR };
   globals.window = globals;
-  globals.addEventListener = () => {};
+  globals.addEventListener = (type,callback) => { handlers[type] = callback; };
   globals.crypto = { randomUUID: () => 'fafafafa-1111-4111-8111-fafafafafafa', getRandomValues: arr => arr.fill(1) };
   globals.scrollTo = () => {};
   const context = vm.createContext(globals);
   [storageSource,checkpointSource,timerSource,engineSource].forEach(script=>vm.runInContext(script,context));
-  return { MR,db,elements,now, get creates(){return creates;} };
+  return { MR,db,elements,now,handlers, get creates(){return creates;} };
 }
 
 test('refresh during feedback resumes the identical scored branch and same database session',async()=>{
@@ -174,4 +175,19 @@ test('navigation preserves external Website link and in-game Mission Menu contro
   assert.match(html, /id="play-menu-btn"/);
   assert.match(app, /MR\.engine\.leaveMissionToMenu\(\)/);
   assert.match(app, /MR\.engine\.resumeSavedMission\(\)/);
+});
+
+test('browser Back restores active timer only for a valid same-day checkpoint', async () => {
+  const storage=createStorage(),db=new Map();db.responses=[];
+  const run=harness(storage,db);
+  await run.MR.engine.start('daily');
+  run.MR.engine.continueAfterFeedback();
+  let resumes=0;
+  run.MR.SessionTimer.resume=()=>{resumes++;};
+  run.handlers.pagehide();
+  run.handlers.pageshow({ persisted: true });
+  assert.equal(resumes,1);
+  run.now.date='2026-10-16';
+  run.handlers.pageshow({ persisted: true });
+  assert.equal(resumes,1,'expired checkpoints must not resume active play');
 });
