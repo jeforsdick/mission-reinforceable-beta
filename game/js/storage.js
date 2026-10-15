@@ -31,6 +31,16 @@
       }
     },
 
+    remove(name) {
+      try {
+        localStorage.removeItem(this.key(name));
+        return true;
+      } catch (error) {
+        console.warn('Storage removal failed:', error);
+        return false;
+      }
+    },
+
     getRuns() {
       return this.get('runs', []);
     },
