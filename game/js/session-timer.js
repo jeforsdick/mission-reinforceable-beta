@@ -43,6 +43,23 @@
     activeStartedAt = now();
   }
 
+  function snapshot() {
+    if (!running || !startedAt) return null;
+    const totalActiveMs = activeMs + (activeStartedAt ? Math.max(0, now() - activeStartedAt) : 0);
+    return { startedAt: new Date(startedAt).toISOString(), activeMs: totalActiveMs };
+  }
+
+  function restore(saved) {
+    const value = Date.parse(saved && saved.startedAt);
+    if (!Number.isFinite(value) || !Number.isFinite(saved.activeMs) || saved.activeMs < 0) return false;
+    startedAt = value;
+    endedAt = null;
+    activeMs = saved.activeMs;
+    activeStartedAt = document.hidden ? null : now();
+    running = true;
+    return true;
+  }
+
   function stop() {
     if (!running || !startedAt) return null;
 
@@ -73,6 +90,10 @@
   MR.SessionTimer = {
     start,
     stop,
+    snapshot,
+    restore,
+    pause: pauseActive,
+    resume: resumeActive,
     formatSeconds
   };
 })();
