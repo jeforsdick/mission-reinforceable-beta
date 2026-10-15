@@ -137,7 +137,7 @@ test('five decisions complete once; stored checkpoint disappears after successfu
   }
   assert.equal(run.MR.missionResume.read().stage,'outcome');
   run.MR.engine.continueAfterFeedback();
-  await Promise.resolve();await Promise.resolve();await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 35)); // Allow async DB completion and response insert to settle.
   assert.equal(db.responses.length,5);
   assert.equal(run.MR.missionResume.read(),null);
   assert.equal(run.creates,1);
