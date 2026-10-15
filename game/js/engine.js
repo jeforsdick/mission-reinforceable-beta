@@ -478,6 +478,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
     // Use the existing backend session. A completed/unknown session cannot be
     // resumed, and never receives a second started row.
+    if (current && current.telemetrySessionId === saved.sessionId && current.telemetrySessionInsert) {
+      await current.telemetrySessionInsert;
+    }
     const row = await MR.auth.getMissionSession(saved.sessionId, saved.caseId);
     if (!row || row.status !== 'started'
         || row.mode !== saved.mode || row.mission_id !== saved.missionId
@@ -759,7 +762,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     img.className = `wizard-modal-img ${sprite.cls}`;
     MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission' : pendingEnding ? 'See Mission Outcome' : 'Complete Mission';
     const exit = MR.$('#wizard-modal-exit');
-    if (exit) exit.hidden = true;
+    if (exit) { exit.hidden = false; exit.setAttribute('aria-label', 'Return to mission menu'); }
     modal.hidden = false;
   }
 
