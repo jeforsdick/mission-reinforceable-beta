@@ -204,11 +204,13 @@
     });
     MR.$('#nav-progress').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
+      if (MR.$('#play-screen').classList.contains('is-active')) MR.engine.leaveMissionToMenu();
       MR.dashboard.render();
       MR.setScreen('progress');
     });
     MR.$('#nav-resources').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
+      if (MR.$('#play-screen').classList.contains('is-active')) MR.engine.leaveMissionToMenu();
       MR.auth.recordResourceEvent('resources_opened').catch(error => {
         console.warn('Resource Map usage telemetry could not be saved.', error);
       });
