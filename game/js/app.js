@@ -147,7 +147,13 @@
     const classroomPath = hasDaily ? (config.assets.sameDayClassroom || config.assets.landingClassroom) : config.assets.landingClassroom;
     MR.$('#home-classroom-img').src = classroomPath;
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
-    const participantLocked = hasDaily && MR.telemetryContext && !MR.telemetryContext.qaMode;
+    const resumable = MR.engine.resumableMission();
+    const resumeBanner = MR.$('#resume-mission-banner');
+    resumeBanner.hidden = !resumable;
+    if (resumable) {
+      MR.$('#resume-mission-label').textContent = resumable.title + ' · ' + resumable.completed + '/5 decisions';
+    }
+    const participantLocked = (hasDaily || Boolean(resumable)) && MR.telemetryContext && !MR.telemetryContext.qaMode;
     const showCalendarStatus = calendarBlocked && !participantLocked;
     MR.$('#home-primary-btn').hidden = participantLocked || calendarBlocked;
     MR.$('#home-status-bubble').hidden = !showCalendarStatus;
@@ -167,10 +173,34 @@
       });
     });
 
-    MR.$('#nav-home').addEventListener('click', () => {
-      MR.audio.playSfx('click', 0.24);
+    function goToMissionMenu() {
+      if (MR.$('#play-screen').classList.contains('is-active')) MR.engine.leaveMissionToMenu();
       renderHome();
       MR.setScreen('home');
+    }
+    MR.$('#nav-home').addEventListener('click', () => {
+      MR.audio.playSfx('click', 0.24);
+      goToMissionMenu();
+    });
+    MR.$('#play-menu-btn').addEventListener('click', () => {
+      MR.audio.playSfx('click', 0.24);
+      goToMissionMenu();
+    });
+    MR.$('#resume-mission-btn').addEventListener('click', async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        const resumed = await MR.engine.resumeSavedMission();
+        if (!resumed) {
+          renderHome();
+          window.alert('This mission could not be resumed. You can start a new mission if available.');
+        }
+      } catch (error) {
+        console.error(error);
+        window.alert('Could not verify your saved session. Check your connection and try again.');
+      } finally {
+        button.disabled = false;
+      }
     });
     MR.$('#nav-progress').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
@@ -194,7 +224,7 @@
     if (briefingExit) {
       briefingExit.addEventListener('click', () => {
         MR.audio.playSfx('click', 0.24);
-        if (!MR.engine.exitBriefing()) return;
+        if (!MR.engine.leaveMissionToMenu()) return;
         renderHome();
         MR.setScreen('home');
       });
