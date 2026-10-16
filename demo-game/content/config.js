@@ -11,16 +11,17 @@ window.MR_PUBLIC_DEMO_CONFIG = {
   missionSteps: 5,
   shuffleChoices: true,
   resultEndpoint: '',
-  growthFocus: 'Keep prompts brief, private, and tied to the next safe classroom step.',
+  growthFocus: 'Catch the earliest opening: make writing smaller, prompt help or a short break, and reinforce the first return step.',
+  bipBriefing: 'Jordan may avoid writing when the first step is unclear or the routine changes. Keep directions brief and private. Make the first step small, prompt a help or short-break request, then reinforce the request and a calm return to writing.',
   xpMax: 1000,
   xpMultiplier: 5,
   feedback: {
-    high: "Strong Plan Alignment\n\nGreat work. Your choices mostly matched Jordan's plan. You helped Jordan by making the writing task smaller, staying calm and private, prompting help or break requests, and reinforcing small steps back toward writing.",
-    mid: "Mixed Plan Alignment\n\nYou used some helpful responses, but a few choices missed important parts of Jordan's plan. Look for moments where Jordan needed a smaller first step, a prompt to ask for help, a short break with a return plan, or calm private support.",
-    low: "Needs Review\n\nSome choices may have made the writing routine harder for Jordan. Responses that add pressure, make the situation public, remove support, or turn writing into a power struggle can make Jordan more likely to avoid the task.",
-    actionHigh: '<p>Keep using the plan: help, break, small step, calm return.</p>',
-    actionMid: '<p>Review the moments where Jordan needed a clearer path back to the plan.</p>',
-    actionLow: "<p>Review Jordan's plan and focus on calm, private responses that help Jordan ask for help, ask for a short break, or return to one small writing step.</p>"
+    high: "Strong Plan Alignment\n\nYou repeatedly made the plan work before refusal became the easiest path. Notice how your small first steps, helpful requests, and prompt reinforcement kept Jordan connected to writing—even when the classroom changed.",
+    mid: "Mixed Plan Alignment\n\nSeveral choices helped Jordan, but some left the next step unclear or delayed the replacement response. Notice the moment when you could have prompted help, honored a short break, or reinforced a small return step sooner.",
+    low: "Needs Review\n\nSome choices made escape from writing more efficient or made the interaction bigger. Try keeping your next cue private, making the task manageable, and teaching a help or break request that works better than refusal.",
+    actionHigh: '<p>Keep practicing the sequence: small start → help or break request → prompt reinforcement → supported return.</p>',
+    actionMid: '<p>Pick one missed timing opportunity: cue a request earlier, honor it promptly, or notice the first return step.</p>',
+    actionLow: "<p>Visit the Resource Map. Start with Prevention Palace and Replacement Reservoir, then try a fresh route through the fictional mission.</p>"
   },
   assets: {
     title: '../assets/game/skin-v2/mission-reinforceable-title.png',
