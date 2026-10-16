@@ -80,3 +80,87 @@ test('shared helper loads in both games and Back to Site override is demo-scoped
   assert.match(demoCSS, /\.demo-app \.home-panel[\s\S]*margin-top: -95px/);
   assert.doesNotMatch(demoCSS, /\.account-stack/);
 });
+
+
+function wizardHintFor(heightAt17, widthAt17 = 220) {
+  const classes = new Set();
+  const element = {
+    style: {},
+    clientWidth: 446,
+    clientHeight: 188,
+    classList: {
+      remove(value) { classes.delete(value); },
+      toggle(value, on) { if (on) classes.add(value); else classes.delete(value); },
+      contains(value) { return classes.has(value); }
+    }
+  };
+  Object.defineProperties(element, {
+    scrollHeight: {
+      get() { return heightAt17 * (parseFloat(element.style.fontSize || '17') / 17); }
+    },
+    scrollWidth: {
+      get() { return widthAt17 * (parseFloat(element.style.fontSize || '17') / 17); }
+    }
+  });
+  return element;
+}
+
+test('wizard hint fitting preserves readable short hints and shrinks longer hints only as needed', () => {
+  const { api } = load();
+  const getComputedStyle = el => ({ fontSize: el.style.fontSize || '17px' });
+  const short = wizardHintFor(120);
+  const untouched = api.fitWizardHintText(short, { getComputedStyle, mobile: false });
+  assert.equal(untouched.fontSize, 17);
+  assert.equal(short.style.fontSize, '');
+  assert.equal(untouched.fits, true);
+
+  const longer = wizardHintFor(232);
+  const fitted = api.fitWizardHintText(longer, { getComputedStyle, mobile: false });
+  assert.ok(fitted.fontSize < 17);
+  assert.ok(fitted.fontSize >= 13.5);
+  assert.equal(fitted.fits, true);
+  assert.equal(longer.classList.contains('is-overflowing'), false);
+});
+
+test('extremely long hint stays inside a scrollable bubble rather than spilling', () => {
+  const { api } = load();
+  const getComputedStyle = el => ({ fontSize: el.style.fontSize || '17px' });
+  const hint = wizardHintFor(700);
+  const result = api.fitWizardHintText(hint, { getComputedStyle, mobile: false });
+  assert.equal(result.fits, false);
+  assert.equal(result.fontSize, 13.5);
+  assert.equal(hint.classList.contains('is-overflowing'), true);
+
+  // A later short hint must reset both the font size and overflow state.
+  Object.defineProperty(hint, 'scrollHeight', { get() { return 100; } });
+  const again = api.fitWizardHintText(hint, { getComputedStyle, mobile: false });
+  assert.equal(again.fontSize, 17);
+  assert.equal(hint.classList.contains('is-overflowing'), false);
+});
+
+test('mobile hints keep natural font size and bubble height after desktop fitting', () => {
+  const { api, listeners } = load();
+  const getComputedStyle = el => ({ fontSize: el.style.fontSize || '15px' });
+  const hint = wizardHintFor(500);
+  hint.style.fontSize = '13.5px';
+  hint.classList.toggle('is-overflowing', true);
+  const result = api.fitWizardHintText(hint, { getComputedStyle, mobile: true });
+  assert.equal(result.mobile, true);
+  assert.equal(hint.style.fontSize, '');
+  assert.equal(hint.classList.contains('is-overflowing'), false);
+
+  const stop = api.watchWizardHintFit(hint, { getComputedStyle, mobile: true });
+  assert.equal(typeof listeners.resize, 'function');
+  assert.equal(typeof listeners.orientationchange, 'function');
+  stop();
+  assert.equal(listeners.resize, undefined);
+});
+
+test('every hint is refitted after the content changes and shared CSS bounds long hints', () => {
+  const css = read('../css/styles.css');
+  assert.match(engineSource, /hint\.textContent = wizardHintForCurrentStep\(\);[\s\S]*MR\.scenarioFit\.fitWizardHintText\(hint\)/);
+  assert.match(engineSource, /MR\.scenarioFit\.watchWizardHintFit/);
+  assert.match(css, /\.wizard-hint-wrap \.scenario-hint\.is-overflowing[\s\S]*overflow-y: auto/);
+  assert.match(css, /@media \(max-width: 700px\)[\s\S]*\.wizard-hint-wrap \.scenario-hint[\s\S]*height: auto/);
+});
+
