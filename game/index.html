@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mission: Reinforceable</title>
   <link rel="icon" href="../favicon.png" />
-  <link rel="stylesheet" href="css/styles.css?v=20261016-resource-scroll-1" />
+  <link rel="stylesheet" href="css/styles.css?v=20261016-results-scroll-1" />
   <style>
     @media (min-width: 701px) {
       .home-panel { margin-top: -135px; }
@@ -147,7 +147,10 @@
       </div>
       <div class="results-panel gold-frame">
         <div class="feedback-scroll">
-          <div id="results-content" class="results-content"></div>
+          <div class="results-scroll-wrap">
+            <div id="results-content" class="results-content" tabindex="0" role="region" aria-label="Mission results and coaching feedback"></div>
+            <button id="results-scroll-cue" class="resources-scroll-cue results-scroll-cue" type="button" aria-controls="results-content" aria-label="Scroll down for more coaching feedback" hidden>More below <span aria-hidden="true">↓</span></button>
+          </div>
         </div>
       </div>
     </section>
@@ -262,7 +265,8 @@
   <script src="js/protected-content.js?v=20260819-cleanup-3b"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/scenario-fit.js?v=20261016-wizard-hint-fit-1"></script>
-  <script src="js/engine.js?v=20261016-wizard-hint-fit-1"></script>
+  <script src="js/engine.js?v=20261016-results-scroll-1"></script>
+  <script src="js/results-scroll.js?v=20261016-results-scroll-1"></script>
   <script src="js/reminders.js"></script>
   <script src="js/resources.js?v=20261016-resource-scroll-1"></script>
   <script src="js/app.js?v=20261016-bottom-menu-only-1"></script>
