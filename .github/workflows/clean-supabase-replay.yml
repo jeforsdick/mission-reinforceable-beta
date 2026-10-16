@@ -61,6 +61,7 @@ jobs:
             game/js/scenario-fit.test.mjs \
             game/js/resources.test.mjs \
             game/js/results-scroll.test.mjs \
+            game/js/qa-consequence-preview.test.mjs \
             game/js/home-status-message.test.mjs
 
       - name: Validate fictional public-demo story, Resource Map, and navigation
