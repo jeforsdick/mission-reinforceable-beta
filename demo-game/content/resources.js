@@ -1,4 +1,4 @@
-// Public fictional demo only. No participant, student, teacher, or protected-case content.
+// Public fictional demo only. No private study records or protected case details.
 window.MR_RESOURCES = {
   "schemaVersion": 1,
   "studentAlias": "Jordan",
