@@ -33,10 +33,12 @@ function setup(data = resources(), telemetryContext = null, recordResourceEvent 
   const title = new Element('h1');
   const content = new Element();
   const back = new Element('button');
+  const cue = new Element('button');
+  cue.hidden = true;
   const hotspots = Object.keys(TITLES).filter(key => key !== 'bip').map(key => {
     const button = new Element('button'); button.dataset.resourceSection = key; return button;
   });
-  const bySelector = { '#resources-title': title, '#resources-content': content, '#back-to-bip': back };
+  const bySelector = { '#resources-title': title, '#resources-content': content, '#resources-scroll-cue': cue, '#back-to-bip': back };
   const MR = {
     resourcesData: data, telemetryContext,
     auth: recordResourceEvent ? { recordResourceEvent } : undefined,
@@ -44,7 +46,7 @@ function setup(data = resources(), telemetryContext = null, recordResourceEvent 
   };
   const context = { window: { MR }, document: { createElement: tag => new Element(tag) }, console };
   vm.runInNewContext(source, context);
-  return { MR, title, content, back, hotspots };
+  return { MR, title, content, back, cue, hotspots };
 }
 
 function descendantText(element) {
@@ -187,4 +189,43 @@ test('heading blocks render safely as semantic h3 elements', () => {
   assert.equal(view.content.children[0].className, 'resource-heading');
   assert.equal(view.content.children[0].textContent, markup);
   assert.equal(view.content.children[0].children.length, 0);
+});
+
+test('scroll cue appears only when more Resource Map content is below the viewport', () => {
+  const view = setup();
+  view.content.clientHeight = 180;
+  view.content.scrollHeight = 620;
+  view.MR.resources.render();
+  assert.equal(view.cue.hidden, false, 'overflowing BIP section should show More below');
+  assert.equal(view.cue.dataset.resourceScrollWired, 'true');
+
+  view.cue.click();
+  assert.ok(view.content.scrollTop > 0, 'cue click scrolls the content down');
+  assert.equal(view.cue.hidden, false, 'cue persists while more content remains');
+
+  view.content.scrollTop = 440;
+  view.content.listeners.scroll();
+  assert.equal(view.cue.hidden, true, 'cue disappears at bottom');
+
+  view.content.scrollHeight = 800;
+  view.MR.resources.renderResourceSection('prevention');
+  assert.equal(view.content.scrollTop, 0, 'switching a section resets scroll');
+  assert.equal(view.cue.hidden, false, 'cue returns for a newly overflowing section');
+
+  view.content.scrollHeight = 180;
+  view.MR.resources.renderResourceSection('bip');
+  assert.equal(view.cue.hidden, true, 'short content must not advertise more below');
+});
+
+test('Resource Map scrolling has visible rails and accessible cue in both game layouts', () => {
+  const css = fs.readFileSync(new URL('../css/styles.css', import.meta.url), 'utf8');
+  for (const path of ['../index.html', '../../demo-game/index.html']) {
+    const html = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
+    assert.match(html, /id="resources-content"[^>]*tabindex="0"/);
+    assert.match(html, /id="resources-scroll-cue"[^>]*aria-controls="resources-content"[^>]*hidden/);
+    assert.match(html, /js\/resources\.js\?v=20261016-resource-scroll-1/);
+  }
+  assert.match(css, /#resources-content::-webkit-scrollbar-thumb/);
+  assert.match(css, /scrollbar-color:\s*#99601c\s+#f5e3b7/);
+  assert.match(css, /\.resources-scroll-cue\[hidden\]\s*\{\s*display:\s*none/);
 });

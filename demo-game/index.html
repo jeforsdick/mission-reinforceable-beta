@@ -6,7 +6,7 @@
   <title>Public Demo | Mission: Reinforceable</title>
   <base href="../game/" />
   <link rel="icon" href="../favicon.png" />
-  <link rel="stylesheet" href="css/styles.css?v=20261016-wizard-hint-fit-1" />
+  <link rel="stylesheet" href="css/styles.css?v=20261016-resource-scroll-1" />
   <link rel="stylesheet" href="../demo-game/demo.css?v=20261016-demo-controls-v1" />
 </head>
 <body>
@@ -142,7 +142,8 @@
         <div class="resources-layout">
           <section class="resources-scroll" aria-labelledby="resources-title">
             <h1 id="resources-title">BIP at a Glance</h1>
-            <div id="resources-content"></div>
+            <div id="resources-content" tabindex="0" role="region" aria-label="Behavior support strategies"></div>
+            <button id="resources-scroll-cue" class="resources-scroll-cue" type="button" aria-controls="resources-content" aria-label="Scroll down for more behavior support strategies" hidden>More below <span aria-hidden="true">↓</span></button>
           </section>
           <section class="resource-map-wrap" aria-label="Strategy map">
             <img class="resource-map-img" src="../assets/game/skin-v2/strategy-map.png" alt="Strategy map with eight behavior support landmarks" />
@@ -251,7 +252,7 @@
   <script src="js/scenario-fit.js?v=20261016-wizard-hint-fit-1"></script>
   <script src="js/engine.js?v=20261016-wizard-hint-fit-1"></script>
   <script src="js/reminders.js"></script>
-  <script src="js/resources.js?v=20260630-strategy-map"></script>
+  <script src="js/resources.js?v=20261016-resource-scroll-1"></script>
   <script src="js/demo-app.js?v=20261016-public-demo-v2"></script>
   <script src="js/fit-screen.js"></script>
   <script src="../demo-game/demo-feedback.js?v=20261007-1"></script>

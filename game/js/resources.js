@@ -100,6 +100,56 @@
     });
   }
 
+  let scrollCueFrame = null;
+
+  function updateScrollCue() {
+    const root = MR.$('#resources-content');
+    const cue = MR.$('#resources-scroll-cue');
+    if (!root || !cue) return;
+    // Hidden screens measure as zero; leave the cue hidden until Resources is
+    // actually visible, then measure again on the next render/resize.
+    const hasOverflow = root.clientHeight > 0 && root.scrollHeight > root.clientHeight + 8;
+    cue.hidden = !hasOverflow || root.scrollTop + root.clientHeight >= root.scrollHeight - 8;
+  }
+
+  function scheduleScrollCue() {
+    if (typeof window.requestAnimationFrame !== 'function') {
+      updateScrollCue();
+      return;
+    }
+    if (scrollCueFrame !== null && typeof window.cancelAnimationFrame === 'function') {
+      window.cancelAnimationFrame(scrollCueFrame);
+    }
+    scrollCueFrame = window.requestAnimationFrame(() => {
+      scrollCueFrame = null;
+      updateScrollCue();
+    });
+  }
+
+  function wireScrollCue() {
+    const root = MR.$('#resources-content');
+    const cue = MR.$('#resources-scroll-cue');
+    if (!root || !cue || cue.dataset.resourceScrollWired === 'true') return;
+    cue.dataset.resourceScrollWired = 'true';
+    cue.hidden = true;
+    root.addEventListener('scroll', updateScrollCue, { passive: true });
+    cue.addEventListener('click', () => {
+      const delta = Math.max(100, Math.round(root.clientHeight * .72));
+      if (typeof root.scrollBy === 'function') root.scrollBy({ top: delta, behavior: 'smooth' });
+      else root.scrollTop += delta;
+      scheduleScrollCue();
+    });
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('resize', scheduleScrollCue);
+      window.addEventListener('orientationchange', scheduleScrollCue);
+    }
+    if (typeof ResizeObserver !== 'undefined') {
+      const observer = new ResizeObserver(scheduleScrollCue);
+      observer.observe(root);
+      if (root.parentElement) observer.observe(root.parentElement);
+    }
+  }
+
   function renderUnavailable(title, root, backButton) {
     title.textContent = 'Resources unavailable';
     root.replaceChildren();
@@ -107,6 +157,7 @@
     setActiveHotspot('');
     if (backButton) backButton.hidden = true;
     root.scrollTop = 0;
+    scheduleScrollCue();
   }
 
   function renderResourceSection(sectionKey = 'bip') {
@@ -130,6 +181,7 @@
     setActiveHotspot(sectionKey === 'bip' ? '' : sectionKey);
     if (backButton) backButton.hidden = sectionKey === 'bip';
     root.scrollTop = 0;
+    scheduleScrollCue();
   }
 
   function recordSectionOpen(sectionKey) {
@@ -165,6 +217,7 @@
   MR.resources = {
     render() {
       wireMap();
+      wireScrollCue();
       renderResourceSection('bip');
     },
     renderResourceSection
