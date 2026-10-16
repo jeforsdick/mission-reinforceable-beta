@@ -302,6 +302,53 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return MR.escapeHTML(clean);
   }
 
+  // Opt-in researcher draft QA only; live teacher sessions keep their existing view.
+  function consequencePreviewEnabled() {
+    const context = MR.telemetryContext;
+    return Boolean(context && context.qaMode === true && context.draftQa === true
+      && window.location && typeof window.location.search === 'string'
+      && new URLSearchParams(window.location.search).get('qa_consequence_preview') === '1');
+  }
+
+  function nextScenarioHTML(step) {
+    if (!consequencePreviewEnabled()) return scenarioHTML(step.text || '');
+    const last = current.history[current.history.length - 1];
+    const lastConsequence = last && typeof last.consequence === 'string' ? last.consequence.trim() : '';
+    // The first scene has no previous decision: present its original setup.
+    if (!lastConsequence) {
+      return '<div class="scenario-flow-label">THE SITUATION</div>'
+        + '<div class="scenario-flow-now">' + scenarioHTML(step.text || '') + '</div>';
+    }
+    return '<div class="scenario-flow-label">WHAT HAPPENED</div>'
+      + '<p class="scenario-flow-consequence">' + MR.escapeHTML(lastConsequence) + '</p>'
+      + '<div class="scenario-flow-label">NOW...</div>'
+      + '<div class="scenario-flow-now">' + scenarioHTML(step.text || '') + '</div>';
+  }
+
+  function updateScenarioScrollCue() {
+    const scroll = MR.$('#scenario-scroll-region');
+    const cue = MR.$('#scenario-scroll-cue');
+    if (!scroll || !cue) return;
+    const overflowing = scroll.clientHeight > 0 && scroll.scrollHeight > scroll.clientHeight + 8;
+    cue.hidden = !consequencePreviewEnabled() || !overflowing
+      || scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 8;
+  }
+
+  function wireScenarioScrollCue() {
+    const scroll = MR.$('#scenario-scroll-region');
+    const cue = MR.$('#scenario-scroll-cue');
+    if (!scroll || !cue || cue.dataset.wired === 'true') return;
+    cue.dataset.wired = 'true';
+    scroll.addEventListener('scroll', updateScenarioScrollCue, { passive: true });
+    cue.addEventListener('click', () => {
+      const delta = Math.max(100, Math.round(scroll.clientHeight * .72));
+      if (typeof scroll.scrollBy === 'function') scroll.scrollBy({ top: delta, behavior: 'smooth' });
+      else scroll.scrollTop += delta;
+      updateScenarioScrollCue();
+    });
+    if (typeof window.addEventListener === 'function') window.addEventListener('resize', updateScenarioScrollCue);
+  }
+
   function shortText(text, limit = 220) {
     const clean = String(text || '').replace(/\s+/g, ' ').trim();
     if (clean.length <= limit) return clean;
@@ -617,8 +664,15 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     };
     wireWizardHintTrigger();
     const scenarioText = MR.$('#scenario-text');
-    scenarioText.innerHTML = scenarioHTML(step.text || '');
-    if (MR.scenarioFit) MR.scenarioFit.fitScenarioText(scenarioText);
+    scenarioText.innerHTML = nextScenarioHTML(step);
+    if (MR.scenarioFit && !consequencePreviewEnabled()) MR.scenarioFit.fitScenarioText(scenarioText);
+    wireScenarioScrollCue();
+    const scrollRegion = MR.$('#scenario-scroll-region');
+    if (scrollRegion) scrollRegion.scrollTop = 0;
+    const cue = MR.$('#scenario-scroll-cue');
+    if (cue) cue.hidden = true;
+    if (typeof window.requestAnimationFrame === 'function') window.requestAnimationFrame(updateScenarioScrollCue);
+    else updateScenarioScrollCue();
     renderWizardHint();
     const choices = getChoiceArray(step);
     MR.$('#choice-list').innerHTML = choices.map(choice => `
