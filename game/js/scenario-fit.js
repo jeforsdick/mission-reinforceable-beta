@@ -44,9 +44,10 @@
     let frame = null;
     const refit = function () {
       if (frame !== null && window.cancelAnimationFrame) window.cancelAnimationFrame(frame);
+      if (element.dataset && element.dataset.noAutoFit === 'true') return;
       frame = requestFrame(function () {
         frame = null;
-        fitScenarioText(element, options);
+        if (!element.dataset || element.dataset.noAutoFit !== 'true') fitScenarioText(element, options);
       });
     };
     window.addEventListener('resize', refit);

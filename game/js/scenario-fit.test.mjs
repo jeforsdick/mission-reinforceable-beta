@@ -59,7 +59,7 @@ test('long scenario text shrinks only to the readable minimum and preserves over
 });
 
 test('scenario fit runs after scene markup and responds to layout changes', () => {
-  const markupIndex = engineSource.indexOf("scenarioText.innerHTML = scenarioHTML(step.text || '')");
+  const markupIndex = engineSource.indexOf("scenarioText.innerHTML = nextScenarioHTML(step)");
   const fitIndex = engineSource.indexOf('MR.scenarioFit.fitScenarioText(scenarioText)', markupIndex);
   assert.ok(markupIndex >= 0 && fitIndex > markupIndex);
   assert.match(engineSource, /watchScenarioTextFit/);
