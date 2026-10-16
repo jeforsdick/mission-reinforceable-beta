@@ -1129,6 +1129,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       playAudioCue(summary.level === 'perfect' ? 'correct' : 'missionStart', summary.level === 'perfect' ? 0.26 : 0.18);
     }
     MR.setScreen('results');
+    if (MR.resultsScroll) MR.resultsScroll.refresh();
   }
 
   if (MR.scenarioFit) MR.scenarioFit.watchScenarioTextFit(MR.$('#scenario-text'));
