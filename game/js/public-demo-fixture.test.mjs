@@ -153,3 +153,16 @@ test('public demo provides the same clear Mission Menu and Website navigation as
   assert.match(demoHTML, /class="back-to-site-label">Website/);
   assert.match(demoApp, /#play-menu-btn/);
 });
+
+
+test('public demo keeps feedback and Sound controls together without fixed overlap', () => {
+  const css = read('../../demo-game/demo.css');
+  const grouping = demoHTML.match(/<div class="demo-utility-controls"[^>]*>([\\s\\S]*?)<\\/div>/);
+  assert.ok(grouping, 'public demo must have a grouped utility toolbar');
+  assert.match(grouping[1], /id="demo-feedback-open"/);
+  assert.match(grouping[1], /id="sound-toggle"/);
+  assert.match(css, /\\.demo-utility-controls\\s*\\{[\\s\\S]*?flex-direction:\s*column/);
+  assert.match(css, /\\.demo-utility-controls\s*>\s*\\.sound-toggle\\s*\\{[\\s\\S]*?position:\s*relative/);
+  assert.match(css, /@media\\s*\\(max-width:\s*700px\\)[\\s\\S]*?\\.demo-utility-controls\\s*\\{[\\s\\S]*?position:\s*relative/);
+  assert.match(demoHTML, /demo\\.css\\?v=20261016-demo-controls-v1/);
+});
