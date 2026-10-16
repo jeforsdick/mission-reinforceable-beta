@@ -112,6 +112,7 @@ test('all three fictional showcase missions offer 13 scenes, 39 rich choices and
     for (const [stepId, scene] of Object.entries(mission.steps)) {
       assert.ok(scene.text && scene.text.trim().length >= 90, mode + ':' + stepId + ' needs a substantive scene');
       assert.ok(scene.hint && scene.hint.trim().length >= 30, mode + ':' + stepId + ' needs a useful hint');
+      assert.ok(scene.hint.trim().length <= 140, mode + ':' + stepId + ' hint should fit the Wizard bubble');
       assert.equal(Object.keys(scene.choices).length, 3, mode + ':' + stepId);
       assert.deepEqual(Object.values(scene.choices).map(c => c.score).sort((a,b)=>a-b), [0,5,10]);
       for (const choice of Object.values(scene.choices)) {
