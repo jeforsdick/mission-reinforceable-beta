@@ -384,6 +384,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (!hint) return;
     hint.textContent = wizardHintForCurrentStep();
     updateWizardHintTrigger();
+    if (MR.scenarioFit && MR.scenarioFit.fitWizardHintText) {
+      MR.scenarioFit.fitWizardHintText(hint);
+    }
   }
 
   function wizardSpriteForScore(score) {
@@ -1129,6 +1132,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   if (MR.scenarioFit) MR.scenarioFit.watchScenarioTextFit(MR.$('#scenario-text'));
+  if (MR.scenarioFit && MR.scenarioFit.watchWizardHintFit) {
+    MR.scenarioFit.watchWizardHintFit(MR.$('#wizard-hint'));
+  }
 
   MR.engine = {
     async start(mode) {
