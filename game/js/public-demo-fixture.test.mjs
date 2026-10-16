@@ -27,6 +27,17 @@ test('public demo directly loads its dedicated fixture without the legacy teache
   assert.match(demoHTML, /js\/engine\.js/);
 });
 
+test('public demo navigation icons have working static image sources', () => {
+  for (const [asset, filename] of [
+    ['startOverIcon', 'bottom-bar-start-over-icon.png'],
+    ['progressIcon', 'bottom-bar-my-progress-icon.png'],
+    ['resourcesIcon', 'bottom-bar-resources-icon.png']
+  ]) {
+    assert.ok(demoHTML.includes(`<img data-asset="${asset}" src="../assets/game/skin-v2/${filename}" alt="" />`),
+      `${asset} must render without waiting for asynchronous fixture loading`);
+  }
+});
+
 test('public demo satisfies the shared engine runtime DOM and daily-date contracts', () => {
   const studyDateIndex = demoHTML.indexOf('src="js/study-date.js"');
   const engineIndex = demoHTML.indexOf('src="js/engine.js');
