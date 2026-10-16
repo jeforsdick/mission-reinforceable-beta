@@ -55,11 +55,35 @@ body > a.back-to-site-cottage img {
 }
 
 
-.demo-feedback-open {
+/* Keep both lower-left utilities in a single flow layout. The shared game
+   stylesheet fixes Sound at z-index 10000; take it out of that layer *only*
+   in the fictional public demo so it cannot cover Give Feedback. */
+.demo-utility-controls {
   position: fixed;
   z-index: 1100;
   left: max(18px, env(safe-area-inset-left));
   bottom: max(20px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: calc(100vw - 36px);
+}
+
+.demo-utility-controls > .sound-toggle {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  z-index: auto;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.demo-feedback-open {
+  position: relative;
+  z-index: auto;
+  left: auto;
+  bottom: auto;
   border: 3px solid #d9a638;
   outline: 3px solid #4a3025;
   background: #60388c;
@@ -153,10 +177,29 @@ body > a.back-to-site-cottage img {
 .demo-feedback-status { min-height: 21px; margin: 0; text-align: center; font: 800 13px/1.35 Arial, Helvetica, sans-serif; }
 .demo-feedback-hp { position: absolute !important; left: -10000px !important; width: 1px !important; height: 1px !important; overflow: hidden !important; }
 
-@media (max-width: 600px) {
+/* Mobile gameplay keeps utility buttons below the game instead of floating
+   above answer choices or over the sticky in-game navigation. */
+@media (max-width: 700px) {
+  .demo-utility-controls {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    width: max-content;
+    max-width: calc(100vw - 92px);
+    margin: 12px 0 28px max(12px, env(safe-area-inset-left));
+    gap: 10px;
+  }
+
+  body:has(#play-screen.is-active) .demo-utility-controls > .sound-toggle {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    z-index: auto;
+    width: max-content;
+    margin: 0;
+  }
+
   .demo-feedback-open {
-    left: max(12px, env(safe-area-inset-left));
-    bottom: max(14px, env(safe-area-inset-bottom));
     padding: 8px 10px;
     font-size: 11px;
   }

@@ -7,7 +7,7 @@
   <base href="../game/" />
   <link rel="icon" href="../favicon.png" />
   <link rel="stylesheet" href="css/styles.css?v=20261016-wizard-hint-fit-1" />
-  <link rel="stylesheet" href="../demo-game/demo.css?v=20261016-public-demo-v2" />
+  <link rel="stylesheet" href="../demo-game/demo.css?v=20261016-demo-controls-v1" />
 </head>
 <body>
   <main id="app" class="mr-app demo-app" aria-live="polite">
@@ -206,14 +206,17 @@
     <span class="back-to-site-label">Website</span>
   </a>
 
-  <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Turn sound on" aria-pressed="false">
-    <span class="sound-toggle__label">SOUND</span>
-    <span class="sound-toggle__switch" aria-hidden="true">
-      <span class="sound-toggle__knob"></span>
-    </span>
-  </button>
-
-  <button id="demo-feedback-open" class="demo-feedback-open" type="button">Give Feedback</button>
+  <!-- Both controls share one layout container so neither can cover the other.
+       Desktop: vertical utility stack. Mobile: in-flow controls below the game. -->
+  <div class="demo-utility-controls" aria-label="Demo controls">
+    <button id="demo-feedback-open" class="demo-feedback-open" type="button">Give Feedback</button>
+    <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Turn sound on" aria-pressed="false">
+      <span class="sound-toggle__label">SOUND</span>
+      <span class="sound-toggle__switch" aria-hidden="true">
+        <span class="sound-toggle__knob"></span>
+      </span>
+    </button>
+  </div>
   <div id="demo-feedback-modal" class="demo-feedback-modal" role="dialog" aria-modal="true" aria-labelledby="demo-feedback-title" hidden>
     <button class="demo-feedback-backdrop" type="button" aria-label="Close feedback form"></button>
     <section class="demo-feedback-card">
