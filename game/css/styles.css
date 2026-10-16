@@ -2819,3 +2819,60 @@ body.qa-preview { padding-top: 4.25rem; }
     overflow-wrap: anywhere;
   }
 }
+
+
+/* Resource Map navigation affordance: parchment-friendly, visible scroll rail
+   and an optional down-step button, shared by the demo and teacher games. */
+.resources-scroll { position: relative; }
+#resources-content {
+  scrollbar-width: auto;
+  scrollbar-color: #99601c #f5e3b7;
+  scrollbar-gutter: stable;
+}
+#resources-content::-webkit-scrollbar { width: 13px; }
+#resources-content::-webkit-scrollbar-track {
+  background: #f5e3b7;
+  border: 2px solid #bc8e52;
+  border-radius: 12px;
+}
+#resources-content::-webkit-scrollbar-thumb {
+  background: #93601e;
+  border: 2px solid #f5e3b7;
+  border-radius: 12px;
+  min-height: 36px;
+}
+#resources-content::-webkit-scrollbar-thumb:hover { background: #704314; }
+.resources-scroll-cue {
+  position: absolute;
+  z-index: 2;
+  right: 93px;
+  bottom: 55px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 12px;
+  border: 2px solid #8e521a;
+  border-radius: 20px;
+  background: #fff1c9;
+  color: #3e2209;
+  box-shadow: 0 3px 0 rgba(68, 33, 7, .28);
+  font: 900 12px/1.2 var(--mono);
+  cursor: pointer;
+}
+.resources-scroll-cue[hidden] { display: none; }
+.resources-scroll-cue span { font-size: 17px; line-height: .8; }
+.resources-scroll-cue:hover { background: #ffe0a0; }
+.resources-scroll-cue:focus-visible {
+  outline: 3px solid #6f3910;
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  #resources-content { scrollbar-gutter: stable; }
+  #resources-content::-webkit-scrollbar { width: 11px; }
+  .resources-scroll-cue {
+    right: 32px;
+    bottom: 39px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+}
