@@ -6,8 +6,8 @@
   <title>Public Demo | Mission: Reinforceable</title>
   <base href="../game/" />
   <link rel="icon" href="../favicon.png" />
-  <link rel="stylesheet" href="css/styles.css?v=20261007-demo-qa-1" />
-  <link rel="stylesheet" href="../demo-game/demo.css?v=20261007-demo-qa-1" />
+  <link rel="stylesheet" href="css/styles.css?v=20261016-public-demo-v2" />
+  <link rel="stylesheet" href="../demo-game/demo.css?v=20261016-public-demo-v2" />
 </head>
 <body>
   <main id="app" class="mr-app demo-app" aria-live="polite">
@@ -64,6 +64,7 @@
     </section>
 
     <section id="play-screen" class="screen screen-play" aria-label="Mission play screen">
+      <button id="play-menu-btn" class="play-menu-btn" type="button">← Mission Menu</button>
       <div class="hud">
         <div id="heart-row" class="heart-row" aria-label="Hearts"></div>
         <div class="hud-meter mission-meter">
@@ -166,7 +167,7 @@
     </section>
 
     <nav class="bottom-nav gold-frame" aria-label="Game navigation">
-      <button id="nav-home" class="scroll-nav-btn" type="button"><img data-asset="startOverIcon" alt="" />Start Over</button>
+      <button id="nav-home" class="scroll-nav-btn" type="button"><img data-asset="startOverIcon" alt="" />Mission Menu</button>
       <button id="nav-progress" class="scroll-nav-btn" type="button"><img data-asset="progressIcon" alt="" />Progress</button>
       <button id="nav-resources" class="scroll-nav-btn" type="button"><img data-asset="resourcesIcon" alt="" />Resources</button>
     </nav>
@@ -200,8 +201,9 @@
     </div>
   </div>
 
-  <a class="back-to-site-cottage" href="../" aria-label="Back to main website">
-    <img src="../assets/game/back-to-site-icon.png" alt="Back to Site" />
+  <a class="back-to-site-cottage" href="../" aria-label="Visit the Mission: Reinforceable website">
+    <img src="../assets/game/back-to-site-icon.png" alt="" />
+    <span class="back-to-site-label">Website</span>
   </a>
 
   <button id="sound-toggle" class="sound-toggle" type="button" aria-label="Turn sound on" aria-pressed="false">
