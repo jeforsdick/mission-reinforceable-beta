@@ -58,9 +58,79 @@
     };
   }
 
+
+  // Gameplay hints share a fixed pixel-art bubble on larger screens. Refitting
+  // protects any authored hint from clipping without changing the text itself.
+  // On phones, the hint is an in-flow card and should grow instead of shrinking.
+  function fitWizardHintText(element, options = {}) {
+    if (!element) return null;
+    const getStyle = options.getComputedStyle || window.getComputedStyle.bind(window);
+    const mobile = options.mobile !== undefined
+      ? Boolean(options.mobile)
+      : Boolean(window.matchMedia && window.matchMedia('(max-width: 700px)').matches);
+
+    // Reset between scenes and after orientation changes; an earlier long hint
+    // must not leave the next short hint or the mobile view artificially small.
+    element.style.fontSize = '';
+    if (element.classList) element.classList.remove('is-overflowing');
+    const normal = parseFloat(getStyle(element).fontSize);
+    if (mobile || !Number.isFinite(normal) || !element.clientHeight || !element.clientWidth) {
+      return { fontSize: normal, fits: true, mobile, skipped: !mobile };
+    }
+
+    const minimum = Number.isFinite(options.minFontSize) ? options.minFontSize : 13.5;
+    const floor = Math.min(normal, minimum);
+    const step = Number.isFinite(options.step) && options.step > 0 ? options.step : 0.5;
+    const overflowing = () =>
+      element.scrollHeight > element.clientHeight + 1 ||
+      element.scrollWidth > element.clientWidth + 1;
+    let size = normal;
+    while (overflowing() && size > floor) {
+      size = Math.max(floor, size - step);
+      element.style.fontSize = `${size}px`;
+    }
+    const fits = !overflowing();
+    // Rare very long legacy hints remain readable in a scrollable bubble
+    // instead of spilling over the wizard or answer buttons.
+    if (element.classList) element.classList.toggle('is-overflowing', !fits);
+    return { normalFontSize: normal, fontSize: size, minimumFontSize: floor, fits, mobile: false };
+  }
+
+  function watchWizardHintFit(element, options = {}) {
+    if (!element) return function () {};
+    const requestFrame = options.requestAnimationFrame ||
+      (window.requestAnimationFrame && window.requestAnimationFrame.bind(window));
+    const cancelFrame = options.cancelAnimationFrame ||
+      (window.cancelAnimationFrame && window.cancelAnimationFrame.bind(window));
+    let frame = null;
+    const refit = function () {
+      if (frame !== null && cancelFrame) cancelFrame(frame);
+      if (requestFrame) {
+        frame = requestFrame(() => {
+          frame = null;
+          fitWizardHintText(element, options);
+        });
+      } else {
+        fitWizardHintText(element, options);
+      }
+    };
+    window.addEventListener('resize', refit);
+    window.addEventListener('orientationchange', refit);
+    if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(refit).catch(() => {});
+    }
+    return function () {
+      window.removeEventListener('resize', refit);
+      window.removeEventListener('orientationchange', refit);
+      if (frame !== null && cancelFrame) cancelFrame(frame);
+    };
+  }
+
   MR.scenarioFit = {
     DEFAULT_MIN_FONT_SIZE,
     fitScenarioText,
-    watchScenarioTextFit
+    watchScenarioTextFit,
+    fitWizardHintText,
+    watchWizardHintFit
   };
 })();
