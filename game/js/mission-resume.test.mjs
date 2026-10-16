@@ -213,3 +213,15 @@ test('other game navigation preserves the ongoing session before changing screen
   assert.match(progress,/MR\.engine\.leaveMissionToMenu\(\)/);
   assert.match(resources,/MR\.engine\.leaveMissionToMenu\(\)/);
 });
+
+test('pagehide across midnight does not make yesterday mission resumable tomorrow',async()=>{
+  const storage=createStorage(),db=new Map();db.responses=[];
+  const run=harness(storage,db);
+  await run.MR.engine.start('daily');
+  run.MR.engine.continueAfterFeedback();
+  assert.ok(run.MR.missionResume.read());
+  run.now.date='2026-10-16';
+  run.handlers.pagehide();
+  const reopened=harness(storage,db,{date:'2026-10-16'});
+  assert.equal(reopened.MR.missionResume.read(),null);
+});
