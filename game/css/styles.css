@@ -2839,7 +2839,7 @@ body.qa-preview { padding-top: 4.25rem; }
 .scenario-flow-now { margin-bottom: 12px; }
 @media (max-width: 700px) {
   #scenario-scroll-cue.scenario-scroll-cue { right: 16px; bottom: 12px; padding: 6px 10px; font-size: 11px; }
-  .scenario-flow-label { font-size: 12px; }
+  .scenario-flow-label { font-size: 12px; color: #ffc54a; }
 }
 
 /* Mission results: the Coaching Summary and Review can exceed the visible parchment.
