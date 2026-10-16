@@ -182,10 +182,6 @@
       MR.audio.playSfx('click', 0.24);
       goToMissionMenu();
     });
-    MR.$('#play-menu-btn').addEventListener('click', () => {
-      MR.audio.playSfx('click', 0.24);
-      goToMissionMenu();
-    });
     MR.$('#resume-mission-btn').addEventListener('click', async event => {
       const button = event.currentTarget;
       button.disabled = true;

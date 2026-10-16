@@ -2765,23 +2765,10 @@ body.qa-preview { padding-top: 4.25rem; }
 }
 .resume-mission-banner .pixel-btn { width: 100%; min-height: 42px; font-size: 15px; }
 .resume-mission-banner small { font-size: 11px; }
-.play-menu-btn {
-  position: absolute;
-  top: 14px;
-  left: 24px;
-  z-index: 30;
-  padding: 10px 14px;
-  border: 2px solid var(--gold);
-  border-radius: 7px;
-  background: #18245e;
-  color: #fff5d2;
-  font: 900 14px/1.2 var(--mono);
-}
 @media (min-width: 701px) {
   .resume-mission-banner { margin: 14px 0; }
 }
 @media (max-width: 700px) {
-  .play-menu-btn { position: relative; top: auto; left: auto; display: block; margin: 4px 0 10px; font-size: 13px; }
   .resume-mission-banner { margin: 14px 0 12px; }
 }
 
