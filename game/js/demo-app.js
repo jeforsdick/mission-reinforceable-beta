@@ -19,11 +19,11 @@
   const sfx = {};
   const activeSfx = new Set();
   const DEMO_FIXTURE_SCRIPTS = [
-    '../demo-game/content/config.js',
-    '../demo-game/content/daily-mission.js',
-    '../demo-game/content/wildcard-mission.js',
-    '../demo-game/content/crisis-mission.js',
-    '../demo-game/content/resources.js'
+    '../demo-game/content/config.js?v=20261016-public-demo-v2',
+    '../demo-game/content/daily-mission.js?v=20261016-public-demo-v2',
+    '../demo-game/content/wildcard-mission.js?v=20261016-public-demo-v2',
+    '../demo-game/content/crisis-mission.js?v=20261016-public-demo-v2',
+    '../demo-game/content/resources.js?v=20261016-public-demo-v2'
   ];
 
   async function loadPublicDemoFixture() {
@@ -198,18 +198,28 @@
       });
     });
 
-    MR.$('#nav-home').addEventListener('click', () => {
-      MR.audio.playSfx('click', 0.24);
+    function goToMissionMenu() {
+      if (MR.$('#play-screen').classList.contains('is-active') && MR.engine.leaveMissionToMenu) MR.engine.leaveMissionToMenu();
       renderHome();
       MR.setScreen('home');
+    }
+    MR.$('#nav-home').addEventListener('click', () => {
+      MR.audio.playSfx('click', 0.24);
+      goToMissionMenu();
+    });
+    MR.$('#play-menu-btn').addEventListener('click', () => {
+      MR.audio.playSfx('click', 0.24);
+      goToMissionMenu();
     });
     MR.$('#nav-progress').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
+      if (MR.$('#play-screen').classList.contains('is-active') && MR.engine.leaveMissionToMenu) MR.engine.leaveMissionToMenu();
       MR.dashboard.render();
       MR.setScreen('progress');
     });
     MR.$('#nav-resources').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
+      if (MR.$('#play-screen').classList.contains('is-active') && MR.engine.leaveMissionToMenu) MR.engine.leaveMissionToMenu();
       MR.resources.render();
       MR.setScreen('resources');
     });

@@ -23,7 +23,9 @@ jobs:
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          # Pinned to the version verified in the preceding successful runner.
+          # Avoid unauthenticated GitHub API rate limits when resolving 'latest'.
+          version: 2.121.0
 
       - name: Confirm isolated runner prerequisites
         shell: bash
@@ -56,7 +58,11 @@ jobs:
             game/js/fidelity-target-linkage.test.mjs \
             game/js/protected-choice-shuffling.test.mjs \
             game/js/rich-mission-feedback.test.mjs \
+            game/js/scenario-fit.test.mjs \
             game/js/home-status-message.test.mjs
+
+      - name: Validate fictional public-demo story, Resource Map, and navigation
+        run: node --test game/js/public-demo-fixture.test.mjs
 
       - name: Replay clean local database
         run: ./scripts/replay-clean-supabase.sh

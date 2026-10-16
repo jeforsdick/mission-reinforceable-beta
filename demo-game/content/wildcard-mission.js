@@ -20,24 +20,34 @@
     title: "The Schedule Switch",
     expectedSteps: 5,
     start: "mystery_step1_start",
-    focus: "Practice Jordan's writing plan when the routine does not go as expected.",
+    focus: "Generalize small first steps, help requests and supported return across an unexpected schedule change.",
     routine: "independent writing after a schedule switch",
     functionPressure: ["escape", "uncertainty"],
     bipTargets: ["Help", "Break", "Small Step", "Calm Return"],
 
+    endings: {
+  "STRONG": {
+    "text": "The mystery was a schedule change, not a different behavior plan. Jordan used a small writing step or a useful help request despite the missing starter and busy room. The entire sentence may not be finished, but the replacement route worked when the routine changed. You maintained a clear path back to writing.",
+    "wizard": "The schedule goblin changed the map—not the spell! One small step kept the quest on course."
+  },
+  "MIXED": {
+    "text": "Jordan is calmer and near the materials, but the next writing move remains fragile. Some responses helped while others delayed the starter, the replacement prompt, or reinforcement. This is a recoverable branch: make the next step visible and respond promptly when Jordan uses the plan.",
+    "wizard": "One clue remains! Find the tiny next move that makes the help request worthwhile."
+  },
+  "FRAGILE": {
+    "text": "The class moves on with Jordan still avoiding much of the writing task. The schedule disruption became an easier route to escape than an appropriate request. This simulated outcome does not predict a real student's behavior. Try again by restoring the starter earlier and giving Jordan a supported way back.",
+    "wizard": "The schedule goblin won this round. Consult the map and choose an earlier counterspell."
+  }
+},
     steps: {
       mystery_step1_start: {
-        text: `Today's schedule changed.
-
-The class had an assembly in the morning, so independent writing is happening right after lunch instead of at the usual time.
-
-Jordan walks in, sees writing folders on the desks, and stops near their chair. They frown and say, "I thought we already did work today."
-
-The plan says Jordan does best when the first step is small, clear, and predictable.`,
+        text: `An assembly ran long, and the afternoon schedule has changed: writing is happening after lunch instead of at the usual time. The class is still putting away lunch boxes, and you are answering questions from students who missed directions. Jordan stops by the desk when they see the writing folder. “I thought we already did work today.” Their familiar sentence-starter card is not on the desk, and Jordan is looking between the folder and the doorway. The schedule really did change. Your next move can make the first writing step visible—or make escape feel easier.`,
+        hint: "The schedule changed. What does Jordan need to see before being asked to produce a whole sentence?",
         choices: {
           A: {
             text: `Quietly say, "The schedule changed. First, write one animal. You can ask for help if you get stuck."`,
             score: 10,
+            consequence: "Jordan sits down and opens the folder. The schedule is still unexpected, but writing now has an accessible first move.",
             feedback: `This follows the plan. You explained the change briefly and gave Jordan a small, clear first step.`,
             wizard: `Mystery managed. You named the schedule switch without making it a battle, then showed Jordan the first step.`,
             next: "mystery_step2_supported",
@@ -51,6 +61,7 @@ The plan says Jordan does best when the first step is small, clear, and predicta
           B: {
             text: `Say, "I know the schedule is different, but writing will only take a few minutes."`,
             score: 5,
+            consequence: "Jordan listens without opening the folder. The explanation helped the mood more than the actual task start.",
             feedback: `This acknowledges the change, which helps. But Jordan still needs a concrete first step or a way to ask for help.`,
             wizard: `A helpful clue, but the map is incomplete. Jordan knows writing is happening, but not how to begin.`,
             next: "mystery_step2_wobbly",
@@ -64,6 +75,7 @@ The plan says Jordan does best when the first step is small, clear, and predicta
           C: {
             text: `Say, "The schedule changed for everyone. Please stop complaining and sit down."`,
             score: 0,
+            consequence: "Jordan slides the writing folder away and protests. More classmates notice, and writing feels like a bigger contest.",
             feedback: `This adds pressure and may make the change feel more stressful. It does not help Jordan start or use the plan.`,
             wizard: `The mystery fog thickens. Jordan now has the schedule change and the correction to escape from.`,
             next: "mystery_step2_escalated",
@@ -82,11 +94,15 @@ The plan says Jordan does best when the first step is small, clear, and predicta
 
 Usually, Jordan uses a sentence starter card, but today the card is missing from the desk. Jordan looks under the folder and whispers, "Where is my card?"
 
-Jordan is still calm, but the missing support could make the task feel too hard.`,
+Jordan is still calm, but the missing support could make the task feel too hard.
+
+A student asks you to find a worksheet just as Jordan notices the missing starter. A helpful request is available now; the timing of your reply matters.`,
+        hint: "The usual support is missing. Which response gives Jordan a usable starting route without waiting for refusal?",
         choices: {
           A: {
             text: `Say, "Good noticing. I can write the starter here: 'My animal is...' Then you pick one animal."`,
             score: 10,
+            consequence: "Jordan reaches for the starter and chooses a topic. The changed routine has not stopped a small plan-aligned response.",
             feedback: `This follows the plan. You replaced the missing support and kept the next step small.`,
             wizard: `Resourceful magic. When the tool vanished, you rebuilt the bridge.`,
             next: "mystery_step3_supported",
@@ -100,6 +116,7 @@ Jordan is still calm, but the missing support could make the task feel too hard.
           B: {
             text: `Say, "I will look for the card in a minute. Try to think of your animal while I check."`,
             score: 5,
+            consequence: "Jordan stays near the task but searches for the missing support and hesitates. The first written move remains uncertain.",
             feedback: `This is calm, but it delays the support Jordan needs. Jordan may stay stuck while waiting.`,
             wizard: `The search begins, but Jordan is still facing the blank page without the missing key.`,
             next: "mystery_step3_wobbly",
@@ -113,6 +130,7 @@ Jordan is still calm, but the missing support could make the task feel too hard.
           C: {
             text: `Say, "You do not need the card today. Just write the sentence without it."`,
             score: 0,
+            consequence: "Jordan turns away and refuses again. The schedule change is becoming a quick route to delaying the assignment.",
             feedback: `This removes a planned support during a changed routine. Jordan may feel less able to start.`,
             wizard: `The bridge disappears. Jordan expected a support, and now the task looks wider.`,
             next: "mystery_step3_escalated",
@@ -131,11 +149,15 @@ Jordan is still calm, but the missing support could make the task feel too hard.
 
 They say, "I don't like when the schedule changes." A few other students are already writing.
 
-Jordan is not refusing yet, but the changed routine is making the task feel uncertain.`,
+Jordan is not refusing yet, but the changed routine is making the task feel uncertain.
+
+Jordan is not yet away from the task. Reassurance kept the moment calm, but the writing move is still too large and indistinct.`,
+        hint: "The usual support is missing. Which response gives Jordan a usable starting route without waiting for refusal?",
         choices: {
           A: {
             text: `Say, "Changes can feel hard. First, pick one animal, then you can ask for help with the sentence."`,
             score: 10,
+            consequence: "Jordan reaches for the starter and chooses a topic. The changed routine has not stopped a small plan-aligned response.",
             feedback: `This follows the plan. You acknowledged the change and brought Jordan back to one small writing step.`,
             wizard: `Nice recovery. You named the wobble, then gave Jordan a clear next move.`,
             next: "mystery_step3_supported",
@@ -149,6 +171,7 @@ Jordan is not refusing yet, but the changed routine is making the task feel unce
           B: {
             text: `Say, "I understand. Take a minute to get used to the change, then try your writing."`,
             score: 5,
+            consequence: "Jordan stays near the task but searches for the missing support and hesitates. The first written move remains uncertain.",
             feedback: `This is understanding, but it does not provide a specific first step or prompt Jordan to ask for help.`,
             wizard: `A gentle pause, but the path back to writing is still hidden.`,
             next: "mystery_step3_wobbly",
@@ -162,6 +185,7 @@ Jordan is not refusing yet, but the changed routine is making the task feel unce
           C: {
             text: `Say, "Schedules change all the time. You need to learn to deal with it."`,
             score: 0,
+            consequence: "Jordan turns away and refuses again. The schedule change is becoming a quick route to delaying the assignment.",
             feedback: `This may increase frustration and does not help Jordan use the writing plan.`,
             wizard: `The spell turns sharp. Jordan may focus on the unfairness instead of the first step.`,
             next: "mystery_step3_escalated",
@@ -180,11 +204,15 @@ Jordan is not refusing yet, but the changed routine is making the task feel unce
 
 They say, "No. I'm not doing writing after lunch." Their voice is louder now, and two students look over.
 
-The schedule change has become public and stressful.`,
+The schedule change has become public and stressful.
+
+The class is getting an audience to the exchange. Your response can lower that attention without pretending the task has disappeared.`,
+        hint: "The usual support is missing. Which response gives Jordan a usable starting route without waiting for refusal?",
         choices: {
           A: {
             text: `Move closer and quietly say, "You can take a short break, then come back and write one animal."`,
             score: 10,
+            consequence: "Jordan stays near the task but searches for the missing support and hesitates. The first written move remains uncertain.",
             feedback: `This follows the plan. You stayed calm and private while giving Jordan a planned break and a small return step.`,
             wizard: `Steady shield. You made the mystery smaller instead of louder.`,
             next: "mystery_step3_wobbly",
@@ -198,6 +226,7 @@ The schedule change has become public and stressful.`,
           B: {
             text: `Say, "I know this is frustrating. Sit quietly for now and we will talk in a few minutes."`,
             score: 5,
+            consequence: "Jordan turns away and refuses again. The schedule change is becoming a quick route to delaying the assignment.",
             feedback: `This may calm the moment, but it does not clearly prompt a break request or a return to one small writing step.`,
             wizard: `The noise settles, but the mission path is still unfinished.`,
             next: "mystery_step3_escalated",
@@ -211,6 +240,7 @@ The schedule change has become public and stressful.`,
           C: {
             text: `Say, "You are not skipping writing just because lunch is over. Open your folder now."`,
             score: 0,
+            consequence: "Jordan turns away and refuses again. The schedule change is becoming a quick route to delaying the assignment.",
             feedback: `This increases pressure and may turn the schedule change into a power struggle.`,
             wizard: `The lock clicks shut. Jordan may now fight the demand instead of using the plan.`,
             next: "mystery_step3_escalated",
@@ -231,11 +261,15 @@ Just then, a nearby student says, "Sharks are boring. Everyone writes about shar
 
 Jordan freezes and pulls the pencil back.
 
-The plan says to keep writing safe, private, and small.`,
+The plan says to keep writing safe, private, and small.
+
+The peer's comment did not change Jordan's plan. What counts now is making the small writing move and a useful request more effective than quitting.`,
+        hint: "A peer comment or missing material is pulling attention away. Where is the smallest plan-aligned next move?",
         choices: {
           A: {
             text: `Quietly say, "Shark is your choice. Write 'shark' first, and I will help with the rest."`,
             score: 10,
+            consequence: "Jordan writes a word and leaves the folder open as the room grows noisier. A small success is ready for reinforcement.",
             feedback: `This follows the plan. You protected Jordan's small step and kept the focus on starting.`,
             wizard: `Protective magic. You kept the peer comment from knocking Jordan off the bridge.`,
             next: "mystery_step4_supported",
@@ -249,6 +283,7 @@ The plan says to keep writing safe, private, and small.`,
           B: {
             text: `Say, "You can pick a different animal if you want. There are lots of good choices."`,
             score: 5,
+            consequence: "Jordan returns toward the materials but asks to do writing later. A clear break-and-return sequence is still missing.",
             feedback: `This gives Jordan a choice, but it may reopen the decision and make the task feel bigger again.`,
             wizard: `Kind, but the doorway widened too much. Jordan may get stuck choosing all over again.`,
             next: "mystery_step4_wobbly",
@@ -262,6 +297,7 @@ The plan says to keep writing safe, private, and small.`,
           C: {
             text: `Say to the nearby student, "Stop being rude. Now Jordan feels bad because of you."`,
             score: 0,
+            consequence: "Jordan moves to the cubbies and the page stays blank. The peer audience grows even as the rest of the class works.",
             feedback: `This makes the moment more public. Jordan may feel more embarrassed and less likely to keep writing.`,
             wizard: `The spotlight flashes. The peer comment has become a classroom event.`,
             next: "mystery_step4_escalated",
@@ -280,11 +316,15 @@ The plan says to keep writing safe, private, and small.`,
 
 They say, "I can't find my sentence starter." Then they push the folder away a little.
 
-The missing support is making the changed routine harder.`,
+The missing support is making the changed routine harder.
+
+The missing card is a genuine barrier, but waiting indefinitely for it could become another way to delay writing. Your support can bridge the gap.`,
+        hint: "A peer comment or missing material is pulling attention away. Where is the smallest plan-aligned next move?",
         choices: {
           A: {
             text: `Say, "I can help. Let's write the starter together: 'My animal is...' Then pick one animal."`,
             score: 10,
+            consequence: "Jordan writes a word and leaves the folder open as the room grows noisier. A small success is ready for reinforcement.",
             feedback: `This follows the plan. You restored the support and gave Jordan one small next step.`,
             wizard: `Good recovery. You found the missing piece and placed it back on the path.`,
             next: "mystery_step4_supported",
@@ -298,6 +338,7 @@ The missing support is making the changed routine harder.`,
           B: {
             text: `Say, "Look carefully in your folder. It is probably in there somewhere."`,
             score: 5,
+            consequence: "Jordan returns toward the materials but asks to do writing later. A clear break-and-return sequence is still missing.",
             feedback: `This may help Jordan search, but it does not reduce the writing demand or prompt a help request.`,
             wizard: `The search spell may work, but Jordan still needs support to begin writing.`,
             next: "mystery_step4_wobbly",
@@ -311,6 +352,7 @@ The missing support is making the changed routine harder.`,
           C: {
             text: `Say, "You lost the card, so today you will need to write without it."`,
             score: 0,
+            consequence: "Jordan moves to the cubbies and the page stays blank. The peer audience grows even as the rest of the class works.",
             feedback: `This adds blame and removes support. It may increase avoidance instead of helping Jordan start.`,
             wizard: `The missing card becomes a punishment. Jordan's path back to writing grows rocky.`,
             next: "mystery_step4_escalated",
@@ -329,11 +371,15 @@ The missing support is making the changed routine harder.`,
 
 They turn their body away from the desk. The changed schedule, missing support, and attention from peers are piling up.
 
-The plan says to stay brief, calm, private, and return to help or a short break.`,
+The plan says to stay brief, calm, private, and return to help or a short break.
+
+The refusal is now more efficient than the help request. A quiet, small re-entry could shift that balance even if frustration remains.`,
+        hint: "A peer comment or missing material is pulling attention away. Where is the smallest plan-aligned next move?",
         choices: {
           A: {
             text: `Quietly say, "You can take a short break, then I will help you write one word."`,
             score: 10,
+            consequence: "Jordan returns toward the materials but asks to do writing later. A clear break-and-return sequence is still missing.",
             feedback: `This follows the plan. You did not argue about fairness; you gave Jordan a calm break and a small return step.`,
             wizard: `Wise move. You stepped around the argument and reopened the path to writing.`,
             next: "mystery_step4_wobbly",
@@ -347,6 +393,7 @@ The plan says to stay brief, calm, private, and return to help or a short break.
           B: {
             text: `Say, "I hear you. This schedule is different. Take some space for now."`,
             score: 5,
+            consequence: "Jordan moves to the cubbies and the page stays blank. The peer audience grows even as the rest of the class works.",
             feedback: `This validates Jordan's frustration, but it does not include the planned return to one small writing step.`,
             wizard: `The feeling is named, but the next step is still missing from the spellbook.`,
             next: "mystery_step4_escalated",
@@ -360,6 +407,7 @@ The plan says to stay brief, calm, private, and return to help or a short break.
           C: {
             text: `Say, "Fair or not, the class is writing. You need to do the same assignment."`,
             score: 0,
+            consequence: "Jordan moves to the cubbies and the page stays blank. The peer audience grows even as the rest of the class works.",
             feedback: `This adds pressure and comparison. It may make Jordan focus on escaping the demand.`,
             wizard: `The mountain grows. Jordan may now see writing as something to resist, not rejoin.`,
             next: "mystery_step4_escalated",
@@ -380,11 +428,15 @@ The class is a little noisy because students are putting lunch boxes away. Jorda
 
 Jordan says, "It's too loud."
 
-The routine is still disrupted, but Jordan has started.`,
+The routine is still disrupted, but Jordan has started.
+
+The first word is a real accomplishment; the room's noise is a new pressure, not proof that the plan has stopped working.`,
+        hint: "A brief pause and indefinite escape are not the same. Which response keeps the return step clear?",
         choices: {
           A: {
             text: `Say, "You started. Nice work. Take one quiet breath, then add two words with my help."`,
             score: 10,
+            consequence: "Jordan returns to the page and requests help before the next transition. Their work is incomplete, but the replacement route is active.",
             feedback: `This follows the plan. You reinforced the start, acknowledged the barrier, and kept the next step small.`,
             wizard: `Calm focus spell. You noticed the noise without letting it erase Jordan's progress.`,
             next: "mystery_step5_supported",
@@ -398,6 +450,7 @@ The routine is still disrupted, but Jordan has started.`,
           B: {
             text: `Say, "The room will quiet down soon. Wait a minute, then keep writing."`,
             score: 5,
+            consequence: "Jordan stays near the folder and considers a small step. The opportunity is real, though easily lost to a vague direction.",
             feedback: `This may be true, but it does not reinforce Jordan's progress or give a clear next writing step.`,
             wizard: `Waiting may help, but the thread of momentum is getting thin.`,
             next: "mystery_step5_wobbly",
@@ -411,6 +464,7 @@ The routine is still disrupted, but Jordan has started.`,
           C: {
             text: `Say, "The room is not that loud. You need to stop getting distracted."`,
             score: 0,
+            consequence: "Jordan stays near the folder and considers a small step. The opportunity is real, though easily lost to a vague direction.",
             feedback: `This dismisses Jordan's concern and adds pressure. It may make Jordan more likely to avoid the task.`,
             wizard: `The noise goblin grows. Jordan's concern was brushed aside instead of supported.`,
             next: "mystery_step5_wobbly",
@@ -429,11 +483,15 @@ The routine is still disrupted, but Jordan has started.`,
 
 They touch the pencil, then put it down. They say, "Can I just do it later?"
 
-The schedule change has made writing feel optional to Jordan.`,
+The schedule change has made writing feel optional to Jordan.
+
+A brief pause can be part of the plan, but “later” without a return step leaves the task unresolved.`,
+        hint: "A brief pause and indefinite escape are not the same. Which response keeps the return step clear?",
         choices: {
           A: {
             text: `Say, "First write one word with help. Then you can be done with this first step."`,
             score: 10,
+            consequence: "Jordan returns to the page and requests help before the next transition. Their work is incomplete, but the replacement route is active.",
             feedback: `This follows the plan. You kept the expectation small and helped Jordan return to writing now.`,
             wizard: `Good anchor. You kept the mission from floating away into "later."`,
             next: "mystery_step5_supported",
@@ -447,6 +505,7 @@ The schedule change has made writing feel optional to Jordan.`,
           B: {
             text: `Say, "Maybe later, but try to get something down before we move on."`,
             score: 5,
+            consequence: "Jordan stays near the folder and considers a small step. The opportunity is real, though easily lost to a vague direction.",
             feedback: `This keeps writing on the table, but it is still vague. Jordan needs a clear first step or help request.`,
             wizard: `The goal is nearby, but the target is blurry.`,
             next: "mystery_step5_wobbly",
@@ -460,6 +519,7 @@ The schedule change has made writing feel optional to Jordan.`,
           C: {
             text: `Say, "No, you had your chance earlier. Now you need to finish it all."`,
             score: 0,
+            consequence: "Jordan stays away from the assignment as the class prepares to move. Writing is at risk of disappearing without a request.",
             feedback: `This increases pressure and makes the task bigger. It does not match the plan's small-step approach.`,
             wizard: `The path turns steep. Jordan asked for escape, and the response made the climb bigger.`,
             next: "mystery_step5_escalated",
@@ -478,11 +538,15 @@ The schedule change has made writing feel optional to Jordan.`,
 
 They say, "I'm done. I'm not writing after lunch." A few students are now watching.
 
-The adult needs to respond without making the schedule change more public.`,
+The adult needs to respond without making the schedule change more public.
+
+Everyone is currently safe. Make the next interaction private and avoid turning a schedule change into a public contest.`,
+        hint: "A brief pause and indefinite escape are not the same. Which response keeps the return step clear?",
         choices: {
           A: {
             text: `Walk nearby and quietly say, "Take a short break here, then come back for one word with help."`,
             score: 10,
+            consequence: "Jordan stays near the folder and considers a small step. The opportunity is real, though easily lost to a vague direction.",
             feedback: `This follows the plan. You stayed private, allowed a short break, and gave Jordan a small return step.`,
             wizard: `Calm footsteps through the chaos. You brought the plan to Jordan without chasing the argument.`,
             next: "mystery_step5_wobbly",
@@ -496,6 +560,7 @@ The adult needs to respond without making the schedule change more public.`,
           B: {
             text: `Say, "You can stand there quietly, but writing still needs to happen sometime today."`,
             score: 5,
+            consequence: "Jordan stays away from the assignment as the class prepares to move. Writing is at risk of disappearing without a request.",
             feedback: `This may prevent more disruption, but it does not teach Jordan how to return to the task now.`,
             wizard: `The moment pauses, but the plan has not fully appeared.`,
             next: "mystery_step5_escalated",
@@ -509,6 +574,7 @@ The adult needs to respond without making the schedule change more public.`,
           C: {
             text: `Say loudly, "Jordan, return to your seat. You are making this harder for everyone."`,
             score: 0,
+            consequence: "Jordan stays away from the assignment as the class prepares to move. Writing is at risk of disappearing without a request.",
             feedback: `This makes the situation public and may increase embarrassment or refusal.`,
             wizard: `The spotlight burns brighter. Jordan may now work harder to escape the attention.`,
             next: "mystery_step5_escalated",
@@ -529,11 +595,16 @@ They say, "Can you help me finish before we go to centers?"
 
 There is not much time left, but Jordan is asking for help.
 
-This is the final decision of the mission.`,
+This is the final decision of the mission.
+
+The clock is real, but finishing the whole assignment for Jordan is not the same as reinforcing the student's request and first step.`,
+        hint: "The clock is running. Which response values appropriate communication and a manageable return rather than instant completion?",
         choices: {
           A: {
             text: `Say, "Yes. Great asking for help. Add two words, and that will finish this sentence."`,
             score: 10,
+            ending: "STRONG",
+            consequence: "Jordan makes another manageable move toward writing and the request for help is effective. The changed routine is still inconvenient, not insurmountable.",
             feedback: `This follows the plan. You reinforced the help request and gave Jordan a simple finish line.`,
             wizard: `Mystery solved. Jordan used the plan even when the schedule changed.`,
             meta: {
@@ -546,6 +617,8 @@ This is the final decision of the mission.`,
           B: {
             text: `Say, "Yes. Let's make it your best sentence before centers start."`,
             score: 5,
+            ending: "MIXED",
+            consequence: "Jordan remains near the page but uncertain about the next step. A stronger response would connect help or break to a specific return.",
             feedback: `This is supportive, but it may make the task bigger than needed. Jordan needs a small, clear finish.`,
             wizard: `A shiny goal, but maybe too shiny. Keep the ending simple.`,
             meta: {
@@ -558,6 +631,8 @@ This is the final decision of the mission.`,
           C: {
             text: `Say, "No, we are out of time because you waited too long to start."`,
             score: 0,
+            ending: "FRAGILE",
+            consequence: "Jordan remains disengaged as the class transitions. In this fictional branch, avoiding writing has worked better than the communication route.",
             feedback: `This may punish the help request. Jordan used the plan, and the response should make that skill more likely next time.`,
             wizard: `The door closes at the finish line. Jordan may not ask for help next time.`,
             meta: {
@@ -577,11 +652,16 @@ They say, "I don't like doing writing at this time."
 
 They are not fully refusing, but they are not writing yet either.
 
-This is the final decision of the mission.`,
+This is the final decision of the mission.
+
+Jordan is close enough to return. One clear starter or short supported break could make that movement meaningful.`,
+        hint: "The clock is running. Which response values appropriate communication and a manageable return rather than instant completion?",
         choices: {
           A: {
             text: `Say, "The time changed, but the first step is the same: one word, with help if you need it."`,
             score: 10,
+            ending: "STRONG",
+            consequence: "Jordan makes another manageable move toward writing and the request for help is effective. The changed routine is still inconvenient, not insurmountable.",
             feedback: `This follows the plan. You acknowledged the schedule change and returned Jordan to one small, familiar step.`,
             wizard: `A strong landing. The schedule changed, but the plan stayed steady.`,
             meta: {
@@ -594,6 +674,8 @@ This is the final decision of the mission.`,
           B: {
             text: `Say, "I know. Let's just try to do a little bit before the next activity."`,
             score: 5,
+            ending: "MIXED",
+            consequence: "Jordan remains near the page but uncertain about the next step. A stronger response would connect help or break to a specific return.",
             feedback: `This is calm, but "a little bit" may still be unclear. Jordan needs a specific first step.`,
             wizard: `Gentle words, but the target is still cloudy.`,
             meta: {
@@ -606,6 +688,8 @@ This is the final decision of the mission.`,
           C: {
             text: `Say, "You do not get to choose when writing happens. Start now."`,
             score: 0,
+            ending: "FRAGILE",
+            consequence: "Jordan remains disengaged as the class transitions. In this fictional branch, avoiding writing has worked better than the communication route.",
             feedback: `This adds pressure and may make Jordan focus on control instead of returning to writing.`,
             wizard: `The control battle appears. Jordan may fight the schedule instead of using the plan.`,
             meta: {
@@ -625,11 +709,16 @@ The writing folder is still open, but the page is mostly blank. The class is alm
 
 The adult feels pressure to make Jordan finish quickly.
 
-This is the final decision of the mission.`,
+This is the final decision of the mission.
+
+The transition makes a rapid consequence tempting. The more important question is whether a help or break request still leads somewhere useful.`,
+        hint: "The clock is running. Which response values appropriate communication and a manageable return rather than instant completion?",
         choices: {
           A: {
             text: `Quietly say, "Take a short break. Then write one word with help before we move on."`,
             score: 10,
+            ending: "MIXED",
+            consequence: "Jordan makes another manageable move toward writing and the request for help is effective. The changed routine is still inconvenient, not insurmountable.",
             feedback: `This follows the plan. Even late in the routine, you kept the response calm, private, and focused on one small step.`,
             wizard: `A calm shield at the edge of the mystery. You kept the path open without forcing the gate.`,
             meta: {
@@ -642,6 +731,8 @@ This is the final decision of the mission.`,
           B: {
             text: `Say, "You can skip this sentence today, but tomorrow you need to start right away."`,
             score: 5,
+            ending: "FRAGILE",
+            consequence: "Jordan remains near the page but uncertain about the next step. A stronger response would connect help or break to a specific return.",
             feedback: `This may end the conflict, but it lets Jordan escape the task without practicing the help, break, or return routine.`,
             wizard: `The room quiets, but the skill does not get stronger.`,
             meta: {
@@ -654,6 +745,8 @@ This is the final decision of the mission.`,
           C: {
             text: `Say, "You lost your chance. You will finish this instead of going to centers."`,
             score: 0,
+            ending: "FRAGILE",
+            consequence: "Jordan remains disengaged as the class transitions. In this fictional branch, avoiding writing has worked better than the communication route.",
             feedback: `This adds a consequence after escalation and may strengthen the power struggle. It does not teach Jordan how to return to writing.`,
             wizard: `The mystery becomes a battle. Jordan may remember the consequence more than the plan.`,
             meta: {

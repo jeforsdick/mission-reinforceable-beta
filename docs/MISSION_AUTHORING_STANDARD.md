@@ -326,6 +326,8 @@ Consequences must be:
 
 Hints are just-in-time support, not answer keys.
 
+**Wizard bubble writing budget:** Aim for a single concise question or cue, preferably 125 characters or fewer (140 maximum for the public demo). Avoid manual line breaks and long explanations in the hint. Put the behavioral rationale in the post-choice feedback or Resource Map instead. The shared gameplay UI automatically fits longer authorized hints as a safety net; it is not a reason to author paragraphs into the bubble.
+
 Do not say:
 
 > Choose the non-contingent attention option.
