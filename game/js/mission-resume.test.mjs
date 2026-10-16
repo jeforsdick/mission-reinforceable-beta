@@ -179,6 +179,20 @@ test('bottom Mission Menu remains available while duplicate top control is absen
   assert.match(app, /MR\.engine\.resumeSavedMission\(\)/);
 });
 
+test('login screen loads bottom navigation icons before teacher authentication', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  for (const [asset, filename] of [
+    ['startOverIcon', 'bottom-bar-start-over-icon.png'],
+    ['progressIcon', 'bottom-bar-my-progress-icon.png'],
+    ['resourcesIcon', 'bottom-bar-resources-icon.png']
+  ]) {
+    assert.ok(html.includes(`<img data-asset="${asset}" src="../assets/game/skin-v2/${filename}" alt="" />`),
+      `${asset} should have a static src so the image appears before login`);
+  }
+  assert.match(source('./app.js'), /if \(src\) el\.setAttribute\('src', src\)/,
+    'per-case assets should still override placeholders after sign-in');
+});
+
 test('browser Back restores active timer only for a valid same-day checkpoint', async () => {
   const storage=createStorage(),db=new Map();db.responses=[];
   const run=harness(storage,db);
