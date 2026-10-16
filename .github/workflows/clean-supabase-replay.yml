@@ -58,6 +58,7 @@ jobs:
             game/js/fidelity-target-linkage.test.mjs \
             game/js/protected-choice-shuffling.test.mjs \
             game/js/rich-mission-feedback.test.mjs \
+            game/js/scenario-fit.test.mjs \
             game/js/home-status-message.test.mjs
 
       - name: Validate fictional public-demo story, Resource Map, and navigation
