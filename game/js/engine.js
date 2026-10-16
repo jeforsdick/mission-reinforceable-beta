@@ -665,6 +665,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     wireWizardHintTrigger();
     const scenarioText = MR.$('#scenario-text');
     scenarioText.innerHTML = nextScenarioHTML(step);
+    scenarioText.dataset.noAutoFit = consequencePreviewEnabled() ? 'true' : 'false';
     if (MR.scenarioFit && !consequencePreviewEnabled()) MR.scenarioFit.fitScenarioText(scenarioText);
     wireScenarioScrollCue();
     const scrollRegion = MR.$('#scenario-scroll-region');
