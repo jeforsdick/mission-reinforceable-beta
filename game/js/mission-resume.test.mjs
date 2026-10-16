@@ -167,12 +167,14 @@ test('completed/unknown backend session cannot be resurrected, even in QA',async
   assert.equal(refreshed.MR.missionResume.read(),null);
 });
 
-test('navigation preserves external Website link and in-game Mission Menu controls',()=>{
+test('bottom Mission Menu remains available while duplicate top control is absent',()=>{
   const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
   const app=source('./app.js');
   assert.match(html, /class="back-to-site-cottage" href="\.\.\/" aria-label="Visit the Mission: Reinforceable website"/);
   assert.match(html, /id="nav-home"[^>]*>[\s\S]*?Mission Menu<\/button>/);
-  assert.match(html, /id="play-menu-btn"/);
+  assert.doesNotMatch(html, /id="play-menu-btn"/);
+  assert.doesNotMatch(app, /#play-menu-btn/);
+  assert.match(app, /MR\.\$\('#nav-home'\)\.addEventListener\('click'/);
   assert.match(app, /MR\.engine\.leaveMissionToMenu\(\)/);
   assert.match(app, /MR\.engine\.resumeSavedMission\(\)/);
 });
