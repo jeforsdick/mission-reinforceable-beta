@@ -42,7 +42,7 @@
       caseId: MR.telemetryContext.caseId,
       participantId: MR.telemetryContext.participantId,
       gameContentVersion: MR.telemetryContext.gameContentVersion,
-      studyDate: MR.studyDate.dateKey()
+      studyDate: value.studyDate || MR.studyDate.dateKey()
     });
   }
 
