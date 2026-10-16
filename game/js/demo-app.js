@@ -198,18 +198,28 @@
       });
     });
 
-    MR.$('#nav-home').addEventListener('click', () => {
-      MR.audio.playSfx('click', 0.24);
+    function goToMissionMenu() {
+      if (MR.$('#play-screen').classList.contains('is-active') && MR.engine.leaveMissionToMenu) MR.engine.leaveMissionToMenu();
       renderHome();
       MR.setScreen('home');
+    }
+    MR.$('#nav-home').addEventListener('click', () => {
+      MR.audio.playSfx('click', 0.24);
+      goToMissionMenu();
+    });
+    MR.$('#play-menu-btn').addEventListener('click', () => {
+      MR.audio.playSfx('click', 0.24);
+      goToMissionMenu();
     });
     MR.$('#nav-progress').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
+      if (MR.$('#play-screen').classList.contains('is-active') && MR.engine.leaveMissionToMenu) MR.engine.leaveMissionToMenu();
       MR.dashboard.render();
       MR.setScreen('progress');
     });
     MR.$('#nav-resources').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
+      if (MR.$('#play-screen').classList.contains('is-active') && MR.engine.leaveMissionToMenu) MR.engine.leaveMissionToMenu();
       MR.resources.render();
       MR.setScreen('resources');
     });
