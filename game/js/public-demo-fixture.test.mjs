@@ -150,7 +150,10 @@ test('all three fictional showcase missions offer 13 scenes, 39 rich choices and
 test('public demo provides the same clear Mission Menu and Website navigation as the teacher game', () => {
   assert.match(demoHTML, /id="play-menu-btn"/);
   assert.match(demoHTML, /id="nav-home"[^>]*>[\s\S]*?Mission Menu/);
-  assert.match(demoHTML, /class="back-to-site-label">Website/);
+  assert.match(demoHTML, /class="back-to-site-cottage"[^>]*aria-label="Visit the Mission: Reinforceable website"/);
+  assert.match(demoHTML, /src="..\/assets\/game\/back-to-site-icon.png"/);
+  assert.doesNotMatch(demoHTML, /class="back-to-site-label"/);
+  assert.doesNotMatch(gameHTML, /class="back-to-site-label"/);
   assert.match(demoApp, /#play-menu-btn/);
 });
 
