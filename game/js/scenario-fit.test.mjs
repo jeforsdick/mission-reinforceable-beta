@@ -96,6 +96,7 @@ function wizardHintFor(heightAt17, widthAt17 = 220) {
   };
   Object.defineProperties(element, {
     scrollHeight: {
+      configurable: true,
       get() { return heightAt17 * (parseFloat(element.style.fontSize || '17') / 17); }
     },
     scrollWidth: {
