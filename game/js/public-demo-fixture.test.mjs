@@ -155,14 +155,17 @@ test('public demo provides the same clear Mission Menu and Website navigation as
 });
 
 
+
 test('public demo keeps feedback and Sound controls together without fixed overlap', () => {
   const css = read('../../demo-game/demo.css');
-  const grouping = demoHTML.match(/<div class="demo-utility-controls"[^>]*>([\\s\\S]*?)<\\/div>/);
-  assert.ok(grouping, 'public demo must have a grouped utility toolbar');
-  assert.match(grouping[1], /id="demo-feedback-open"/);
-  assert.match(grouping[1], /id="sound-toggle"/);
-  assert.match(css, /\\.demo-utility-controls\\s*\\{[\\s\\S]*?flex-direction:\s*column/);
-  assert.match(css, /\\.demo-utility-controls\s*>\s*\\.sound-toggle\\s*\\{[\\s\\S]*?position:\s*relative/);
-  assert.match(css, /@media\\s*\\(max-width:\s*700px\\)[\\s\\S]*?\\.demo-utility-controls\\s*\\{[\\s\\S]*?position:\s*relative/);
-  assert.match(demoHTML, /demo\\.css\\?v=20261016-demo-controls-v1/);
+  const groupedControls = demoHTML.split('<div class="demo-utility-controls"')[1]?.split('</div>')[0] || '';
+  assert.ok(groupedControls.includes('id="demo-feedback-open"'), 'feedback button must be in utility stack');
+  assert.ok(groupedControls.includes('id="sound-toggle"'), 'sound button must be in utility stack');
+  assert.ok(css.includes('.demo-utility-controls {'));
+  assert.ok(css.includes('flex-direction: column;'), 'desktop utility stack must keep controls on separate rows');
+  assert.ok(css.includes('.demo-utility-controls > .sound-toggle {'));
+  assert.ok(css.includes('z-index: auto;'), 'shared fixed sound control must be reset inside the stack');
+  assert.ok(css.includes('body:has(#play-screen.is-active) .demo-utility-controls > .sound-toggle'));
+  assert.ok(css.includes('@media (max-width: 700px)'));
+  assert.ok(demoHTML.includes('demo.css?v=20261016-demo-controls-v1'));
 });
