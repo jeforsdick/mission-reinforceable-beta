@@ -96,3 +96,59 @@ test('authenticated game, participant telemetry, and QA Preview entry contracts 
   assert.match(auth, /supabase/i);
   assert.match(qaTest, /qaMode/);
 });
+
+
+test('all three fictional showcase missions offer 13 scenes, 39 rich choices and 243 valid five-decision routes', () => {
+  const context = { window: {}, POOL: { daily: [], wild: [], crisis: [] } };
+  context.window.POOL = context.POOL;
+  for (const file of fixtureFiles) vm.runInNewContext(read(file), context);
+
+  for (const [mode, missions] of Object.entries(context.POOL)) {
+    assert.equal(missions.length, 1, mode + ' must contain exactly one public showcase mission');
+    const mission = missions[0];
+    assert.equal(Object.keys(mission.steps).length, 13, mode + ' should contain one opening and three states for each subsequent beat');
+    assert.deepEqual(Object.keys(mission.endings).sort(), ['FRAGILE', 'MIXED', 'STRONG']);
+    let choiceCount = 0;
+    for (const [stepId, scene] of Object.entries(mission.steps)) {
+      assert.ok(scene.text && scene.text.trim().length >= 90, mode + ':' + stepId + ' needs a substantive scene');
+      assert.ok(scene.hint && scene.hint.trim().length >= 30, mode + ':' + stepId + ' needs a useful hint');
+      assert.equal(Object.keys(scene.choices).length, 3, mode + ':' + stepId);
+      assert.deepEqual(Object.values(scene.choices).map(c => c.score).sort((a,b)=>a-b), [0,5,10]);
+      for (const choice of Object.values(scene.choices)) {
+        choiceCount++;
+        for (const key of ['text', 'consequence', 'wizard', 'feedback']) {
+          assert.ok(typeof choice[key] === 'string' && choice[key].trim().length >= 20, mode + ':' + stepId + ' choice lacks ' + key);
+        }
+        assert.ok(choice.meta && choice.meta.bipComponent && choice.meta.mechanism, mode + ':' + stepId + ' needs mechanism metadata');
+      }
+    }
+    assert.equal(choiceCount, 39);
+    let routeCount = 0;
+    function traverse(stepId, depth, visited) {
+      assert.ok(mission.steps[stepId], 'missing branch target ' + mode + ':' + stepId);
+      assert.ok(!visited.has(stepId), 'loop in ' + mode + ':' + stepId);
+      assert.ok(depth <= 5, 'too many decisions');
+      const scene = mission.steps[stepId];
+      const nextVisited = new Set([...visited, stepId]);
+      for (const choice of Object.values(scene.choices)) {
+        if (depth === 5) {
+          assert.ok(!choice.next, 'terminal choice unexpectedly has next');
+          assert.ok(mission.endings[choice.ending], 'terminal choice needs a configured ending');
+          routeCount++;
+        } else {
+          assert.ok(choice.next, 'nonterminal choice missing next');
+          traverse(choice.next, depth + 1, nextVisited);
+        }
+      }
+    }
+    traverse(mission.start, 1, new Set());
+    assert.equal(routeCount, 243, mode + ' should offer all 3^5 branching paths');
+  }
+});
+
+test('public demo provides the same clear Mission Menu and Website navigation as the teacher game', () => {
+  assert.match(demoHTML, /id="play-menu-btn"/);
+  assert.match(demoHTML, /id="nav-home"[^>]*>[\\s\\S]*?Mission Menu/);
+  assert.match(demoHTML, /class="back-to-site-label">Website/);
+  assert.match(demoApp, /#play-menu-btn/);
+});
