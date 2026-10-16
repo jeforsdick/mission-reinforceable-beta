@@ -58,5 +58,8 @@ jobs:
             game/js/rich-mission-feedback.test.mjs \
             game/js/home-status-message.test.mjs
 
+      - name: Validate fictional public-demo story, Resource Map, and navigation
+        run: node --test game/js/public-demo-fixture.test.mjs
+
       - name: Replay clean local database
         run: ./scripts/replay-clean-supabase.sh
