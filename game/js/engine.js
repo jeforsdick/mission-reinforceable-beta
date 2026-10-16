@@ -442,6 +442,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     checkpointStage = stage;
     MR.missionResume.save({
       mode: current.mode,
+      studyDate: current.studyDateKey,
       missionId: current.mission.id,
       sessionId: current.telemetrySessionId,
       telemetryStartedAt: current.telemetryStartedAt,
