@@ -158,7 +158,7 @@ test('mobile hints keep natural font size and bubble height after desktop fittin
 });
 
 test('every hint is refitted after the content changes and shared CSS bounds long hints', () => {
-  const css = read('../css/styles.css');
+  const css = fs.readFileSync(new URL('../css/styles.css', import.meta.url), 'utf8');
   assert.match(engineSource, /hint\.textContent = wizardHintForCurrentStep\(\);[\s\S]*MR\.scenarioFit\.fitWizardHintText\(hint\)/);
   assert.match(engineSource, /MR\.scenarioFit\.watchWizardHintFit/);
   assert.match(css, /\.wizard-hint-wrap \.scenario-hint\.is-overflowing[\s\S]*overflow-y: auto/);
