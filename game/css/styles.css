@@ -2808,6 +2808,37 @@ body.qa-preview { padding-top: 4.25rem; }
 }
 
 
+/* Mission results: the Coaching Summary and Review can exceed the visible parchment.
+   Reuse the Resource Map's More below styling and high-contrast scroll rail. */
+#results-screen .results-scroll-wrap { position: relative; min-height: 0; }
+#results-screen #results-content {
+  overflow-y: auto;
+  padding-bottom: 52px;
+  scrollbar-width: auto;
+  scrollbar-color: #99601c #f5e3b7;
+  scrollbar-gutter: stable;
+}
+#results-screen #results-content::-webkit-scrollbar { width: 13px; }
+#results-screen #results-content::-webkit-scrollbar-track {
+  background: #f5e3b7;
+  border: 2px solid #bc8e52;
+  border-radius: 12px;
+}
+#results-screen #results-content::-webkit-scrollbar-thumb {
+  background: #93601e;
+  border: 2px solid #f5e3b7;
+  border-radius: 12px;
+  min-height: 36px;
+}
+#results-screen #results-content::-webkit-scrollbar-thumb:hover { background: #704314; }
+#results-screen .results-scroll-cue { right: 18px; bottom: 9px; }
+@media (max-width: 700px) {
+  /* Results previously expanded without a contained scroll region on phones. */
+  #results-screen #results-content { max-height: min(58svh, 470px); overflow-y: auto; }
+  #results-screen #results-content::-webkit-scrollbar { width: 11px; }
+  #results-screen .results-scroll-cue { right: 8px; bottom: 7px; font-size: 11px; padding: 6px 10px; }
+}
+
 /* Resource Map navigation affordance: parchment-friendly, visible scroll rail
    and an optional down-step button, shared by the demo and teacher games. */
 .resources-scroll { position: relative; }
