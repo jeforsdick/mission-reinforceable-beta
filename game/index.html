@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mission: Reinforceable</title>
   <link rel="icon" href="../favicon.png" />
-  <link rel="stylesheet" href="css/styles.css?v=20261015-mobile-hint-and-controls-1" />
+  <link rel="stylesheet" href="css/styles.css?v=20261015-mission-menu-resume-1" />
   <style>
     @media (min-width: 701px) {
       .home-panel { margin-top: -135px; }
@@ -65,6 +65,11 @@
 
           <aside class="mission-menu" aria-label="Mission options">
             <div class="menu-title">Mission Options</div>
+            <div id="resume-mission-banner" class="resume-mission-banner" hidden>
+              <strong id="resume-mission-label">Mission in progress</strong>
+              <button id="resume-mission-btn" type="button" class="pixel-btn green-btn">Resume Mission</button>
+              <small>Continue where you left off today.</small>
+            </div>
             <article class="mission-card">
               <img data-asset="dailyIcon" alt="" />
               <div>
@@ -95,6 +100,7 @@
     </section>
 
     <section id="play-screen" class="screen screen-play" aria-label="Mission play screen">
+      <button id="play-menu-btn" class="play-menu-btn" type="button">← Mission Menu</button>
       <div class="hud">
         <div id="heart-row" class="heart-row" aria-label="Hearts"></div>
         <div class="hud-meter mission-meter">
@@ -193,7 +199,7 @@
     </section>
 
     <nav class="bottom-nav gold-frame" aria-label="Game navigation">
-      <button id="nav-home" class="scroll-nav-btn" type="button"><img data-asset="startOverIcon" alt="" />Start Over</button>
+      <button id="nav-home" class="scroll-nav-btn" type="button"><img data-asset="startOverIcon" alt="" />Mission Menu</button>
       <button id="nav-progress" class="scroll-nav-btn" type="button"><img data-asset="progressIcon" alt="" />Progress</button>
       <button id="nav-resources" class="scroll-nav-btn" type="button"><img data-asset="resourcesIcon" alt="" />Resources</button>
     </nav>
@@ -228,8 +234,9 @@
   </div>
 
   <div class="account-stack">
-    <a class="back-to-site-cottage" href="../" aria-label="Back to main website">
-      <img src="../assets/game/back-to-site-icon.png" alt="Back to Site" />
+    <a class="back-to-site-cottage" href="../" aria-label="Visit the Mission: Reinforceable website">
+      <img src="../assets/game/back-to-site-icon.png" alt="" />
+      <span class="back-to-site-label">Website</span>
     </a>
 
     <div class="participant-controls" aria-label="Participant session">
@@ -249,16 +256,17 @@
   <script src="js/utils.js"></script>
   <script src="js/study-date.js"></script>
   <script src="js/study-calendar.js"></script>
-  <script src="js/auth.js?v=20261009-password-recovery-1"></script>
-  <script src="js/session-timer.js"></script>
+  <script src="js/auth.js?v=20261015-same-day-resume-1"></script>
+  <script src="js/session-timer.js?v=20261015-same-day-resume-1"></script>
   <script src="js/storage.js"></script>
+  <script src="js/mission-resume.js?v=20261015-same-day-resume-1"></script>
   <script src="js/protected-content.js?v=20260819-cleanup-3b"></script>
   <script src="js/dashboard.js"></script>
   <script src="js/scenario-fit.js"></script>
-  <script src="js/engine.js?v=20261007-mission-briefing-1"></script>
+  <script src="js/engine.js?v=20261015-same-day-resume-1"></script>
   <script src="js/reminders.js"></script>
   <script src="js/resources.js?v=20260818-schema-v1"></script>
-  <script src="js/app.js?v=20261009-independent-qa-2"></script>
+  <script src="js/app.js?v=20261015-mission-menu-resume-1"></script>
   <script src="js/fit-screen.js"></script>
 </body>
 </html>

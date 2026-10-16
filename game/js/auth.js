@@ -460,6 +460,19 @@
 
     getProgressResponses: progressResponses,
 
+    async getMissionSession(sessionId, caseId) {
+      const context = MR.telemetryContext;
+      if (!context || !context.participantId || context.caseId !== caseId) return null;
+      const { data, error } = await client().from('game_sessions')
+        .select('id, status, participant_id, case_id, mode, mission_id, game_content_version, qa_mode, started_at')
+        .eq('id', sessionId)
+        .eq('participant_id', context.participantId)
+        .eq('case_id', caseId)
+        .maybeSingle();
+      if (error) throw new Error('Unable to verify saved mission session: ' + error.message);
+      return data || null;
+    },
+
     async hasCompletedMissionToday() {
       const { data, error } = await client().rpc('has_completed_mission_today');
       if (error) throw new Error(`Unable to check today's mission status: ${error.message}`);

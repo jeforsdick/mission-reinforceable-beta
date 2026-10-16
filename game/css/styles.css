@@ -2748,3 +2748,48 @@ body.qa-preview { padding-top: 4.25rem; }
     margin: 8px auto 18px;
   }
 }
+
+
+/* Clear navigation hierarchy. Website is intentionally external to the game;
+   Mission Menu is the in-game return and never discards today's checkpoint. */
+.back-to-site-label {
+  display: block;
+  margin-top: 2px;
+  color: #fff5d2;
+  font: 900 12px/1.15 var(--mono);
+  text-align: center;
+  text-shadow: 2px 2px 0 #080008;
+}
+.resume-mission-banner {
+  display: grid;
+  gap: 7px;
+  padding: 12px;
+  border: 3px solid var(--gold);
+  border-radius: 8px;
+  background: rgba(12, 16, 68, .94);
+  color: #fff5d2;
+  text-align: center;
+  font: 800 13px/1.3 var(--mono);
+}
+.resume-mission-banner .pixel-btn { width: 100%; min-height: 42px; font-size: 15px; }
+.resume-mission-banner small { font-size: 11px; }
+.play-menu-btn {
+  position: absolute;
+  top: 14px;
+  left: 24px;
+  z-index: 30;
+  padding: 10px 14px;
+  border: 2px solid var(--gold);
+  border-radius: 7px;
+  background: #18245e;
+  color: #fff5d2;
+  font: 900 14px/1.2 var(--mono);
+}
+@media (min-width: 701px) {
+  .resume-mission-banner { margin: 14px 0; }
+}
+@media (max-width: 700px) {
+  .play-menu-btn { position: relative; top: auto; left: auto; display: block; margin: 4px 0 10px; font-size: 13px; }
+  .resume-mission-banner { margin: 14px 0 12px; }
+  .back-to-site-label { font-size: 10px; }
+}
