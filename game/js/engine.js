@@ -834,7 +834,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       || 'The classroom shifts in response to your decision.';
     img.src = sprite.src;
     img.className = `wizard-modal-img ${sprite.cls}`;
-    MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission' : pendingEnding ? 'See Mission Outcome' : 'Complete Mission';
+    MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission'
+      : pendingEnding && consequencePreviewEnabled() ? 'View Results'
+      : pendingEnding ? 'See Mission Outcome' : 'Complete Mission';
     const exit = MR.$('#wizard-modal-exit');
     if (exit) { exit.hidden = false; exit.setAttribute('aria-label', 'Return to mission menu'); }
     modal.hidden = false;
@@ -891,7 +893,13 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     } else if (pendingEnding) {
       const ending = pendingEnding;
       pendingEnding = null;
-      showMissionOutcome(ending);
+      if (consequencePreviewEnabled()) {
+        // Only an authorized, opted-in draft QA run bypasses the long popup.
+        // The same fifth decision still ends with one completed session.
+        finishMission(ending);
+      } else {
+        showMissionOutcome(ending);
+      }
     } else {
       finishMission();
     }
@@ -1008,9 +1016,35 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     `;
   }
 
+  function outcomeForResults(run) {
+    if (!consequencePreviewEnabled()) return null;
+    if (run.missionOutcome && run.missionOutcome.text) return run.missionOutcome;
+    // Historical QA details: reconstitute only when the matching mission
+    // draft and recorded step/choice are still available.
+    const mode = run.mode === 'wildcard' ? 'wild' : run.mode;
+    const id = run.missionId || run.mission_id;
+    const mission = ((MR.pool && MR.pool[mode]) || []).find(item => item.id === id);
+    const history = Array.isArray(run.history) ? run.history : [];
+    const final = history[history.length - 1];
+    const step = mission && final && mission.steps && mission.steps[final.stepId];
+    return step && final && step.choices
+      ? endingForChoice(mission, step.choices[final.choiceKey], true) : null;
+  }
+
   function coachingDebriefHTML(run, summary) {
     const buckets = scoreBuckets(run);
     const coaching = coachingSummary(run, buckets);
+    const outcome = outcomeForResults(run);
+    const sprite = { STRONG: 'wizardSuccess', MIXED: 'wizardMeh', FRAGILE: 'wizardDead' }[outcome?.key];
+    const imageSrc = sprite && MR.asset(sprite);
+    const outcomeHTML = outcome?.text ? `
+      <section class="results-card results-outcome-card">
+        ${imageSrc ? '<img class="results-outcome-wizard" src="' + MR.escapeHTML(imageSrc) + '" alt="" />' : ''}
+        <h2>Your Mission Outcome</h2>
+        <p>${MR.escapeHTML(outcome.text)}</p>
+        ${outcome.wizard ? '<p class="results-outcome-wizard-line">' + MR.escapeHTML(outcome.wizard) + '</p>' : ''}
+      </section>
+    ` : '';
     const reviewHTML = buckets.missedQuestions.length
       ? `
         ${reviewGroupHTML(
@@ -1029,6 +1063,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return `
       <section class="results-debrief">
         <h1>${MR.escapeHTML(summary.title)}</h1>
+        ${outcomeHTML}
         <section class="results-card results-summary-card">
           <h2>Mission Summary</h2>
           <dl class="results-stats">
@@ -1093,7 +1128,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     };
   }
 
-  async function finishMission() {
+  async function finishMission(endingOnResults = null) {
     if (studyDayExpired()) return;
     const accuracy = current.maxScore ? Math.round((current.score / current.maxScore) * 100) : 0;
     const xp = behaviorXPFor(current.score, current.expectedSteps || 3, current.xpMax);
@@ -1143,7 +1178,14 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       refineChoiceCount: countSummary.refineChoiceCount,
       missedOpportunityCount: countSummary.missedOpportunityCount,
       missedReviewCount: countSummary.missedReviewCount,
-      history
+      history,
+      ...(consequencePreviewEnabled() && endingOnResults ? {
+        missionOutcome: {
+          key: endingOnResults.key,
+          text: endingOnResults.text,
+          wizard: endingOnResults.wizard
+        }
+      } : {})
     };
 
     const telemetryResult = await finishRelationalTelemetry(run, current.telemetrySessionId, current.telemetrySessionInsert);

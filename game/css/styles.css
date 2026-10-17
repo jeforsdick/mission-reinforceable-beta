@@ -2826,6 +2826,34 @@ body.qa-preview { padding-top: 4.25rem; }
   .scenario-flow-label { font-size: 12px; color: #ffc54a; }
 }
 
+/* In opted-in draft QA, mission-specific endings are shown on Results,
+   with a small Wizard illustration instead of a second large popup. */
+#results-screen .results-outcome-card {
+  position: relative;
+  padding-right: 118px;
+  border-color: #d4a02c;
+  background: rgba(255, 227, 156, .16);
+}
+#results-screen .results-outcome-card h2 { margin-top: 0; }
+#results-screen .results-outcome-wizard {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 92px;
+  max-height: 124px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+#results-screen .results-outcome-wizard-line {
+  margin-top: 10px;
+  font-style: italic;
+  font-weight: 900;
+}
+@media (max-width: 700px) {
+  #results-screen .results-outcome-card { padding-right: 82px; }
+  #results-screen .results-outcome-wizard { width: 62px; max-height: 84px; }
+}
+
 /* Mission results: the Coaching Summary and Review can exceed the visible parchment.
    Reuse the Resource Map's More below styling and high-contrast scroll rail. */
 #results-screen .results-scroll-wrap { position: relative; min-height: 0; }
