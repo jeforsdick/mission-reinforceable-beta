@@ -136,6 +136,8 @@
     });
   }
 
+  const START_MODE_LABELS = Object.freeze({ daily: 'Start Daily', wild: 'Start Mystery', crisis: 'Start Crisis' });
+
   function renderHome() {
     const config = MR.teacherConfig;
     MR.$('#home-classroom-label').textContent = config.classroomLabel || `${config.displayName}'s Classroom`;
@@ -148,17 +150,32 @@
     MR.$('#home-classroom-img').src = classroomPath;
     MR.$('#home-screen').classList.toggle('home-return', hasDaily);
     const resumable = MR.engine.resumableMission();
-    const resumeBanner = MR.$('#resume-mission-banner');
-    resumeBanner.hidden = !resumable;
-    if (resumable) {
-      MR.$('#resume-mission-label').textContent = resumable.title + ' · ' + resumable.completed + '/5 decisions';
-    }
     const participantLocked = (hasDaily || Boolean(resumable)) && MR.telemetryContext && !MR.telemetryContext.qaMode;
     const showCalendarStatus = calendarBlocked && !participantLocked;
-    MR.$('#home-primary-btn').hidden = participantLocked || calendarBlocked;
+    const singleDraftPreview = Boolean(MR.telemetryContext && MR.telemetryContext.draftQa && !MR.telemetryContext.fullDraftQa);
+    const dailyAvailable = Boolean(MR.pool && Array.isArray(MR.pool.daily) && MR.pool.daily.length);
+    // Only one action should resume an unfinished mission: its own mission card.
+    // Do not let the classroom Start Daily button silently discard a QA checkpoint.
+    MR.$('#home-primary-btn').hidden = participantLocked || calendarBlocked || Boolean(resumable) || (singleDraftPreview && !dailyAvailable);
     MR.$('#home-status-bubble').hidden = !showCalendarStatus;
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
-    MR.$$('.mission-menu [data-start-mode]').forEach(button => { button.hidden = participantLocked || calendarBlocked; });
+    document.querySelectorAll('.mission-menu [data-start-mode]').forEach(button => {
+      const mode = button.dataset.startMode;
+      const matchesResume = Boolean(resumable && resumable.mode === mode);
+      const modeAvailable = Boolean(MR.pool && Array.isArray(MR.pool[mode]) && MR.pool[mode].length);
+      const card = button.closest('.mission-card');
+      const description = card && card.querySelector('[data-mission-description]');
+      if (description) {
+        description.textContent = matchesResume
+          ? `${resumable.title} · ${resumable.completed}/5 decisions complete`
+          : description.dataset.missionDescription;
+      }
+      if (card) card.classList.toggle('is-resumable', matchesResume);
+      button.textContent = matchesResume ? 'Resume Mission' : START_MODE_LABELS[mode];
+      // Real participants can resume but cannot start another mission that day.
+      // A single-draft QA preview must not offer unavailable mission modes.
+      button.hidden = (participantLocked && !matchesResume) || calendarBlocked || (singleDraftPreview && !modeAvailable);
+    });
   }
 
   function wireEvents() {
@@ -166,10 +183,35 @@
       MR.audio.playSfx('click', 0.26);
       MR.engine.start('daily');
     });
-    MR.$$('[data-start-mode]').forEach(button => {
-      button.addEventListener('click', () => {
+    document.querySelectorAll('[data-start-mode]').forEach(button => {
+      button.addEventListener('click', async () => {
+        const mode = button.dataset.startMode;
+        const resumable = MR.engine.resumableMission();
+        const isResume = Boolean(resumable && resumable.mode === mode);
+        const available = Boolean(MR.pool && Array.isArray(MR.pool[mode]) && MR.pool[mode].length);
+        if (!available) return;
+        if (resumable && !isResume) {
+          // Study participants cannot replace a saved session with another mission.
+          if (!MR.telemetryContext || !MR.telemetryContext.qaMode) return;
+          if (!window.confirm('Starting a different QA mission will replace your unfinished ' + resumable.title + ' checkpoint. Continue?')) return;
+        }
         MR.audio.playSfx('click', 0.26);
-        MR.engine.start(button.dataset.startMode);
+        if (!isResume) {
+          await MR.engine.start(mode);
+          return;
+        }
+        button.disabled = true;
+        try {
+          if (!(await MR.engine.resumeSavedMission())) {
+            renderHome();
+            window.alert('This mission could not be resumed. You can start a new mission if available.');
+          }
+        } catch (error) {
+          console.error(error);
+          window.alert('Could not verify your saved session. Check your connection and try again.');
+        } finally {
+          button.disabled = false;
+        }
       });
     });
 
@@ -181,22 +223,6 @@
     MR.$('#nav-home').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
       goToMissionMenu();
-    });
-    MR.$('#resume-mission-btn').addEventListener('click', async event => {
-      const button = event.currentTarget;
-      button.disabled = true;
-      try {
-        const resumed = await MR.engine.resumeSavedMission();
-        if (!resumed) {
-          renderHome();
-          window.alert('This mission could not be resumed. You can start a new mission if available.');
-        }
-      } catch (error) {
-        console.error(error);
-        window.alert('Could not verify your saved session. Check your connection and try again.');
-      } finally {
-        button.disabled = false;
-      }
     });
     MR.$('#nav-progress').addEventListener('click', () => {
       MR.audio.playSfx('click', 0.24);
@@ -346,7 +372,7 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
-      if (assignment.qaMode === true && assignment.qaDraft) MR.engine.start(assignment.qaDraft.type);
+      // A draft preview must not erase a same-day QA checkpoint on refresh.\n      if (assignment.qaMode === true && assignment.qaDraft && !MR.engine.resumableMission()) MR.engine.start(assignment.qaDraft.type);
       console.info('Mission: Reinforceable loaded', {
         teacher: MR.teacherConfig,
         pool: MR.pool,

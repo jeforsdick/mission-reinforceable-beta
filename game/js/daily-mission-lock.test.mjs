@@ -55,7 +55,7 @@ test('locked participant return uses same-day artwork without overlay or replay 
   assert.match(app, /hasDaily \? \(config\.assets\.sameDayClassroom \|\| config\.assets\.landingClassroom\)/);
   assert.match(app, /showCalendarStatus = calendarBlocked && !participantLocked/);
   assert.match(app, /#home-primary-btn'\)\.hidden = participantLocked \|\| calendarBlocked/);
-  assert.match(app, /\.mission-menu \[data-start-mode\][\s\S]*button\.hidden = participantLocked \|\| calendarBlocked/);
+  assert.match(app, /\.mission-menu \[data-start-mode\][\s\S]*button\.hidden = \(participantLocked && !matchesResume\) \|\| calendarBlocked/);
 });
 
 test('yesterday completion does not block today', () => {

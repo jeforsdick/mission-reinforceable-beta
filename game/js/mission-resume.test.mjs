@@ -179,6 +179,20 @@ test('bottom Mission Menu remains available while duplicate top control is absen
   assert.match(app, /MR\.engine\.resumeSavedMission\(\)/);
 });
 
+test('unfinished missions resume inside their matching card, without a standalone banner', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const app = source('./app.js');
+  assert.doesNotMatch(html, /id="resume-mission-banner"|id="resume-mission-btn"/);
+  for (const mode of ['daily', 'wild', 'crisis']) {
+    assert.match(html, new RegExp('data-mission-mode="' + mode + '"'));
+    assert.match(html, new RegExp('data-start-mode="' + mode + '"'));
+  }
+  assert.match(app, /matchesResume \? 'Resume Mission' : START_MODE_LABELS\[mode\]/);
+  assert.match(app, /if \(resumable && !isResume\)/);
+  assert.match(app, /MR\.engine\.resumeSavedMission\(\)/);
+  assert.match(app, /assignment\.qaDraft && !MR\.engine\.resumableMission\(\)/);
+});
+
 test('login screen loads bottom navigation icons before teacher authentication', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   for (const [asset, filename] of [
