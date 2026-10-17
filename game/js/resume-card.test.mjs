@@ -75,7 +75,7 @@ function setup({ qaMode = false, saved = null, completed = false, draftOnly = fa
     confirm: () => { state.confirms++; return state.confirmed; },
     alert: text => state.warnings.push(text),
     matchMedia: () => ({ matches: false }),
-    document: { addEventListener() {} }
+    document: { addEventListener() {}, querySelectorAll: selector => selector === '[data-start-mode]' || selector === '.mission-menu [data-start-mode]' ? buttons : [] }
   };
   context.window = context;
   vm.runInNewContext(appSource, vm.createContext(context));
