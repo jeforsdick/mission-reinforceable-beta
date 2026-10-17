@@ -211,7 +211,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 118px;
+  width: 176px;
   height: 74px;
   margin: 0;
   transform-origin: center;
@@ -227,7 +227,9 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 }
 .wizard-heart-flight-amount {
   display: block;
-  padding: 5px 7px;
+  min-width: 76px;
+  padding: 5px 9px;
+  text-align: center;
   border: 3px solid #ffcc59;
   border-radius: 7px;
   color: #fff4de;
@@ -262,9 +264,9 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   100% { opacity: 0; transform: translate(-50%, -50%) scale(.52); }
 }
 @media (max-width: 700px) {
-  .wizard-heart-flight { gap: 4px; width: 82px; height: 52px; }
+  .wizard-heart-flight { gap: 4px; width: 128px; height: 52px; }
   .wizard-heart-flight-icon { width: 34px; height: 34px; }
-  .wizard-heart-flight-amount { padding: 3px 4px; border-width: 2px; font-size: 17px; }
+  .wizard-heart-flight-amount { min-width: 52px; padding: 3px 5px; border-width: 2px; font-size: 16px; }
   .wizard-heart-flight-landing { width: 40px; height: 40px; border-width: 3px; }
 }
 @media (prefers-reduced-motion: reduce) {
