@@ -196,6 +196,82 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .heart-half img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; filter: none; }
 .heart-half img.half { clip-path: inset(0 50% 0 0); }
 
+/* QA Wizard heart-loss flight. Rendered inside the Wizard overlay so its
+   pixel heart and loss label remain visible above the darkened HUD. */
+.wizard-modal .wizard-heart-flight-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  overflow: visible;
+}
+.wizard-heart-flight {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 118px;
+  height: 74px;
+  margin: 0;
+  transform-origin: center;
+  animation: mr-wizard-heart-fly 1000ms cubic-bezier(.26,.76,.24,1) both;
+  filter: drop-shadow(3px 4px 0 rgba(6, 7, 37, .85));
+}
+.wizard-heart-flight-icon {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.wizard-heart-flight-amount {
+  display: block;
+  padding: 5px 7px;
+  border: 3px solid #ffcc59;
+  border-radius: 7px;
+  color: #fff4de;
+  background: #491938;
+  font: 900 26px/1 var(--mono);
+  text-shadow: 2px 2px 0 #170620;
+  white-space: nowrap;
+}
+.wizard-heart-flight-landing {
+  position: absolute;
+  width: 56px;
+  height: 56px;
+  border: 4px solid #ffcd61;
+  background: rgba(255, 215, 104, .18);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(.25);
+  opacity: 0;
+  box-shadow: 0 0 12px rgba(255, 210, 94, .7);
+  animation: mr-wizard-heart-pop 330ms ease-out 700ms both;
+}
+@keyframes mr-wizard-heart-fly {
+  0% { opacity: 0; transform: translate(-50%, -50%) translate3d(0,0,0) scale(.55); }
+  12% { opacity: 1; transform: translate(-50%, -50%) translate3d(0,-9px,0) scale(1.12); }
+  29% { opacity: 1; transform: translate(-50%, -50%) translate3d(var(--heart-flight-mid-x),var(--heart-flight-mid-y),0) scale(1.02); }
+  75% { opacity: 1; transform: translate(-50%, -50%) translate3d(var(--heart-flight-dx),var(--heart-flight-rise-y),0) scale(.88); }
+  87% { opacity: 1; transform: translate(-50%, -50%) translate3d(var(--heart-flight-dx),var(--heart-flight-dy),0) scale(1.18); }
+  100% { opacity: 0; transform: translate(-50%, -50%) translate3d(var(--heart-flight-dx),var(--heart-flight-dy),0) scale(.65); }
+}
+@keyframes mr-wizard-heart-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.25); }
+  45% { opacity: 1; transform: translate(-50%, -50%) scale(1.14); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(.52); }
+}
+@media (max-width: 700px) {
+  .wizard-heart-flight { gap: 4px; width: 82px; height: 52px; }
+  .wizard-heart-flight-icon { width: 34px; height: 34px; }
+  .wizard-heart-flight-amount { padding: 3px 4px; border-width: 2px; font-size: 17px; }
+  .wizard-heart-flight-landing { width: 40px; height: 40px; border-width: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wizard-heart-flight,
+  .wizard-heart-flight-landing { animation: none; display: none; }
+}
+
 /* Small, one-time arcade pulse on the affected heart sprites. Health/score
    is determined by the engine; these animations are visual-only. */
 #heart-row > .heart-pulse-half {
