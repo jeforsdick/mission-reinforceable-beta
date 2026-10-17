@@ -94,6 +94,50 @@ test('researcher-only option moves actual mission-specific ending to Results',()
  assert.ok(summaryCard, 'summary card must exist');
  assert.doesNotMatch(summaryCard,/Workable, but Refine|Missed Opportunity/);
 });
+test('positive and improvement counts show all five decisions in one breakdown',()=>{
+ const {MR}=harness();
+ const mixed=structuredClone(history);
+ mixed[1].score=mixed[1].selectedScore=5;
+ mixed[2].score=mixed[2].selectedScore=0;
+ mixed[0].feedback='You honored the classroom support plan.';
+ mixed[0].choiceText='Help the student after an appropriate request.';
+ const run={mode:'crisis',missionId:'qa-crisis',score:35,maxScore:50,accuracy:70,history:mixed};
+ const html=MR.__qaOutcomeTest.html(run,{title:'Keep Practicing'});
+ assert.match(html,/class="results-stats-secondary" aria-label="Choice breakdown"/);
+ assert.match(html,/Plan-Aligned — What Went Well<\/dt><dd>3<\/dd>/);
+ assert.match(html,/Workable, but Refine<\/dt><dd>1<\/dd>/);
+ assert.match(html,/Missed Opportunity<\/dt><dd>1<\/dd>/);
+ assert.ok(html.indexOf('Coaching Summary') < html.indexOf('Choice breakdown'));
+ assert.ok(html.indexOf('Choice breakdown') < html.indexOf('<h2>Review</h2>'));
+ assert.ok(html.indexOf('Plan-Aligned — What Went Well</h2>') < html.indexOf('Workable, but Refine</h2>'));
+ assert.ok(html.indexOf('Workable, but Refine</h2>') < html.indexOf('Missed Opportunities</h2>'));
+ assert.match(html,/You honored the classroom support plan/);
+ const firstReview=html.match(/<article class="results-review-item results-review-best">[\s\S]*?<\/article>/)?.[0];
+ assert.ok(firstReview, 'a successful choice should appear in Review');
+ assert.match(firstReview,/Help the student after an appropriate request/);
+ assert.doesNotMatch(firstReview,/Stronger Plan-Aligned Move/, 'successes should not be treated as errors');
+ assert.equal((html.match(/<article class="results-review-item/g)||[]).length,5,
+  'every decision has an appropriate review item');
+});
+test('perfect missions celebrate all five choices instead of showing only an empty review',()=>{
+ const {MR}=harness();
+ const html=MR.__qaOutcomeTest.html({mode:'daily',score:50,maxScore:50,accuracy:100,history},{title:'Perfect Mission!'});
+ assert.match(html,/Plan-Aligned — What Went Well<\/dt><dd>5<\/dd>/);
+ assert.match(html,/Workable, but Refine<\/dt><dd>0<\/dd>/);
+ assert.match(html,/Missed Opportunity<\/dt><dd>0<\/dd>/);
+ assert.equal((html.match(/class="results-review-item results-review-best"/g)||[]).length,5);
+ assert.doesNotMatch(html,/No review items today/);
+});
+test('no plan-aligned choices still shows the complete breakdown without invented praise',()=>{
+ const {MR}=harness();
+ const missed=history.map(item=>({...item,score:0,selectedScore:0}));
+ const html=MR.__qaOutcomeTest.html({mode:'daily',score:0,maxScore:50,accuracy:0,history:missed},{title:'Keep Practicing'});
+ assert.match(html,/Plan-Aligned — What Went Well<\/dt><dd>0<\/dd>/);
+ assert.match(html,/Missed Opportunity<\/dt><dd>5<\/dd>/);
+ assert.doesNotMatch(html,/Plan-Aligned — What Went Well<\/h2>/);
+ assert.equal((html.match(/<article class="results-review-item/g)||[]).length,5);
+});
+
 test('without an authored summary, outcomes remain short and complete story stays accessible',()=>{
  const {MR}=harness();
  const run={mode:'crisis',score:45,maxScore:50,accuracy:90,history,missionOutcome:{
