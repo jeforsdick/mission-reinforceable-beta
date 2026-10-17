@@ -64,9 +64,15 @@ export function prepareMissionUpload(payload, workspace, selected) {
     if (envelope.slot_number != null) requireValid(Number(envelope.slot_number) === slot,
       'The file describes a different mission slot.');
   }
-  const expectedId = workspace.case.case_code + '_' + type.toUpperCase() + '_' + String(slot).padStart(2,'0');
-  requireValid(mission.id === expectedId,
-    'Wrong mission for the selected slot. Choose ' + expectedId + ' in the dropdown, or upload its matching JSON.');
+  // The legacy research-game JSON uses CASE-069_DAILY_02, while the
+  // built-in blank authoring form creates CASE069_D02. Both are case/slot
+  // specific; do not silently rewrite either ID or choose a different slot.
+  const padded = String(slot).padStart(2,'0');
+  const expectedId = workspace.case.case_code + '_' + type.toUpperCase() + '_' + padded;
+  const shortId = workspace.case.case_code.toUpperCase().replace(/[^A-Z0-9]/g,'')
+    + '_' + ({ daily:'D', wild:'M', crisis:'C' })[type] + padded;
+  requireValid(new Set([expectedId,shortId]).has(mission.id),
+    'Wrong mission for the selected slot. This slot expects ' + expectedId + ' or ' + shortId + '. Check the dropdown and the uploaded file.');
   if (existing) {
     requireValid(existing.mission?.id === mission.id,
       'The existing slot has a different case-scoped mission ID; do not overwrite it.');
