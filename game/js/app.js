@@ -159,7 +159,7 @@
     MR.$('#home-primary-btn').hidden = participantLocked || calendarBlocked || Boolean(resumable) || (singleDraftPreview && !dailyAvailable);
     MR.$('#home-status-bubble').hidden = !showCalendarStatus;
     MR.$('#home-primary-btn').textContent = hasDaily ? 'Play Daily Again' : 'Start Your Daily Mission';
-    MR.$('.mission-menu [data-start-mode]').forEach(button => {
+    document.querySelectorAll('.mission-menu [data-start-mode]').forEach(button => {
       const mode = button.dataset.startMode;
       const matchesResume = Boolean(resumable && resumable.mode === mode);
       const modeAvailable = Boolean(MR.pool && Array.isArray(MR.pool[mode]) && MR.pool[mode].length);
@@ -183,7 +183,7 @@
       MR.audio.playSfx('click', 0.26);
       MR.engine.start('daily');
     });
-    MR.$('[data-start-mode]').forEach(button => {
+    document.querySelectorAll('[data-start-mode]').forEach(button => {
       button.addEventListener('click', async () => {
         const mode = button.dataset.startMode;
         const resumable = MR.engine.resumableMission();
