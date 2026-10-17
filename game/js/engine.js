@@ -1017,14 +1017,15 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
 
   function reviewItemHTML(item) {
     const coachNote = item.feedback || item.wizard || 'Review how this choice connects to the student’s plan.';
+    const isPlanAligned = item.score === 10;
     const strongerMove = item.bestChoiceText || 'Use the most plan-aligned option available: prevent, prompt, reinforce, and return calmly.';
     return `
-      <article class="results-review-item">
+      <article class="results-review-item${isPlanAligned ? ' results-review-best' : ''}">
         <h3>Moment ${MR.escapeHTML(String(item.stepIndex || ''))}</h3>
         <p><strong>Context:</strong> ${MR.escapeHTML(shortText(item.context || item.prompt || item.stepId || 'Practice moment'))}</p>
         <p><strong>Your Choice:</strong> ${MR.escapeHTML(item.choiceText || 'No choice text saved')}</p>
         <p><strong>Coach Note:</strong> ${MR.escapeHTML(coachNote)}</p>
-        <p><strong>Stronger Plan-Aligned Move:</strong> ${MR.escapeHTML(strongerMove)}</p>
+        ${isPlanAligned ? '' : '<p><strong>Stronger Plan-Aligned Move:</strong> ' + MR.escapeHTML(strongerMove) + '</p>'}
       </article>
     `;
   }
@@ -1077,20 +1078,25 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         ${hasMoreOutcome ? '<details class="results-outcome-more"><summary>Read full outcome</summary><p>' + MR.escapeHTML(fullOutcome) + '</p></details>' : ''}
       </section>
     ` : '';
-    const reviewHTML = buckets.missedQuestions.length
+    const reviewHTML = buckets.answered.length
       ? `
         ${reviewGroupHTML(
+          'Plan-Aligned — What Went Well',
+          'These choices followed the plan. Notice what made the response effective.',
+          buckets.bestChoices
+        )}
+        ${reviewGroupHTML(
           'Workable, but Refine',
-          'These choices were supportive or reasonable, but missed a chance to respond more directly from the plan.',
+          'These choices were supportive or reasonable, but could match the plan more closely.',
           buckets.refineChoices
         )}
         ${reviewGroupHTML(
           'Missed Opportunities',
-          'These choices moved away from the plan or missed a chance to teach, reinforce, or calmly return to the routine.',
+          'These choices offer another opportunity to practice plan-aligned responding.',
           buckets.mismatchChoices
         )}
       `
-      : '<p class="results-empty-review">No review items today — strong plan-aligned responding.</p>';
+      : '<p class="results-empty-review">Complete a mission to review your decisions.</p>';
 
     return `
       <section class="results-debrief">
@@ -1110,6 +1116,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
           <p>${MR.escapeHTML(coaching)}</p>
         </section>
         <dl class="results-stats-secondary" aria-label="Choice breakdown">
+          <div class="results-breakdown-positive"><dt>Plan-Aligned — What Went Well</dt><dd>${buckets.bestChoices.length}</dd></div>
           <div><dt>Workable, but Refine</dt><dd>${buckets.refineChoices.length}</dd></div>
           <div><dt>Missed Opportunity</dt><dd>${buckets.mismatchChoices.length}</dd></div>
         </dl>

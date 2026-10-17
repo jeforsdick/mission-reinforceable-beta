@@ -2952,9 +2952,16 @@ body.qa-preview { padding-top: 4.25rem; }
 }
 #results-screen .results-stats-secondary {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin: 10px 0 0;
+}
+#results-screen .results-stats-secondary .results-breakdown-positive {
+  border-color: #6c8654;
+  background: rgba(229, 248, 211, .5);
+}
+#results-screen .results-review-best {
+  border-left-color: #6c8654;
 }
 #results-screen .results-stats-secondary div {
   padding: 8px 12px;
@@ -2992,7 +2999,7 @@ body.qa-preview { padding-top: 4.25rem; }
   }
   #results-screen .results-summary-card .results-stats > div:last-child { grid-column: 1 / -1; }
   #results-screen .results-summary-card .results-stats dd { font-size: 24px; }
-  #results-screen .results-stats-secondary { gap: 7px; }
+  #results-screen .results-stats-secondary { grid-template-columns: 1fr; gap: 7px; }
   #results-screen .results-stats-secondary div { padding: 8px; }
   #results-screen .results-stats-secondary dt { font-size: 10px; }
 }
