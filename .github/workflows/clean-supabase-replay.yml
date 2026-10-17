@@ -52,6 +52,7 @@ jobs:
         run: |
           node --test \
             game/js/mission-resume.test.mjs \
+            game/js/resume-card.test.mjs \
             game/js/daily-mission-lock.test.mjs \
             game/js/study-calendar.test.mjs \
             game/js/telemetry-integrity.test.mjs \
