@@ -90,7 +90,7 @@ export function prepareFullMissionDraftRevision(payload, workspace) {
   requireValid(authoritativeStatus.trim() && suppliedStatus.trim(),
     'Both saved and uploaded missions need sourceStatus provenance. Do not guess missing research status.');
   requireValid(!/\b(?:live|plan.verified|bsp.verified|clinically.approved|clinically.verified)\b/i.test(suppliedStatus)
-    || /\\b(?:provisional|intake.only|qa)\\b/i.test(suppliedStatus),
+    || /\b(?:provisional|intake.only|qa)\b/i.test(suppliedStatus),
     'Uploaded sourceStatus claims verified/live clinical approval. This must be reconciled separately, not imported.');
   const provenanceNormalized = suppliedStatus !== authoritativeStatus;
   const correctedUpload = structuredClone(uploaded);

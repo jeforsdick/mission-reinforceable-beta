@@ -3,7 +3,7 @@ import { extractFidelityTargets, extractionSummary } from './fidelity-target-ext
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs?v=20261009-intervention-focus-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261017-mission-flow-1';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261017-work-upload-2';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261017-short-scene-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs?v=20261009-intervention-focus-1';
@@ -12,7 +12,7 @@ import { intakeChanges, missingRequired } from './edit-intake.mjs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';
 import { reviewApprovedImport, saveApprovedImport } from './approved-draft-import.mjs?v=20261014-1';
 import { prepareExistingDraftRevision, saveReviewedDraftRevision } from './existing-draft-revision.mjs?v=20261016-1';
-import { prepareFullMissionDraftRevision, reviewSummary } from './full-mission-revision.mjs?v=20261017-1';
+import { prepareFullMissionDraftRevision, reviewSummary } from './full-mission-revision.mjs?v=20261017-2';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W';
