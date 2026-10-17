@@ -54,6 +54,8 @@
       const score = Number(response.selected_score) || 0;
       return {
         stepIndex: Number(response.step_index) || index + 1,
+        stepId: response.step_id || '',
+        choiceKey: response.choice_id || '',
         scenarioTitle: response.scenario_title || '',
         context: response.scenario_text || '',
         prompt: response.scenario_text || '',
