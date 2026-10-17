@@ -32,6 +32,7 @@ test('status bubble visibility follows the home-state priority', () => {
 
 test('calendar and completion gates continue to hide every mission start control', () => {
   assert.match(app, /#home-primary-btn'\)\.hidden = participantLocked \|\| calendarBlocked \|\| Boolean\(resumable\)/);
-  assert.match(app, /button\.hidden = \(participantLocked && !matchesResume\) \|\| calendarBlocked/);\n  assert.match(app, /singleDraftPreview && !modeAvailable/);
+  assert.match(app, /button\.hidden = \(participantLocked && !matchesResume\) \|\| calendarBlocked/);
+  assert.match(app, /singleDraftPreview && !modeAvailable/);
   assert.match(app, /!MR\.telemetryContext\.demoCalendarBypass[\s\S]*!MR\.studyCalendar\.isEligibleStudyDay\(\)/);
 });
