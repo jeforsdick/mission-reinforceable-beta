@@ -1102,10 +1102,6 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
             <div><dt>Practice Alignment</dt><dd>${MR.escapeHTML(String(run.accuracy))}%</dd></div>
             <div><dt>Plan-Aligned Choices</dt><dd>${buckets.bestChoices.length} / ${buckets.answered.length}</dd></div>
           </dl>
-          <dl class="results-stats-secondary">
-            <div><dt>Workable, but Refine</dt><dd>${buckets.refineChoices.length}</dd></div>
-            <div><dt>Missed Opportunity</dt><dd>${buckets.mismatchChoices.length}</dd></div>
-          </dl>
           <p class="results-practice-note">Game practice scores, not classroom implementation fidelity.</p>
         </section>
         ${outcomeHTML}
@@ -1113,6 +1109,10 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
           <h2>Coaching Summary</h2>
           <p>${MR.escapeHTML(coaching)}</p>
         </section>
+        <dl class="results-stats-secondary" aria-label="Choice breakdown">
+          <div><dt>Workable, but Refine</dt><dd>${buckets.refineChoices.length}</dd></div>
+          <div><dt>Missed Opportunity</dt><dd>${buckets.mismatchChoices.length}</dd></div>
+        </dl>
         <section class="results-card results-review-card">
           <h2>Review</h2>
           ${reviewHTML}
