@@ -195,6 +195,36 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
 .heart-half { position: relative; display: inline-block; flex: 0 0 auto; filter: drop-shadow(5px 5px 0 #080008); }
 .heart-half img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; filter: none; }
 .heart-half img.half { clip-path: inset(0 50% 0 0); }
+
+/* Small, one-time arcade pulse on the affected heart sprites. Health/score
+   is determined by the engine; these animations are visual-only. */
+#heart-row > .heart-pulse-half {
+  animation: mr-heart-pulse-half 400ms ease-out both;
+  transform-origin: center;
+}
+#heart-row > .heart-pulse-full {
+  animation: mr-heart-pulse-full 420ms ease-out both;
+  transform-origin: center;
+}
+@keyframes mr-heart-pulse-half {
+  0%, 100% { transform: translateX(0) scale(1); }
+  26% { transform: translateX(-1px) scale(1.09); }
+  51% { transform: translateX(1px) scale(.98); }
+  75% { transform: translateX(0) scale(1.02); }
+}
+@keyframes mr-heart-pulse-full {
+  0%, 100% { transform: translateX(0) scale(1); }
+  23% { transform: translateX(-2px) scale(1.12); }
+  47% { transform: translateX(2px) scale(.96); }
+  75% { transform: translateX(-1px) scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #heart-row > .heart-pulse-half,
+  #heart-row > .heart-pulse-full {
+    animation: none;
+  }
+}
+
 .hud-meter { color: #fff; text-align: center; font-family: Arial, sans-serif; font-weight: 900; text-shadow: 0 2px 0 #17103d; }
 .hud-meter strong { display: block; margin-bottom: 8px; font-size: 16px; }
 .hud-meter small { display: block; margin-top: 8px; font-size: 15px; }
