@@ -454,6 +454,20 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return { before, after: current.hearts };
   }
 
+  // Brief visual feedback for only the hearts whose fill changed.
+  function animateHeartChange(before, after) {
+    if (!(after < before)) return;
+    const row = MR.$('#heart-row');
+    if (!row || !row.children) return;
+    const fill = (health, index) => Math.max(0, Math.min(1, health - index));
+    const effect = before - after >= 0.75 ? 'heart-pulse-full' : 'heart-pulse-half';
+    Array.from(row.children).forEach((heart, index) => {
+      if (fill(before, index) > fill(after, index) + 0.001 && heart.classList) {
+        heart.classList.add(effect);
+      }
+    });
+  }
+
   function playAudioCue(name, volume) {
     if (MR.audio && MR.audio.playSfx) MR.audio.playSfx(name, volume);
   }
@@ -762,6 +776,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (restoredAnswer) return;
     MR.$$('.choice-btn').forEach(button => button.disabled = true);
     renderHUD();
+    animateHeartChange(heartChange.before, heartChange.after);
     showWizardFeedback(choice, score);
     checkpoint('feedback');
   }
