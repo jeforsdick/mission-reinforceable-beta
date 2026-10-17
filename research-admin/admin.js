@@ -3,7 +3,7 @@ import { extractFidelityTargets, extractionSummary } from './fidelity-target-ext
 import { COMPONENTS, STUDY_START, STUDY_END, isStudyDay, weekHasStudyDay, percentage } from './procedural-fidelity.mjs';
 import { attentionForCase, COACHING_FOCUSES, partitionDashboardCases, visibleDashboardCases, observationSummary, nextAction } from './operations-model.mjs';
 import { renderOperations } from './operations-ui.mjs?v=20261009-intervention-focus-1';
-import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261014-approved-import-1';
+import { captureMission, captureResourceMap, captureResourceOpenSections, draftPreviewUrl, draftRevisionManifest, fullDraftPreviewUrl, latestDraft, missionFromDraft, normalizeMission, renderGameCreation, resetMissionAuthoringState, resourcesFromWorkspace, restoreResourceOpenSections, sameDraftRevisionManifest, setupFromWorkspace } from './game-creation-ui.mjs?v=20261016-revision-import-1';
 import { validateFullDraft } from './game-draft-validator.mjs?v=20261008-game-banner-review-guidance-1';
 import { friendlyBaselineError, renderCaseReport } from './case-report.mjs';
 import { renderObserverTeam, renderStudyIoaSummary, recordPayload } from './observations-ui.mjs?v=20261009-intervention-focus-1';
@@ -11,6 +11,7 @@ import { renderFullObservation } from './observation-full-view-ui.mjs?v=20261009
 import { intakeChanges, missingRequired } from './edit-intake.mjs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';
 import { reviewApprovedImport, saveApprovedImport } from './approved-draft-import.mjs?v=20261014-1';
+import { prepareExistingDraftRevision, saveReviewedDraftRevision } from './existing-draft-revision.mjs?v=20261016-1';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W';
@@ -792,6 +793,68 @@ function bindSetupAndResources() {
   document.querySelectorAll('[data-item-remove]').forEach(button => button.addEventListener('click', () => { preserveAllAuthoringForms(); const card = button.closest('.resource-block'), block = state.resourceDraft.sections[button.closest('.resource-section').dataset.sectionKey].blocks[Number(card.dataset.blockIndex)]; block.items.splice(Number(button.closest('.resource-item').dataset.itemIndex), 1); redrawGameCreation(); }));
 }
 function bindMissionBuilder() {
+  $('#import-revision-patch')?.addEventListener('click', async event => {
+    const button = event.currentTarget, message = $('#revision-patch-message');
+    button.disabled = true;
+    try {
+      const file = $('#revision-patch-file')?.files?.[0];
+      if (!file || file.size > 2 * 1024 * 1024) throw new Error('Select a reviewed JSON patch smaller than 2 MB.');
+      const payload = JSON.parse(await file.text());
+      const caseId = state.authoringWorkspace?.case?.id;
+      if (!caseId) throw new Error('Select a Research Admin case before applying a patch.');
+      const readWorkspace = async () => {
+        const { data, error } = await state.client.rpc('research_admin_game_authoring_workspace', { target_case_id: caseId });
+        if (error) throw error;
+        return data;
+      };
+      const workspace = await readWorkspace();
+      const prepared = prepareExistingDraftRevision(payload, workspace);
+      const approval = [
+        'Review existing saved ' + prepared.mission_type + ' mission ' + prepared.slot_number + ': ' + prepared.mission.title,
+        'Proposed changes: ' + prepared.changes.length + ' (13 scenes, 39 choice consequences checked).',
+        '',
+        prepared.changes.join('\n'),
+        '',
+        'The old revision is retained. Mission-level quality reviews will be reset.',
+        'This saves a NEW DRAFT ONLY. It does not publish, activate access, send emails, or change study phase.',
+        '',
+        'Approve saving this reviewed draft revision?'
+      ].join('\n');
+      if (!window.confirm(approval)) {
+        message.textContent = 'Revision import canceled. No mission was changed.';
+        return;
+      }
+      message.textContent = 'Saving reviewed mission draft through Research Admin…';
+      const result = await saveReviewedDraftRevision(prepared, readWorkspace, async revision => {
+        const { data, error } = await state.client.rpc('research_admin_save_mission_draft', {
+          target_case_id: revision.case_id,
+          target_mission_type: revision.mission_type,
+          target_slot_number: revision.slot_number,
+          target_mission: revision.mission
+        });
+        if (error) throw error;
+        return data;
+      });
+      state.authoringWorkspace = await readWorkspace();
+      state.missionSelection = { mission_type: prepared.mission_type, slot_number: prepared.slot_number };
+      state.missionDraft = normalizeMission(missionFromDraft(latestDraft(state.authoringWorkspace, prepared.mission_type, prepared.slot_number)),
+        prepared.case_code, prepared.mission_type, prepared.slot_number);
+      state.missionNav = { decision: 1, branch: 'supported' };
+      state.missionMessage = 'Reviewed revision saved and verified. Use Play Saved Draft to QA the new mission. No changes were published.';
+      state.fullDraftCheck = null;
+      state.validatedRevisionManifest = null;
+      state.publishResult = null;
+      state.selectedTab = 'game-creation';
+      redrawGameCreation();
+      const complete = $('#revision-patch-message');
+      if (complete) complete.textContent = 'Saved and verified ' + result.changes + ' revisions to the mission content (draft only). Select Play Saved Draft to preview.';
+    } catch (error) {
+      message.textContent = 'Revision was not verified: ' + (error?.message || error)
+        + '. If a save began, reload Research Admin and inspect latest draft before retrying.';
+    } finally {
+      button.disabled = false;
+    }
+  });
   $('#import-approved-drafts')?.addEventListener('click', async event => {
     const button = event.currentTarget;
     const message = $('#approved-import-message');
