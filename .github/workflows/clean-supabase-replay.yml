@@ -66,6 +66,7 @@ jobs:
             game/js/qa-consequence-preview.test.mjs \
             game/js/qa-outcome-results.test.mjs \
             game/js/heart-pulse.test.mjs \
+            game/js/heart-flight.test.mjs \
             game/js/home-status-message.test.mjs
 
       - name: Validate fictional public-demo story, Resource Map, and navigation
