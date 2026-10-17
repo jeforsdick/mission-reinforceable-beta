@@ -63,6 +63,20 @@ test('full existing-mission JSON can be reviewed safely without saving',()=>{
  assert.match(reviewSummary(prepared),/NO SAVE HAS OCCURRED/);
  assert.match(reviewSummary(prepared),/39 choices, 243 complete paths/);
 });
+test('AI sourceStatus wording is normalized to authoritative existing provisional QA source rather than rejected',()=>{
+ const {workspace,revised}=fixture();
+ revised.authoringMeta.sourceStatus = 'PROVISIONAL QA: intake and approved provisional targets only; no verified BSP.';
+ const prepared = prepareFullMissionDraftRevision(revised,workspace);
+ assert.equal(prepared.provenanceNormalized,true);
+ assert.equal(prepared.mission.authoringMeta.sourceStatus,workspace.missions[0].mission.authoringMeta.sourceStatus);
+ assert.match(reviewSummary(prepared),/authoritative provisional status will be retained/);
+ assert.equal(workspace.missions[0].mission.authoringMeta.sourceStatus,'Provisional intake-only QA');
+});
+test('cannot upgrade intake-based content to verified LIVE status through an uploaded mission',()=>{
+ const {workspace,revised}=fixture();
+ revised.authoringMeta.sourceStatus = 'LIVE plan verified by AI';
+ assert.throws(()=>prepareFullMissionDraftRevision(revised,workspace),/verified\/live clinical approval/);
+});
 test('correct complete wrapper matches case and slot',()=>{
  const {workspace,revised}=fixture();
  const payload={case_code:'CASE-EXAMPLE',case_id:'fixture-case-uuid',mission_type:'daily',slot_number:2,

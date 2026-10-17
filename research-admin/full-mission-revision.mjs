@@ -82,15 +82,26 @@ export function prepareFullMissionDraftRevision(payload, workspace) {
   const existing = row.mission;
   requireValid(existing.start === 'd1_start' && existing.expectedSteps === 5, 'The saved mission has an unexpected schema.');
   requireValid(existing.id === uploaded.id, 'Mission identity must not change.');
-  requireValid(uploaded.authoringMeta.sourceStatus === existing.authoringMeta?.sourceStatus,
-    'The sourceStatus/provisional-BSP provenance must match the existing mission. Do not promote intake-based QA to plan-verified.');
+  // Work may paraphrase provenance metadata while authoring. The actual
+  // case's saved status is authoritative; NEVER let an uploaded file promote
+  // provisional intake content into an approved/plan-verified state.
+  const suppliedStatus = String(uploaded.authoringMeta.sourceStatus || '');
+  const authoritativeStatus = String(existing.authoringMeta?.sourceStatus || '');
+  requireValid(authoritativeStatus.trim() && suppliedStatus.trim(),
+    'Both saved and uploaded missions need sourceStatus provenance. Do not guess missing research status.');
+  requireValid(!/\b(?:live|plan.verified|bsp.verified|clinically.approved|clinically.verified)\b/i.test(suppliedStatus)
+    || /\\b(?:provisional|intake.only|qa)\\b/i.test(suppliedStatus),
+    'Uploaded sourceStatus claims verified/live clinical approval. This must be reconciled separately, not imported.');
+  const provenanceNormalized = suppliedStatus !== authoritativeStatus;
+  const correctedUpload = structuredClone(uploaded);
+  correctedUpload.authoringMeta.sourceStatus = authoritativeStatus;
   for (const ending of ENDINGS) requireValid(
     typeof uploaded.endings?.[ending]?.summary === 'string' && uploaded.endings[ending].summary.trim(),
     'Missing short Results summary: endings.' + ending + '.summary');
   const targets = (workspace.fidelity_targets || []).filter(target => target.active !== false);
   const rows = reviewApprovedImport({
     schemaVersion: 1, case_id: workspace.case.id, case_code: workspace.case.case_code,
-    missions: [{ mission_type: type, slot_number: slot, mission: uploaded }]
+    missions: [{ mission_type: type, slot_number: slot, mission: correctedUpload }]
   }, { ...workspace, fidelity_targets: targets });
   const revised = rows[0].mission;
   for (const sceneId of SCENES) {
@@ -112,7 +123,7 @@ export function prepareFullMissionDraftRevision(payload, workspace) {
     case_id: workspace.case.id, case_code: workspace.case.case_code,
     mission_type: type, slot_number: slot, expected_revision_id: row.revision_id || row.id,
     original: structuredClone(existing), mission: revised, changes, routeChanges,
-    fullMissionReview: true, graph: routes
+    provenanceNormalized, fullMissionReview: true, graph: routes
   };
 }
 
@@ -130,6 +141,9 @@ export function reviewSummary(prepared) {
     'Other fields (hints, targets, metadata, endings): ' + category(x => !/^steps\.d\d_[a-z]+\.text$/.test(x) && !/\.choices\.[ABC]\.(text|consequence|wizard|feedback)$/.test(x) && !/\.choices\.[ABC]\.(next|ending)$/.test(x)),
     'Graph: ' + prepared.graph.scenes + ' scenes, 39 choices, ' + prepared.graph.paths + ' complete paths, 3 endings.',
     'Researcher behavioral and game-design flags will remain FALSE.',
+    prepared.provenanceNormalized
+      ? 'Provenance normalized: AI sourceStatus wording was ignored; the saved case\'s authoritative provisional status will be retained.'
+      : 'Existing authoritative sourceStatus preserved unchanged.',
     'Saving will create a new private QA DRAFT only, never publish or enable teacher access.',
     prepared.routeChanges.length ? 'CAUTION — ROUTING CHANGES require deliberate behavioral review: ' + prepared.routeChanges.join(', ') : 'No routing changes.',
     '',
