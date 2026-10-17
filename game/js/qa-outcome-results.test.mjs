@@ -80,10 +80,19 @@ test('researcher-only option moves actual mission-specific ending to Results',()
  assert.ok(html.indexOf('Mission Summary')<html.indexOf('Your Mission Outcome'),
    'scores must be visible before a longer mission ending');
  assert.ok(html.indexOf('Your Mission Outcome')<html.indexOf('Coaching Summary'));
+ assert.ok(html.indexOf('Coaching Summary')<html.indexOf('Workable, but Refine'),
+  'the secondary counts must appear below the coaching summary');
+ assert.ok(html.indexOf('Missed Opportunity')<html.indexOf('<h2>Review</h2>'),
+  'both counts must appear before the selection review');
+ assert.ok(html.indexOf('Game practice scores')<html.indexOf('Your Mission Outcome'));
  assert.match(html,/Plan-Aligned Choices/);
  assert.match(html,/Practice Alignment/);
  assert.match(html,/Game practice scores, not classroom implementation fidelity/);
  assert.match(html,/results-stats-secondary/);
+ assert.equal((html.match(/class="results-stats-secondary"/g)||[]).length,1);
+ const summaryCard=html.match(/class="results-card results-summary-card"[\s\S]*?<\/section>/)?.[0] || '';
+ assert.ok(summaryCard, 'summary card must exist');
+ assert.doesNotMatch(summaryCard,/Workable, but Refine|Missed Opportunity/);
 });
 test('without an authored summary, outcomes remain short and complete story stays accessible',()=>{
  const {MR}=harness();

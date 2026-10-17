@@ -60,7 +60,7 @@ function harness({ reducedMotion = false, modalVisible = true, mode = 'feedback'
   return { flight, modal, nodes, timers, get removed() { return removed; } };
 }
 
-test('half-heart loss shows −½ with existing sprite and flies from Wizard to exact scaled heart target', () => {
+test('half-heart loss shows -1/2 with existing sprite and flies from Wizard to exact scaled heart target', () => {
   const v = harness();
   assert.equal(v.flight.play(5, 4.5), true);
   const layer = v.modal.children[0];
@@ -70,7 +70,8 @@ test('half-heart loss shows −½ with existing sprite and flies from Wizard to 
   const landing = layer.children[1];
   assert.equal(flying.dataset.loss, 'half');
   assert.equal(flying.children[0].src, '/heart-pixel.png');
-  assert.equal(flying.children[1].textContent, '−½');
+  assert.equal(flying.children[1].textContent, '-1/2');
+  assert.match(flying.children[1].className, /wizard-heart-flight-amount/);
   // For a 1500px stage displayed at 1000px, each X coordinate must
   // be multiplied by 1.5 to reach its correct game-space destination.
   const targetClientCenter = 100 + 4 * 42 + 20;
@@ -81,11 +82,11 @@ test('half-heart loss shows −½ with existing sprite and flies from Wizard to 
   assert.equal([...v.timers.values()][0].time, 1850, 'fallback cleanup must follow the 1.5-second flight');
 });
 
-test('full heart loss displays −1 and targets the last affected heart', () => {
+test('full heart loss displays -1 and targets the last affected heart', () => {
   const v = harness();
   assert.equal(v.flight.play(4.5, 3.5), true);
   const [flying, landing] = v.modal.children[0].children;
-  assert.equal(flying.children[1].textContent, '−1');
+  assert.equal(flying.children[1].textContent, '-1');
   assert.equal(flying.dataset.loss, 'full');
   assert.equal(Number.parseFloat(landing.style.left), (100 + 4 * 42 + 20) * 1.5);
 });
@@ -122,7 +123,7 @@ test('QA only: Wizard popup appears first, regular teacher play retains existing
   assert.match(engine, /else \{\s*animateHeartChange\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /function hideWizardFeedback\(\) \{\s*if \(MR\.heartFlight\) MR\.heartFlight\.clear\(\)/);
   const html = readFileSync(new URL('../index.html', import.meta.url),'utf8');
-  assert.match(html, /js\/heart-flight\.js\?v=20261017-qa-flight-1500ms/);
+  assert.match(html, /js\/heart-flight\.js\?v=20261017-heart-fraction-1/);
   assert.ok(html.indexOf('heart-flight.js') < html.indexOf('js/engine.js'));
 });
 

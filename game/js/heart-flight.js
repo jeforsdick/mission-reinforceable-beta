@@ -20,7 +20,7 @@
   function lossLabel(before, after) {
     const change = Math.max(0, Number(before) - Number(after));
     if (!Number.isFinite(change) || change < 0.01) return '';
-    return change < 0.75 ? '−½' : '−1';
+    return change < 0.75 ? '-1/2' : '-1';
   }
 
   function affectedHeart(hearts, before, after) {
@@ -77,7 +77,7 @@
 
     const flying = document.createElement('div');
     flying.className = 'wizard-heart-flight';
-    flying.dataset.loss = label === '−½' ? 'half' : 'full';
+    flying.dataset.loss = label === '-1/2' ? 'half' : 'full';
     flying.style.left = points.x + 'px';
     flying.style.top = points.y + 'px';
     flying.style.setProperty('--heart-flight-dx', points.dx + 'px');
