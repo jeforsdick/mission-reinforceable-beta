@@ -68,14 +68,35 @@ const history=Array.from({length:5},(_,i)=>({stepId:i===4?'d5_supported':'d'+(i+
   feedback:'Helpful connection'}));
 test('researcher-only option moves actual mission-specific ending to Results',()=>{
  const {MR}=harness();
- const outcome={key:'STRONG',text:'The student begins working again.',wizard:'The wizard celebrates.'};
+ const outcome={key:'STRONG',text:'The student begins working again. The full story remains available to study.',summary:'The student makes progress with appropriate help.',wizard:'The wizard celebrates.'};
  const run={mode:'crisis',missionId:'qa-crisis',score:50,maxScore:50,accuracy:100,history,missionOutcome:outcome};
  const html=MR.__qaOutcomeTest.html(run,{title:'Perfect Mission!'});
  assert.match(html,/Your Mission Outcome/);
+ assert.match(html,/The student makes progress with appropriate help/);
+ assert.match(html,/Read full outcome/);
  assert.match(html,/The student begins working again/);
  assert.match(html,/The wizard celebrates/);
  assert.match(html,/results-outcome-wizard/);
- assert.ok(html.indexOf('Your Mission Outcome')<html.indexOf('Mission Summary'));
+ assert.ok(html.indexOf('Mission Summary')<html.indexOf('Your Mission Outcome'),
+   'scores must be visible before a longer mission ending');
+ assert.ok(html.indexOf('Your Mission Outcome')<html.indexOf('Coaching Summary'));
+ assert.match(html,/Plan-Aligned Choices/);
+ assert.match(html,/Practice Alignment/);
+ assert.match(html,/Game practice scores, not classroom implementation fidelity/);
+ assert.match(html,/results-stats-secondary/);
+});
+test('without an authored summary, outcomes remain short and complete story stays accessible',()=>{
+ const {MR}=harness();
+ const run={mode:'crisis',score:45,maxScore:50,accuracy:90,history,missionOutcome:{
+   key:'MIXED',
+   text:'AM accepts some support. The next step is to make appropriate communication useful. Staff continue watching the room.',
+   wizard:'More practice will help.'
+ }};
+ const html=MR.__qaOutcomeTest.html(run,{title:'Strong Mission!'});
+ assert.match(html,/results-outcome-brief">AM accepts some support\./);
+ assert.match(html,/Read full outcome/);
+ assert.match(html,/The next step is to make appropriate communication useful/);
+ assert.ok(html.indexOf('Mission Summary')<html.indexOf('Your Mission Outcome'));
 });
 test('normal teacher or non-opted QA still uses original results and Wizard outcome',()=>{
  const run={mode:'crisis',score:50,maxScore:50,accuracy:100,history,missionOutcome:{key:'STRONG',text:'Private preview story',wizard:'Private line'}};

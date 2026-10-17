@@ -56,7 +56,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (!['STRONG', 'MIXED', 'FRAGILE'].includes(key)) return null;
     const ending = mission.endings && mission.endings[key];
     return key && ending && typeof ending === 'object' && String(ending.text || '').trim()
-      ? { key, text: String(ending.text).trim(), wizard: String(ending.wizard || '').trim() }
+      ? { key, text: String(ending.text).trim(), wizard: String(ending.wizard || '').trim(),
+          summary: String(ending.summary || '').trim() }
       : null;
   }
 
@@ -1037,12 +1038,20 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const outcome = outcomeForResults(run);
     const sprite = { STRONG: 'wizardSuccess', MIXED: 'wizardMeh', FRAGILE: 'wizardDead' }[outcome?.key];
     const imageSrc = sprite && MR.asset(sprite);
-    const outcomeHTML = outcome?.text ? `
+    // Author-approved short outcomes are preferred. Older saved games retain
+    // their full ending behind an optional disclosure instead of a long wall of
+    // text above the score. Never substitute a generic outcome for the case.
+    const fullOutcome = String(outcome?.text || '').trim();
+    const firstSentence = fullOutcome.match(/^[\s\S]*?[.!?](?=\s|$)/)?.[0] || fullOutcome;
+    const outcomeBrief = String(outcome?.summary || '').trim() || firstSentence;
+    const hasMoreOutcome = fullOutcome && fullOutcome !== outcomeBrief;
+    const outcomeHTML = fullOutcome ? `
       <section class="results-card results-outcome-card">
         ${imageSrc ? '<img class="results-outcome-wizard" src="' + MR.escapeHTML(imageSrc) + '" alt="" />' : ''}
         <h2>Your Mission Outcome</h2>
-        <p>${MR.escapeHTML(outcome.text)}</p>
+        <p class="results-outcome-brief">${MR.escapeHTML(outcomeBrief)}</p>
         ${outcome.wizard ? '<p class="results-outcome-wizard-line">' + MR.escapeHTML(outcome.wizard) + '</p>' : ''}
+        ${hasMoreOutcome ? '<details class="results-outcome-more"><summary>Read full outcome</summary><p>' + MR.escapeHTML(fullOutcome) + '</p></details>' : ''}
       </section>
     ` : '';
     const reviewHTML = buckets.missedQuestions.length
@@ -1063,17 +1072,20 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return `
       <section class="results-debrief">
         <h1>${MR.escapeHTML(summary.title)}</h1>
-        ${outcomeHTML}
         <section class="results-card results-summary-card">
           <h2>Mission Summary</h2>
           <dl class="results-stats">
             <div><dt>Total Score</dt><dd>${MR.escapeHTML(String(run.score))} / ${MR.escapeHTML(String(run.maxScore))}</dd></div>
-            <div><dt>Percent</dt><dd>${MR.escapeHTML(String(run.accuracy))}%</dd></div>
-            <div><dt>Best Choice</dt><dd>${buckets.bestChoices.length}</dd></div>
+            <div><dt>Practice Alignment</dt><dd>${MR.escapeHTML(String(run.accuracy))}%</dd></div>
+            <div><dt>Plan-Aligned Choices</dt><dd>${buckets.bestChoices.length} / ${buckets.answered.length}</dd></div>
+          </dl>
+          <dl class="results-stats-secondary">
             <div><dt>Workable, but Refine</dt><dd>${buckets.refineChoices.length}</dd></div>
             <div><dt>Missed Opportunity</dt><dd>${buckets.mismatchChoices.length}</dd></div>
           </dl>
+          <p class="results-practice-note">Game practice scores, not classroom implementation fidelity.</p>
         </section>
+        ${outcomeHTML}
         <section class="results-card results-coaching-card">
           <h2>Coaching Summary</h2>
           <p>${MR.escapeHTML(coaching)}</p>
@@ -1183,7 +1195,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
         missionOutcome: {
           key: endingOnResults.key,
           text: endingOnResults.text,
-          wizard: endingOnResults.wizard
+          wizard: endingOnResults.wizard,
+          summary: endingOnResults.summary || ''
         }
       } : {})
     };

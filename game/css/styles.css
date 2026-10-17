@@ -2826,6 +2826,69 @@ body.qa-preview { padding-top: 4.25rem; }
   .scenario-flow-label { font-size: 12px; color: #ffc54a; }
 }
 
+/* Score-first Mission Results: headline score, practice alignment and
+   plan-aligned choices should be visible before detailed coaching. */
+#results-screen .results-summary-card .results-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+#results-screen .results-summary-card .results-stats > div {
+  min-width: 0;
+  background: rgba(255, 244, 207, .48);
+  border: 2px solid #b7894f;
+  padding: 12px;
+}
+#results-screen .results-summary-card .results-stats dd {
+  font-size: clamp(24px, 2vw, 32px);
+  font-weight: 900;
+}
+#results-screen .results-stats-secondary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 10px 0 0;
+}
+#results-screen .results-stats-secondary div {
+  padding: 8px 12px;
+  background: rgba(255, 248, 217, .3);
+  border: 1px solid rgba(120, 70, 14, .38);
+}
+#results-screen .results-stats-secondary dt {
+  font: 800 12px/1.2 var(--mono);
+  text-transform: uppercase;
+}
+#results-screen .results-stats-secondary dd {
+  margin: 3px 0 0;
+  font: 900 18px/1 var(--display);
+}
+#results-screen .results-practice-note {
+  margin: 9px 0 0;
+  font: 700 12px/1.3 var(--mono);
+}
+#results-screen .results-outcome-card .results-outcome-brief {
+  font-size: 0.98em;
+  line-height: 1.38;
+}
+#results-screen .results-outcome-more { margin-top: 8px; }
+#results-screen .results-outcome-more summary {
+  width: fit-content;
+  cursor: pointer;
+  text-decoration: underline;
+  font: 900 13px/1.35 var(--mono);
+}
+#results-screen .results-outcome-more p { margin: 10px 0 0; }
+@media (max-width: 700px) {
+  #results-screen .results-summary-card .results-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+  #results-screen .results-summary-card .results-stats > div:last-child { grid-column: 1 / -1; }
+  #results-screen .results-summary-card .results-stats dd { font-size: 24px; }
+  #results-screen .results-stats-secondary { gap: 7px; }
+  #results-screen .results-stats-secondary div { padding: 8px; }
+  #results-screen .results-stats-secondary dt { font-size: 10px; }
+}
+
 /* In opted-in draft QA, mission-specific endings are shown on Results,
    with a small Wizard illustration instead of a second large popup. */
 #results-screen .results-outcome-card {
