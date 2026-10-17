@@ -372,7 +372,7 @@
       MR.resources.render();
       renderHome();
       MR.setScreen('home');
-      if (assignment.qaMode === true && assignment.qaDraft) MR.engine.start(assignment.qaDraft.type);
+      // A draft preview must not erase a same-day QA checkpoint on refresh.\n      if (assignment.qaMode === true && assignment.qaDraft && !MR.engine.resumableMission()) MR.engine.start(assignment.qaDraft.type);
       console.info('Mission: Reinforceable loaded', {
         teacher: MR.teacherConfig,
         pool: MR.pool,
