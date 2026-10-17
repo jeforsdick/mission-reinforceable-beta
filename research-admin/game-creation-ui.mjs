@@ -191,7 +191,7 @@ export function blankMission(caseCode, type, slot) {
       });
     }
   }
-  return { id: defaultMissionId(caseCode, type, slot), title: '', expectedSteps: 5, start: 'd1_start', focus: '', routine: '', functionPressure: [], bipTargets: [], authoringMeta: { centralTension: '', tone: '', functionPressureContext: '', activeBipComponents: [], qualityReview: { behavioral: false, gameDesign: false } }, endings: Object.fromEntries(ENDINGS.map(key => [key, { text: '', wizard: '' }])), steps };
+  return { id: defaultMissionId(caseCode, type, slot), title: '', expectedSteps: 5, start: 'd1_start', focus: '', routine: '', functionPressure: [], bipTargets: [], authoringMeta: { centralTension: '', tone: '', functionPressureContext: '', activeBipComponents: [], qualityReview: { behavioral: false, gameDesign: false } }, endings: Object.fromEntries(ENDINGS.map(key => [key, { text: '', summary: '', wizard: '' }])), steps };
 }
 export function normalizeMission(value, caseCode, type, slot) {
   const base = blankMission(caseCode, type, slot);
@@ -270,13 +270,15 @@ function choiceCard(item, index, decision) {
     <legend><strong>${rating.score}</strong> — ${rating.label}</legend>
     <small class="choice-helper">${helper}</small>
     <label>TEACHER RESPONSE<textarea name="text" rows="3">${esc(item.text)}</textarea></label>
-    <label>WHAT HAPPENS NEXT?<textarea name="consequence" rows="3">${esc(item.consequence)}</textarea></label>
+    <label>WHAT HAPPENS NEXT? — THIS SHOWS AS “WHAT HAPPENED” AFTER THE CHOICE<textarea name="consequence" rows="3">${esc(item.consequence)}</textarea></label>
+    <small>Show one immediate, visible classroom result. Write as a teacher would describe it, not a clinical report. Do not repeat this sentence in the next scene.</small>
+    <label>WIZARD REACTION<textarea name="wizard" rows="2" placeholder="A quick, warm Wizard reaction; keep the explanation separate">${esc(item.wizard || '')}</textarea></label>
     <label>WHY DOES THIS SCORE FIT?<textarea name="feedback" rows="3">${esc(item.feedback)}</textarea></label>
     ${routing}
   </fieldset>`;
 }
 export function draftPreviewUrl(caseCode, type, slot) {
-  const params = new URLSearchParams({ qa_case: caseCode, qa_draft_type: type, qa_draft_slot: String(slot) });
+  const params = new URLSearchParams({ qa_case: caseCode, qa_draft_type: type, qa_draft_slot: String(slot), qa_consequence_preview: '1' });
   return `../game/?${params}`;
 }
 export function renderMissionBuilder(workspace, selection, mission, nav = { decision: 1, branch: 'supported' }, message = '') {
@@ -298,6 +300,19 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
     ...[2,3,4,5].flatMap(number => TRAJECTORIES.map(branch => ({ decision:number, branch })))
   ];
   const sceneIndex = sceneOrder.findIndex(item => item.decision===decision && item.branch===nav.branch);
+  const endingEditor = `<details class="mission-outcomes-editor">
+    <summary>Mission outcomes: brief Results summary, full outcome and Wizard line</summary>
+    <p>Each ending uses a short teacher-facing summary first. The full outcome stays behind “Read full outcome.” All three endings must be authored and reviewed.</p>
+    ${ENDINGS.map(key => {
+      const ending = mission.endings?.[key] || {};
+      return `<fieldset class="mission-ending" data-ending="${key}">
+        <legend>${key}</legend>
+        <label>SHORT RESULTS SUMMARY<textarea name="summary" rows="2" placeholder="1–2 natural sentences describing what actually changes">${esc(ending.summary || '')}</textarea></label>
+        <label>FULL MISSION OUTCOME<textarea name="text" rows="3">${esc(ending.text || '')}</textarea></label>
+        <label>WIZARD ENDING LINE<textarea name="wizard" rows="2">${esc(ending.wizard || '')}</textarea></label>
+      </fieldset>`;
+    }).join('')}
+  </details>`;
   return `<section class="mission-builder simple-mission-builder" data-case-id="${esc(workspace.case.id)}">
     <header>
       <div><p class="eyebrow">EDITING ${esc(group.label.toUpperCase())} MISSION ${Number(selection.slot_number)}</p><h2>${esc(mission.title || `${group.label} Mission ${selection.slot_number}`)}</h2></div>
@@ -318,6 +333,10 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
       <label>ROUTINE / LOCATION<input name="routine" value="${esc(mission.routine)}" placeholder="e.g., Centers, independent work, transition"></label>
     </section>
 
+    <div class="mission-flow-guide">
+      <strong>Write the same flow teachers will play:</strong> Teacher choice → Wizard reaction → WHAT HAPPENED (that choice’s consequence) → NOW (the next scene).
+      <small>Use concrete classroom language: counters, track pieces, worksheets, what AM says or does. Keep safety details accurate, but avoid repetitive clinical phrases such as “lightweight materials,” “the area is currently safe,” or “the intensity decreases.” Each shared NOW scene must work after every route that reaches it.</small>
+    </div>
     <section class="builder-section decision-editor simple-decision-editor">
       <div class="simple-decision-heading">
         <div><p class="eyebrow">STEP ${decision} OF 5</p><h3>${DECISIONS[decision - 1]}</h3></div>
@@ -332,7 +351,8 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
       ${decision > 1 ? `<div class="branch-tabs simple-branch-tabs">${TRAJECTORIES.map(branch => `<button type="button" data-branch="${branch}" class="${nav.branch===branch?'selected':''}"><strong>${branchLabels[branch][0]}</strong><small>${branchLabels[branch][1]}</small></button>`).join('')}</div>` : ''}
 
       <div class="scene-editor simple-scene-editor" data-step-id="${id}">
-        <label class="scene-field">SCENE<textarea name="text" rows="7" placeholder="What is happening in the classroom right now?">${esc(step.text)}</textarea></label>
+        <label class="scene-field">NOW — WHAT IS HAPPENING IN THE CLASSROOM?<textarea name="text" rows="7" placeholder="A brief, believable moment a teacher might describe to a colleague">${esc(step.text)}</textarea></label>
+        <small>Usually 30–55 words. Set up the decision; avoid summarizing the previous consequence or predicting a guaranteed behavioral outcome.</small>
         <label>HINT<textarea name="hint" rows="2" placeholder="A useful cue that does not give away the answer">${esc(step.hint)}</textarea></label>
         <label>EXACT PLAN STEP PRACTICED <span class="optional-label">Optional</span>
           <select name="fidelityTargetKey">
@@ -353,6 +373,7 @@ export function renderMissionBuilder(workspace, selection, mission, nav = { deci
       </div>
     </section>
 
+    ${endingEditor}
     <div class="save-bar simple-save-bar">
       <button id="save-mission-draft" class="primary" type="button">Save Mission</button>
       <button id="preview-saved-draft" type="button" data-case-code="${esc(workspace.case.case_code)}" data-mission-type="${esc(selection.mission_type)}" data-slot-number="${Number(selection.slot_number)}"${saved?'':' disabled'}>Play Saved Mission</button>
@@ -603,7 +624,7 @@ export function captureMission(root, mission, nav) {
       item.text = card.querySelector('[name="text"]').value;
       item.consequence = card.querySelector('[name="consequence"]').value;
       item.feedback = card.querySelector('[name="feedback"]').value;
-      item.wizard = item.wizard?.trim() || wizardDefaults[score];
+      item.wizard = card.querySelector('[name="wizard"]')?.value?.trim() || item.wizard?.trim() || wizardDefaults[score];
       item.score = score;
       item.meta = {
         ...(item.meta || {}),
@@ -627,6 +648,16 @@ export function captureMission(root, mission, nav) {
       }
     });
   }
+
+  root.querySelectorAll('.mission-ending').forEach(panel => {
+    const key = panel.dataset.ending;
+    if (!ENDINGS.includes(key)) return;
+    const ending = mission.endings[key] || {};
+    ending.summary = panel.querySelector('[name="summary"]').value.trim();
+    ending.text = panel.querySelector('[name="text"]').value.trim();
+    ending.wizard = panel.querySelector('[name="wizard"]').value.trim();
+    mission.endings[key] = ending;
+  });
 
   const linkedTargets = [...new Set(
     Object.values(mission.steps || {})
