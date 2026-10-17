@@ -12,7 +12,7 @@ import { intakeChanges, missingRequired } from './edit-intake.mjs';
 import { renderParticipantReadiness } from './participant-readiness.mjs';
 import { reviewApprovedImport, saveApprovedImport } from './approved-draft-import.mjs?v=20261014-1';
 import { prepareExistingDraftRevision, saveReviewedDraftRevision } from './existing-draft-revision.mjs?v=20261016-1';
-import { prepareFullMissionDraftRevision, reviewSummary } from './full-mission-revision.mjs?v=20261017-1';
+import { prepareFullMissionDraftRevision, reviewSummary } from './full-mission-revision.mjs?v=20261017-2';
 
 const SUPABASE_URL = 'https://vyiwwwmcoahwkgiictmc.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_Mp2ASOgrx0Yx8Bp-Fz3AAg_V5Gl0I4W';
