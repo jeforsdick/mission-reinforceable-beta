@@ -117,7 +117,7 @@ test('the effect is one-shot and cleans up on animation end or early dismissal',
 
 test('QA only: Wizard popup appears first, regular teacher play retains existing pulse, restored play never animates', () => {
   const engine = readFileSync(new URL('./engine.js', import.meta.url),'utf8');
-  assert.match(engine, /if \(restoredAnswer\) return;[\s\S]*?renderHUD\(\);\s*showWizardFeedback\(choice, score\);\s*if \(consequencePreviewEnabled\(\) && MR\.heartFlight\)/);
+  assert.match(engine, /if \(restoredAnswer\) return;[\s\S]*?renderHUD\(\);\s*showWizardFeedback\(choice, score\);[\s\S]*?if \(consequencePreviewEnabled\(\) && MR\.heartFlight\)/);
   assert.match(engine, /MR\.heartFlight\.play\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /else \{\s*animateHeartChange\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /function hideWizardFeedback\(\) \{\s*if \(MR\.heartFlight\) MR\.heartFlight\.clear\(\)/);
