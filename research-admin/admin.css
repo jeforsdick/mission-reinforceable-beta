@@ -1012,3 +1012,14 @@ dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 .teacher-launch-actions .teacher-launch-step button:disabled { opacity:.55;cursor:not-allowed; }
 .teacher-launch-actions #teacher-launch-message { margin-top:14px; }
 @media(max-width:700px){ .teacher-launch-actions .teacher-launch-steps { grid-template-columns:1fr; } }
+
+/* Mission authoring: match the teacher-facing cause-and-effect flow. */
+.mission-flow-guide { margin: 14px 0 20px; padding: 14px 16px; border-left: 4px solid #748b62; background: #f5f5e9; line-height: 1.5; }
+.mission-flow-guide strong { display: block; margin-bottom: 6px; }
+.mission-flow-guide small { display: block; margin-top: 7px; line-height: 1.5; }
+.mission-outcomes-editor { margin: 18px 0; padding: 14px 16px; border: 1px solid #b8ad8b; border-radius: 10px; background: #faf8ef; }
+.mission-outcomes-editor summary { cursor: pointer; font-weight: 800; }
+.mission-outcomes-editor p { margin: 10px 0 16px; }
+.mission-outcomes-editor fieldset { margin: 14px 0; padding: 12px; border: 1px solid #d7ccb3; border-radius: 8px; }
+.mission-outcomes-editor label { display: block; margin: 10px 0; }
+.mission-outcomes-editor textarea { display: block; width: 100%; max-width: 100%; min-height: 3.5rem; }
