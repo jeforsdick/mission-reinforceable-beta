@@ -171,7 +171,7 @@ export function validateFullDraft(input) {
       const sceneWords = wordCount(step?.text);
       const canonicalDecision = canonicalDecisionNumber(stepId);
       if (isCanonicalAuthoringMission && sceneWords) {
-        if (canonicalDecision === 1 && (sceneWords < 60 || sceneWords > 160)) {
+        if (canonicalDecision === 1 && (sceneWords < 25 || sceneWords > 85)) {
           sceneLengthOutliers++;
         } else if (canonicalDecision && canonicalDecision > 1 && (sceneWords < 25 || sceneWords > 120)) {
           sceneLengthOutliers++;
