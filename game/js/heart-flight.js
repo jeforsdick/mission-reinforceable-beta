@@ -109,7 +109,7 @@
     // Robust cleanup in browsers where an animationend is missed or canceled.
     cleanupTimer = window.setTimeout(() => {
       if (activeLayer === layer) clear();
-    }, 1350);
+    }, 1850);
     return true;
   }
 
