@@ -78,7 +78,7 @@ test('half-heart loss shows −½ with existing sprite and flies from Wizard to 
   assert.equal(Number.parseFloat(landing.style.top), 80 * 1.5);
   assert.equal(Number.parseFloat(flying.style.left) + Number.parseFloat(flying.style['--heart-flight-dx']), Number.parseFloat(landing.style.left));
   assert.equal(Number.parseFloat(flying.style.top) + Number.parseFloat(flying.style['--heart-flight-dy']), Number.parseFloat(landing.style.top));
-  assert.equal([...v.timers.values()][0].time, 1350, 'fallback cleanup should follow the 1-second effect');
+  assert.equal([...v.timers.values()][0].time, 1850, 'fallback cleanup must follow the 1.5-second flight');
 });
 
 test('full heart loss displays −1 and targets the last affected heart', () => {
@@ -122,14 +122,14 @@ test('QA only: Wizard popup appears first, regular teacher play retains existing
   assert.match(engine, /else \{\s*animateHeartChange\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /function hideWizardFeedback\(\) \{\s*if \(MR\.heartFlight\) MR\.heartFlight\.clear\(\)/);
   const html = readFileSync(new URL('../index.html', import.meta.url),'utf8');
-  assert.match(html, /js\/heart-flight\.js\?v=20261017-qa-flight-1/);
+  assert.match(html, /js\/heart-flight\.js\?v=20261017-qa-flight-1500ms/);
   assert.ok(html.indexOf('heart-flight.js') < html.indexOf('js/engine.js'));
 });
 
 test('CSS animation is exactly one second, targets a foreground Wizard layer, and is reduced-motion safe', () => {
   const css = readFileSync(new URL('../css/styles.css', import.meta.url), 'utf8');
   assert.match(css, /\.wizard-modal \.wizard-heart-flight-layer\s*\{[\s\S]*?z-index:\s*5/);
-  assert.match(css, /\.wizard-heart-flight\s*\{[\s\S]*?animation:\s*mr-wizard-heart-fly 1000ms/);
-  assert.match(css, /\.wizard-heart-flight-landing\s*\{[\s\S]*?animation:\s*mr-wizard-heart-pop 330ms/);
+  assert.match(css, /\.wizard-heart-flight\s*\{[\s\S]*?animation:\s*mr-wizard-heart-fly 1500ms/);
+  assert.match(css, /\.wizard-heart-flight-landing\s*\{[\s\S]*?animation:\s*mr-wizard-heart-pop 330ms ease-out 1150ms/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*?\.wizard-heart-flight-landing\s*\{\s*animation: none; display: none;/);
 });
