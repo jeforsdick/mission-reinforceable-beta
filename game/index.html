@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mission: Reinforceable</title>
   <link rel="icon" href="../favicon.png" />
-  <link rel="stylesheet" href="css/styles.css?v=20261016-consequence-preview-1" />
+  <link rel="stylesheet" href="css/styles.css?v=20261016-resume-in-card-1" />
   <style>
     @media (min-width: 701px) {
       .home-panel { margin-top: -135px; }
@@ -65,32 +65,27 @@
 
           <aside class="mission-menu" aria-label="Mission options">
             <div class="menu-title">Mission Options</div>
-            <div id="resume-mission-banner" class="resume-mission-banner" hidden>
-              <strong id="resume-mission-label">Mission in progress</strong>
-              <button id="resume-mission-btn" type="button" class="pixel-btn green-btn">Resume Mission</button>
-              <small>Continue where you left off today.</small>
-            </div>
-            <article class="mission-card">
+            <article class="mission-card" data-mission-mode="daily">
               <img data-asset="dailyIcon" alt="" />
               <div>
                 <h2>Daily Mission</h2>
-                <p>Practice plan-aligned support decisions.</p>
+                <p data-mission-description="Practice plan-aligned support decisions.">Practice plan-aligned support decisions.</p>
               </div>
               <button class="pixel-btn green-btn" data-start-mode="daily" type="button">Start Daily</button>
             </article>
-            <article class="mission-card">
+            <article class="mission-card" data-mission-mode="wild">
               <img data-asset="mysteryIcon" alt="" />
               <div>
                 <h2>Mystery Mission</h2>
-                <p>Try a random classroom scenario.</p>
+                <p data-mission-description="Try a random classroom scenario.">Try a random classroom scenario.</p>
               </div>
               <button class="pixel-btn green-btn" data-start-mode="wild" type="button">Start Mystery</button>
             </article>
-            <article class="mission-card">
+            <article class="mission-card" data-mission-mode="crisis">
               <img data-asset="crisisIcon" alt="" />
               <div>
                 <h2>Crisis Mission</h2>
-                <p>Practice calm responses during higher-intensity moments.</p>
+                <p data-mission-description="Practice calm responses during higher-intensity moments.">Practice calm responses during higher-intensity moments.</p>
               </div>
               <button class="pixel-btn green-btn" data-start-mode="crisis" type="button">Start Crisis</button>
             </article>
@@ -270,7 +265,7 @@
   <script src="js/results-scroll.js?v=20261016-results-scroll-1"></script>
   <script src="js/reminders.js"></script>
   <script src="js/resources.js?v=20261016-resource-scroll-1"></script>
-  <script src="js/app.js?v=20261016-bottom-menu-only-1"></script>
+  <script src="js/app.js?v=20261016-resume-in-card-1"></script>
   <script src="js/fit-screen.js"></script>
 </body>
 </html>
