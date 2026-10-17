@@ -36,7 +36,12 @@ export function prepareExistingDraftRevision(payload, workspace) {
   requireValid(plain(payload.scenes) && SAME_KEYS(payload.scenes, ONLY_SCENES),
     'Patch must contain exactly the same 13 canonical scenes; no missing or extra scenes.');
   const revised = structuredClone(current), changes = [];
-  const activeTargets = new Set((workspace.fidelity_targets || []).filter(t => t.active === true).map(t => t.target_key));
+  // The Research Admin workspace RPC returns ONLY active fidelity targets,
+  // and intentionally omits the 'active' flag from each row. An explicitly
+  // inactive row (if supplied by a future API) must still be rejected.
+  const activeTargets = new Set((workspace.fidelity_targets || [])
+    .filter(t => t && t.active !== false && typeof t.target_key === 'string')
+    .map(t => t.target_key));
   for (const sceneId of ONLY_SCENES) {
     const target = revised.steps[sceneId];
     const patch = payload.scenes[sceneId];
