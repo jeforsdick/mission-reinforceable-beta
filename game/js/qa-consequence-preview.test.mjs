@@ -80,7 +80,7 @@ test('QA preview markup is scoped to teacher game; copy is not committed to publ
  const css=fs.readFileSync(new URL('../css/styles.css',import.meta.url),'utf8');
  assert.match(html,/id="scenario-scroll-region"/);
  assert.match(html,/id="scenario-scroll-cue"[^>]*hidden/);
- assert.match(html,/js\/engine\.js\?v=20261017-score-first-outcome-1/);
+ assert.match(html,/js\/engine\.js\?v=20261017-heart-pulse-1/);
  assert.match(css,/\.scenario-scroll-cue\[hidden\]/);
  assert.match(css,/overflow-y: auto/);
 });
