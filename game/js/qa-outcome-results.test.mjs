@@ -90,7 +90,8 @@ test('researcher-only option moves actual mission-specific ending to Results',()
  assert.match(html,/Game practice scores, not classroom implementation fidelity/);
  assert.match(html,/results-stats-secondary/);
  assert.equal((html.match(/class="results-stats-secondary"/g)||[]).length,1);
- const summaryCard=html.match(/class="results-card results-summary-card"[\\s\\S]*?<\\/section>/)?.[0] || '';
+ const summaryCard=html.match(/class="results-card results-summary-card"[\s\S]*?<\/section>/)?.[0] || '';
+ assert.ok(summaryCard, 'summary card must exist');
  assert.doesNotMatch(summaryCard,/Workable, but Refine|Missed Opportunity/);
 });
 test('without an authored summary, outcomes remain short and complete story stays accessible',()=>{
