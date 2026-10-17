@@ -1042,7 +1042,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     // their full ending behind an optional disclosure instead of a long wall of
     // text above the score. Never substitute a generic outcome for the case.
     const fullOutcome = String(outcome?.text || '').trim();
-    const firstSentence = fullOutcome.match(/^[\\s\\S]*?[.!?](?=\\s|$)/)?.[0] || fullOutcome;
+    const firstSentence = fullOutcome.match(/^[\s\S]*?[.!?](?=\s|$)/)?.[0] || fullOutcome;
     const outcomeBrief = String(outcome?.summary || '').trim() || firstSentence;
     const hasMoreOutcome = fullOutcome && fullOutcome !== outcomeBrief;
     const outcomeHTML = fullOutcome ? `
