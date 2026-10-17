@@ -34,7 +34,7 @@ function fixture() {
     authoringMeta:{qualityReview:{behavioral:true,gameDesign:true},versionNote:'Fictional case'}};
   const workspace={
     case:{id:'fictional-case-uuid',case_code:'CASE-EXAMPLE'},
-    fidelity_targets:[{target_key:'reinforcement_01',active:true},{target_key:'reinforcement_02',active:true}],
+    fidelity_targets:[{target_key:'reinforcement_01'},{target_key:'reinforcement_02'}],
     missions:[{mission_type:'crisis',slot_number:1,revision_id:'old-revision',mission}]
   };
   const patch={kind:'researcher_review_patch_NOT_A_SAVED_DRAFT',
@@ -69,6 +69,17 @@ test('creates complete new draft while leaving original content, 39 scores and r
  assert.equal(workspace.missions[0].mission.steps.d1_start.text,'Original classroom moment',
    'original save remains unchanged until researcher approves and uses authenticated RPC');
 });
+test('workspace already filters to active targets even when active flag is omitted',()=>{
+ const {patch,workspace}=fixture();
+ // Matches the actual research_admin_game_authoring_workspace RPC payload.
+ assert.ok(workspace.fidelity_targets.every(t=>!Object.hasOwn(t,'active')));
+ assert.equal(prepareExistingDraftRevision(patch,workspace).mission.steps.d2_wobbly.meta.fidelityTargetKey,'reinforcement_02');
+ const {patch:other,workspace:untrusted}=fixture();
+ untrusted.fidelity_targets.push({target_key:'retired_target',active:false});
+ other.scenes.d2_wobbly.meta_override={fidelityTargetKey:'retired_target'};
+ assert.throws(()=>prepareExistingDraftRevision(other,untrusted),/not active/);
+});
+
 test('cannot change wrong case, mission, target, routing, scoring or scene count',()=>{
  const mutations=[
   p=>{p.case_code='CASE-OTHER';},
