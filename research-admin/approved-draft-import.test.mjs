@@ -11,6 +11,13 @@ function fixture() {
   return {schemaVersion:1,case_id:'fixture-id',case_code:'CASE-EXAMPLE',missions:[{mission_type:'daily',slot_number:1,mission:{id:'CASE-EXAMPLE_D1',title:'Fictional example',expectedSteps:5,start:'d1_start',steps,endings:Object.fromEntries(['STRONG','MIXED','FRAGILE'].map(k=>[k,{text:'Closure',wizard:'Reaction'}]))}}]};
 }
 test('preserves every imported JSON field',()=>{const p=fixture();p.missions[0].mission.custom={privateAuthoringNote:'Fictional note'};assert.deepEqual(reviewApprovedImport(p,workspace),p.missions);});
+test('accepts case-scoped IDs from both Work and the built-in Research Admin editor',()=>{
+  const p=fixture();
+  p.missions[0].mission.id='CASEEXAMPLE_D01';
+  assert.equal(reviewApprovedImport(p,workspace)[0].mission.id,'CASEEXAMPLE_D01');
+  p.missions[0].mission.id='CASEOTHER_D01';
+  assert.throws(()=>reviewApprovedImport(p,workspace),/case-scoped/);
+});
 test('rejects cross-case, duplicate slots, stale target, and broken routes',()=>{
   for (const mutate of [p=>p.case_id='other',p=>p.missions.push(p.missions[0]),p=>p.missions[0].mission.steps.d1_start.meta.fidelityTargetKey='missing',p=>p.missions[0].mission.steps.d1_start.choices.A.next='d5_supported']) {const p=fixture();mutate(p);assert.throws(()=>reviewApprovedImport(p,workspace));}
 });

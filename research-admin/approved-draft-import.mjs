@@ -19,7 +19,13 @@ export function reviewApprovedImport(payload, workspace) {
     requireValue(slots[type] && Number.isInteger(slot) && slot >= 1 && slot <= slots[type], 'Invalid mission type or slot.');
     const slotKey = `${type}:${slot}`;
     requireValue(!occupied.has(slotKey), 'Duplicate mission slot.'); occupied.add(slotKey);
-    requireValue(object(m) && typeof m.id === 'string' && m.id.startsWith(`${payload.case_code}_`) && !ids.has(m.id), 'Mission ID must be unique and case-scoped.'); ids.add(m.id);
+    // Imported Work-authored missions use CASE-069_DAILY_02, while the
+    // built-in Research Admin authoring form uses CASE069_D02. Both are
+    // case-scoped identifiers; no cross-case ID is permitted.
+    const casePrefix = String(payload.case_code).toUpperCase().replace(/[^A-Z0-9]/g,'');
+    requireValue(object(m) && typeof m.id === 'string'
+      && (m.id.startsWith(payload.case_code + '_') || m.id.startsWith(casePrefix + '_'))
+      && !ids.has(m.id), 'Mission ID must be unique and case-scoped.'); ids.add(m.id);
     requireValue(m.expectedSteps === 5 && m.start === 'd1_start' && object(m.steps), 'Mission must have five decisions and a canonical start.');
     const expected = ['d1_start', ...[2,3,4,5].flatMap(d => states.map(s => `d${d}_${s}`))];
     requireValue(sameJson(Object.keys(m.steps).sort(), expected.sort()), `${slotKey}: exactly 13 canonical scenes required.`);

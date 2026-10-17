@@ -28,7 +28,7 @@ function changedPaths(a, b, path = '', found = []) {
   return found;
 }
 
-function verifyGraph(mission) {
+export function verifyGraph(mission) {
   const seen = new Set(), endings = new Set();
   let paths = 0;
   function traverse(sceneId, depth) {

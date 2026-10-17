@@ -46,6 +46,8 @@ jobs:
           node --test research-admin/teacher-launch-first-week.test.mjs
           node --test research-admin/existing-draft-revision.test.mjs
           node --test research-admin/full-mission-revision.test.mjs
+          node --test research-admin/mission-upload.test.mjs
+          node --test research-admin/approved-draft-import.test.mjs
           node --test research-admin/game-creation-flow.test.mjs
 
       - name: Verify mission navigation and resume behavior
