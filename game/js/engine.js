@@ -776,8 +776,15 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     if (restoredAnswer) return;
     MR.$$('.choice-btn').forEach(button => button.disabled = true);
     renderHUD();
-    animateHeartChange(heartChange.before, heartChange.after);
     showWizardFeedback(choice, score);
+    // Keep the existing gentle HUD pulse for regular play. In the opt-in
+    // researcher preview, fly a visible loss marker from Wizard to hearts
+    // above the modal backdrop instead.
+    if (consequencePreviewEnabled() && MR.heartFlight) {
+      MR.heartFlight.play(heartChange.before, heartChange.after);
+    } else {
+      animateHeartChange(heartChange.before, heartChange.after);
+    }
     checkpoint('feedback');
   }
 
@@ -880,6 +887,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   function hideWizardFeedback() {
+    if (MR.heartFlight) MR.heartFlight.clear();
     const modal = MR.$('#wizard-modal');
     modal.hidden = true;
     modal.dataset.mode = '';
