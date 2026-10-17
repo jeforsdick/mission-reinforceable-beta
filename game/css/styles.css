@@ -215,7 +215,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   height: 74px;
   margin: 0;
   transform-origin: center;
-  animation: mr-wizard-heart-fly 1000ms cubic-bezier(.26,.76,.24,1) both;
+  animation: mr-wizard-heart-fly 1500ms cubic-bezier(.26,.76,.24,1) both;
   filter: drop-shadow(3px 4px 0 rgba(6, 7, 37, .85));
 }
 .wizard-heart-flight-icon {
@@ -246,7 +246,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid #fff1a3; outline-
   transform: translate(-50%, -50%) scale(.25);
   opacity: 0;
   box-shadow: 0 0 12px rgba(255, 210, 94, .7);
-  animation: mr-wizard-heart-pop 330ms ease-out 700ms both;
+  animation: mr-wizard-heart-pop 330ms ease-out 1150ms both;
 }
 @keyframes mr-wizard-heart-fly {
   0% { opacity: 0; transform: translate(-50%, -50%) translate3d(0,0,0) scale(.55); }
