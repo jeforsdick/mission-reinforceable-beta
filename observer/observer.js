@@ -15,18 +15,30 @@ let observerType = null;
 let onlineTrainingComplete = false;
 let currentPacket = null;
 let practiceMode = false;
+/* SIMULATED calibration plan; NOT the actual filmed student's BIP. */
 const PRACTICE_TARGETS = [
- {id:"practice-prevent",domain:"Prevent",description:"Before writing, provide a short direction and a manageable first step."},
- {id:"practice-teach",domain:"Teach",description:"When stuck, prompt a specific help or break request."},
- {id:"practice-reinforce",domain:"Reinforce",description:"Respond promptly to an appropriate request and acknowledge re-engagement."},
- {id:"practice-respond",domain:"Respond",description:"When refusal occurs, stay calm and return to the planned small step."}
+{id:"sam-prevent",domain:"Prevent",description:"When individual work begins or resumes, give Sam a short specific first-step cue and ensure materials are available."},
+{id:"sam-teach",domain:"Teach",description:"When Sam is stuck or disengaged, prompt a specific help or short-break request rather than only repeating the demand."},
+{id:"sam-reinforce",domain:"Reinforce",description:"After an appropriate request or first observable return to work, promptly acknowledge and support the response."},
+{id:"sam-respond",domain:"Respond",description:"During disengagement, respond calmly and privately and offer a small achievable step back to work without public correction."}
 ];
+const SAM_BIP = {
+  summary:"Simulated BIP designed for scoring practice with the 4:52 Sam classroom video. It is not the actual student's behavior plan.",
+  hypothesis:"Training hypothesis only: work-start demands may be associated with disengagement. The student's behavioral function is not established by this video.",
+  examples:"Examples: head resting on desk; sustained arms-folded posture with gaze away from work. Nonexamples: looking up to listen, changing activity on teacher direction, or a brief glance away.",
+  prevent:"Provide a short task-start direction and accessible materials; offer one manageable first step.",
+  teach:"Model a specific appropriate help or short-break request if Sam appears stuck.",
+  reinforce:"Respond promptly to a request and acknowledge the first observable return to task.",
+  respond:"Approach quietly, avoid a public lecture, and offer a small supported return or model an appropriate request."
+};
 function isPractice(){return practiceMode === true;}
 function openPractice(){
  stopTimer();if(saveTimer)clearTimeout(saveTimer);collection=null;practiceMode=true;
- currentPacket={practice:true,phase:"practice",observer:{id:observerId,role:"primary"},slot:{id:"practice-session",case_code:"PRACTICE",observation_date:DENVER_TODAY(),routine_label:"Independent writing",planned_start_time:"09:00",planned_end_time:"09:30",status:"scheduled"},setup:{target_routine:"Independent writing",target_behavior_definition:"Practice example: Jordan says \"I am not doing this,\", pushes the paper away, or leaves the writing area during assigned writing. Mark an interval if any of these occur."},fidelity_targets:PRACTICE_TARGETS,record:null,ready_to_start:true};
+ currentPacket={practice:true,phase:"practice",observer:{id:observerId,role:"primary"},slot:{id:"practice-session",case_code:"SAM PRACTICE",observation_date:DENVER_TODAY(),routine_label:"Independent writing",planned_start_time:"09:00",planned_end_time:"09:30",status:"scheduled"},setup:{target_routine:"Independent classroom work",target_behavior_definition:"During assigned independent work, record an occurrence when Sam rests his head on the desk or forearms, or sits with arms folded while looking away from the task materials for at least two consecutive seconds. Exclude looking up to listen, transitions directed by the teacher, page turning, and brief glances."},fidelity_targets:PRACTICE_TARGETS,record:null,ready_to_start:true};
  renderSession();show("session-view");
- $("session-status-help").textContent="Fictional practice only. Nothing is sent to dissertation records.";
+ $("session-status-help").textContent="Sam calibration practice only · never saved to dissertation data.";
+  $("practice-bip-card").hidden=false;
+  for(const key of ["summary","hypothesis","examples","prevent","teach","reinforce","respond"]) $("practice-bip-"+key).textContent=SAM_BIP[key];
  $("start-live-observation").textContent="Start Practice Observation";
 }
 
@@ -196,6 +208,7 @@ async function loadPortal() {
 
 async function openSession(slotId) {
   practiceMode=false;
+  $("practice-bip-card").hidden=true;
   $("start-error").textContent="";
   show("loading-view");
   const result=await client.rpc("research_observer_observation_packet",{target_slot_id:slotId});
