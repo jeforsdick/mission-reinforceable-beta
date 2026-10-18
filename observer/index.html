@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/assets/site/site.css">
   <link rel="stylesheet" href="/observer/observer.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script type="module" src="/observer/observer.js?v=20261018-practice-calibration-1"></script>
+  <script type="module" src="/observer/observer.js?v=20261018-sam-calibration-2"></script>
 </head>
 <body>
   <div class="site-shell">
@@ -84,7 +84,7 @@
           </section>
         </div>
 
-        <section class="observer-card" aria-label="Practice observation"><div class="section-heading"><div><p class="eyebrow">Practice / calibration</p><h2>Start Observation</h2></div></div><p>Open the actual data collection interface using a fictional practice case. No schedule needed. Practice responses are never submitted to research records.</p><button id="start-practice-observation" class="primary-button" type="button">Start Practice Observation</button></section>
+        <section class="observer-card" aria-label="Practice observation"><div class="section-heading"><div><p class="eyebrow">Practice / calibration</p><h2>Start Observation</h2></div></div><p>Use Sam's fictional video-aligned BIP with the actual data collection form. No schedule needed. Practice responses are never submitted to research records.</p><button id="start-practice-observation" class="primary-button" type="button">Start Practice Observation</button></section>
 
         <section id="my-schedule" class="observer-card">
           <div class="section-heading">
@@ -112,6 +112,12 @@
         </section>
 
         <div id="session-preflight">
+          <section id="practice-bip-card" class="observer-card" hidden>
+            <p class="eyebrow">Sam · Fictional Calibration BIP</p><h2>Plan at a glance</h2>
+            <p id="practice-bip-summary"></p><p id="practice-bip-hypothesis"></p>
+            <p><strong>Examples and nonexamples:</strong> <span id="practice-bip-examples"></span></p>
+            <div class="preflight-grid"><div><strong>Prevent</strong><p id="practice-bip-prevent"></p></div><div><strong>Teach</strong><p id="practice-bip-teach"></p></div><div><strong>Reinforce</strong><p id="practice-bip-reinforce"></p></div><div><strong>Respond</strong><p id="practice-bip-respond"></p></div></div>
+          </section>
           <section class="observer-card">
             <div class="preflight-grid">
               <div><span>Target routine</span><strong id="session-routine"></strong></div>
