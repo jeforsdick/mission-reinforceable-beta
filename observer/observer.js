@@ -14,6 +14,22 @@ let clearanceStatus = "pending";
 let observerType = null;
 let onlineTrainingComplete = false;
 let currentPacket = null;
+let practiceMode = false;
+const PRACTICE_TARGETS = [
+ {id:"practice-prevent",domain:"Prevent",description:"Before writing, provide a short direction and a manageable first step."},
+ {id:"practice-teach",domain:"Teach",description:"When stuck, prompt a specific help or break request."},
+ {id:"practice-reinforce",domain:"Reinforce",description:"Respond promptly to an appropriate request and acknowledge re-engagement."},
+ {id:"practice-respond",domain:"Respond",description:"When refusal occurs, stay calm and return to the planned small step."}
+];
+function isPractice(){return practiceMode === true;}
+function openPractice(){
+ stopTimer();if(saveTimer)clearTimeout(saveTimer);collection=null;practiceMode=true;
+ currentPacket={practice:true,phase:"practice",observer:{id:observerId,role:"primary"},slot:{id:"practice-session",case_code:"PRACTICE",observation_date:DENVER_TODAY(),routine_label:"Independent writing",planned_start_time:"09:00",planned_end_time:"09:30",status:"scheduled"},setup:{target_routine:"Independent writing",target_behavior_definition:"Practice example: Jordan says \"I am not doing this,\", pushes the paper away, or leaves the writing area during assigned writing. Mark an interval if any of these occur."},fidelity_targets:PRACTICE_TARGETS,record:null,ready_to_start:true};
+ renderSession();show("session-view");
+ $("session-status-help").textContent="Fictional practice only. Nothing is sent to dissertation records.";
+ $("start-live-observation").textContent="Start Practice Observation";
+}
+
 let collection = null;
 let timer = null;
 let audioContext = null;
@@ -87,6 +103,7 @@ function renderAssignments(slots) {
 }
 
 async function loadPortal() {
+  practiceMode=false;
   stopTimer();
   show("loading-view");
   const session=(await client.auth.getSession()).data.session;
@@ -178,6 +195,7 @@ async function loadPortal() {
 }
 
 async function openSession(slotId) {
+  practiceMode=false;
   $("start-error").textContent="";
   show("loading-view");
   const result=await client.rpc("research_observer_observation_packet",{target_slot_id:slotId});
@@ -349,13 +367,19 @@ async function beginCollection() {
   $("start-error").textContent="";
   await ensureAudio();
   let record=currentPacket.record;
+  if (!record && isPractice()) {
+    record={id:"practice-local",status:"draft",started_at:new Date().toISOString(),elapsed_seconds:0,fidelity_scores:{},interval_scores:[]};
+    currentPacket.record=record;
+  }
   if (!record) {
     const result=await client.rpc("research_observer_start_observation",{target_slot_id:currentPacket.slot.id});
     if (result.error) { $("start-error").textContent=result.error.message; return; }
     record=result.data;
     currentPacket.record=record;
   }
-  const [outcomeResult,opportunityResult]=await Promise.all([
+  const [outcomeResult,opportunityResult]=isPractice()
+    ? [{data:{},error:null},{data:[],error:null}]
+    : await Promise.all([
     client.rpc("research_observer_get_fidelity_outcomes",{target_slot_id:currentPacket.slot.id}),
     client.rpc("research_observer_get_fidelity_opportunities",{target_slot_id:currentPacket.slot.id})
   ]);
@@ -404,9 +428,9 @@ function tick() {
   $("target-occurred").classList.toggle("marked",collection.intervals[index]==="occurred");
   const within=elapsed%REAL_SESSION.intervalSeconds;
   $("interval-clock").textContent=elapsed>=REAL_SESSION.durationSeconds?"00:00":formatClock(within===0?REAL_SESSION.intervalSeconds:REAL_SESSION.intervalSeconds-within);
-  $("finish-collection").disabled=elapsed<REAL_SESSION.durationSeconds;
+  $("finish-collection").disabled=!isPractice() && elapsed<REAL_SESSION.durationSeconds;
   $("finish-collection").textContent=elapsed<REAL_SESSION.durationSeconds
-    ? `End & Review at 30:00 (${formatClock(REAL_SESSION.durationSeconds-elapsed)} left)`
+    ? (isPractice() ? "End & Review Practice" : `End & Review at 30:00 (${formatClock(REAL_SESSION.durationSeconds-elapsed)} left)`)
     : "End & Review Observation";
   if (elapsed>=REAL_SESSION.durationSeconds) finishCollection();
 }
@@ -541,6 +565,7 @@ function queueSave() {
   saveTimer=setTimeout(saveDraft,450);
 }
 async function saveDraft() {
+  if(isPractice()) { $("autosave-status").textContent="Practice only · not saved to research data"; return true; }
   if (!collection || currentPacket.record?.status==="submitted") return true;
   syncFidelityRollups(false);
   const [result,outcomeResult,opportunityResult]=await Promise.all([
@@ -574,9 +599,9 @@ function finalizeCompletedIntervals() {
   }
 }
 function finishCollection() {
-  if (!collection || elapsedSeconds()<REAL_SESSION.durationSeconds) return;
+  if (!collection || (!isPractice() && elapsedSeconds()<REAL_SESSION.durationSeconds)) return;
   stopTimer();
-  collection.savedElapsed=REAL_SESSION.durationSeconds;
+  collection.savedElapsed=isPractice()?elapsedSeconds():REAL_SESSION.durationSeconds;
   collection.endedAt=new Date(collection.startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString();
   finalizeCompletedIntervals();
   syncFidelityRollups(true);
@@ -631,6 +656,12 @@ async function submitObservation() {
   if (fidelity.scoreable===0) { $("review-error").textContent="At least one fidelity item must have an observable opportunity."; return; }
   if (behavior.observed===0) { $("review-error").textContent="At least one student-behavior interval must be observable."; return; }
 
+  if (isPractice()) {
+    $("review-view").hidden=true;$("submitted-view").hidden=false;
+    $("submitted-title").textContent="Practice completed";
+    $("submitted-help").textContent="This fictional practice was not sent to Supabase and does not count as dissertation observation data. Choose Practice again to start over.";
+    return;
+  }
   if (saveTimer) clearTimeout(saveTimer);
   const saved=await saveDraft();
   if (!saved) {
@@ -715,6 +746,7 @@ $("back-to-schedule").addEventListener("click",loadPortal);
 $("submitted-back").addEventListener("click",loadPortal);
 $("test-live-cue").addEventListener("click",beep);
 $("start-live-observation").addEventListener("click",beginCollection);
+$("start-practice-observation").addEventListener("click",openPractice);
 $("target-occurred").addEventListener("click",markOccurred);
 $("continuing-toggle").addEventListener("click",()=>setMode("continuing"));
 $("not-observed-toggle").addEventListener("click",()=>setMode("notObserved"));
