@@ -482,7 +482,7 @@ function syncFidelityRollups(resolveNoOpportunity=false) {
 function opportunityFidelity() {
   const events=collection?.fidelityOpportunities||[];
   const implemented=events.filter((event)=>event.implementation==="implemented").length;
-  const pendingOutcome=events.filter((event)=>!event.desired_outcome).length;
+  const pendingOutcome=events.filter((event)=>event.implementation==="implemented"&&!event.desired_outcome).length;
   return {total:events.length,implemented,pendingOutcome,percent:events.length?(implemented/events.length)*100:null};
 }
 function addFidelityOpportunity(targetId,implementation) {
@@ -495,6 +495,7 @@ function addFidelityOpportunity(targetId,implementation) {
 function setFidelityOpportunityOutcome(eventId,outcome) {
   const event=(collection.fidelityOpportunities||[]).find((item)=>item.event_id===eventId);
   if (!event) return;
+  if(event.implementation!=="implemented")return;
   event.desired_outcome=outcome;
   syncFidelityRollups(false);
   renderFidelity();
@@ -519,11 +520,11 @@ function renderFidelity() {
       '<div class="opportunity-event">' +
       '<span class="opportunity-time">+'+formatClock(event.elapsed_seconds)+'</span>' +
       '<strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong>' +
-      '<div class="fidelity-outcome-actions">' +
-      '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="yes" class="'+(event.desired_outcome==="yes"?"selected":"")+'">Desired Outcome: Yes</button>' +
+      (event.implementation==="implemented"?'<div class="fidelity-outcome-actions">' : '<div class="fidelity-outcome-actions"><small>Desired outcome: Not applicable</small>') +
+      (event.implementation==="implemented"?'<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="yes" class="'+(event.desired_outcome==="yes"?"selected":"")+'">Desired Outcome: Yes</button>' +
       '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="no" class="'+(event.desired_outcome==="no"?"selected":"")+'">No</button>' +
       '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="unclear" class="'+(event.desired_outcome==="unclear"?"selected":"")+'">Not clear</button>' +
-      '</div>' +
+      ':'') + '</div>' +
       '<button type="button" class="opportunity-remove" data-opportunity-remove="'+event.event_id+'" aria-label="Remove this opportunity">×</button>' +
       '</div>'
     ).join("");
@@ -636,13 +637,13 @@ function renderReview(noteOverride) {
     const events=opportunitiesFor(target.id);
     const implemented=events.filter(e=>e.implementation==="implemented").length;
     const rows=events.map(event=>{
-      const outcome=event.desired_outcome;
+      const outcome=event.implementation==="implemented"?event.desired_outcome:null;
       const buttons=[["yes","Yes"],["no","No"],["unclear","Not clear"]].map(([value,label])=>
         '<button type="button" class="review-outcome-button '+(outcome===value?'selected':'')+'" data-review-outcome="'+escapeHtml(event.event_id)+'" data-review-value="'+value+'" aria-pressed="'+String(outcome===value)+'">'+label+'</button>'
       ).join("");
       return '<div class="review-opportunity-row"><span class="review-time">+'+formatClock(event.elapsed_seconds)+'</span>'+
         '<strong class="review-implementation">'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong>'+
-        '<div class="review-outcome-field"><span class="review-outcome-label">Desired outcome'+(!outcome?' · Please rate':'')+'</span><div class="review-outcome-buttons">'+buttons+'</div></div></div>';
+        (event.implementation==="implemented"?'<div class="review-outcome-field"><span class="review-outcome-label">Desired outcome'+(!outcome?' · Please rate':'')+'</span><div class="review-outcome-buttons">'+buttons+'</div></div>':'<div class="review-outcome-label">Desired outcome: Not applicable</div>')+'</div>';
     }).join("");
     return '<article class="review-item opportunity-review-item"><div class="review-target-heading"><strong>'+escapeHtml(target.description)+'</strong><small>'+(events.length?implemented+"/"+events.length+" opportunities implemented as written":"No opportunity recorded")+'</small></div>'+
       '<div class="review-opportunity-list">'+(rows||'<span class="review-none">No Opportunity</span>')+'</div></article>';
@@ -650,7 +651,7 @@ function renderReview(noteOverride) {
   $("review-fidelity-list").querySelectorAll("[data-review-outcome]").forEach(button=>button.addEventListener("click",()=>{
     const note=$("observation-note").value;
     const event=(collection.fidelityOpportunities||[]).find(e=>e.event_id===button.dataset.reviewOutcome);
-    if(!event)return;
+    if(!event||event.implementation!=="implemented")return;
     event.desired_outcome=button.dataset.reviewValue;
     syncFidelityRollups(true);
     renderReview(note);
@@ -670,7 +671,7 @@ async function submitObservation() {
   syncFidelityRollups(true);
   const opportunitySummary=opportunityFidelity();
   if (opportunitySummary.total===0) { $("review-error").textContent="Record at least one fidelity opportunity before submitting."; return; }
-  if (opportunitySummary.pendingOutcome>0) { $("review-error").textContent="Rate the desired outcome for every recorded opportunity before submitting."; return; }
+  if (opportunitySummary.pendingOutcome>0) { $("review-error").textContent="Rate the desired outcome for every opportunity marked Implemented as Written before submitting."; return; }
   const targets=currentPacket.fidelity_targets||[];
   const missing=targets.filter((target)=>!collection.fidelityScores[target.id]);
   if (missing.length) {
