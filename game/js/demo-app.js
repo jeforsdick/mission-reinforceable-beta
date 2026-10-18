@@ -19,11 +19,11 @@
   const sfx = {};
   const activeSfx = new Set();
   const DEMO_FIXTURE_SCRIPTS = [
-    '../demo-game/content/config.js?v=20261016-public-demo-v2',
-    '../demo-game/content/daily-mission.js?v=20261016-public-demo-v2',
-    '../demo-game/content/wildcard-mission.js?v=20261016-public-demo-v2',
-    '../demo-game/content/crisis-mission.js?v=20261016-public-demo-v2',
-    '../demo-game/content/resources.js?v=20261016-public-demo-v2'
+    '../demo-game/content/config.js?v=20261018-three-exemplar-missions-v1',
+    '../demo-game/content/daily-mission.js?v=20261018-three-exemplar-missions-v1',
+    '../demo-game/content/wildcard-mission.js?v=20261018-three-exemplar-missions-v1',
+    '../demo-game/content/crisis-mission.js?v=20261018-three-exemplar-missions-v1',
+    '../demo-game/content/resources.js?v=20261018-three-exemplar-missions-v1'
   ];
 
   async function loadPublicDemoFixture() {
