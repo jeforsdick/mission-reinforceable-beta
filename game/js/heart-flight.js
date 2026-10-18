@@ -1,4 +1,4 @@
-/* A short, opt-in QA visual cue linking Wizard feedback to lost health.
+/* A shared visual cue linking Wizard feedback to lost health.
    Does not change scores, feedback text, missions, or telemetry. */
 (function () {
   'use strict';

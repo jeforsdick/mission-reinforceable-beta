@@ -58,10 +58,10 @@ test('long scenario text shrinks only to the readable minimum and preserves over
   assert.equal(overflowing.fits, false);
 });
 
-test('scenario fit runs after scene markup and responds to layout changes', () => {
+test('shared scenario keeps readable text and scrolls while hint fitting responds to layout', () => {
   const markupIndex = engineSource.indexOf("scenarioText.innerHTML = nextScenarioHTML(step)");
-  const fitIndex = engineSource.indexOf('MR.scenarioFit.fitScenarioText(scenarioText)', markupIndex);
-  assert.ok(markupIndex >= 0 && fitIndex > markupIndex);
+  const scrollIndex = engineSource.indexOf("scenarioText.dataset.noAutoFit = 'true'", markupIndex);
+  assert.ok(markupIndex >= 0 && scrollIndex > markupIndex);
   assert.match(engineSource, /watchScenarioTextFit/);
   const { api, listeners } = load();
   api.watchScenarioTextFit(elementFor(70));

@@ -12,5 +12,25 @@
       "path": "/api/teacher-daily-prompt-retry",
       "schedule": "0 23 * * 5"
     }
+  ],
+  "headers": [
+    {
+      "source": "/game/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/demo-game/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    }
   ]
 }

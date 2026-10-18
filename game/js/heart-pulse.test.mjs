@@ -56,7 +56,7 @@ test('correct choices and empty hearts do not animate', () => {
 
 test('animation occurs after scored HUD render and never during checkpoint restoration', () => {
   assert.match(engine, /if \(restoredAnswer\) return;[\s\S]*?renderHUD\(\);\s*showWizardFeedback/);
-  assert.match(engine, /if \(consequencePreviewEnabled\(\) && MR\.heartFlight\)/);
+  assert.match(engine, /if \(MR\.heartFlight\)/);
   assert.match(engine, /MR\.heartFlight\.play\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /animateHeartChange\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /heartsBefore: heartChange\.before/);

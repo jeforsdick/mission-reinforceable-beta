@@ -94,7 +94,7 @@ test('teacher and public demo use same accessible results cue and responsive scr
     const html = fs.readFileSync(new URL(path, import.meta.url), 'utf8');
     assert.match(html, /id="results-content"[^>]*tabindex="0"[^>]*role="region"/);
     assert.match(html, /id="results-scroll-cue"[^>]*aria-controls="results-content"[^>]*hidden/);
-    assert.match(html, /results-scroll\.js\?v=20261016-results-scroll-1/);
+    assert.match(html, /results-scroll\.js\?v=20261018-shared-presentation-1/);
     assert.match(html, /Mission Menu<\/button>/);
   }
   const css = fs.readFileSync(new URL('../css/styles.css', import.meta.url), 'utf8');

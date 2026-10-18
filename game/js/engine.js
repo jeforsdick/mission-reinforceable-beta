@@ -303,16 +303,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     return MR.escapeHTML(clean);
   }
 
-  // Opt-in researcher draft QA only; live teacher sessions keep their existing view.
-  function consequencePreviewEnabled() {
-    const context = MR.telemetryContext;
-    return Boolean(context && context.qaMode === true && context.draftQa === true
-      && window.location && typeof window.location.search === 'string'
-      && new URLSearchParams(window.location.search).get('qa_consequence_preview') === '1');
-  }
-
   function nextScenarioHTML(step) {
-    if (!consequencePreviewEnabled()) return scenarioHTML(step.text || '');
     const last = current.history[current.history.length - 1];
     const lastConsequence = last && typeof last.consequence === 'string' ? last.consequence.trim() : '';
     // The first scene has no previous decision: present its original setup.
@@ -331,7 +322,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     const cue = MR.$('#scenario-scroll-cue');
     if (!scroll || !cue) return;
     const overflowing = scroll.clientHeight > 0 && scroll.scrollHeight > scroll.clientHeight + 8;
-    cue.hidden = !consequencePreviewEnabled() || !overflowing
+    cue.hidden = !overflowing
       || scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 8;
   }
 
@@ -617,7 +608,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       MR.$$('.choice-btn').forEach(button => button.disabled = true);
       showWizardFeedback(mission.steps[last.stepId].choices[last.choiceKey], last.score);
     } else {
-      showMissionOutcome(pendingEnding);
+      // Resume legacy outcome checkpoints into the shared Results screen.
+      await finishMission(pendingEnding);
+      return true;
     }
     checkpoint(saved.stage);
     return true;
@@ -680,8 +673,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     wireWizardHintTrigger();
     const scenarioText = MR.$('#scenario-text');
     scenarioText.innerHTML = nextScenarioHTML(step);
-    scenarioText.dataset.noAutoFit = consequencePreviewEnabled() ? 'true' : 'false';
-    if (MR.scenarioFit && !consequencePreviewEnabled()) MR.scenarioFit.fitScenarioText(scenarioText);
+    scenarioText.dataset.noAutoFit = 'true';
     wireScenarioScrollCue();
     const scrollRegion = MR.$('#scenario-scroll-region');
     if (scrollRegion) scrollRegion.scrollTop = 0;
@@ -777,10 +769,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     MR.$$('.choice-btn').forEach(button => button.disabled = true);
     renderHUD();
     showWizardFeedback(choice, score);
-    // Keep the existing gentle HUD pulse for regular play. In the opt-in
-    // researcher preview, fly a visible loss marker from Wizard to hearts
-    // above the modal backdrop instead.
-    if (consequencePreviewEnabled() && MR.heartFlight) {
+    // All entry points use the same foreground Wizard-to-HUD feedback.
+    if (MR.heartFlight) {
       MR.heartFlight.play(heartChange.before, heartChange.after);
     } else {
       animateHeartChange(heartChange.before, heartChange.after);
@@ -858,8 +848,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     img.src = sprite.src;
     img.className = `wizard-modal-img ${sprite.cls}`;
     MR.$('#wizard-modal-continue').textContent = pendingNext ? 'Continue Mission'
-      : pendingEnding && consequencePreviewEnabled() ? 'View Results'
-      : pendingEnding ? 'See Mission Outcome' : 'Complete Mission';
+      : pendingEnding ? 'View Results' : 'Complete Mission';
     const exit = MR.$('#wizard-modal-exit');
     if (exit) { exit.hidden = false; exit.setAttribute('aria-label', 'Return to mission menu'); }
     modal.hidden = false;
@@ -917,13 +906,8 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
     } else if (pendingEnding) {
       const ending = pendingEnding;
       pendingEnding = null;
-      if (consequencePreviewEnabled()) {
-        // Only an authorized, opted-in draft QA run bypasses the long popup.
-        // The same fifth decision still ends with one completed session.
-        finishMission(ending);
-      } else {
-        showMissionOutcome(ending);
-      }
+      // Presentation is shared; finalization still uses the existing auth/telemetry path.
+      finishMission(ending);
     } else {
       finishMission();
     }
@@ -1042,10 +1026,9 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
   }
 
   function outcomeForResults(run) {
-    if (!consequencePreviewEnabled()) return null;
     if (run.missionOutcome && run.missionOutcome.text) return run.missionOutcome;
-    // Historical QA details: reconstitute only when the matching mission
-    // draft and recorded step/choice are still available.
+    // Reconstitute historical outcomes only from the loaded content version
+    // and the recorded final choice; never infer a narrative from the score.
     const mode = run.mode === 'wildcard' ? 'wild' : run.mode;
     const id = run.missionId || run.mission_id;
     const mission = ((MR.pool && MR.pool[mode]) || []).find(item => item.id === id);
@@ -1102,6 +1085,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       <section class="results-debrief">
         <h1>${MR.escapeHTML(summary.title)}</h1>
         <section class="results-card results-summary-card">
+          ${!outcome ? '<img class="results-summary-wizard" src="' + MR.escapeHTML(MR.asset(wizardSpriteForAccuracy(run.accuracy).asset)) + '" alt="' + wizardSpriteForAccuracy(run.accuracy).alt + '" />' : ''}
           <h2>Mission Summary</h2>
           <dl class="results-stats">
             <div><dt>Total Score</dt><dd>${MR.escapeHTML(String(run.score))} / ${MR.escapeHTML(String(run.maxScore))}</dd></div>
@@ -1221,7 +1205,7 @@ Avoid public correction, arguing, threats, or making the task feel bigger.`;
       missedOpportunityCount: countSummary.missedOpportunityCount,
       missedReviewCount: countSummary.missedReviewCount,
       history,
-      ...(consequencePreviewEnabled() && endingOnResults ? {
+      ...(endingOnResults ? {
         missionOutcome: {
           key: endingOnResults.key,
           text: endingOnResults.text,
