@@ -1,682 +1,764 @@
-/* daily-mission-1.js
- * Mission: Reinforceable Fictional Public Demo Content
- * Daily Mission: The Blank Page
- *
- * Purpose:
- * - Help public demo players practice applying Jordan's simple behavior plan.
- * - Routine: independent writing.
- * - Plan focus: help, break, small step, calm return.
- */
-
+/* Fictional public demo draft. NOT DEPLOYED. */
 (function registerDailyMission1() {
-  if (typeof POOL === "undefined") {
-    throw new Error("POOL must be defined before loading daily-mission-1.js");
-  }
-
-  POOL.daily = POOL.daily || [];
-
-  POOL.daily.push({
-    id: "daily-blank-page-beta",
-    title: "The Blank Page",
-    expectedSteps: 5,
-    start: "daily_step1_start",
-    focus: "Help Jordan turn a blank-page stall into a doable first writing step without making refusal the shortcut.",
-    routine: "independent writing",
-    functionPressure: ["escape"],
-    bipTargets: ["Help", "Break", "Small Step", "Calm Return"],
-
-    endings: {
-        "STRONG": {
-            "text": "The page is no longer an all-or-nothing challenge. Jordan has asked for help or taken a meaningful first step, and you have reinforced that route. Other students continue writing while Jordan has an achievable next move. The sentence may still need finishing, but the plan is working: communication and re-engagement are becoming easier than refusal.",
-            "wizard": "Quest cleared: not a perfect paragraph, but a stronger pathway! You made the first step worth taking."
-        },
-        "MIXED": {
-            "text": "Jordan is quieter and nearer to the materials, but the path back is still delicate. Some support helped; one important prompt or reinforcement moment was delayed or left too vague. The next real opportunity would be to name the tiny first step and respond when Jordan requests help. The classroom can recover from this point.",
-            "wizard": "The spell is half-lit! One precise cue and one timely response can turn this into real momentum."
-        },
-        "FRAGILE": {
-            "text": "Writing time is nearly over and Jordan is still avoiding much of the task. The exchange did not establish a reliable help-or-break route or a small return step. That is not a prediction about a real student; it is feedback about this simulated decision path. Next time, make the first move smaller and the replacement response more effective.",
-            "wizard": "The page won this round, not the quest. Review the map, then try opening a smaller door."
-        }
+  window.POOL = window.POOL || { daily: [], wild: [], crisis: [] };
+  window.POOL.daily = window.POOL.daily || [];
+  window.POOL.daily.push({
+  "id": "daily-blank-page-beta",
+  "title": "The Blank Page",
+  "routine": "independent writing",
+  "focus": "Make the first writing step small, respond to help requests, and reinforce re-engagement.",
+  "expectedSteps": 5,
+  "start": "daily_step1_start",
+  "functionPressure": [
+    "escape"
+  ],
+  "bipTargets": [
+    "Help",
+    "Break",
+    "Small Step",
+    "Calm Return"
+  ],
+  "authoringMeta": {
+    "sourceStatus": "FICTIONAL_PUBLIC_DEMO",
+    "qualityReview": {
+      "behavioral": false,
+      "gameDesign": false
     },
-
-    steps: {
-      daily_step1_start: {
-        text: `It's independent writing time, five minutes after a lively conversation about favorite animals. Pencils tap across the room while you answer a question from another table. Jordan has plenty to say about sea creatures, but the paper in front of them is completely blank. The task is to write a sentence, and no one has shown Jordan where to begin. Jordan looks at the page, then at you, and starts sliding the paper toward the edge of the desk. Your group is waiting. What do you do first?`,
-        hint: `Jordan does best when the first writing step is small, clear, and paired with help if needed.`,
-        choices: {
-          A: {
-            text: `Quietly point to the sentence starter and say, "First, write one animal. You can ask for help if you get stuck."`,
-            score: 10,
-            consequence: "Jordan keeps the paper close, touches the pencil, and looks toward the starter. The work has not started yet, but the path into it is clearer.",
-            feedback: `This follows the plan. You made the writing task smaller and gave Jordan a clear first step before refusal started.`,
-            wizard: `Excellent spellwork. You made the blank page feel less powerful by giving Jordan one clear move.`,
-            next: "daily_step2_supported",
-            meta: {
-              bipComponent: "Prevent",
-              mechanism: "Small first step",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say quietly, "Think about an animal you like. I will check back in a minute."`,
-            score: 5,
-            consequence: "Jordan stays seated and quiet, yet keeps scanning the blank page. Without a specific first move, hesitation continues.",
-            feedback: `This is calm and gives Jordan space, which may lower pressure. The missing piece is a clear first writing move or a prompt to ask for help. A stronger move would be to offer one small starter step and remind Jordan help is available.`,
-            wizard: `Hmm... the spell is gentle, but it does not fully land. Giving Jordan a minute may feel supportive, but the blank page is still too big. A stronger move would make the first step tiny and give Jordan a way to ask for help.`,
-            next: "daily_step2_wobbly",
-            meta: {
-              bipComponent: "Prevent",
-              mechanism: "Encouragement",
-              errorType: "open-ended prompt",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "The directions are on the board. Start your sentence when you are ready."`,
-            score: 0,
-            consequence: "Jordan pushes the page away and says they are not writing. The interaction has grown louder, and a classmate turns to look.",
-            feedback: `This sounds neutral, but it leaves Jordan alone with the hard part of writing. If the function is escape from difficult writing, waiting without support can let avoidance grow. A stronger move would be to give one clear first step and prompt help if Jordan is stuck.`,
-            wizard: `Careful... the blank-page fog gets thicker here. Jordan may stay quiet, but they still do not have a bridge into writing. A stronger spell would shrink the task and point to help before refusal starts.`,
-            next: "daily_step2_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Public pressure",
-              errorType: "public correction",
-              function: "escape"
-            }
+    "draftVersion": "2026-10-18-proposal-2-continuity-revision"
+  },
+  "endings": {
+    "STRONG": {
+      "summary": "Jordan used help or a small writing step, and you reinforced it. The sentence may still be unfinished.",
+      "text": "Jordan made a supported start and experienced a teacher response that made asking for help or trying a small step useful. Writing may remain unfinished; the important result is an improving route into the task.",
+      "wizard": "That first step counts."
+    },
+    "MIXED": {
+      "summary": "Some pressure eased, but help or the next writing step was delayed. A workable opening remains.",
+      "text": "Parts of the exchange supported a calmer moment or a small attempt. Other moments left a request unanswered or the writing step unclear. The next opportunity is to respond to communication promptly and support a manageable start.",
+      "wizard": "Good opening. Sharpen the follow-through."
+    },
+    "FRAGILE": {
+      "summary": "Jordan is still stuck, or the final response added pressure. The writing support plan needs another try.",
+      "text": "The writing problem was not meaningfully resolved in this simulated route. A requested help response, small first step, or timely reinforcement was missing, and the teacher has a clearer option to practice next time. No outcome for a real student is implied.",
+      "wizard": "Try the smaller, supported path."
+    }
+  },
+  "steps": {
+    "daily_step1_start": {
+      "text": "The class has just finished sharing favorite animals. Now everyone is writing one sentence. Jordan talks easily about octopuses, but the pencil sits beside a blank page. You are answering a question at the next table when Jordan nudges the paper away and says, “I don’t know how to start.”",
+      "hint": "The plan calls for a small first step and an easy way to request help.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "The Blank Page"
+      },
+      "choices": {
+        "A": {
+          "text": "Move beside Jordan, point to the sentence starter, and say, “Pick one animal. I can help with the first word.”",
+          "score": 10,
+          "consequence": "Jordan pulls the page closer and points to the starter. No word is written yet, but there is an achievable place to begin.",
+          "feedback": "You made the first demand small and offered immediate help.",
+          "wizard": "One small doorway. Nice.",
+          "next": "daily_step2_supported",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say, “Think of your favorite animal. I’ll come back when I finish with this table.”",
+          "score": 5,
+          "consequence": "Jordan looks at the paper again but keeps the pencil down. Waiting has not made the first move clearer.",
+          "feedback": "Your tone is calm, but Jordan still needs an explicit first step or usable help.",
+          "wizard": "Calm helps. A starting point helps more.",
+          "next": "daily_step2_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Point to the directions on the board and say, “Everyone else is writing. You need to get started.”",
+          "score": 0,
+          "consequence": "Jordan pushes the sheet farther away and says, “I’m not doing it.” Two classmates glance over.",
+          "feedback": "Repeating the whole demand increases pressure without making the work doable.",
+          "wizard": "That page just got bigger.",
+          "next": "daily_step2_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "plan_drift"
           }
         }
+      }
+    },
+    "daily_step2_supported": {
+      "text": "Jordan has the page in front of them and looks at the sentence starter. “Can you help me pick an animal?” Jordan asks while another student calls you from across the table. Jordan is waiting to see whether asking actually gets help.",
+      "hint": "Jordan already asked appropriately; make that request work.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "A quiet request"
       },
-
-      daily_step2_supported: {
-        text: `Jordan draws the page closer and studies the sentence starter. The pencil is in hand, but the first word has not appeared. From the nearby reading table, someone asks you to find a missing book. Jordan whispers, “Could you help me choose an animal?” The request is quiet enough that you could miss it while helping the other group. This is a chance to show whether asking for help gets Jordan a useful response.`,
-        hint: `Prompt Jordan to use the replacement skill: asking for help, then taking one small writing step.`,
-        choices: {
-          A: {
-            text: `Say, "You can ask for help. Try saying, 'Can you help me pick one animal?'"`,
-            score: 10,
-            consequence: "Jordan turns toward you and makes a specific help request. The pencil stays near the page while the request is waiting to be answered.",
-            feedback: `This follows the plan. You prompted Jordan to ask for help instead of getting stuck or refusing.`,
-            wizard: `Strong choice. You turned a stuck moment into a help request Jordan can use again.`,
-            next: "daily_step3_supported",
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Help request",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Take a moment and pick from the animals we named together."`,
-            score: 5,
-            consequence: "Jordan stops pushing the page away but still cannot name a first step. The calm is real; the replacement skill has not quite taken hold.",
-            feedback: `This is understandable because it narrows the topic a little. It still does not teach Jordan what to do when stuck or prompt the help request. A stronger move would be to model asking for help and then guide Jordan to pick one animal.`,
-            wizard: `The spell flickers. A smaller topic helps, but Jordan still has to figure out the help move alone. A stronger spell would give Jordan the words to ask for help and then one small choice.`,
-            next: "daily_step3_wobbly",
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Wait time",
-              errorType: "unclear next step",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "I already gave examples, so choose one and start on your own."`,
-            score: 0,
-            consequence: "Jordan lowers their head and stops looking at the work. Their refusal has become a more effective way to pause writing than asking for help.",
-            feedback: `This may look like encouraging independence, but it removes support right when Jordan is asking for it. Jordan may learn that asking does not help and return to avoidance. A stronger move would be to reinforce the ask and help Jordan take one small step.`,
-            wizard: `Careful. Jordan reached for a bridge, and this pulls the bridge away. That can make help-seeking feel less useful next time. A stronger spell would honor the ask, then guide one tiny writing move.`,
-            next: "daily_step3_escalated",
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Withheld support",
-              errorType: "blocked help request",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Answer, “Yes. Octopus or turtle?” Let Jordan choose, then help write the first word.",
+          "score": 10,
+          "consequence": "Jordan picks octopus and writes an O with your help. They keep the page close and look at the word starter.",
+          "feedback": "You honored the existing help request and made the first response manageable.",
+          "wizard": "That request opened the door.",
+          "next": "daily_step3_supported",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say, “Good asking. Choose any animal you want,” and turn to the next table.",
+          "score": 5,
+          "consequence": "Jordan smiles at the acknowledgment but looks back at the page, still unsure how to put the idea into writing.",
+          "feedback": "You noticed the request but did not deliver the help Jordan asked for.",
+          "wizard": "Almost there—follow through.",
+          "next": "daily_step3_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Tell Jordan, “You know animals. Try it by yourself before you ask me.”",
+          "score": 0,
+          "consequence": "Jordan closes the pencil box and turns away from the paper. Asking for help did not change the hard task.",
+          "feedback": "Delaying help after an appropriate request makes that replacement response less useful.",
+          "wizard": "Don’t close the help window.",
+          "next": "daily_step3_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "plan_drift"
           }
         }
+      }
+    },
+    "daily_step2_wobbly": {
+      "text": "Jordan remains seated, rubbing the pencil eraser over the desk. “I have an animal in my head,” Jordan says, “but I can’t write it.” The class is quietly writing, and the next table is beginning to need you. There is still a chance to turn hesitation into a first step.",
+      "hint": "Provide one concrete writing move while keeping help available.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "Still waiting"
       },
-
-      daily_step2_wobbly: {
-        text: `Jordan nods at your reassurance but does not begin. Two classmates are already on their second sentences. Jordan scans their papers, presses the pencil against the desk, and murmurs, “I don't know what to put.” The interaction stayed calm, yet the first action is still vague. You have a few seconds before the group at the next table needs you again.`,
-        hint: `This is still a prevention moment. Make the task smaller or prompt Jordan to ask for help before refusal grows.`,
-        choices: {
-          A: {
-            text: `Move close and say, "You can write 'My animal is...' or ask me for help picking one."`,
-            score: 10,
-            consequence: "Jordan turns toward you and makes a specific help request. The pencil stays near the page while the request is waiting to be answered.",
-            feedback: `This follows the plan. You made the task smaller and gave Jordan a clear way to ask for help.`,
-            wizard: `Nicely done. You turned the foggy path into two clear stepping stones.`,
-            next: "daily_step3_supported",
-            meta: {
-              bipComponent: "Prevent",
-              mechanism: "Small first step",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "That's okay. Keep thinking while I help the next table."`,
-            score: 5,
-            consequence: "Jordan stops pushing the page away but still cannot name a first step. The calm is real; the replacement skill has not quite taken hold.",
-            feedback: `This stays calm and does not add pressure, which is helpful. The missing piece is teaching Jordan what to do instead of staying stuck. A stronger move would prompt a help request or give one sentence-starter step before walking away.`,
-            wizard: `A calm pause can help, but Jordan is still at the edge of the maze. The spell needs a doorway, not only extra time. A stronger move would prompt help or one small writing step before you leave.`,
-            next: "daily_step3_wobbly",
-            meta: {
-              bipComponent: "Prevent",
-              mechanism: "Wait time",
-              errorType: "missed prompt",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "Everyone has started, so open your paper and begin now."`,
-            score: 0,
-            consequence: "Jordan lowers their head and stops looking at the work. Their refusal has become a more effective way to pause writing than asking for help.",
-            feedback: `This repeats the demand but does not make writing clearer or smaller. The peer comparison may add pressure and strengthen escape from writing. A stronger move would be to move close, offer a starter, and prompt Jordan to ask for help if needed.`,
-            wizard: `Storm clouds gather. Jordan hears the demand, but the path into writing is still hidden. A stronger spell would shrink the task and give Jordan a help request to use.`,
-            next: "daily_step3_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Pressure",
-              errorType: "comparison",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Say, “Tell me the animal. I’ll help you sound out the first letter, then you try it.”",
+          "score": 10,
+          "consequence": "Jordan names an animal and writes its first letter with your help. The page now has a starting point.",
+          "feedback": "A brief model and small task step directly address the point of difficulty.",
+          "wizard": "A first mark counts.",
+          "next": "daily_step3_supported",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Suggest, “Draw the animal first if that helps,” then continue circulating.",
+          "score": 5,
+          "consequence": "Jordan draws a small shape but the sentence remains blank, with no clear bridge from drawing to writing.",
+          "feedback": "An easier entry can help, but the plan still needs an explicit writing step and support.",
+          "wizard": "Useful start; missing bridge.",
+          "next": "daily_step3_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “You’re spending too long thinking. Write a sentence now.”",
+          "score": 0,
+          "consequence": "Jordan folds the paper corner and says, “No.” The original writing demand is still too large.",
+          "feedback": "The repeated demand does not teach a help request or make the task smaller.",
+          "wizard": "Pressure isn’t a plan.",
+          "next": "daily_step3_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "plan_drift"
           }
         }
+      }
+    },
+    "daily_step2_escalated": {
+      "text": "Jordan has pushed the page to the edge of the desk and says, “I’m not writing.” A nearby student looks over. The pencil and paper are still within reach, and the rest of the group is working. You need a quiet response that offers an alternative to refusing the whole task.",
+      "hint": "Keep your response private; offer the planned help or brief-break route.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "Refusal starts"
       },
-
-      daily_step2_escalated: {
-        text: `Jordan pulls the page out of reach and leans back. “I'm not writing that,” they say, loud enough for the closest student to turn. The other group's question is still waiting and the class is starting to notice. Jordan is no longer considering the sentence starter. You need to lower the pressure without letting refusal become the easiest way to remove the whole writing task.`,
-        hint: `Keep it private and low-pressure. Offer the planned help or break option instead of adding attention.`,
-        choices: {
-          A: {
-            text: `Move close, keep your voice quiet, and say, "You can ask for help or take a short break."`,
-            score: 10,
-            consequence: "Jordan stops pushing the page away but still cannot name a first step. The calm is real; the replacement skill has not quite taken hold.",
-            feedback: `This follows the plan. You stayed calm and private while reminding Jordan of the planned help and break options.`,
-            wizard: `Steady magic. You lowered the volume of the moment and showed Jordan a safer path.`,
-            next: "daily_step3_wobbly",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Help or break",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Take a minute to calm down, and then we will come back to writing."`,
-            score: 5,
-            consequence: "Jordan lowers their head and stops looking at the work. Their refusal has become a more effective way to pause writing than asking for help.",
-            feedback: `This may reduce pressure briefly, so it is understandable. The missing piece is a specific break-and-return routine or a small next writing step. A stronger move would name the short break and the exact first step Jordan will return to.`,
-            wizard: `A pause can help, but the trail fades if there is no return marker. Jordan may drift farther from writing. A stronger spell would pair the break with one small step back.`,
-            next: "daily_step3_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Pause",
-              errorType: "unclear return path",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "Writing still has to get done, so you can finish this during recess if needed."`,
-            score: 0,
-            consequence: "Jordan lowers their head and stops looking at the work. Their refusal has become a more effective way to pause writing than asking for help.",
-            feedback: `This may feel practical, but it shifts the moment toward consequence instead of skill practice. Jordan may focus on escaping the consequence rather than asking for help or returning to writing. A stronger move would stay private, offer help or a short break, and set one small return step.`,
-            wizard: `Careful... that move may wake the escape dragon. Jordan may battle the consequence instead of practicing the support routine. A stronger spell would keep the demand small, private, and paired with help or a break.`,
-            next: "daily_step3_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Threat",
-              errorType: "power struggle",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Move close and quietly offer, “You can ask for help or a short break. We’ll start with one word afterward.”",
+          "score": 10,
+          "consequence": "Jordan stops talking over the class and watches you. The refusal has not ended, but a less demanding route is available.",
+          "feedback": "You reduced public pressure and cued the plan’s functional communication options.",
+          "wizard": "The volume drops; stay steady.",
+          "next": "daily_step3_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Quietly say, “Take a minute. I’ll check back,” and return to your group.",
+          "score": 5,
+          "consequence": "Jordan stays at the desk but does not touch the paper. The conflict pauses without a clear way back.",
+          "feedback": "Giving space may reduce pressure but leaves the replacement response and first step unspecified.",
+          "wizard": "The pause needs a path.",
+          "next": "daily_step3_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say where others can hear, “You still have to finish, even if you don’t want to.”",
+          "score": 0,
+          "consequence": "Jordan says “No!” again and turns the chair away from the desk. More students notice.",
+          "feedback": "Public insistence increases attention and demand without prompting the planned alternative.",
+          "wizard": "Keep the spotlight small.",
+          "next": "daily_step3_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Prevent",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "plan_drift"
           }
         }
+      }
+    },
+    "daily_step3_supported": {
+      "text": "Jordan has turned back to the page and made a first mark. The next table calls for you, but Jordan points to the writing and asks, “Can you check this with me?” You have a moment to respond before returning to the group.",
+      "hint": "An appropriate bid for support deserves useful follow-through.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "A first foothold"
       },
-
-      daily_step3_supported: {
-        text: `Jordan has now used a help request instead of pushing the page away. You give a brief cue and Jordan says, “Sharks. I know about sharks.” Their pencil pauses over the paper while a student at the next table waves for your help. Jordan has the idea; what happens next depends on whether that small move is noticed and made doable.`,
-        hint: `Reinforce the help request right away, then keep the next writing move small and doable.`,
-        choices: {
-          A: {
-            text: `Say, "Great job asking for help. Pick dog or shark, then write just that first word."`,
-            score: 10,
-            consequence: "Jordan writes an animal name and keeps the paper in front of them. A small successful response is now available to reinforce.",
-            feedback: `This follows the plan. You reinforced the help request and gave Jordan one small step back into writing.`,
-            wizard: `Victory spark! Jordan used the skill, and you helped turn it into action.`,
-            next: "daily_step4_supported",
-            meta: {
-              bipComponent: "Reinforce",
-              mechanism: "Help request",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Sure. You could pick a dog, shark, bird, cat, frog, or snake."`,
-            score: 5,
-            consequence: "Jordan tries a letter and erases it, then looks to you for direction. They are near the task, but unsure what will count.",
-            feedback: `This responds to Jordan's help request, which is a good start. The list may be too broad and can make the decision feel big again. A stronger move would offer two choices and immediately connect the choice to one first word.`,
-            wizard: `Helpful magic, but too many doors open at once. Jordan asked for help, and the support should stay small. A stronger spell would offer two choices, then turn one choice into the first word.`,
-            next: "daily_step4_wobbly",
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Choice making",
-              errorType: "too many choices",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "See, once you ask, this is easy. Next time try that sooner."`,
-            score: 0,
-            consequence: "Jordan tries a letter and erases it, then looks to you for direction. They are near the task, but unsure what will count.",
-            feedback: `This tries to teach a lesson, but it may make the help request feel criticized. If asking for help feels uncomfortable, Jordan may avoid both writing and support next time. A stronger move would praise the ask and guide one small writing step.`,
-            wizard: `Careful. The skill appeared, but the comment may scare it back into hiding. A stronger spell would celebrate the help request and use it to start one small word.`,
-            next: "daily_step4_wobbly",
-            meta: {
-              bipComponent: "Reinforce",
-              mechanism: "Help request",
-              errorType: "punished replacement behavior",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Say, “Yes—show me what you have.” Help with one small writing move and acknowledge the effort.",
+          "score": 10,
+          "consequence": "Jordan shows you the first letter. With a quick prompt, they add another letter and glance up at you.",
+          "feedback": "Jordan already requested a check. You answered it, supported one manageable writing move, and acknowledged the effort.",
+          "wizard": "That request got a real answer.",
+          "next": "daily_step4_supported",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say, “Nice asking. Keep going,” while moving toward the other table.",
+          "score": 5,
+          "consequence": "Jordan nods at the praise, then waits with the pencil above the page as you head to the other table.",
+          "feedback": "You acknowledged the request, but Jordan asked for a check. A brief look and one specific next step would make that request effective.",
+          "wizard": "Praise is nice. The check was the ask.",
+          "next": "daily_step4_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “I saw your start. Try the next part yourself while I help this table,” and walk away.",
+          "score": 0,
+          "consequence": "Jordan watches you leave and sets the pencil down. The requested check did not happen.",
+          "feedback": "Independence is a reasonable goal, but Jordan has asked for help with an unfinished word. A brief response would keep asking useful.",
+          "wizard": "Jordan still needed the check.",
+          "next": "daily_step4_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "Delayed check",
+            "function": "escape",
+            "errorType": "missed help response"
           }
         }
+      }
+    },
+    "daily_step3_wobbly": {
+      "text": "Jordan has settled somewhat but is still doing little writing. The pencil moves between Jordan’s fingers while the rest of the table works. “I’m stuck,” Jordan says quietly. You can offer help without abandoning the group, but a vague reassurance may leave the same problem in place.",
+      "hint": "Acknowledge being stuck and specify the next doable action.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "The pencil pauses"
       },
-
-      daily_step3_wobbly: {
-        text: `Jordan is still seated and has turned back toward the task, but there is no word on the page. “I can't make a whole sentence,” Jordan says, rubbing out a faint pencil mark. Their voice is not raised; they are hovering between a request and another shutdown. The difficult part is distinguishing a tiny first-step opportunity from an invitation to negotiate the whole assignment.`,
-        hint: `Prompt a help request and one small writing step before frustration turns into full refusal.`,
-        choices: {
-          A: {
-            text: `Say, "You can ask for help. Try, 'Can you help me start with one word?'"`,
-            score: 10,
-            consequence: "Jordan writes an animal name and keeps the paper in front of them. A small successful response is now available to reinforce.",
-            feedback: `This follows the plan. You prompted a help request and focused on one small writing step.`,
-            wizard: `Strong recovery. You gave Jordan words to use before frustration took over.`,
-            next: "daily_step4_supported",
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Help request",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Take a breath. You have good ideas, and you can try one small part."`,
-            score: 5,
-            consequence: "Jordan tries a letter and erases it, then looks to you for direction. They are near the task, but unsure what will count.",
-            feedback: `This is warm and may lower emotion, which matters. It still leaves Jordan without the exact words or action to use next. A stronger move would prompt Jordan to ask for help or write one word with support.`,
-            wizard: `A warm breeze, but the magic needs a target. Jordan still needs a concrete move, not only reassurance. A stronger spell would give the help-request words or the one-word starting step.`,
-            next: "daily_step4_wobbly",
-            meta: {
-              bipComponent: "Prevent",
-              mechanism: "Encouragement",
-              errorType: "vague support",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Write a sentence starter on Jordan's paper and tell them to copy the rest when ready.`,
-            score: 0,
-            consequence: "Jordan stands by the bookshelf and the paper remains on the desk. Distance from the assignment is increasing while attention shifts toward the disruption.",
-            feedback: `This gives a lot of adult help, so it may look supportive. The risk is that Jordan escapes the hard part without practicing asking, choosing, or writing a small response. A stronger move would prompt the support request and have Jordan complete one small part.`,
-            wizard: `The pencil moves, but Jordan's skill does not grow much. Too much adult rescue can feed the escape dragon. A stronger spell would help Jordan practice one small response themselves.`,
-            next: "daily_step4_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Adult completes task",
-              errorType: "escape reinforced",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Say, “I can help. Tell me the word you want, and we’ll sound out its first letter together.”",
+          "score": 10,
+          "consequence": "Jordan names an animal and tries its first letter while you help. The request brought an immediate response.",
+          "feedback": "“I’m stuck” is already communication that support is needed. You respond directly and help Jordan make a manageable writing move.",
+          "wizard": "You heard the help request.",
+          "next": "daily_step4_supported",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Offer, “Try one more minute and I’ll help if you still need it.”",
+          "score": 5,
+          "consequence": "Jordan watches you head to the next table. The pencil stays down while they wait for the promised help.",
+          "feedback": "Offering help later is understandable while supervising the group, but Jordan needs an immediate usable first step or brief support.",
+          "wizard": "The help is still on its way.",
+          "next": "daily_step4_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “Look at the sentence starter again. You have everything you need,” and return to the group.",
+          "score": 0,
+          "consequence": "Jordan rereads the starter, then slides the paper away. They still cannot get the word onto the page.",
+          "feedback": "The starter alone has not solved the problem. This misses Jordan’s stated need for help and makes avoidance more likely.",
+          "wizard": "The starter needed a helper.",
+          "next": "daily_step4_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "Redirect without help",
+            "function": "escape",
+            "errorType": "missed help response"
           }
         }
+      }
+    },
+    "daily_step3_escalated": {
+      "text": "Jordan has turned away from the writing materials and is protesting loudly enough to distract a classmate. The paper is still on the desk; writing is not happening. You are also responsible for the rest of the group. A calm response can begin recovery, but it may take more than one exchange.",
+      "hint": "Do not expect instant compliance; offer a clear, private route back.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "The work stops"
       },
-
-      daily_step3_escalated: {
-        text: `Jordan puts their head down and pushes the page farther away. A nearby classmate whispers about the interruption, and Jordan says, “Stop looking at me.” The audience is becoming part of the problem. Nothing unsafe has happened, but Jordan is not using a help or break request. You have an opportunity to reopen a private, manageable path to the task.`,
-        hint: `Avoid a public power struggle. Stay calm, offer a short break, and include a clear return to one small writing step.`,
-        choices: {
-          A: {
-            text: `Quietly say, "You can take a short break. Then we will come back and write one word."`,
-            score: 10,
-            consequence: "Jordan tries a letter and erases it, then looks to you for direction. They are near the task, but unsure what will count.",
-            feedback: `This follows the plan. You stayed calm, avoided public correction, and gave Jordan a break with a clear return to writing.`,
-            wizard: `Steady shield. You protected the routine without turning it into a public battle.`,
-            next: "daily_step4_wobbly",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Break with return",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "I can see this is frustrating. Take a little space and we can talk soon."`,
-            score: 5,
-            consequence: "Jordan stands by the bookshelf and the paper remains on the desk. Distance from the assignment is increasing while attention shifts toward the disruption.",
-            feedback: `This validates Jordan and may help the moment cool down. The missing piece is a planned return to writing or a replacement response to practice. A stronger move would offer a short break and name the one small step Jordan will come back to.`,
-            wizard: `You softened the moment, but the return path is missing from the map. Space without a next step can turn into escape. A stronger spell would include a short break and one small writing step after it.`,
-            next: "daily_step4_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Space",
-              errorType: "missing return path",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "Please sit up so we can finish this and keep the class moving."`,
-            score: 0,
-            consequence: "Jordan stands by the bookshelf and the paper remains on the desk. Distance from the assignment is increasing while attention shifts toward the disruption.",
-            feedback: `This is a common classroom move, but it puts attention on compliance instead of support. Public pressure can make escape from writing more valuable for Jordan. A stronger move would reduce the audience, offer help or a short break, and return to one small step.`,
-            wizard: `The spotlight grows too bright. Jordan may work harder to escape the attention, not just the writing. A stronger spell would lower the audience and offer the planned support path.`,
-            next: "daily_step4_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Public pressure",
-              errorType: "public correction",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Lower your voice and offer, “Ask for a short break or help. Then we’ll try one word together.”",
+          "score": 10,
+          "consequence": "Jordan becomes quieter and looks toward you, but does not return to the writing yet. The next step remains delicate.",
+          "feedback": "This is plan-aligned and begins recovery without promising an instant return.",
+          "wizard": "Recovery can start small.",
+          "next": "daily_step4_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Tell Jordan, “You can sit quietly until you feel ready,” and move away.",
+          "score": 5,
+          "consequence": "Jordan stops speaking loudly but continues to avoid the paper. The plan’s help-or-break route remains unused.",
+          "feedback": "Less attention may quiet the moment, but it does not provide the planned replacement response.",
+          "wizard": "Quiet isn’t the whole goal.",
+          "next": "daily_step4_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “We’ll talk about a break after you show me that you’ve tried writing something.”",
+          "score": 0,
+          "consequence": "Jordan pushes the chair back and says, “I can’t!” The break or help option is still out of reach.",
+          "feedback": "Making access to the planned break or help contingent on writing can keep refusal going. Offer the planned communication route now.",
+          "wizard": "That puts the bridge after the hurdle.",
+          "next": "daily_step4_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Teach",
+            "mechanism": "Help contingent on work",
+            "function": "escape",
+            "errorType": "contingency mismatch"
           }
         }
+      }
+    },
+    "daily_step4_supported": {
+      "text": "Jordan has either made another small writing move or started a word with your help. The sentence is still unfinished. Another child needs a quick check, and Jordan watches you for what happens next. This is a chance to notice the specific request or writing attempt while keeping the class moving.",
+      "hint": "Reinforce the useful response, then make the next step attainable.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "Keep the momentum"
       },
-
-      daily_step4_supported: {
-        text: `Jordan writes “shark,” then looks up. One word is on the paper—much less than the class assignment, but it is a real entry into the work. Jordan asks, “Does that count?” Another student needs a quick answer from you. The next choice could reinforce Jordan's initiation or accidentally raise the demand again before it has a chance to grow.`,
-        hint: `Reinforce the first small step, then give one simple next move or a way to ask for help.`,
-        choices: {
-          A: {
-            text: `Say, "You wrote the first word. That is the start. Now add 'is cool' or ask for help."`,
-            score: 10,
-            consequence: "Jordan points to a starter and asks for the next bit of help. The work is still incomplete, but they are using the plan to stay with it.",
-            feedback: `This follows the plan. You reinforced the first small step and gave Jordan a simple next move.`,
-            wizard: `Bright spark! One word became the bridge to the next part of the sentence.`,
-            next: "daily_step5_supported",
-            meta: {
-              bipComponent: "Reinforce",
-              mechanism: "Small first step",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Good start. Keep going while I check on another student."`,
-            score: 5,
-            consequence: "Jordan returns to the paper and considers a single word. The opening is small and could close if the next direction grows too quickly.",
-            feedback: `This gives praise, which is helpful. It also removes support before Jordan has a clear next step, so the task may feel big again. A stronger move would reinforce the first word and give one simple next phrase or help option.`,
-            wizard: `The bridge appeared, but then stretched a little too far. Jordan may still need one more stepping stone. A stronger spell would praise the first word and give one simple next phrase.`,
-            next: "daily_step5_wobbly",
-            meta: {
-              bipComponent: "Reinforce",
-              mechanism: "Praise",
-              errorType: "demand too large",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "Okay, that's something. Now try to make it a real sentence."`,
-            score: 0,
-            consequence: "Jordan returns to the paper and considers a single word. The opening is small and could close if the next direction grows too quickly.",
-            feedback: `This acknowledges the work, but the tone may make the small step feel insufficient. If progress contacts criticism, Jordan may avoid trying again. A stronger move would clearly reinforce the first word and keep the next step small.`,
-            wizard: `Ouch. The tiny spark dims when progress meets criticism. Jordan may decide the first step was not worth trying. A stronger spell would reinforce the start and offer a small next move.`,
-            next: "daily_step5_wobbly",
-            meta: {
-              bipComponent: "Reinforce",
-              mechanism: "Criticism",
-              errorType: "punished progress",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Point to the new letter or word and say, “You got started and asked for help. Try one more small piece.”",
+          "score": 10,
+          "consequence": "Jordan adds a small piece to the writing before you check the other table. The sentence is not finished.",
+          "feedback": "You name the meaningful action, reinforce it, and offer a manageable next writing step.",
+          "wizard": "A small step gets noticed.",
+          "next": "daily_step5_supported",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Smile and say, “Good job!” before moving to the other student.",
+          "score": 5,
+          "consequence": "Jordan keeps the pencil near the page but pauses when you move away. The next writing move is unclear.",
+          "feedback": "Praise is positive, but nonspecific feedback misses the exact skill and next action.",
+          "wizard": "Name what worked.",
+          "next": "daily_step5_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “Great, you’ve started. I think you can work through the rest without me,” and help the other table.",
+          "score": 0,
+          "consequence": "Jordan studies the remaining blank space and sets the pencil down. The next step feels too big again.",
+          "feedback": "This sounds encouraging, but it removes the small-step support before Jordan can continue independently.",
+          "wizard": "The next leap is too big.",
+          "next": "daily_step5_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "Premature independence",
+            "function": "escape",
+            "errorType": "missed active ingredient"
           }
         }
+      }
+    },
+    "daily_step4_wobbly": {
+      "text": "Jordan is quieter now, but the writing is still stalled. Depending on the last exchange, help was promised, a request went unanswered, or Jordan only just looked back toward the materials. Jordan glances between you and the page and says, “Could you help with one word?” Your next move can make that request useful.",
+      "hint": "Respond to the opening with specific help and timely acknowledgment.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "A narrow opening"
       },
-
-      daily_step4_wobbly: {
-        text: `Jordan has made a partial attempt and stopped. The eraser is rubbing a small gray hole into the page. “I'm probably doing this wrong,” they say. They have not abandoned the task, but they are watching for your response. A precise prompt and timely encouragement could still move the writing forward; a vague direction could leave Jordan stalled.`,
-        hint: `Reduce perfection pressure. Bring Jordan back to one small step and make help available.`,
-        choices: {
-          A: {
-            text: `Say, "Starting is what matters. Write one word first, and I can help with the sentence."`,
-            score: 10,
-            consequence: "Jordan points to a starter and asks for the next bit of help. The work is still incomplete, but they are using the plan to stay with it.",
-            feedback: `This follows the plan. You reduced the pressure to be perfect and brought Jordan back to one small step.`,
-            wizard: `Good recovery. You made the task safe enough for Jordan to try again.`,
-            next: "daily_step5_supported",
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Small first step",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "It doesn't have to be perfect. Think for a moment and try again."`,
-            score: 5,
-            consequence: "Jordan returns to the paper and considers a single word. The opening is small and could close if the next direction grows too quickly.",
-            feedback: `This lowers perfection pressure, which is useful. It still leaves the next action unclear and does not prompt help. A stronger move would pair reassurance with one word to write or a help request to use.`,
-            wizard: `The message is kind, but the next step is still hiding in the mist. Jordan needs a tiny target. A stronger spell would say what to write first or how to ask for help.`,
-            next: "daily_step5_wobbly",
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Encouragement",
-              errorType: "vague support",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "You had a word started, so stop erasing and just finish it."`,
-            score: 0,
-            consequence: "Jordan turns away again and the last writing minutes slip past. The teacher has to decide whether to preserve a return step or let the task disappear.",
-            feedback: `This may be meant to encourage follow-through, but it adds criticism when Jordan is already unsure. That can make writing feel riskier and increase avoidance. A stronger move would reduce the pressure and guide Jordan back to one small word with help available.`,
-            wizard: `The spell backfires. Jordan may worry more about mistakes than about starting. A stronger spell would make the next attempt feel safe and small.`,
-            next: "daily_step5_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Criticism",
-              errorType: "increased pressure",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Answer, “Yes.” Help Jordan choose one word and begin it, then acknowledge the effort right away.",
+          "score": 10,
+          "consequence": "Jordan begins the word with your help. You name the effort, and Jordan keeps the pencil on the page.",
+          "feedback": "Jordan has already asked for help. You respond to the request, provide a small writing step, and reinforce the attempt.",
+          "wizard": "That request paid off.",
+          "next": "daily_step5_supported",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say, “Good asking. Pick a word while I finish with this group, and I’ll come back.”",
+          "score": 5,
+          "consequence": "Jordan watches you move away and rests the pencil on the page. The requested help is still waiting.",
+          "feedback": "You acknowledge the request but delay the support needed to start a word. A brief response now would make help-seeking useful.",
+          "wizard": "The request is still waiting.",
+          "next": "daily_step5_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “You know what to write about. Try it first, then I can help if it’s still hard.”",
+          "score": 0,
+          "consequence": "Jordan turns the page slightly away and puts the pencil down. The direct request did not produce help.",
+          "feedback": "Requiring another independent attempt after Jordan asks for help misses the planned communication response.",
+          "wizard": "Help is behind another hurdle.",
+          "next": "daily_step5_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "Delay after help request",
+            "function": "escape",
+            "errorType": "missed help response"
           }
         }
+      }
+    },
+    "daily_step4_escalated": {
+      "text": "Jordan is still avoiding the writing, and the exchange has distracted a few classmates. The paper and pencil remain available, even if Jordan is turned away from them. You need to continue teaching the group while making a quiet, workable help-or-break option available to Jordan.",
+      "hint": "A steady, private prompt may start recovery even if the task is not completed.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "Writing is on hold"
       },
-
-      daily_step4_escalated: {
-        text: `Jordan is by the bookshelf rather than the desk. The page remains blank and the class is midway through writing. Jordan's voice is quieter now, but distance from the task is doing the work of escape. A peer watches from the next row. You need to handle this privately and make the return step small, rather than trading calm for complete removal of the assignment.`,
-        hint: `Stay calm and private. Redirect to the planned help or break option with a small return step.`,
-        choices: {
-          A: {
-            text: `Walk nearby and quietly say, "You can take a short break here, then come back for one word."`,
-            score: 10,
-            consequence: "Jordan returns to the paper and considers a single word. The opening is small and could close if the next direction grows too quickly.",
-            feedback: `This follows the plan. You stayed private, allowed a short break, and kept the return expectation small and clear.`,
-            wizard: `Calm footsteps. You brought the path to Jordan without chasing or arguing.`,
-            next: "daily_step5_wobbly",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Break with return",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Take some space by the shelf, and we will try writing again later."`,
-            score: 5,
-            consequence: "Jordan turns away again and the last writing minutes slip past. The teacher has to decide whether to preserve a return step or let the task disappear.",
-            feedback: `This avoids arguing, which can keep the room calmer. The missing piece is practicing the replacement response or returning to one small writing step. A stronger move would make the break short and connect it to a specific return step.`,
-            wizard: `The battle paused, but the mission is still unresolved. Space can become escape if there is no return path. A stronger spell would pair the break with one small writing move afterward.`,
-            next: "daily_step5_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Space",
-              errorType: "delayed re-entry",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `From across the room, say, "Jordan, come back so we can finish writing."`,
-            score: 0,
-            consequence: "Jordan turns away again and the last writing minutes slip past. The teacher has to decide whether to preserve a return step or let the task disappear.",
-            feedback: `This may feel efficient, but it makes the interaction public. Attention and pressure can increase Jordan's need to escape the writing task. A stronger move would approach privately and offer a short break with a clear return to one word.`,
-            wizard: `The spotlight flashes. Jordan may now defend against the attention instead of returning to writing. A stronger spell would move close, stay private, and offer the small return step.`,
-            next: "daily_step5_escalated",
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Public correction",
-              errorType: "public pressure",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Quietly offer, “Would you like help with one word or a short break first?” Stay nearby to honor the answer.",
+          "score": 10,
+          "consequence": "Jordan becomes quieter and turns toward the desk. They have not requested help or resumed writing yet.",
+          "feedback": "You offered the documented alternatives and remained available to follow through.",
+          "wizard": "An opening—not a miracle.",
+          "next": "daily_step5_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say softly, “We can talk when you’re calmer,” and return to instruction.",
+          "score": 5,
+          "consequence": "Jordan stops calling out but keeps distance from the writing materials. No return step has been offered.",
+          "feedback": "Calmness helps, but waiting alone does not prompt the planned communication or return step.",
+          "wizard": "The plan still needs a cue.",
+          "next": "daily_step5_wobbly",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “We’re running out of writing time. Come back to the desk and try to finish before cleanup.”",
+          "score": 0,
+          "consequence": "Jordan says, “I can’t,” and turns away again. The full task is still the focus of the exchange.",
+          "feedback": "A deadline and whole-task direction can increase pressure without offering the planned help or break route.",
+          "wizard": "The clock doesn’t shrink the task.",
+          "next": "daily_step5_escalated",
+          "ending": null,
+          "meta": {
+            "bipComponent": "Reinforce",
+            "mechanism": "Time pressure without support",
+            "function": "escape",
+            "errorType": "plan drift"
           }
         }
+      }
+    },
+    "daily_step5_supported": {
+      "text": "Writing time is ending. Jordan has made at least one supported writing move, though the sentence may still be unfinished. Other students are putting pencils away. You have one last chance to reinforce the useful communication or small start without turning the unfinished sentence into another confrontation.",
+      "hint": "Keep the final step small and acknowledge useful communication or engagement.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "The last minute"
       },
-
-      daily_step5_supported: {
-        text: `Jordan has a first word and looks ready to use the sentence starter. “Can you help with the next part?” they ask. The group at the other table is calling for you again. Jordan has already practiced the replacement skill, and this final moment tests whether help and specific reinforcement arrive while engagement is still available.`,
-        hint: `This is a replacement behavior success. Reinforce asking for help and keep the finish line simple.`,
-        choices: {
-          A: {
-            text: `Say, "Yes. Great asking for help. Add two words, then you are done with this sentence."`,
-            score: 10,
-            ending: "STRONG",
-            consequence: "Jordan accepts the brief help or return cue and orients back to the writing page. The next manageable response is available even if the sentence is not finished.",
-            feedback: `This follows the plan. You reinforced the help request and kept the final writing step small and clear.`,
-            wizard: `Mission magic! Jordan asked for help, stayed with the task, and had a clear finish line.`,
-            meta: {
-              bipComponent: "Reinforce",
-              mechanism: "Help request",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Yes, I can help. Let's think of a few ways to make the sentence stronger."`,
-            score: 5,
-            ending: "MIXED",
-            consequence: "Jordan stays near the materials, but the exact help or return step is still fuzzy. Progress is possible; another precise prompt would make it more reliable.",
-            feedback: `This honors the help request, which is positive. It also expands the writing task when Jordan needs a simple finish. A stronger move would reinforce asking for help and give one small completion step.`,
-            wizard: `Helpful energy, but too many sparkles at the finish line. Jordan asked for help, not a bigger writing challenge. A stronger spell would praise the ask and give one simple ending step.`,
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Help request",
-              errorType: "task expanded",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "I helped you start, so now try to finish the rest independently."`,
-            score: 0,
-            ending: "FRAGILE",
-            consequence: "Jordan remains disconnected from writing and the routine moves on. The modeled branch shows how the task may be avoided without a successful replacement request.",
-            feedback: `This sounds like building independence, but it may punish the help request. If asking for help leads to less support, Jordan may avoid asking and avoid writing. A stronger move would reinforce the request and shape independence through one small supported step.`,
-            wizard: `The door closes just as Jordan knocks. Next time, they may not ask. A stronger spell would reward the help request and fade support one tiny step at a time.`,
-            meta: {
-              bipComponent: "Reinforce",
-              mechanism: "Help request",
-              errorType: "blocked help request",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Notice the specific help request or written word, and say, “That was a strong start. We’ll use the same step tomorrow.”",
+          "score": 10,
+          "consequence": "Jordan puts the pencil away after a specific acknowledgment of the help request or writing attempt. The sentence may remain unfinished.",
+          "feedback": "You reinforced an observable plan-aligned response without claiming the assignment was completed.",
+          "wizard": "A strong ending can be a beginning.",
+          "next": null,
+          "ending": "STRONG",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say, “Good job today,” and begin collecting papers.",
+          "score": 5,
+          "consequence": "Jordan gives you the page and joins cleanup. The effort goes unnamed, though some writing happened.",
+          "feedback": "General praise misses a chance to reinforce the specific replacement or re-engagement response.",
+          "wizard": "Name the win next time.",
+          "next": null,
+          "ending": "MIXED",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “You made a start, but next time let’s see if you can finish without stopping.”",
+          "score": 0,
+          "consequence": "Jordan glances at the unfinished sentence and looks away. The final message focuses on what remains.",
+          "feedback": "Even after progress, this emphasizes completion rather than reinforcing the requested help or small writing effort.",
+          "wizard": "Name the win before the next goal.",
+          "next": null,
+          "ending": "FRAGILE",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "Outcome pressure",
+            "function": "escape",
+            "errorType": "missed reinforcement opportunity"
           }
         }
+      }
+    },
+    "daily_step5_wobbly": {
+      "text": "Cleanup has begun. Jordan is near the materials, but progress is uncertain: a request may still be unanswered, a first step may have stalled, or Jordan may only just be turning back. The last exchange can offer useful help without assuming the writing has been finished.",
+      "hint": "A small beginning and an acknowledged request can still matter.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "One last opening"
       },
-
-      daily_step5_wobbly: {
-        text: `Jordan is close to rejoining writing, but the attempt is fragile. The paper is nearby and they have either selected a topic, used a help request, or returned after a brief pause. “Just one word?” they ask, checking how much is expected. The class is approaching the end of the routine. Your next response could make the small step count or make the demand feel too large again.`,
-        hint: `Keep the demand small and specific. A clear first word with help is more plan-aligned than a vague reduced demand.`,
-        choices: {
-          A: {
-            text: `Say, "First write one word. Then I will help you add two more words."`,
-            score: 10,
-            ending: "STRONG",
-            consequence: "Jordan accepts the brief help or return cue and orients back to the writing page. The next manageable response is available even if the sentence is not finished.",
-            feedback: `This follows the plan. You kept the demand small and gave Jordan a supported path back to writing.`,
-            wizard: `A strong landing. You made the final step feel possible instead of overwhelming.`,
-            meta: {
-              bipComponent: "Teach",
-              mechanism: "Small first step",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Just do what you can before the timer ends, and we will call it progress."`,
-            score: 5,
-            ending: "MIXED",
-            consequence: "Jordan stays near the materials, but the exact help or return step is still fuzzy. Progress is possible; another precise prompt would make it more reliable.",
-            feedback: `This lowers pressure and sounds supportive. The target is still blurry, so Jordan may not know what response will count. A stronger move would define one small writing step and offer help to complete it.`,
-            wizard: `The pressure drops, but the target is blurry. Jordan still needs a clear mark to aim for. A stronger spell would name the one small step and offer help getting there.`,
-            meta: {
-              bipComponent: "Prevent",
-              mechanism: "Reduced pressure",
-              errorType: "unclear target",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "Yes, the assignment is still one full sentence like everyone else."`,
-            score: 0,
-            ending: "FRAGILE",
-            consequence: "Jordan remains disconnected from writing and the routine moves on. The modeled branch shows how the task may be avoided without a successful replacement request.",
-            feedback: `This restates the expectation, but it brings back the full demand without support. For Jordan, that can make escape from writing more valuable. A stronger move would keep the expectation small enough to start and reinforce the first step.`,
-            wizard: `The mountain grows again. Jordan may see the whole sentence as too much to climb. A stronger spell would shrink the climb to one word and reinforce that step.`,
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Comparison",
-              errorType: "public pressure",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Offer help with one word, then say exactly what Jordan did well when they attempt it.",
+          "score": 10,
+          "consequence": "With brief help, Jordan tries a letter or word before putting the materials away. You identify that small attempt.",
+          "feedback": "You paired feasible assistance with specific reinforcement at the available opportunity.",
+          "wizard": "Small steps still count.",
+          "next": null,
+          "ending": "MIXED",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say, “We’ll work on this tomorrow,” and start collecting materials.",
+          "score": 5,
+          "consequence": "Jordan puts the paper away without another attempt. The moment is calm, but the requested help or next step remains unresolved.",
+          "feedback": "Postponing avoids pressure, yet the skill-building opportunity remains incomplete.",
+          "wizard": "A quiet ending, not quite a win.",
+          "next": null,
+          "ending": "FRAGILE",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “I’ll put this on top of your papers so you remember to finish it first tomorrow.”",
+          "score": 0,
+          "consequence": "Jordan pushes the paper to the bottom of the pile. No help or small return step is practiced.",
+          "feedback": "A reminder about finishing does not address the help or first-step difficulty Jordan is communicating.",
+          "wizard": "A reminder isn’t the missing step.",
+          "next": null,
+          "ending": "FRAGILE",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "Finish reminder without support",
+            "function": "escape",
+            "errorType": "missed active ingredient"
           }
         }
+      }
+    },
+    "daily_step5_escalated": {
+      "text": "The class is transitioning, but Jordan is still away from the writing task. The paper remains unfinished, and the teacher must keep the next routine moving. A realistic final response can reduce pressure and preserve access to help without insisting on a completed sentence in the last seconds.",
+      "hint": "Protect the next safe opportunity for appropriate communication and supported return.",
+      "meta": {
+        "fidelityTargetKey": "fictional_demo_writing_support",
+        "sceneLabel": "Transition is coming"
       },
-
-      daily_step5_escalated: {
-        text: `Jordan is not yet writing. They may be near the bookshelf or seated with their head down; the page is still mostly blank. Your class is moving toward the next activity. The rush creates pressure to obtain compliance quickly, but the fictional plan does not call for an argument or a penalty. The last decision is about keeping a workable return path alive.`,
-        hint: `Even near the end, avoid pressure. Offer a calm break-and-return path with one small writing step.`,
-        choices: {
-          A: {
-            text: `Quietly say, "Take a short break. Then come back and write one word with help."`,
-            score: 10,
-            ending: "MIXED",
-            consequence: "Jordan accepts the brief help or return cue and orients back to the writing page. The next manageable response is available even if the sentence is not finished.",
-            feedback: `This follows the plan. Even during escalation, you stayed calm, kept it private, and gave Jordan a small way back.`,
-            wizard: `A calm shield at the finish. You did not win by force; you kept the path open.`,
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Break with return",
-              errorType: "none",
-              function: "escape"
-            }
-          },
-          B: {
-            text: `Say, "Sit quietly for now, and we will problem-solve writing later."`,
-            score: 5,
-            ending: "FRAGILE",
-            consequence: "Jordan stays near the materials, but the exact help or return step is still fuzzy. Progress is possible; another precise prompt would make it more reliable.",
-            feedback: `This may reduce disruption in the moment, which is understandable. It also lets writing end without practicing help, a break request, or a small return step. A stronger move would keep things calm while still asking for one tiny response before moving on.`,
-            wizard: `The room gets quieter, but the skill stays unpracticed. The escape dragon gets a small snack. A stronger spell would keep calm and still practice one tiny return step.`,
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Delay",
-              errorType: "avoidance without practice",
-              function: "escape"
-            }
-          },
-          C: {
-            text: `Say, "Since writing did not get done, we will use recess time to finish it."`,
-            score: 0,
-            ending: "FRAGILE",
-            consequence: "Jordan remains disconnected from writing and the routine moves on. The modeled branch shows how the task may be avoided without a successful replacement request.",
-            feedback: `This may seem like a logical consequence, but after escalation it can strengthen the power struggle. Jordan still does not practice asking for help, taking a short break, or returning to one small writing step. A stronger move would keep the return path small and reinforce any movement back toward writing.`,
-            wizard: `The dragon claims the treasure. Jordan may remember the battle more than the writing plan. A stronger spell would keep the return path tiny and reinforce the next step toward writing.`,
-            meta: {
-              bipComponent: "Respond",
-              mechanism: "Consequence",
-              errorType: "power struggle",
-              function: "escape"
-            }
+      "choices": {
+        "A": {
+          "text": "Quietly offer help or a brief planned break, and identify one small writing step for the next opportunity.",
+          "score": 10,
+          "consequence": "Jordan turns toward the materials and becomes quieter. A possible return has begun, but no writing attempt is established.",
+          "feedback": "You kept the response aligned with the plan without pretending the whole episode resolved.",
+          "wizard": "A path remains open.",
+          "next": null,
+          "ending": "MIXED",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "none"
+          }
+        },
+        "B": {
+          "text": "Say, “We’ll leave it for now,” and move the class into the next routine.",
+          "score": 5,
+          "consequence": "Jordan joins the transition without further argument. The writing difficulty and missing help routine remain unresolved.",
+          "feedback": "Moving on preserves the routine but misses the planned communication and return instruction.",
+          "wizard": "A pause isn’t a practiced skill.",
+          "next": null,
+          "ending": "FRAGILE",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "small_step_help_break_and_reinforcement",
+            "function": "escape",
+            "errorType": "partial_implementation"
+          }
+        },
+        "C": {
+          "text": "Say, “You can start the next activity after you finish at least part of this sentence.”",
+          "score": 0,
+          "consequence": "Jordan says, “No,” and remains away from the page while classmates transition.",
+          "feedback": "Making the next activity conditional on writing does not supply the planned help or break response during escalation.",
+          "wizard": "Another hurdle won’t help here.",
+          "next": null,
+          "ending": "FRAGILE",
+          "meta": {
+            "bipComponent": "Respond",
+            "mechanism": "Conditional access to next activity",
+            "function": "escape",
+            "errorType": "contingency mismatch"
           }
         }
       }
     }
-  });
+  }
+});
 })();
