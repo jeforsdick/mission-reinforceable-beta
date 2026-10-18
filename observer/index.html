@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/assets/site/site.css">
   <link rel="stylesheet" href="/observer/observer.css?v=20261018-mobile-review-outcomes-1">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script type="module" src="/observer/observer.js?v=20261018-outcomes-implemented-only-1"></script>
+  <script type="module" src="/observer/observer.js?v=20261018-manual-start-v1"></script>
 </head>
 <body>
   <div class="site-shell">
@@ -69,6 +69,8 @@
           <a href="#my-schedule">My Schedule</a>
           <a id="research-admin-return" href="/research-admin/" hidden>← Research Admin</a>
         </nav>
+
+        <section class="observer-card" aria-label="Manual observation fallback"><div class="section-heading"><div><p class="eyebrow">Backup collection</p><h2>Start without a scheduled session</h2></div></div><p>For scheduler problems only. Choose a case you are already assigned to observe. Your account, clearance, case, and study phase will be verified.</p><button id="manual-options-button" class="secondary-button" type="button">Find Authorized Cases</button><div id="manual-controls" hidden><label>Case<select id="manual-case-select"></select></label><label>Why are you starting without the scheduler?<textarea id="manual-reason" rows="2" maxlength="400" placeholder="Describe the scheduling issue (at least 10 characters)"></textarea></label><button id="manual-start-button" class="primary-button" type="button">Continue to Observation Setup</button></div><p id="manual-message" class="message" role="status"></p></section>
 
         <section id="my-schedule" class="observer-card">
           <div class="section-heading">
