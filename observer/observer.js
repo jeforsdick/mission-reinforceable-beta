@@ -353,20 +353,20 @@ function markAwayIntervals(intervals,fromElapsed,toElapsed) {
   return marked;
 }
 function startCollectionState(record,fidelityOutcomes={},fidelityOpportunities=[]) {
-  const savedElapsed=Math.min(REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
+  const savedElapsed=Math.min(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds,Math.max(0,Number(record?.elapsed_seconds||0)));
   const parsedStart=Date.parse(record?.started_at||"");
   const startedAtMs=Number.isFinite(parsedStart) ? parsedStart : Date.now()-(savedElapsed*1000);
   const wallElapsed=Math.min(
-    REAL_SESSION.durationSeconds,
+    isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds,
     Math.max(savedElapsed,Math.max(0,Math.floor((Date.now()-startedAtMs)/1000)))
   );
   const intervals=normalizeIntervals(record?.interval_scores||[]);
   const awayMarked=markAwayIntervals(intervals,savedElapsed,wallElapsed);
-  const activeIndex=Math.min(REAL_SESSION.intervalCount-1,Math.floor(wallElapsed/REAL_SESSION.intervalSeconds));
+  const activeIndex=Math.min((isPractice()?PRACTICE_INTERVALS:REAL_SESSION.intervalCount)-1,Math.floor(wallElapsed/REAL_SESSION.intervalSeconds));
   return {
     savedElapsed,
     startedAtMs,
-    endedAt:new Date(startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString(),
+    endedAt:new Date(startedAtMs+((isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds)*1000)).toISOString(),
     fidelityScores:{...(record?.fidelity_scores||{})},
     fidelityOutcomes:{...(fidelityOutcomes||{})},
     fidelityOpportunities:[...(fidelityOpportunities||record?.fidelity_opportunities||[])],
@@ -441,14 +441,15 @@ function tick() {
   finalizeBoundaryThrough(index);
   $("elapsed-clock").textContent=formatClock(elapsed);
   $("interval-number").textContent=String(index+1);
+  $("interval-total").textContent=String(isPractice()?PRACTICE_INTERVALS:REAL_SESSION.intervalCount);
   $("target-occurred").classList.toggle("marked",collection.intervals[index]==="occurred");
   const within=elapsed%REAL_SESSION.intervalSeconds;
-  $("interval-clock").textContent=elapsed>=REAL_SESSION.durationSeconds?"00:00":formatClock(within===0?REAL_SESSION.intervalSeconds:REAL_SESSION.intervalSeconds-within);
-  $("finish-collection").disabled=!isPractice() && elapsed<REAL_SESSION.durationSeconds;
+  $("interval-clock").textContent=elapsed>=(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds)?"00:00":formatClock(within===0?REAL_SESSION.intervalSeconds:REAL_SESSION.intervalSeconds-within);
+  $("finish-collection").disabled=elapsed<(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds);
   $("finish-collection").textContent=elapsed<REAL_SESSION.durationSeconds
     ? (isPractice() ? "End & Review Practice" : `End & Review at 30:00 (${formatClock(REAL_SESSION.durationSeconds-elapsed)} left)`)
     : "End & Review Observation";
-  if (elapsed>=REAL_SESSION.durationSeconds) finishCollection();
+  if (elapsed>=(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds)) finishCollection();
 }
 function stopTimer() {
   if (timer) clearInterval(timer);
@@ -617,7 +618,7 @@ function finalizeCompletedIntervals() {
 function finishCollection() {
   if (!collection || elapsedSeconds()<(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds)) return;
   stopTimer();
-  collection.savedElapsed=isPractice()?elapsedSeconds():REAL_SESSION.durationSeconds;
+  collection.savedElapsed=isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds;
   collection.endedAt=new Date(collection.startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString();
   finalizeCompletedIntervals();
   syncFidelityRollups(true);
@@ -800,7 +801,7 @@ function handleCollectorVisibilityChange() {
   }
 
   tick();
-  if (elapsedSeconds()<REAL_SESSION.durationSeconds && !timer) timer=setInterval(tick,250);
+  if (elapsedSeconds()<(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds) && !timer) timer=setInterval(tick,250);
 }
 document.addEventListener("visibilitychange",handleCollectorVisibilityChange);
 window.addEventListener("pagehide",()=>{
