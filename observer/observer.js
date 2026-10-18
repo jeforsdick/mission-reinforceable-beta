@@ -523,8 +523,8 @@ function renderFidelity() {
       (event.implementation==="implemented"?'<div class="fidelity-outcome-actions">' : '<div class="fidelity-outcome-actions"><small>Desired outcome: Not applicable</small>') +
       (event.implementation==="implemented"?'<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="yes" class="'+(event.desired_outcome==="yes"?"selected":"")+'">Desired Outcome: Yes</button>' +
       '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="no" class="'+(event.desired_outcome==="no"?"selected":"")+'">No</button>' +
-      '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="unclear" class="'+(event.desired_outcome==="unclear"?"selected":"")+'">Not clear</button>' +
-      ':'') + '</div>' +
+      '<button type="button" data-opportunity-outcome="'+event.event_id+'" data-outcome="unclear" class="'+(event.desired_outcome==="unclear"?"selected":"")+'">Not clear</button>'
+      : '') + '</div>' +
       '<button type="button" class="opportunity-remove" data-opportunity-remove="'+event.event_id+'" aria-label="Remove this opportunity">×</button>' +
       '</div>'
     ).join("");
