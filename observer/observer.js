@@ -22,6 +22,8 @@ const PRACTICE_TARGETS = [
 {id:"sam-reinforce",domain:"Reinforce",description:"After an appropriate request or first observable return to work, promptly acknowledge and support the response."},
 {id:"sam-respond",domain:"Respond",description:"During disengagement, respond calmly and privately and offer a small achievable step back to work without public correction."}
 ];
+const PRACTICE_SECONDS=292;
+const PRACTICE_INTERVALS=20;
 const SAM_BIP = {
   summary:"Simulated BIP designed for scoring practice with the 4:52 Sam classroom video. It is not the actual student's behavior plan.",
   hypothesis:"Training hypothesis only: work-start demands may be associated with disengagement. The student's behavioral function is not established by this video.",
@@ -407,16 +409,16 @@ async function beginCollection() {
   renderFidelity();
   tick();
   if (collection.awayMarked>0) queueSave();
-  if (elapsedSeconds()<REAL_SESSION.durationSeconds) timer=setInterval(tick,250);
+  if (elapsedSeconds()<(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds)) timer=setInterval(tick,250);
 }
 
 function elapsedSeconds() {
   if (!collection) return 0;
   const wallElapsed=Math.max(0,Math.floor((Date.now()-collection.startedAtMs)/1000));
-  return Math.min(REAL_SESSION.durationSeconds,Math.max(collection.savedElapsed,wallElapsed));
+  return Math.min(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds,Math.max(collection.savedElapsed,wallElapsed));
 }
 function currentIntervalIndex() {
-  return Math.min(REAL_SESSION.intervalCount-1,Math.floor(elapsedSeconds()/REAL_SESSION.intervalSeconds));
+  return Math.min((isPractice()?PRACTICE_INTERVALS:REAL_SESSION.intervalCount)-1,Math.floor(elapsedSeconds()/REAL_SESSION.intervalSeconds));
 }
 function finalizeBoundaryThrough(activeIndex) {
   if (collection.lastInterval<0) collection.lastInterval=activeIndex;
@@ -608,12 +610,12 @@ async function saveDraft() {
   return !hasError;
 }
 function finalizeCompletedIntervals() {
-  for (let i=0;i<REAL_SESSION.intervalCount;i++) {
+  for (let i=0;i<(isPractice()?PRACTICE_INTERVALS:REAL_SESSION.intervalCount);i++) {
     if (!collection.intervals[i]) collection.intervals[i]=collection.notObserved?"not_observed":collection.continuing?"occurred":"did_not_occur";
   }
 }
 function finishCollection() {
-  if (!collection || (!isPractice() && elapsedSeconds()<REAL_SESSION.durationSeconds)) return;
+  if (!collection || elapsedSeconds()<(isPractice()?PRACTICE_SECONDS:REAL_SESSION.durationSeconds)) return;
   stopTimer();
   collection.savedElapsed=isPractice()?elapsedSeconds():REAL_SESSION.durationSeconds;
   collection.endedAt=new Date(collection.startedAtMs+(REAL_SESSION.durationSeconds*1000)).toISOString();
