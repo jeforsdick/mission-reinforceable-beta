@@ -136,8 +136,7 @@ test('five decisions complete once; stored checkpoint disappears after successfu
     run.MR.__test.selectChoice('A');
     run.MR.engine.continueAfterFeedback();
   }
-  assert.equal(run.MR.missionResume.read().stage,'outcome');
-  run.MR.engine.continueAfterFeedback();
+  // Final feedback now opens Results directly; no second outcome popup.
   await new Promise(resolve => setTimeout(resolve, 35)); // Allow async DB completion and response insert to settle.
   assert.equal(db.responses.length,5);
   assert.equal(run.MR.missionResume.read(),null);

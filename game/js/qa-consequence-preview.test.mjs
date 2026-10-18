@@ -9,7 +9,6 @@ assert.ok(at > 0, 'engine wrapper is present');
 const code = source.slice(0, at) + `
   MR.__qaScenarioTest = {
     setCurrent(value) { current = value; },
-    enabled: consequencePreviewEnabled,
     render: nextScenarioHTML,
     updateCue: updateScenarioScrollCue,
     wireCue: wireScenarioScrollCue
@@ -64,23 +63,23 @@ test('authorized draft QA shows selected consequence followed by the next scene'
   assert.doesNotMatch(MR.__qaScenarioTest.render(step),/WHAT HAPPENED/,'first scene has no previous choice');
 });
 
-test('live teacher and non-opt-in preview preserve original scenario and hide cue',()=>{
-  for(const options of [{qa:false,draft:false,optIn:true},{qa:true,draft:false,optIn:true},{qa:true,draft:true,optIn:false}]) {
+test('teacher, full-draft, demo and individual preview share consequence presentation without URL opt-in',()=>{
+  for(const options of [{qa:false,draft:false,optIn:false},{qa:true,draft:true,optIn:false},{qa:true,draft:true,optIn:true},{qa:false,draft:false,optIn:true}]) {
     const {MR,cue}=harness(options);
     MR.__qaScenarioTest.setCurrent({history:[previous]});
-    assert.equal(MR.__qaScenarioTest.enabled(),false);
-    assert.equal(MR.__qaScenarioTest.render(step),step.text);
+    assert.match(MR.__qaScenarioTest.render(step),/WHAT HAPPENED/);
+    assert.match(MR.__qaScenarioTest.render(step),/NOW\.\.\./);
     MR.__qaScenarioTest.updateCue();
-    assert.equal(cue.hidden,true);
+    assert.equal(cue.hidden,false);
   }
 });
 
-test('QA preview markup is scoped to teacher game; copy is not committed to public demo',()=>{
+test('shared game markup supports readable scrolling',()=>{
  const html=fs.readFileSync(new URL('../index.html', import.meta.url),'utf8');
  const css=fs.readFileSync(new URL('../css/styles.css',import.meta.url),'utf8');
  assert.match(html,/id="scenario-scroll-region"/);
  assert.match(html,/id="scenario-scroll-cue"[^>]*hidden/);
- assert.match(html,/js\/engine\.js\?v=20261017-balanced-results-1/);
+ assert.match(html,/js\/engine\.js\?v=20261018-shared-presentation-1/);
  assert.match(css,/\.scenario-scroll-cue\[hidden\]/);
  assert.match(css,/overflow-y: auto/);
 });

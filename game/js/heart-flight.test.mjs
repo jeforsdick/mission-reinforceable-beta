@@ -116,14 +116,14 @@ test('the effect is one-shot and cleans up on animation end or early dismissal',
   assert.equal(v.timers.size,0);
 });
 
-test('QA only: Wizard popup appears first, regular teacher play retains existing pulse, restored play never animates', () => {
+test('Shared heart flight follows Wizard feedback and restored play never animates', () => {
   const engine = readFileSync(new URL('./engine.js', import.meta.url),'utf8');
-  assert.match(engine, /if \(restoredAnswer\) return;[\s\S]*?renderHUD\(\);\s*showWizardFeedback\(choice, score\);[\s\S]*?if \(consequencePreviewEnabled\(\) && MR\.heartFlight\)/);
+  assert.match(engine, /if \(restoredAnswer\) return;[\s\S]*?renderHUD\(\);\s*showWizardFeedback\(choice, score\);[\s\S]*?if \(MR\.heartFlight\)/);
   assert.match(engine, /MR\.heartFlight\.play\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /else \{\s*animateHeartChange\(heartChange\.before, heartChange\.after\)/);
   assert.match(engine, /function hideWizardFeedback\(\) \{\s*if \(MR\.heartFlight\) MR\.heartFlight\.clear\(\)/);
   const html = readFileSync(new URL('../index.html', import.meta.url),'utf8');
-  assert.match(html, /js\/heart-flight\.js\?v=20261017-heart-fraction-1/);
+  assert.match(html, /js\/heart-flight\.js\?v=20261018-shared-presentation-1/);
   assert.ok(html.indexOf('heart-flight.js') < html.indexOf('js/engine.js'));
 });
 

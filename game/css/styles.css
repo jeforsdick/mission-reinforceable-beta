@@ -2900,8 +2900,7 @@ body.qa-preview { padding-top: 4.25rem; }
 }
 
 
-/* Researcher-only scenario continuity preview; no change to the teacher game unless
-   authorized draft QA explicitly opts in via its preview URL. */
+/* Shared scenario continuity presentation for all game entry points. */
 .scenario-area { position: relative; }
 #scenario-scroll-cue.scenario-scroll-cue {
   position: absolute;
@@ -3118,3 +3117,7 @@ body.qa-preview { padding-top: 4.25rem; }
     font-size: 11px;
   }
 }
+
+/* Legacy missions without authored endings still receive the shared Results Wizard. */
+.results-summary-wizard { float: right; width: 76px; max-height: 100px; object-fit: contain; margin: 0 0 8px 12px; }
+@media (max-width: 700px) { .results-summary-wizard { width: 58px; max-height: 78px; } }

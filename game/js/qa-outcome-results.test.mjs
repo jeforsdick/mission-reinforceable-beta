@@ -15,7 +15,6 @@ const script = source.slice(0, end) + `
       modalMode = 'feedback';
     },
     getPending: () => pendingEnding,
-    enabled: consequencePreviewEnabled,
     html: coachingDebriefHTML,
     outcome: outcomeForResults,
     close: continueAfterFeedback,
@@ -43,6 +42,7 @@ function harness({ qa = true, draft = true, optIn = true } = {}) {
     pool: {crisis:[]},
     auth: {
       completeTelemetrySession:async()=>{saved.sessions++;},
+      completeParticipantMission:async()=>{saved.sessions++;return 'completed';},
       insertTelemetryResponses:async rows=>{saved.responses=rows;}
     },
     setScreen:s=> saved.screens.push(s),
@@ -66,7 +66,7 @@ const history=Array.from({length:5},(_,i)=>({stepId:i===4?'d5_supported':'d'+(i+
   stepIndex:i+1,choiceKey:'A',score:10, selectedScore:10,hintOpenCount:0,
   context:'Fictional',choiceText:'Plan aligned response',bestChoiceText:'Plan aligned response',
   feedback:'Helpful connection'}));
-test('researcher-only option moves actual mission-specific ending to Results',()=>{
+test('shared presentation moves actual mission-specific ending to Results',()=>{
  const {MR}=harness();
  const outcome={key:'STRONG',text:'The student begins working again. The full story remains available to study.',summary:'The student makes progress with appropriate help.',wizard:'The wizard celebrates.'};
  const run={mode:'crisis',missionId:'qa-crisis',score:50,maxScore:50,accuracy:100,history,missionOutcome:outcome};
@@ -151,17 +151,19 @@ test('without an authored summary, outcomes remain short and complete story stay
  assert.match(html,/The next step is to make appropriate communication useful/);
  assert.ok(html.indexOf('Mission Summary')<html.indexOf('Your Mission Outcome'));
 });
-test('normal teacher or non-opted QA still uses original results and Wizard outcome',()=>{
- const run={mode:'crisis',score:50,maxScore:50,accuracy:100,history,missionOutcome:{key:'STRONG',text:'Private preview story',wizard:'Private line'}};
- for (const setting of [{qa:false,draft:false,optIn:true},{qa:true,draft:false,optIn:true},{qa:true,draft:true,optIn:false}]) {
+test('teacher, full-draft and demo receive the same mission-specific results',()=>{
+ const run={mode:'crisis',score:50,maxScore:50,accuracy:100,history,missionOutcome:{key:'STRONG',text:'The student returns to work.',wizard:'A helpful finish.'}};
+ for (const setting of [{qa:false,draft:false,optIn:false},{qa:true,draft:true,optIn:false},{qa:true,draft:true,optIn:true}]) {
   const {MR}=harness(setting);
-  assert.equal(MR.__qaOutcomeTest.enabled(),false);
   const html=MR.__qaOutcomeTest.html(run,{title:'Perfect Mission!'});
-  assert.doesNotMatch(html,/Your Mission Outcome|Private preview story/);
+  assert.match(html,/Your Mission Outcome/);
+  assert.match(html,/The student returns to work/);
+  assert.match(html,/results-outcome-wizard/);
  }
 });
-test('short fifth-decision Wizard leads straight to Results with no additional question/score',async()=>{
- const {MR,$,saved}=harness();
+for (const [mode,options] of Object.entries({individual:{},fullDraft:{optIn:false},teacher:{qa:false,draft:false,optIn:false},demo:{qa:false,draft:false,optIn:false}})) {
+test(mode+': fifth decision reaches shared Results with one completion and five responses',async()=>{
+ const {MR,$,saved}=harness(options);
  MR.pool.crisis=[mission];
  const last={key:'STRONG',text:mission.endings.STRONG.text,wizard:mission.endings.STRONG.wizard};
  const current={
@@ -182,6 +184,7 @@ test('short fifth-decision Wizard leads straight to Results with no additional q
  assert.doesNotMatch($('#results-content').innerHTML,/Mission Outcome popup/);
  assert.equal(MR.__qaOutcomeTest.getPending(),null);
 });
+}
 test('historical QA result reconstructs outcome from saved step and choice if draft still available',()=>{
  const {MR}=harness();
  MR.pool.crisis=[mission];
