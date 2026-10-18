@@ -143,3 +143,21 @@ button{font:inherit}.primary-button,.secondary-button,.text-button{border:0;bord
   .opportunity-event .fidelity-outcome-actions{grid-column:1/-1}
   .opportunity-entry .fidelity-buttons{grid-template-columns:1fr}
 }
+
+
+/* Mobile-friendly fidelity review: readable events and editable desired outcomes. */
+.opportunity-review-item{display:block;min-width:0;padding:18px;overflow-wrap:anywhere}
+.review-target-heading{display:grid;gap:7px}
+.review-target-heading>strong{line-height:1.45}
+.review-target-heading>small{font-size:.88rem;color:var(--muted);line-height:1.5}
+.review-opportunity-list{display:grid;gap:12px;margin-top:14px;min-width:0}
+.review-opportunity-row{display:grid;gap:8px;padding:12px;border-radius:10px;background:#f8f6f1;min-width:0}
+.review-time{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.review-implementation{font-size:.98rem;line-height:1.35}
+.review-outcome-field{display:grid;gap:8px}
+.review-outcome-label{font-size:.85rem;color:var(--muted)}
+.review-outcome-buttons{display:flex;gap:7px;flex-wrap:wrap}
+.review-outcome-button{border:1px solid #d7cbe7;border-radius:9px;padding:10px 12px;background:white;color:#23334c;font:inherit;cursor:pointer;min-height:42px}
+.review-outcome-button.selected{background:#eae2fa;border-color:#7a51bd;font-weight:750;color:#51318b}
+.review-none{color:var(--muted);font-size:.9rem}
+@media(max-width:620px){.opportunity-review-item{padding:14px}.review-outcome-button{flex:1 1 auto}.review-summary{grid-template-columns:1fr}}
