@@ -674,9 +674,19 @@ async function submitObservation() {
   if (behavior.observed===0) { $("review-error").textContent="At least one student-behavior interval must be observable."; return; }
 
   if (isPractice()) {
+    $("submit-observation").disabled=true;
+    const result=await client.rpc("observer_submit_sam_calibration",{
+      p_intervals:collection.intervals.slice(0,PRACTICE_INTERVALS),
+      p_opportunities:collection.fidelityOpportunities,
+      p_fidelity:collection.fidelityScores,
+      p_outcomes:collection.fidelityOutcomes,
+      p_note:$("observation-note").value.trim()||null
+    });
+    $("submit-observation").disabled=false;
+    if(result.error){$("review-error").textContent="Could not save practice: "+result.error.message;return;}
     $("review-view").hidden=true;$("submitted-view").hidden=false;
     $("submitted-title").textContent="Practice completed";
-    $("submitted-help").textContent="This fictional practice was not sent to Supabase and does not count as dissertation observation data. Choose Practice again to start over.";
+    $("submitted-help").textContent="Sam practice attempt "+result.data.attempt+" saved in the separate calibration area for Research Admin comparison. It is not dissertation observation data.";
     return;
   }
   if (saveTimer) clearTimeout(saveTimer);
