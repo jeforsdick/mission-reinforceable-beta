@@ -634,12 +634,28 @@ function renderReview(noteOverride) {
   const noteValue=noteOverride===undefined ? (currentPacket.record?.observation_note||"") : noteOverride;
   $("review-fidelity-list").innerHTML=targets.map((target)=>{
     const events=opportunitiesFor(target.id);
-    const implemented=events.filter((event)=>event.implementation==="implemented").length;
-    const rows=events.length?events.map((event)=>
-      '<div class="review-opportunity-row"><span>+'+formatClock(event.elapsed_seconds)+'</span><strong>'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong><span>Desired outcome: '+(event.desired_outcome==="yes"?"Yes":event.desired_outcome==="no"?"No":event.desired_outcome==="unclear"?"Not clear":"Not rated")+'</span></div>'
-    ).join(""):'<small>No opportunity occurred during this observation.</small>';
-    return '<article class="review-item opportunity-review-item"><div><strong>'+escapeHtml(target.description)+'</strong><small>'+(events.length?implemented+"/"+events.length+" opportunities implemented as written":"No opportunity")+'</small></div><div class="review-opportunity-list">'+rows+'</div></article>';
+    const implemented=events.filter(e=>e.implementation==="implemented").length;
+    const rows=events.map(event=>{
+      const outcome=event.desired_outcome;
+      const buttons=[["yes","Yes"],["no","No"],["unclear","Not clear"]].map(([value,label])=>
+        '<button type="button" class="review-outcome-button '+(outcome===value?'selected':'')+'" data-review-outcome="'+escapeHtml(event.event_id)+'" data-review-value="'+value+'" aria-pressed="'+String(outcome===value)+'">'+label+'</button>'
+      ).join("");
+      return '<div class="review-opportunity-row"><span class="review-time">+'+formatClock(event.elapsed_seconds)+'</span>'+
+        '<strong class="review-implementation">'+(event.implementation==="implemented"?"Implemented as Written":"Not Implemented as Written")+'</strong>'+
+        '<div class="review-outcome-field"><span class="review-outcome-label">Desired outcome'+(!outcome?' · Please rate':'')+'</span><div class="review-outcome-buttons">'+buttons+'</div></div></div>';
+    }).join("");
+    return '<article class="review-item opportunity-review-item"><div class="review-target-heading"><strong>'+escapeHtml(target.description)+'</strong><small>'+(events.length?implemented+"/"+events.length+" opportunities implemented as written":"No opportunity recorded")+'</small></div>'+
+      '<div class="review-opportunity-list">'+(rows||'<span class="review-none">No Opportunity</span>')+'</div></article>';
   }).join("");
+  $("review-fidelity-list").querySelectorAll("[data-review-outcome]").forEach(button=>button.addEventListener("click",()=>{
+    const note=$("observation-note").value;
+    const event=(collection.fidelityOpportunities||[]).find(e=>e.event_id===button.dataset.reviewOutcome);
+    if(!event)return;
+    event.desired_outcome=button.dataset.reviewValue;
+    syncFidelityRollups(true);
+    renderReview(note);
+    $("review-error").textContent="";
+  }));
   $("observation-note").value=noteValue;
   updateReviewSummary();
 }
