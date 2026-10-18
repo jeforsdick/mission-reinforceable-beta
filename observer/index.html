@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="/assets/site/site.css">
   <link rel="stylesheet" href="/observer/observer.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script type="module" src="/observer/observer.js?v=20261018-admin-return-1"></script>
+  <script type="module" src="/observer/observer.js?v=20261018-sam-compare-v1"></script>
 </head>
 <body>
   <div class="site-shell">
@@ -93,7 +93,7 @@
           </section>
         </div>
 
-        <section class="observer-card" aria-label="Practice observation"><div class="section-heading"><div><p class="eyebrow">Practice / calibration</p><h2>Start Observation</h2></div></div><p>Use Sam's fictional video-aligned BIP with the actual data collection form. No schedule needed. Practice responses are never submitted to research records.</p><button id="start-practice-observation" class="primary-button" type="button">Start Practice Observation</button></section>
+        <section class="observer-card" aria-label="Practice observation"><div class="section-heading"><div><p class="eyebrow">Practice / calibration</p><h2>Start Observation</h2></div></div><p>Use Sam's fictional video-aligned BIP with the actual data collection form. No schedule needed. Practice submissions are saved only in a separate calibration area, never as dissertation observations.</p><button id="start-practice-observation" class="primary-button" type="button">Start Practice Observation</button></section>
 
 
       </section>
@@ -147,7 +147,7 @@
               </div>
               <div class="timer-grid">
                 <div><span>Elapsed</span><strong id="elapsed-clock">00:00</strong></div>
-                <div><span>Interval</span><strong><span id="interval-number">1</span>/120</strong></div>
+                <div><span>Interval</span><strong><span id="interval-number">1</span>/<span id="interval-total">120</span></strong></div>
                 <div><span>Next cue</span><strong id="interval-clock">00:15</strong></div>
               </div>
               <p id="collector-behavior-definition" class="behavior-definition"></p>
