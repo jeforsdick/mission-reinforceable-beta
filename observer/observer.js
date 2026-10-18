@@ -147,6 +147,7 @@ async function loadPortal() {
 
   $("observer-name").textContent=observer.data?.display_name||"Observer";
   observerType=observer.data?.observer_type||null;
+  $("research-admin-return").hidden=observerType!=="primary_researcher";
   clearanceStatus=clearance.data?.clearance_status||"pending";
 
   const latestByCase={};
