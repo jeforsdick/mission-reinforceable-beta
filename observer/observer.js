@@ -791,6 +791,26 @@ $("submitted-back").addEventListener("click",loadPortal);
 $("test-live-cue").addEventListener("click",beep);
 $("start-live-observation").addEventListener("click",beginCollection);
 $("start-practice-observation").addEventListener("click",openPractice);
+$("manual-options-button").addEventListener("click",async()=>{
+  $("manual-message").textContent="Checking your authorized cases…";
+  const result=await client.rpc("research_observer_manual_options");
+  if(result.error){$("manual-message").textContent=result.error.message;return;}
+  const options=Array.isArray(result.data)?result.data:[];
+  $("manual-controls").hidden=!options.length;
+  $("manual-case-select").innerHTML=options.map(c=>'<option value="'+escapeHtml(c.case_id)+'">'+escapeHtml(c.case_code)+' · '+escapeHtml(c.routine||"Observation")+(c.today_slot_id?" · already scheduled today":" · create same-day session")+'</option>').join("");
+  $("manual-message").textContent=options.length?"Choose an authorized case. Your normal 30-minute data collection form will open.":"No eligible cases are available for your account today. Contact the research administrator.";
+});
+$("manual-start-button").addEventListener("click",async()=>{
+  const caseId=$("manual-case-select").value,reason=$("manual-reason").value.trim();
+  if(reason.length<10){$("manual-message").textContent="Please explain the scheduling problem in at least 10 characters.";return;}
+  const button=$("manual-start-button");button.disabled=true;
+  $("manual-message").textContent="Verifying and preparing observation…";
+  const result=await client.rpc("research_observer_manual_start",{p_case_id:caseId,p_reason:reason});
+  button.disabled=false;
+  if(result.error){$("manual-message").textContent=result.error.message;return;}
+  await openSession(result.data);
+});
+
 $("target-occurred").addEventListener("click",markOccurred);
 $("continuing-toggle").addEventListener("click",()=>setMode("continuing"));
 $("not-observed-toggle").addEventListener("click",()=>setMode("notObserved"));
