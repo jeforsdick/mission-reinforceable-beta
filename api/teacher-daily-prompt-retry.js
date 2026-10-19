@@ -2,6 +2,7 @@
 
 const { createHandler, TYPES, authorized } = require('../server/teacher-reminder-service');
 const weeklyRecap = require('../server/weekly-recap-delivery');
+const researcherDigest = require('../server/research-weekly-digest');
 const { KINDS, deliver } = require('../server/qa-teacher-email-service');
 
 const dailyRetry = createHandler(TYPES.DAILY, { retry: true });
@@ -29,5 +30,15 @@ module.exports = async function handler(request,response) {
     console.error('QA Friday recap failed without affecting production recaps:',error.message);
     qa={error:'QA weekly delivery unavailable'};
   }
-  return response.status(status).json({...(body||{}),qa});
+  let researchDigest=null;
+  if(process.env.RESEARCH_WEEKLY_DIGEST_ENABLED==='true') {
+    try {
+      const content=await researcherDigest.digest(new Date());
+      researchDigest=await researcherDigest.send(content);
+    }catch(error){
+      console.error('Researcher digest failed independently of teacher recaps:',error.message);
+      researchDigest={error:'Research digest unavailable'};
+    }
+  }
+  return response.status(status).json({...(body||{}),qa,researchDigest});
 };
