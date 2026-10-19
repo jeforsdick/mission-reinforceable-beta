@@ -1,6 +1,7 @@
 'use strict';
 const crypto=require('node:crypto');
 const {supabaseFetch}=require('../api/research-admin-server');
+const {SENDER}=require('./mission-reminder-email');
 const {currentStudyWeek,loadWeeklySummary}=require('./weekly-recap-service');
 const RECIPIENT='jess.olson@utah.edu';
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -14,7 +15,11 @@ async function digest(now=new Date(),testCase=null){
   if(!['CASE-069','CASE-100'].includes(testCase))throw Error('Test case not permitted');
   const records=await api('/rest/v1/cases?case_code=eq.'+encodeURIComponent(testCase)+'&select=id,case_code&limit=1');
   if(!records.length)throw Error('QA case not found');
-  cases=records;
+  const sessions=await api('/rest/v1/game_sessions?case_id=eq.'+encodeURIComponent(records[0].id)+'&qa_mode=eq.true&status=eq.completed&select=mode,ended_at');
+  const mix={daily:0,mystery:0,crisis:0};
+  sessions.forEach(row=>{const m=row.mode==='wild'?'mystery':row.mode;if(Object.hasOwn(mix,m))mix[m]++;});
+  const dates=new Set(sessions.filter(row=>row.ended_at).map(row=>String(row.ended_at).slice(0,10)));
+  return {week,rows:[{case_code:testCase,missions:sessions.length,days:dates.size,daily:mix.daily,mystery:mix.mystery,crisis:mix.crisis}],is_test:true,note:'QA sessions across available case history; not study-week eligible activity'};
  }else{
   const candidates=await api('/rest/v1/rpc/eligible_weekly_teacher_recaps',{method:'POST',body:'{}'});
   const ids=new Map((candidates||[]).filter(c=>c.case_id&&c.participant_id).map(c=>[c.case_id,c.participant_code]));
@@ -28,7 +33,7 @@ function compose(data){
  const {week,rows,is_test}=data;
  const total=rows.reduce((n,r)=>n+(r.missions||0),0);
  const title='Mission: Reinforceable — '+(is_test?'QA Preview · ':'')+'Weekly Research Digest';
- const intro='Week of '+week.week_start+' to '+week.week_end+' (Mountain Time)';
+ const intro=is_test?'Historical QA activity · excluded from study reporting':'Week of '+week.week_start+' to '+week.week_end+' (Mountain Time)';
  const items=rows.length?rows.map(r=>r.error? r.case_code+': summary unavailable':r.case_code+': '+r.missions+' missions, '+r.days+' days practiced (Daily '+r.daily+', Mystery '+r.mystery+', Crisis '+r.crisis+')'):[ 'No eligible intervention dyads this week.' ];
  const text=[title,intro,'',rows.length+' dyad(s) · '+total+' missions recorded','',...items,'','Research follow-up: review participation and check-in completion in Research Admin.','This email contains no student name, individual responses, fidelity observations or personalized weekly survey links.'].join('\n');
  const html='<div style="font-family:Arial,sans-serif;max-width:640px;margin:auto;color:#28334c"><h2>'+esc(title)+'</h2><p>'+esc(intro)+'</p><p><strong>'+rows.length+' dyad(s) · '+total+' missions</strong></p><ul>'+items.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ul><p>Research follow-up: review participation and check-in completion in Research Admin.</p><p style="font-size:12px;color:#677">No identifiable student information or personalized survey links.</p></div>';
@@ -37,7 +42,7 @@ function compose(data){
 async function send(data){
  const message=compose(data);
  const key='research-weekly-digest/'+data.week.week_start+(data.is_test?'/test':'');
- const resp=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify({from:process.env.RESEARCH_DIGEST_SENDER||process.env.WEEKLY_RECAP_FROM||'Mission: Reinforceable <noreply@missionreinforceable.com>',to:[RECIPIENT],...message})});
+ const resp=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.RESEND_API_KEY,'Content-Type':'application/json','Idempotency-Key':key},body:JSON.stringify({from:SENDER,to:[RECIPIENT],...message})});
  const response=await resp.json().catch(()=>null);if(!resp.ok||!response?.id)throw Error('Digest email send failed');return {sent:true,provider_message_id:response.id};
 }
 module.exports={RECIPIENT,authorized,digest,compose,send};
