@@ -48,7 +48,7 @@ module.exports = async function handler(request,response) {
   if(process.env.RESEARCH_WEEKLY_DIGEST_ENABLED==='true') {
     try {
       const content=await researcherDigest.digest(new Date());
-      researchDigest=await researcherDigest.send(content);
+      researchDigest=content.rows.length ? await researcherDigest.send(content) : {sent:false,reason:'no_eligible_dyads'};
     }catch(error){
       console.error('Researcher digest failed independently of teacher recaps:',error.message);
       researchDigest={error:'Research digest unavailable'};
