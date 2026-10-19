@@ -8,6 +8,20 @@ const { KINDS, deliver } = require('../server/qa-teacher-email-service');
 const dailyRetry = createHandler(TYPES.DAILY, { retry: true });
 
 module.exports = async function handler(request,response) {
+  // Authenticated QA preview shares this existing function: no additional Vercel function slot.
+  if(request.query?.test_case) {
+    if(request.method!=='GET'||!authorized(request.headers?.authorization,process.env.CRON_SECRET))
+      return response.status(401).json({error:'Unauthorized'});
+    if(!['CASE-069','CASE-100'].includes(request.query.test_case))
+      return response.status(400).json({error:'Unknown QA test case'});
+    try {
+      const data=await researcherDigest.digest(new Date(),request.query.test_case);
+      return response.status(200).json({preview:true,recipient:researcherDigest.RECIPIENT,subject:researcherDigest.compose(data).subject,content:researcherDigest.compose(data).text});
+    } catch(error) {
+      console.error('Research digest QA preview failed',error.message);
+      return response.status(502).json({error:'QA digest preview unavailable'});
+    }
+  }
   if(request.headers?.['x-vercel-cron-schedule'] !== '0 23 * * 5') {
     return dailyRetry(request,response);
   }
